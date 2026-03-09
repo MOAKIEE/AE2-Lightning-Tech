@@ -1,0 +1,13 @@
+{
+  "itemGroup.ae2lt": "AE2 闪电科技",
+  "item.ae2lt.overload_crystal": "过载水晶",
+  "block.ae2lt.overload_crystal_block": "过载水晶块",
+  "block.ae2lt.flawless_budding_overload_crystal": "无暇的过载水晶母岩",
+  "block.ae2lt.flawed_budding_overload_crystal": "有瑕的过载水晶母岩",
+  "block.ae2lt.cracked_budding_overload_crystal": "开裂的过载水晶母岩",
+  "block.ae2lt.damaged_budding_overload_crystal": "损坏的过载水晶母岩",
+  "block.ae2lt.small_overload_crystal_bud": "小型过载水晶芽",
+  "block.ae2lt.medium_overload_crystal_bud": "中型过载水晶芽",
+  "block.ae2lt.large_overload_crystal_bud": "大型过载水晶芽",
+  "block.ae2lt.overload_crystal_cluster": "过载水晶簇"
+}

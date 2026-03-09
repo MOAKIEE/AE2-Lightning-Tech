@@ -1,0 +1,36 @@
+# Gradle
+.gradle/
+build/
+**/build/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Local assistant/docs
+.aiassistant/
+.docs/
+
+# Bundled source mirrors / references
+Source Code/
+
+# Local test/export assets
+else/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Java
+*.class
+
+# Runtime / temporary files
+run/
+out/
+tmp/
