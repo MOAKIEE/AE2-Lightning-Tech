@@ -34,3 +34,6 @@ logs/
 run/
 out/
 tmp/
+
+#log
+DevLog/
