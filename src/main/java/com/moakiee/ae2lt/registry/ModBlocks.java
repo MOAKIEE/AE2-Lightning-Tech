@@ -39,19 +39,19 @@ public final class ModBlocks {
 
     public static final DeferredBlock<BuddingOverloadCrystalBlock> FLAWLESS_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("flawless_budding_overload_crystal", () ->
-                    new BuddingOverloadCrystalBlock(BuddingOverloadCrystalBlock.GrowthStage.FLAWLESS, BUDDING_PROPERTIES));
+                    new BuddingOverloadCrystalBlock(BUDDING_PROPERTIES));
 
     public static final DeferredBlock<BuddingOverloadCrystalBlock> FLAWED_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("flawed_budding_overload_crystal", () ->
-                    new BuddingOverloadCrystalBlock(BuddingOverloadCrystalBlock.GrowthStage.FLAWED, BUDDING_PROPERTIES));
+                    new BuddingOverloadCrystalBlock(BUDDING_PROPERTIES));
 
     public static final DeferredBlock<BuddingOverloadCrystalBlock> CRACKED_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("cracked_budding_overload_crystal", () ->
-                    new BuddingOverloadCrystalBlock(BuddingOverloadCrystalBlock.GrowthStage.CRACKED, BUDDING_PROPERTIES));
+                    new BuddingOverloadCrystalBlock(BUDDING_PROPERTIES));
 
     public static final DeferredBlock<BuddingOverloadCrystalBlock> DAMAGED_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("damaged_budding_overload_crystal", () ->
-                    new BuddingOverloadCrystalBlock(BuddingOverloadCrystalBlock.GrowthStage.DAMAGED, BUDDING_PROPERTIES));
+                    new BuddingOverloadCrystalBlock(BUDDING_PROPERTIES));
 
     public static final DeferredBlock<OverloadCrystalClusterBlock> SMALL_OVERLOAD_CRYSTAL_BUD =
             registerBlock("small_overload_crystal_bud", () ->

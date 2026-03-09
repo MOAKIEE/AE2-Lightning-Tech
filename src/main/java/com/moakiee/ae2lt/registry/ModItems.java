@@ -11,6 +11,9 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL =
             ITEMS.registerSimpleItem("overload_crystal", new Item.Properties());
 
+    public static final DeferredItem<Item> OVERLOAD_CRYSTAL_DUST =
+            ITEMS.registerSimpleItem("overload_crystal_dust", new Item.Properties());
+
     private ModItems() {
     }
 }

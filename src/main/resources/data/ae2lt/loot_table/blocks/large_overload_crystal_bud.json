@@ -35,7 +35,7 @@
                   "condition": "minecraft:survives_explosion"
                 }
               ],
-              "name": "ae2lt:overload_crystal"
+              "name": "ae2lt:overload_crystal_dust"
             }
           ]
         }

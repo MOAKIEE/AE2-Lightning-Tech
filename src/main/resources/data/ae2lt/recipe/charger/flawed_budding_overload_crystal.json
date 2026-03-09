@@ -1,0 +1,10 @@
+{
+  "type": "ae2:charger",
+  "ingredient": {
+    "item": "ae2:flawless_budding_quartz"
+  },
+  "result": {
+    "count": 1,
+    "id": "ae2lt:flawed_budding_overload_crystal"
+  }
+}

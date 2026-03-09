@@ -4,11 +4,14 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
@@ -28,6 +31,10 @@ import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.level.storage.loot.parameters.LootContextParams;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.api.distmarker.OnlyIn;
+
+import appeng.client.render.effects.ParticleTypes;
 
 public class OverloadCrystalClusterBlock extends Block implements SimpleWaterloggedBlock {
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
@@ -127,5 +134,33 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
     @Override
     public PushReaction getPistonPushReaction(BlockState state) {
         return PushReaction.DESTROY;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    @Override
+    public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
+        // 1/3 chance per tick to spawn a lightning particle
+        if (random.nextInt(3) != 0) {
+            return;
+        }
+
+        Direction facing = state.getValue(FACING);
+
+        // Particle spawns at the tip of the bud/cluster
+        double x = pos.getX() + 0.5 + facing.getStepX() * 0.3;
+        double y = pos.getY() + 0.5 + facing.getStepY() * 0.3;
+        double z = pos.getZ() + 0.5 + facing.getStepZ() * 0.3;
+
+        // Small random offset
+        x += (random.nextFloat() - 0.5) * 0.4;
+        y += (random.nextFloat() - 0.5) * 0.4;
+        z += (random.nextFloat() - 0.5) * 0.4;
+
+        var particle = Minecraft.getInstance().particleEngine.createParticle(
+                ParticleTypes.LIGHTNING, x, y, z, 0, 0, 0);
+        if (particle != null) {
+            // Tint the lightning with a cyan/green overload crystal color
+            particle.setColor(0.2F, 0.9F, 0.8F);
+        }
     }
 }

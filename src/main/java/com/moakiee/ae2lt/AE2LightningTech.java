@@ -30,6 +30,7 @@ public class AE2LightningTech {
                     .icon(() -> ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL.get().asItem().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
+                        output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
