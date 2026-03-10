@@ -2,6 +2,7 @@
   "replace": false,
   "values": [
     "ae2lt:overload_crystal_block",
+    "ae2lt:high_voltage_aggregator",
     "ae2lt:flawless_budding_overload_crystal",
     "ae2lt:flawed_budding_overload_crystal",
     "ae2lt:cracked_budding_overload_crystal",

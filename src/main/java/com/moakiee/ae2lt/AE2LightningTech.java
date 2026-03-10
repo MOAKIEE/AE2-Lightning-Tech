@@ -32,6 +32,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
+                        output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);

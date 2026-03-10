@@ -37,6 +37,14 @@ public final class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .requiresCorrectToolForDrops()));
 
+    public static final DeferredBlock<Block> HIGH_VOLTAGE_AGGREGATOR =
+            registerBlock("high_voltage_aggregator", () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.METAL)
+                    .strength(2.2F, 11.0F)
+                    .sound(SoundType.COPPER)
+                    .forceSolidOn()
+                    .noOcclusion()));
+
     public static final DeferredBlock<BuddingOverloadCrystalBlock> FLAWLESS_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("flawless_budding_overload_crystal", () ->
                     new BuddingOverloadCrystalBlock(BUDDING_PROPERTIES));
