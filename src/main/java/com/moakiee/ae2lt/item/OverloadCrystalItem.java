@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.item;
 
 import appeng.client.render.effects.ParticleTypes;
+import com.moakiee.ae2lt.event.ArtificialLightningHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -12,8 +13,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
+import net.minecraft.server.level.ServerLevel;
 
 public class OverloadCrystalItem extends Item {
+    private static final String DROPPED_TICKS_TAG = "ae2lt.overload_dropped_ticks";
+    private static final int SUMMON_DELAY_TICKS = 200;
+
     public OverloadCrystalItem(Properties properties) {
         super(properties);
     }
@@ -38,6 +43,14 @@ public class OverloadCrystalItem extends Item {
     public boolean onEntityItemUpdate(ItemStack stack, ItemEntity entity) {
         if (entity.level().isClientSide) {
             spawnDroppedLightning(entity);
+        } else if (entity.level() instanceof ServerLevel serverLevel) {
+            int droppedTicks = entity.getPersistentData().getInt(DROPPED_TICKS_TAG) + 1;
+            if (droppedTicks >= SUMMON_DELAY_TICKS) {
+                entity.getPersistentData().putInt(DROPPED_TICKS_TAG, 0);
+                ArtificialLightningHandler.spawnArtificialLightning(serverLevel, entity.position(), null, "dropped");
+            } else {
+                entity.getPersistentData().putInt(DROPPED_TICKS_TAG, droppedTicks);
+            }
         }
         return false;
     }
