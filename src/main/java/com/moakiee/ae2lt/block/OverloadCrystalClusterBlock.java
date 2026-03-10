@@ -139,8 +139,7 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
     @OnlyIn(Dist.CLIENT)
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        // 1/3 chance per tick to spawn a lightning particle
-        if (random.nextInt(3) != 0) {
+        if (random.nextInt(12) != 0) {
             return;
         }
 
@@ -159,8 +158,7 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
         var particle = Minecraft.getInstance().particleEngine.createParticle(
                 ParticleTypes.LIGHTNING, x, y, z, 0, 0, 0);
         if (particle != null) {
-            // Tint the lightning with a cyan/green overload crystal color
-            particle.setColor(0.2F, 0.9F, 0.8F);
+            particle.setColor(1.0F, 0.95F, 0.45F);
         }
     }
 }
