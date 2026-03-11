@@ -4,6 +4,7 @@
   "package": "com.moakiee.ae2lt.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "ServerLevelMixin"
   ],
   "client": [
   ],

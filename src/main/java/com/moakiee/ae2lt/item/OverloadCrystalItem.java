@@ -47,7 +47,7 @@ public class OverloadCrystalItem extends Item {
             int droppedTicks = entity.getPersistentData().getInt(DROPPED_TICKS_TAG) + 1;
             if (droppedTicks >= SUMMON_DELAY_TICKS) {
                 entity.getPersistentData().putInt(DROPPED_TICKS_TAG, 0);
-                ArtificialLightningHandler.spawnArtificialLightning(serverLevel, entity.position(), null, "dropped");
+                ArtificialLightningHandler.spawnArtificialLightning(serverLevel, entity.position(), null);
             } else {
                 entity.getPersistentData().putInt(DROPPED_TICKS_TAG, droppedTicks);
             }

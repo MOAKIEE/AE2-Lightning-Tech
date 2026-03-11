@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
+import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
@@ -40,8 +41,8 @@ public final class ModBlocks {
     public static final DeferredBlock<Block> OVERLOAD_CRYSTAL_BLOCK =
             registerBlock("overload_crystal_block", () -> new Block(OVERLOAD_CRYSTAL_BLOCK_PROPERTIES));
 
-    public static final DeferredBlock<Block> HIGH_VOLTAGE_AGGREGATOR =
-            registerBlock("high_voltage_aggregator", () -> new Block(BlockBehaviour.Properties.of()
+    public static final DeferredBlock<HighVoltageAggregatorBlock> HIGH_VOLTAGE_AGGREGATOR =
+            registerBlock("high_voltage_aggregator", () -> new HighVoltageAggregatorBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.METAL)
                     .strength(2.2F, 11.0F)
                     .sound(SoundType.COPPER)

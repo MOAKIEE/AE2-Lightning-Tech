@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.event;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -10,10 +11,10 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
@@ -21,6 +22,7 @@ import org.joml.Vector3f;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class NaturalLightningTransformationHandler {
+    public static final String NATURAL_WEATHER_LIGHTNING_TAG = "ae2lt.natural_weather_lightning";
     private static final ResourceLocation AE2_FLUIX_BLOCK_ID = ResourceLocation.parse("ae2:fluix_block");
     private static final ResourceLocation AE2_FLAWLESS_BUDDING_QUARTZ_ID =
             ResourceLocation.parse("ae2:flawless_budding_quartz");
@@ -70,14 +72,42 @@ public final class NaturalLightningTransformationHandler {
         }
 
         var data = lightningBolt.getPersistentData();
-        if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)
-                || data.getBoolean(ArtificialLightningHandler.ARTIFICIAL_LIGHTNING_TAG)
-                || lightningBolt.getCause() != null) {
+        if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)) {
             return;
         }
 
         data.putBoolean(TRANSFORMATION_CHECKED_TAG, true);
-        tryTransformFromNearbyLightningRod(serverLevel, lightningBolt.blockPosition());
+        boolean naturalWeatherLightning = data.getBoolean(NATURAL_WEATHER_LIGHTNING_TAG);
+        tryActivateHighVoltageAggregator(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
+        if (naturalWeatherLightning) {
+            tryTransformFromNearbyLightningRod(serverLevel, lightningBolt.blockPosition());
+        }
+    }
+
+    private static void tryActivateHighVoltageAggregator(ServerLevel level, BlockPos lightningPos, boolean naturalWeatherLightning) {
+        for (int yOffset = 0; yOffset <= 3; yOffset++) {
+            BlockPos checkPos = lightningPos.below(yOffset);
+            if (level.getBlockEntity(checkPos) instanceof HighVoltageAggregatorBlockEntity aggregator) {
+                activateHighVoltageAggregatorMode(aggregator, naturalWeatherLightning);
+                return;
+            }
+
+            if (level.getBlockState(checkPos).is(Blocks.LIGHTNING_ROD)
+                    && level.getBlockEntity(checkPos.below()) instanceof HighVoltageAggregatorBlockEntity aggregator) {
+                activateHighVoltageAggregatorMode(aggregator, naturalWeatherLightning);
+                return;
+            }
+        }
+    }
+
+    private static void activateHighVoltageAggregatorMode(
+            HighVoltageAggregatorBlockEntity aggregator,
+            boolean naturalWeatherLightning) {
+        if (naturalWeatherLightning) {
+            aggregator.activateExtremeHighVoltageMode();
+        } else {
+            aggregator.activateHighVoltageMode();
+        }
     }
 
     private static void tryTransformFromNearbyLightningRod(ServerLevel level, BlockPos lightningPos) {

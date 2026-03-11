@@ -15,8 +15,6 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class ArtificialLightningHandler {
-    public static final String ARTIFICIAL_LIGHTNING_TAG = "ae2lt.artificial_lightning";
-    private static final String LIGHTNING_SOURCE_TAG = "ae2lt.lightning_source";
     private static final String HELD_TICKS_TAG = "ae2lt.overload_held_ticks";
     private static final int SUMMON_DELAY_TICKS = 200;
 
@@ -45,12 +43,10 @@ public final class ArtificialLightningHandler {
         }
 
         player.getPersistentData().putInt(HELD_TICKS_TAG, 0);
-        spawnArtificialLightning(serverLevel, player.position(), player instanceof ServerPlayer serverPlayer ? serverPlayer : null,
-                "held");
+        spawnArtificialLightning(serverLevel, player.position(), player instanceof ServerPlayer serverPlayer ? serverPlayer : null);
     }
 
-    public static void spawnArtificialLightning(ServerLevel level, Vec3 position, @Nullable ServerPlayer cause,
-            String source) {
+    public static void spawnArtificialLightning(ServerLevel level, Vec3 position, @Nullable ServerPlayer cause) {
         LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(level);
         if (lightningBolt == null) {
             return;
@@ -61,10 +57,6 @@ public final class ArtificialLightningHandler {
         if (cause != null) {
             lightningBolt.setCause(cause);
         }
-
-        var data = lightningBolt.getPersistentData();
-        data.putBoolean(ARTIFICIAL_LIGHTNING_TAG, true);
-        data.putString(LIGHTNING_SOURCE_TAG, source);
 
         level.addFreshEntity(lightningBolt);
     }

@@ -110,6 +110,8 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:7027323"
     compileOnly "curse.maven:jei-238222:7391682"
+    compileOnly "curse.maven:jade-324717:5427817"
+    runtimeOnly "curse.maven:jade-324717:5427817"
     implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
 
     // Example mod dependency with JEI
