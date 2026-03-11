@@ -30,12 +30,15 @@ public final class ModBlocks {
             .forceSolidOn()
             .requiresCorrectToolForDrops();
 
+    private static final BlockBehaviour.Properties OVERLOAD_CRYSTAL_BLOCK_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.COLOR_CYAN)
+            .strength(3.0F, 5.0F)
+            .sound(SoundType.STONE)
+            .forceSolidOn()
+            .requiresCorrectToolForDrops();
+
     public static final DeferredBlock<Block> OVERLOAD_CRYSTAL_BLOCK =
-            registerBlock("overload_crystal_block", () -> new Block(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.COLOR_CYAN)
-                    .strength(3.0F, 5.0F)
-                    .sound(SoundType.AMETHYST)
-                    .requiresCorrectToolForDrops()));
+            registerBlock("overload_crystal_block", () -> new Block(OVERLOAD_CRYSTAL_BLOCK_PROPERTIES));
 
     public static final DeferredBlock<Block> HIGH_VOLTAGE_AGGREGATOR =
             registerBlock("high_voltage_aggregator", () -> new Block(BlockBehaviour.Properties.of()

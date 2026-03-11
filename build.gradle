@@ -11,6 +11,12 @@ group = mod_group_id
 repositories {
     mavenLocal()
     maven {
+        url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
+    }
+    maven {
+        url = "https://maven.createmod.net"
+    }
+    maven {
         url = "https://www.cursemaven.com"
         content {
             includeGroup "curse.maven"
@@ -104,7 +110,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:7027323"
     compileOnly "curse.maven:jei-238222:7391682"
-    compileOnly files("Jar/ponder-neoforge-1.0.82+mc1.21.1.jar")
+    implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
