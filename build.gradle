@@ -104,6 +104,7 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:7027323"
     compileOnly "curse.maven:jei-238222:7391682"
+    compileOnly files("Jar/ponder-neoforge-1.0.82+mc1.21.1.jar")
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

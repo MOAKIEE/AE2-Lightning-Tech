@@ -23,5 +23,14 @@
   "block.ae2lt.small_overload_crystal_bud": "小型过载水晶芽",
   "block.ae2lt.medium_overload_crystal_bud": "中型过载水晶芽",
   "block.ae2lt.large_overload_crystal_bud": "大型过载水晶芽",
-  "block.ae2lt.overload_crystal_cluster": "过载水晶簇"
+  "block.ae2lt.overload_crystal_cluster": "过载水晶簇",
+  "ae2lt.ponder.flawless_budding_overload_crystal.header": "无暇过载水晶母岩的锻成",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_1": "以无暇的赛特斯石英母岩作为核心。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_2": "在四个正方向放置 4 个福鲁伊克斯块。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_3": "在四个对角放置 4 个过载水晶块。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_4": "在核心正上方放置避雷针。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_5": "只有自然雷击才能完成这个多方块结构。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_6": "玩家携带过载水晶引来的人工闪电不会生效。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_7": "雷击命中后，周围八个方块会被消耗，并留下无暇的过载水晶母岩。",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "之后就能用它培育过载水晶芽和过载水晶簇。"
 }

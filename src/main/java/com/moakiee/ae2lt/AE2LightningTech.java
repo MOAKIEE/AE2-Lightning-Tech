@@ -9,8 +9,10 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
@@ -49,6 +51,21 @@ public class AE2LightningTech {
         ModItems.ITEMS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
 
+        registerOptionalClientIntegrations();
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
+    }
+
+    private static void registerOptionalClientIntegrations() {
+        if (!FMLEnvironment.dist.isClient() || !ModList.get().isLoaded("ponder")) {
+            return;
+        }
+
+        try {
+            Class.forName("com.moakiee.ae2lt.integration.ponder.PonderCompat")
+                    .getMethod("register")
+                    .invoke(null);
+        } catch (ReflectiveOperationException exception) {
+            LOGGER.error("Failed to register optional Ponder integration.", exception);
+        }
     }
 }

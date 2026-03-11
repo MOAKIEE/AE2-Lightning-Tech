@@ -23,5 +23,14 @@
   "block.ae2lt.small_overload_crystal_bud": "Small Overload Crystal Bud",
   "block.ae2lt.medium_overload_crystal_bud": "Medium Overload Crystal Bud",
   "block.ae2lt.large_overload_crystal_bud": "Large Overload Crystal Bud",
-  "block.ae2lt.overload_crystal_cluster": "Overload Crystal Cluster"
+  "block.ae2lt.overload_crystal_cluster": "Overload Crystal Cluster",
+  "ae2lt.ponder.flawless_budding_overload_crystal.header": "Forging Flawless Budding Overload Crystal",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_1": "Use a Flawless Budding Quartz block as the core.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_2": "Place 4 Fluix Blocks on the four sides.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_3": "Place 4 Overload Crystal Blocks on the four corners.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_4": "Mount a Lightning Rod directly above the core.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_5": "Only natural lightning can complete this multiblock.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_6": "Artificial lightning from carried overload crystals is ignored.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_7": "The eight surrounding blocks are consumed, leaving the flawless budding overload crystal.",
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "Use it to grow overload crystal buds and clusters."
 }
