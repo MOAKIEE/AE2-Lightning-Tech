@@ -36,7 +36,7 @@ public final class PonderScenes {
     }
 
     private static void flawlessBuddingOverloadCrystal(SceneBuilder scene, SceneBuildingUtil util) {
-        scene.title("flawless_budding_overload_crystal", "Forging Flawless Budding Overload Crystal");
+        scene.title("flawless_budding_overload_crystal", "Transformation of Flawless Budding Overload Crystal");
         scene.configureBasePlate(0, 0, 5);
         scene.scaleSceneView(0.95F);
         scene.showBasePlate();

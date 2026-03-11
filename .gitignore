@@ -7,10 +7,12 @@ build/
 .idea/
 *.iml
 .vscode/
+Jar/
 
 # Local assistant/docs
 .aiassistant/
 .docs/
+archive/
 
 # Bundled source mirrors / references
 Source Code/
