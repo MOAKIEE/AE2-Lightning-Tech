@@ -20,8 +20,8 @@ import org.joml.Vector3f;
 public final class PonderScenes {
     private static final ResourceLocation FLAWLESS_BUDDING_OVERLOAD_CRYSTAL =
             ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "flawless_budding_overload_crystal");
-    private static final DustParticleOptions GOLD_DUST =
-            new DustParticleOptions(new Vector3f(1.0F, 0.82F, 0.2F), 1.2F);
+    private static final DustParticleOptions PINK_DUST =
+            new DustParticleOptions(new Vector3f(1.0F, 0.45F, 0.78F), 1.2F);
     private static final DustParticleOptions PURPLE_DUST =
             new DustParticleOptions(new Vector3f(0.78F, 0.34F, 1.0F), 1.0F);
 
@@ -140,7 +140,7 @@ public final class PonderScenes {
                 scene.effects().simpleParticleEmitter(ParticleTypes.ENCHANT, new Vec3(0.0D, 0.06D, 0.0D));
         ParticleEmitter endRodEmitter =
                 scene.effects().simpleParticleEmitter(ParticleTypes.END_ROD, Vec3.ZERO);
-        ParticleEmitter goldEmitter = scene.effects().simpleParticleEmitter(GOLD_DUST, Vec3.ZERO);
+        ParticleEmitter pinkEmitter = scene.effects().simpleParticleEmitter(PINK_DUST, Vec3.ZERO);
         ParticleEmitter purpleEmitter = scene.effects().simpleParticleEmitter(PURPLE_DUST, Vec3.ZERO);
 
         Vec3 rodTop = util.vector().topOf(rod);
@@ -154,9 +154,9 @@ public final class PonderScenes {
         scene.effects().emitParticles(util.vector().centerOf(1, 1, 2), purpleEmitter, 16, 8);
         scene.effects().emitParticles(util.vector().centerOf(3, 1, 2), purpleEmitter, 16, 8);
         scene.effects().emitParticles(util.vector().centerOf(2, 1, 3), purpleEmitter, 16, 8);
-        scene.effects().emitParticles(util.vector().centerOf(1, 1, 1), goldEmitter, 18, 8);
-        scene.effects().emitParticles(util.vector().centerOf(3, 1, 1), goldEmitter, 18, 8);
-        scene.effects().emitParticles(util.vector().centerOf(1, 1, 3), goldEmitter, 18, 8);
-        scene.effects().emitParticles(util.vector().centerOf(3, 1, 3), goldEmitter, 18, 8);
+        scene.effects().emitParticles(util.vector().centerOf(1, 1, 1), pinkEmitter, 18, 8);
+        scene.effects().emitParticles(util.vector().centerOf(3, 1, 1), pinkEmitter, 18, 8);
+        scene.effects().emitParticles(util.vector().centerOf(1, 1, 3), pinkEmitter, 18, 8);
+        scene.effects().emitParticles(util.vector().centerOf(3, 1, 3), pinkEmitter, 18, 8);
     }
 }

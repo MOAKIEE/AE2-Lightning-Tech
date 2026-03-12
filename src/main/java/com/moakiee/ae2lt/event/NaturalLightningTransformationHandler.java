@@ -27,8 +27,8 @@ public final class NaturalLightningTransformationHandler {
     private static final ResourceLocation AE2_FLAWLESS_BUDDING_QUARTZ_ID =
             ResourceLocation.parse("ae2:flawless_budding_quartz");
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.natural_transform_checked";
-    private static final DustParticleOptions GOLD_DUST =
-            new DustParticleOptions(new Vector3f(1.0F, 0.82F, 0.2F), 1.6F);
+    private static final DustParticleOptions PINK_DUST =
+            new DustParticleOptions(new Vector3f(1.0F, 0.45F, 0.78F), 1.6F);
     private static final DustParticleOptions PURPLE_DUST =
             new DustParticleOptions(new Vector3f(0.78F, 0.34F, 1.0F), 1.4F);
 
@@ -185,7 +185,7 @@ public final class NaturalLightningTransformationHandler {
             double progress = i / 6.0D;
             Vec3 point = rodVec.lerp(centerVec, progress);
             level.sendParticles(ParticleTypes.ELECTRIC_SPARK, point.x, point.y, point.z, 10, 0.12D, 0.1D, 0.12D, 0.03D);
-            level.sendParticles(GOLD_DUST, point.x, point.y, point.z, 8, 0.08D, 0.08D, 0.08D, 0.01D);
+            level.sendParticles(PINK_DUST, point.x, point.y, point.z, 8, 0.08D, 0.08D, 0.08D, 0.01D);
         }
 
         // Purple fluix energy pulls inward from the four sides in thick trails.
@@ -196,11 +196,11 @@ public final class NaturalLightningTransformationHandler {
             level.sendParticles(ParticleTypes.WITCH, from.x, from.y, from.z, 20, toward.x, 0.06D, toward.z, 0.18D);
         }
 
-        // Overload crystal corners throw larger golden trails toward the center.
+        // Overload crystal corners throw larger pink trails toward the center.
         for (BlockPos offset : OVERLOAD_BLOCK_OFFSETS) {
             Vec3 from = Vec3.atCenterOf(centerPos.offset(offset)).add(0.0D, 0.55D, 0.0D);
             Vec3 toward = from.vectorTo(centerVec).scale(0.16D);
-            level.sendParticles(GOLD_DUST, from.x, from.y, from.z, 26, 0.2D, 0.16D, 0.2D, 0.01D);
+            level.sendParticles(PINK_DUST, from.x, from.y, from.z, 26, 0.2D, 0.16D, 0.2D, 0.01D);
             level.sendParticles(ParticleTypes.ENCHANT, from.x, from.y, from.z, 20, toward.x, 0.06D, toward.z, 0.22D);
         }
 
@@ -209,7 +209,7 @@ public final class NaturalLightningTransformationHandler {
             BlockPos offset = OUTER_RING_OFFSETS.get(i);
             Vec3 from = Vec3.atCenterOf(centerPos.offset(offset)).add(0.0D, 0.2D + (i % 3) * 0.12D, 0.0D);
             Vec3 toward = from.vectorTo(centerVec).scale(0.08D);
-            DustParticleOptions ringDust = (i & 1) == 0 ? PURPLE_DUST : GOLD_DUST;
+            DustParticleOptions ringDust = (i & 1) == 0 ? PURPLE_DUST : PINK_DUST;
             level.sendParticles(ringDust, from.x, from.y, from.z, 12, 0.14D, 0.06D, 0.14D, 0.01D);
             level.sendParticles(ParticleTypes.ENCHANT, from.x, from.y, from.z, 8, toward.x, 0.03D, toward.z, 0.1D);
         }
@@ -219,7 +219,7 @@ public final class NaturalLightningTransformationHandler {
         Vec3 centerVec = Vec3.atCenterOf(centerPos).add(0.0D, 0.7D, 0.0D);
         for (int i = 0; i < 4; i++) {
             double y = centerVec.y + i * 0.18D;
-            level.sendParticles(GOLD_DUST, centerVec.x, y, centerVec.z, 18, 0.24D, 0.04D, 0.24D, 0.01D);
+            level.sendParticles(PINK_DUST, centerVec.x, y, centerVec.z, 18, 0.24D, 0.04D, 0.24D, 0.01D);
             level.sendParticles(ParticleTypes.END_ROD, centerVec.x, y, centerVec.z, 10, 0.18D, 0.1D, 0.18D, 0.03D);
         }
         level.sendParticles(ParticleTypes.ELECTRIC_SPARK, centerVec.x, centerVec.y + 0.2D, centerVec.z, 24, 0.28D, 0.28D, 0.28D, 0.02D);
