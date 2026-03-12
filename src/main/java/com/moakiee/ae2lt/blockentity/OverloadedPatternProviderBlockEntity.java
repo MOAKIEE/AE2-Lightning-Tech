@@ -17,6 +17,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -156,11 +157,13 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             if (connections.get(i).sameTarget(dimension, pos)) {
                 connections.set(i, new WirelessConnection(dimension, pos, boundFace));
                 saveChanges();
+                markForClientUpdate();
                 return;
             }
         }
         connections.add(new WirelessConnection(dimension, pos, boundFace));
         saveChanges();
+        markForClientUpdate();
     }
 
     /**
@@ -172,6 +175,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         boolean removed = connections.removeIf(c -> c.sameTarget(dimension, pos));
         if (removed) {
             saveChanges();
+            markForClientUpdate();
         }
         return removed;
     }
@@ -214,8 +218,51 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         }
         if (removed > 0) {
             saveChanges();
+            markForClientUpdate();
         }
         return removed;
+    }
+
+    // -- Client sync (writeToStream / readFromStream) --
+
+    @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeByte(providerMode.ordinal());
+        data.writeBoolean(autoReturn);
+        data.writeByte(wirelessStrategy.ordinal());
+        data.writeVarInt(connections.size());
+        for (var conn : connections) {
+            data.writeResourceLocation(conn.dimension().location());
+            data.writeBlockPos(conn.pos());
+            data.writeByte(conn.boundFace().get3DDataValue());
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+        var newMode = ProviderMode.values()[data.readByte()];
+        var newAutoReturn = data.readBoolean();
+        var newStrategy = WirelessStrategy.values()[data.readByte()];
+        int count = data.readVarInt();
+        var newConns = new ArrayList<WirelessConnection>(count);
+        for (int i = 0; i < count; i++) {
+            var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
+            var pos = data.readBlockPos();
+            var face = Direction.from3DDataValue(data.readByte());
+            newConns.add(new WirelessConnection(dim, pos, face));
+        }
+        if (newMode != providerMode || newAutoReturn != autoReturn || newStrategy != wirelessStrategy
+                || !newConns.equals(connections)) {
+            providerMode = newMode;
+            autoReturn = newAutoReturn;
+            wirelessStrategy = newStrategy;
+            connections.clear();
+            connections.addAll(newConns);
+            changed = true;
+        }
+        return changed;
     }
 
     // -- NBT persistence --
