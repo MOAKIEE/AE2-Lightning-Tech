@@ -5,10 +5,8 @@ import java.util.List;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
-import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.PatternProviderScreen;
 import appeng.client.gui.style.ScreenStyle;
-import appeng.client.gui.widgets.ToggleButton;
 
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 
@@ -25,33 +23,33 @@ import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
  */
 public class OverloadedPatternProviderScreen extends PatternProviderScreen<OverloadedPatternProviderMenu> {
 
-    private final ToggleButton modeButton;
-    private final ToggleButton autoReturnButton;
-    private final ToggleButton wirelessStrategyButton;
+    private final TextureToggleButton modeButton;
+    private final TextureToggleButton autoReturnButton;
+    private final TextureToggleButton wirelessStrategyButton;
 
     public OverloadedPatternProviderScreen(OverloadedPatternProviderMenu menu, Inventory playerInventory,
                                            Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
         // Auto-Return toggle: On ↔ Off (always visible)
-        this.autoReturnButton = new ToggleButton(
-                Icon.AUTO_EXPORT_ON, Icon.AUTO_EXPORT_OFF,
+        this.autoReturnButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.AUTO_RETURN,
                 btn -> menu.clientToggleAutoReturn());
         this.autoReturnButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.auto_return.on")));
         this.autoReturnButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.auto_return.off")));
         addToLeftToolbar(this.autoReturnButton);
 
         // Mode toggle: Normal ↔ Wireless (always visible)
-        this.modeButton = new ToggleButton(
-                Icon.SCHEDULING_ROUND_ROBIN, Icon.SCHEDULING_DEFAULT,
+        this.modeButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.MODE,
                 btn -> menu.clientToggleMode());
         this.modeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.provider_mode.wireless")));
         this.modeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.provider_mode.normal")));
         addToLeftToolbar(this.modeButton);
 
         // Wireless Strategy toggle: Single Target ↔ Even Distribution (wireless mode only)
-        this.wirelessStrategyButton = new ToggleButton(
-                Icon.SCHEDULING_ROUND_ROBIN, Icon.SCHEDULING_DEFAULT,
+        this.wirelessStrategyButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.WIRELESS_STRATEGY,
                 btn -> menu.clientToggleWirelessStrategy());
         this.wirelessStrategyButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.wireless_strategy.even")));
         this.wirelessStrategyButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.wireless_strategy.single")));
