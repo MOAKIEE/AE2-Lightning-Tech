@@ -110,6 +110,8 @@ public class WirelessConnectorRenderer {
                 for (var bePos : chunk.getBlockEntitiesPos()) {
                     var be = chunk.getBlockEntity(bePos);
                     if (!(be instanceof OverloadedPatternProviderBlockEntity provider)) continue;
+                    // Skip providers in NORMAL mode
+                    if (provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) continue;
 
                     // Use blue for selected provider, yellow for others
                     boolean isSelected = hasSelection && bePos.equals(selectedPos);

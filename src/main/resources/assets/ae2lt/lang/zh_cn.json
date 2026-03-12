@@ -53,5 +53,6 @@
   "ae2lt.connector.disconnected": "已断开 [%d, %d, %d]",
   "ae2lt.connector.updated": "已更新 [%d, %d, %d] 绑定面 %s",
   "ae2lt.connector.connected": "已连接 [%d, %d, %d] 绑定面 %s",
-  "ae2lt.connector.deselected": "已取消选中过载样板供应器"
+  "ae2lt.connector.deselected": "已取消选中过载样板供应器",
+  "ae2lt.connector.need_wireless": "需要开启无线模式"
 }

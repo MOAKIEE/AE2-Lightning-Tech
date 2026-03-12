@@ -67,6 +67,15 @@ public class OverloadedWirelessConnectorItem extends Item {
 
         // Case 1: Shift + right-click on an Overloaded Pattern Provider → select it
         if (state.getBlock() instanceof OverloadedPatternProviderBlock) {
+            var be = level.getBlockEntity(pos);
+            if (be instanceof OverloadedPatternProviderBlockEntity provider
+                    && provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
+                player.displayClientMessage(
+                        Component.translatable("ae2lt.connector.need_wireless")
+                                .withStyle(ChatFormatting.GREEN),
+                        true);
+                return InteractionResult.FAIL;
+            }
             selectProvider(stack, level, pos);
             player.displayClientMessage(
                     Component.translatable("ae2lt.connector.selected",

@@ -24,6 +24,11 @@ import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 
+import appeng.api.AECapabilities;
+import appeng.api.networking.IInWorldGridNodeHost;
+
+import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
@@ -73,6 +78,12 @@ public class AE2LightningTech {
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.HIGH_VOLTAGE_AGGREGATOR.get(),
                 (blockEntity, side) -> side == Direction.UP ? null : blockEntity.getEnergyStorage());
+
+        // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
     }
 
     /**
@@ -90,6 +101,9 @@ public class AE2LightningTech {
                     null,  // 无客户端 ticker
                     null   // 无服务端 ticker（AE2 grid tick 由 GridHelper.onFirstTick 驱动）
             );
+
+            // Register built-in machine adapters (AE2-native fallback)
+            MachineAdapterRegistry.init();
         });
     }
 

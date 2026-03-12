@@ -1,0 +1,90 @@
+package com.moakiee.ae2lt.logic;
+
+import java.util.List;
+import java.util.Set;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+
+import appeng.api.config.Actionable;
+import appeng.api.crafting.IPatternDetails;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
+import appeng.api.stacks.KeyCounter;
+import appeng.helpers.patternprovider.PatternProviderTarget;
+
+/**
+ * Stateless adapter that knows how to interact with one category of machines.
+ * <p>
+ * Implementations are singletons registered in {@link MachineAdapterRegistry}.
+ * All world context is passed as method parameters — adapters hold no mutable state.
+ * <p>
+ * The dispatch unit is a <em>pattern task copy</em>, not individual items.
+ */
+public interface MachineAdapter {
+
+    /**
+     * Does this adapter recognise the block at the given position?
+     * Called once per dispatch attempt; first adapter that returns {@code true} wins.
+     */
+    boolean supports(ServerLevel level, BlockPos pos);
+
+    /**
+     * Quick pre-check: can the machine plausibly accept tasks for this pattern
+     * through the given face?  Should be cheap (no item simulation).
+     */
+    boolean canAccept(ServerLevel level, BlockPos pos, Direction face, IPatternDetails pattern);
+
+    /**
+     * Attempt to push up to {@code maxCopies} copies of the pattern's inputs.
+     *
+     * @param blocking      if {@code true}, refuse when the target already holds pattern inputs
+     * @param patternInputs the union of all input keys (secondary dropped); used only when blocking
+     * @return a {@link PushResult} containing the number of accepted copies and any overflow items
+     */
+    PushResult pushCopies(ServerLevel level, BlockPos pos, Direction face,
+                          IPatternDetails pattern, KeyCounter[] inputs, int maxCopies,
+                          boolean blocking, Set<AEKey> patternInputs,
+                          IActionSource source);
+
+    /**
+     * Try to flush leftover items into the same target.
+     * <p>
+     * Default implementation uses {@link PatternProviderTarget} which works for
+     * any block exposing ME-storage or platform external-storage capabilities.
+     *
+     * @return {@code true} if all overflow was delivered
+     */
+    default boolean flushOverflow(ServerLevel level, BlockPos pos, Direction face,
+                                  List<GenericStack> overflow, IActionSource source) {
+        if (!level.isLoaded(pos)) return false;
+        var be = level.getBlockEntity(pos);
+        var target = PatternProviderTarget.get(level, pos, be, face, source);
+        if (target == null) return false;
+
+        var it = overflow.listIterator();
+        while (it.hasNext()) {
+            var stack = it.next();
+            var inserted = target.insert(stack.what(), stack.amount(), Actionable.MODULATE);
+            if (inserted >= stack.amount()) {
+                it.remove();
+            } else if (inserted > 0) {
+                it.set(new GenericStack(stack.what(), stack.amount() - inserted));
+            }
+        }
+        return overflow.isEmpty();
+    }
+
+    /**
+     * Extract available outputs from the machine (for future auto-return).
+     * <p>
+     * Skeleton — returns empty by default; concrete adapters override when
+     * they know how to pull results out of a specific machine type.
+     */
+    default List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
+                                              IActionSource source) {
+        return List.of();
+    }
+}

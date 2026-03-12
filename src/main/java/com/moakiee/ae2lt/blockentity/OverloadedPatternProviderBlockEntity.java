@@ -37,6 +37,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import appeng.util.SettingsFrom;
 
+import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -114,7 +115,19 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     @Override
     protected PatternProviderLogic createLogic() {
-        return new PatternProviderLogic(this.getMainNode(), this, 36);
+        return new OverloadedPatternProviderLogic(this.getMainNode(), this, 36);
+    }
+
+    /**
+     * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
+     * path (in PatternProviderLogic.getActiveSides) finds no targets.
+     */
+    @Override
+    public EnumSet<Direction> getTargets() {
+        if (providerMode == ProviderMode.WIRELESS) {
+            return EnumSet.noneOf(Direction.class);
+        }
+        return super.getTargets();
     }
 
     // -- Getters / Setters --
@@ -126,6 +139,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void setProviderMode(ProviderMode providerMode) {
         this.providerMode = providerMode;
         saveChanges();
+        markForClientUpdate();
     }
 
     public boolean isAutoReturn() {
@@ -135,6 +149,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void setAutoReturn(boolean autoReturn) {
         this.autoReturn = autoReturn;
         saveChanges();
+        markForClientUpdate();
     }
 
     public WirelessStrategy getWirelessStrategy() {
@@ -144,6 +159,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void setWirelessStrategy(WirelessStrategy wirelessStrategy) {
         this.wirelessStrategy = wirelessStrategy;
         saveChanges();
+        markForClientUpdate();
     }
 
     // -- Connection management --
