@@ -1,7 +1,11 @@
 package com.moakiee.ae2lt.logic;
 
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -23,6 +27,7 @@ import appeng.me.helpers.MachineSource;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessStrategy;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 /**
@@ -57,6 +62,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Round-robin index across the *valid* connection list for SINGLE_TARGET. */
     private int wirelessRoundRobin = 0;
+
+    /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
+    private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
 
     // ---- construction -----------------------------------------------------------
 
@@ -114,36 +122,78 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
         if (valid.isEmpty()) return false;
 
-        // 4. SINGLE_TARGET: round-robin pick ONE machine
-        wirelessRoundRobin %= valid.size();
-        var chosen = valid.get(wirelessRoundRobin);
-        wirelessRoundRobin++;
+        // 4. Dispatch according to strategy
+        var strategy = overloadedHost.getWirelessStrategy();
+        if (strategy == WirelessStrategy.EVEN_DISTRIBUTION) {
+            return dispatchEvenDistribution(pattern, inputs, valid, server);
+        }
+        return dispatchSingleTarget(pattern, inputs, valid, server);
+    }
 
-        // 5. Resolve target level & find adapter from registry
-        var targetLevel = server.getLevel(chosen.dimension());
+    // ---- dispatch strategies ----------------------------------------------------
+
+    /**
+     * SINGLE_TARGET: sticky — always send to the first valid connection.
+     * Only returns false if that machine refuses; never auto-rotates to others.
+     */
+    private boolean dispatchSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
+        return tryPushToConnection(pattern, inputs, valid.get(0), server);
+    }
+
+    /**
+     * EVEN_DISTRIBUTION: load-balanced — sort machines by accumulated push count
+     * (least loaded first) and try each until one accepts.
+     * <p>
+     * Per pushPattern() call we still push exactly 1 copy; the "even" property
+     * emerges over many consecutive calls as the least-loaded machine is always
+     * preferred, naturally spreading tasks across all connected machines.
+     */
+    private boolean dispatchEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
+        // Prune counters for connections that are no longer valid
+        distributionCounts.keySet().retainAll(new HashSet<>(valid));
+
+        // Sort by push count ascending — least loaded machine first
+        valid.sort(Comparator.comparingInt(c -> distributionCounts.getOrDefault(c, 0)));
+
+        for (var conn : valid) {
+            if (tryPushToConnection(pattern, inputs, conn, server)) {
+                distributionCounts.merge(conn, 1, Integer::sum);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Try to push one pattern copy to a single wireless connection.
+     * On success, stores any overflow and triggers lock-mode transitions.
+     */
+    private boolean tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
+            WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
+        var targetLevel = server.getLevel(conn.dimension());
         if (targetLevel == null) return false;
 
-        var adapter = MachineAdapterRegistry.find(targetLevel, chosen.pos());
+        var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
         if (adapter == null) return false;
 
-        // 6. Push one copy via adapter
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
         var result = adapter.pushCopies(
-                targetLevel, chosen.pos(), chosen.boundFace(),
+                targetLevel, conn.pos(), conn.boundFace(),
                 pattern, inputs, 1,
                 blocking, patternInputs, wirelessSource);
         if (result.acceptedCopies() == 0) return false;
 
-        // 7. Track overflow for later flushing
+        // Track overflow for later flushing
         if (!result.overflow().isEmpty()) {
             wirelessSendList.addAll(result.overflow());
-            wirelessSendConn = chosen;
+            wirelessSendConn = conn;
         }
 
-        // 8. Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
+        // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
-
         return true;
     }
 
@@ -247,6 +297,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         super.clearContent();
         wirelessSendList.clear();
         wirelessSendConn = null;
+        distributionCounts.clear();
     }
 
     // ---- NBT persistence --------------------------------------------------------
