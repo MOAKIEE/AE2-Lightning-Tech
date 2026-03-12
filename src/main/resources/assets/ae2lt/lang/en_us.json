@@ -44,5 +44,14 @@
   "ae2lt.gui.auto_return.on": "Auto Return: ON",
   "ae2lt.gui.auto_return.off": "Auto Return: OFF",
   "ae2lt.gui.wireless_strategy.single": "Single Target",
-  "ae2lt.gui.wireless_strategy.even": "Even Distribution"
+  "ae2lt.gui.wireless_strategy.even": "Even Distribution",
+  "item.ae2lt.overloaded_wireless_connector": "Overloaded Wireless Connector",
+  "ae2lt.connector.selected": "Selected Overloaded Pattern Provider at [%d, %d, %d]",
+  "ae2lt.connector.no_provider": "No Overloaded Pattern Provider selected",
+  "ae2lt.connector.provider_lost": "Selected Overloaded Pattern Provider is missing or unloaded",
+  "ae2lt.connector.not_machine": "Target is not a machine",
+  "ae2lt.connector.disconnected": "Disconnected from [%d, %d, %d]",
+  "ae2lt.connector.updated": "Updated connection to [%d, %d, %d] face %s",
+  "ae2lt.connector.connected": "Connected to [%d, %d, %d] face %s",
+  "ae2lt.connector.deselected": "Overloaded Pattern Provider deselected"
 }

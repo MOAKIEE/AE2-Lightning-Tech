@@ -33,15 +33,7 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
                                            Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
-        // Mode toggle: Normal ↔ Wireless
-        this.modeButton = new ToggleButton(
-                Icon.SCHEDULING_ROUND_ROBIN, Icon.SCHEDULING_DEFAULT,
-                btn -> menu.clientToggleMode());
-        this.modeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.provider_mode.wireless")));
-        this.modeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.provider_mode.normal")));
-        addToLeftToolbar(this.modeButton);
-
-        // Auto-Return toggle: On ↔ Off
+        // Auto-Return toggle: On ↔ Off (always visible)
         this.autoReturnButton = new ToggleButton(
                 Icon.AUTO_EXPORT_ON, Icon.AUTO_EXPORT_OFF,
                 btn -> menu.clientToggleAutoReturn());
@@ -49,7 +41,15 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         this.autoReturnButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.auto_return.off")));
         addToLeftToolbar(this.autoReturnButton);
 
-        // Wireless Strategy toggle: Single Target ↔ Even Distribution
+        // Mode toggle: Normal ↔ Wireless (always visible)
+        this.modeButton = new ToggleButton(
+                Icon.SCHEDULING_ROUND_ROBIN, Icon.SCHEDULING_DEFAULT,
+                btn -> menu.clientToggleMode());
+        this.modeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.provider_mode.wireless")));
+        this.modeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.provider_mode.normal")));
+        addToLeftToolbar(this.modeButton);
+
+        // Wireless Strategy toggle: Single Target ↔ Even Distribution (wireless mode only)
         this.wirelessStrategyButton = new ToggleButton(
                 Icon.SCHEDULING_ROUND_ROBIN, Icon.SCHEDULING_DEFAULT,
                 btn -> menu.clientToggleWirelessStrategy());

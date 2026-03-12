@@ -44,5 +44,14 @@
   "ae2lt.gui.auto_return.on": "自动抽回：开",
   "ae2lt.gui.auto_return.off": "自动抽回：关",
   "ae2lt.gui.wireless_strategy.single": "逐台发配",
-  "ae2lt.gui.wireless_strategy.even": "均分发配"
+  "ae2lt.gui.wireless_strategy.even": "均分发配",
+  "item.ae2lt.overloaded_wireless_connector": "过载无线连接器",
+  "ae2lt.connector.selected": "已选中过载样板供应器 [%d, %d, %d]",
+  "ae2lt.connector.no_provider": "未选中过载样板供应器",
+  "ae2lt.connector.provider_lost": "选中的过载样板供应器丢失或未加载",
+  "ae2lt.connector.not_machine": "目标不是机器方块",
+  "ae2lt.connector.disconnected": "已断开 [%d, %d, %d]",
+  "ae2lt.connector.updated": "已更新 [%d, %d, %d] 绑定面 %s",
+  "ae2lt.connector.connected": "已连接 [%d, %d, %d] 绑定面 %s",
+  "ae2lt.connector.deselected": "已取消选中过载样板供应器"
 }

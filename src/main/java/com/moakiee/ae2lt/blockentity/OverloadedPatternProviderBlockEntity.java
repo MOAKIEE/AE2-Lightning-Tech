@@ -1,6 +1,9 @@
 package com.moakiee.ae2lt.blockentity;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -10,9 +13,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentMap;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.orientation.BlockOrientation;
@@ -55,6 +65,46 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private boolean autoReturn = false;
     private WirelessStrategy wirelessStrategy = WirelessStrategy.SINGLE_TARGET;
 
+    /** Active wireless connection records. */
+    private final List<WirelessConnection> connections = new ArrayList<>();
+
+    // -- Wireless connection record --
+
+    /**
+     * A single wireless connection to a remote machine face.
+     * Identity is determined by (dimension, pos) — only one connection per machine.
+     */
+    public record WirelessConnection(
+            ResourceKey<Level> dimension,
+            BlockPos pos,
+            Direction boundFace
+    ) {
+        private static final String TAG_DIM = "Dim";
+        private static final String TAG_POS = "Pos";
+        private static final String TAG_FACE = "Face";
+
+        /** Same machine = same dimension + same pos. */
+        public boolean sameTarget(ResourceKey<Level> otherDim, BlockPos otherPos) {
+            return dimension.equals(otherDim) && pos.equals(otherPos);
+        }
+
+        public CompoundTag toTag() {
+            var tag = new CompoundTag();
+            tag.putString(TAG_DIM, dimension.location().toString());
+            tag.putLong(TAG_POS, pos.asLong());
+            tag.putInt(TAG_FACE, boundFace.get3DDataValue());
+            return tag;
+        }
+
+        public static WirelessConnection fromTag(CompoundTag tag) {
+            var dim = ResourceKey.create(Registries.DIMENSION,
+                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+            var pos = BlockPos.of(tag.getLong(TAG_POS));
+            var face = Direction.from3DDataValue(tag.getInt(TAG_FACE));
+            return new WirelessConnection(dim, pos, face);
+        }
+    }
+
     // -- Constructor --
 
     public OverloadedPatternProviderBlockEntity(BlockPos pos, BlockState blockState) {
@@ -95,11 +145,85 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         saveChanges();
     }
 
+    // -- Connection management --
+
+    /**
+     * Add or update a wireless connection. If a connection to the same (dimension, pos)
+     * already exists, the bound face is updated; otherwise a new record is added.
+     */
+    public void addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction boundFace) {
+        for (int i = 0; i < connections.size(); i++) {
+            if (connections.get(i).sameTarget(dimension, pos)) {
+                connections.set(i, new WirelessConnection(dimension, pos, boundFace));
+                saveChanges();
+                return;
+            }
+        }
+        connections.add(new WirelessConnection(dimension, pos, boundFace));
+        saveChanges();
+    }
+
+    /**
+     * Remove the connection to the specified machine, if present.
+     *
+     * @return true if a connection was removed
+     */
+    public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
+        boolean removed = connections.removeIf(c -> c.sameTarget(dimension, pos));
+        if (removed) {
+            saveChanges();
+        }
+        return removed;
+    }
+
+    /** Returns an unmodifiable view of the current connections. */
+    public List<WirelessConnection> getConnections() {
+        return Collections.unmodifiableList(connections);
+    }
+
+    /**
+     * Remove connections whose target block or BlockEntity no longer exists.
+     * Only checks loaded chunks — unloaded targets are kept.
+     *
+     * @return number of connections removed
+     */
+    public int clearInvalidConnections() {
+        var server = getLevel() instanceof ServerLevel sl ? sl.getServer() : null;
+        if (server == null) {
+            return 0;
+        }
+        int removed = 0;
+        Iterator<WirelessConnection> it = connections.iterator();
+        while (it.hasNext()) {
+            var conn = it.next();
+            ServerLevel targetLevel = server.getLevel(conn.dimension());
+            if (targetLevel == null) {
+                it.remove();
+                removed++;
+                continue;
+            }
+            // Only validate loaded chunks to avoid force-loading
+            if (!targetLevel.isLoaded(conn.pos())) {
+                continue;
+            }
+            var state = targetLevel.getBlockState(conn.pos());
+            if (state.isAir() || targetLevel.getBlockEntity(conn.pos()) == null) {
+                it.remove();
+                removed++;
+            }
+        }
+        if (removed > 0) {
+            saveChanges();
+        }
+        return removed;
+    }
+
     // -- NBT persistence --
 
     private static final String TAG_PROVIDER_MODE = "OverloadMode";
     private static final String TAG_AUTO_RETURN = "AutoReturn";
     private static final String TAG_WIRELESS_STRATEGY = "WirelessStrategy";
+    private static final String TAG_CONNECTIONS = "WirelessConnections";
 
     @Override
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
@@ -107,6 +231,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putBoolean(TAG_AUTO_RETURN, autoReturn);
         data.putString(TAG_WIRELESS_STRATEGY, wirelessStrategy.name());
+
+        var connList = new ListTag();
+        for (var conn : connections) {
+            connList.add(conn.toTag());
+        }
+        data.put(TAG_CONNECTIONS, connList);
     }
 
     @Override
@@ -125,6 +255,14 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 wirelessStrategy = WirelessStrategy.valueOf(data.getString(TAG_WIRELESS_STRATEGY));
             } catch (IllegalArgumentException ignored) {
                 wirelessStrategy = WirelessStrategy.SINGLE_TARGET;
+            }
+        }
+
+        connections.clear();
+        if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
+            var connList = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
+            for (int i = 0; i < connList.size(); i++) {
+                connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
             }
         }
     }
