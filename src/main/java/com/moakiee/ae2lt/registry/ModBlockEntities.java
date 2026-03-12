@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -17,6 +18,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             HighVoltageAggregatorBlockEntity::new,
                             ModBlocks.HIGH_VOLTAGE_AGGREGATOR.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPatternProviderBlockEntity>>
+            OVERLOADED_PATTERN_PROVIDER = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_pattern_provider",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedPatternProviderBlockEntity::new,
+                            ModBlocks.OVERLOADED_PATTERN_PROVIDER.get())
                             .build(null));
 
     private ModBlockEntities() {

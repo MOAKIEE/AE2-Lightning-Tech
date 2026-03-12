@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
+import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -80,6 +81,9 @@ public final class ModBlocks {
     public static final DeferredBlock<OverloadCrystalClusterBlock> OVERLOAD_CRYSTAL_CLUSTER =
             registerBlock("overload_crystal_cluster", () ->
                     new OverloadCrystalClusterBlock(7, 3, CLUSTER_PROPERTIES.sound(SoundType.AMETHYST_CLUSTER).lightLevel(s -> 5)));
+
+    public static final DeferredBlock<OverloadedPatternProviderBlock> OVERLOADED_PATTERN_PROVIDER =
+            registerBlock("overloaded_pattern_provider", OverloadedPatternProviderBlock::new);
 
     private ModBlocks() {
     }

@@ -3,6 +3,8 @@ package com.moakiee.ae2lt;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModItems;
+import com.moakiee.ae2lt.registry.ModMenuTypes;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -14,6 +16,7 @@ import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
@@ -39,6 +42,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
+                        output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
@@ -54,8 +58,10 @@ public class AE2LightningTech {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
+        ModMenuTypes.MENU_TYPES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         modEventBus.addListener(this::registerCapabilities);
+        modEventBus.addListener(this::commonSetup);
 
         registerOptionalClientIntegrations();
         modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
@@ -66,6 +72,24 @@ public class AE2LightningTech {
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.HIGH_VOLTAGE_AGGREGATOR.get(),
                 (blockEntity, side) -> side == Direction.UP ? null : blockEntity.getEnergyStorage());
+    }
+
+    /**
+     * After all registries are frozen, bind the AE2 BlockEntityType to the Block.
+     * This sets the blockEntityType / class / ticker fields inside AEBaseEntityBlock
+     * so that newBlockEntity() and getBlockEntity() work correctly.
+     */
+    private void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(() -> {
+            var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
+            var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
+            block.setBlockEntity(
+                    OverloadedPatternProviderBlockEntity.class,
+                    beType,
+                    null,  // 无客户端 ticker
+                    null   // 无服务端 ticker（AE2 grid tick 由 GridHelper.onFirstTick 驱动）
+            );
+        });
     }
 
     private static void registerOptionalClientIntegrations() {

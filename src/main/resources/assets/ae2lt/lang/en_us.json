@@ -37,5 +37,12 @@
   "ae2lt.ponder.flawless_budding_overload_crystal.text_5": "Only natural lightning can complete this multiblock.",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_6": "Artificial lightning from carried overload crystals is ignored.",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_7": "The eight surrounding blocks are consumed, leaving the flawless budding overload crystal.",
-  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "Use it to grow overload crystal buds and clusters."
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "Use it to grow overload crystal buds and clusters.",
+  "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
+  "ae2lt.gui.provider_mode.normal": "Normal Mode",
+  "ae2lt.gui.provider_mode.wireless": "Wireless Mode",
+  "ae2lt.gui.auto_return.on": "Auto Return: ON",
+  "ae2lt.gui.auto_return.off": "Auto Return: OFF",
+  "ae2lt.gui.wireless_strategy.single": "Single Target",
+  "ae2lt.gui.wireless_strategy.even": "Even Distribution"
 }

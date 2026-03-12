@@ -37,5 +37,12 @@
   "ae2lt.ponder.flawless_budding_overload_crystal.text_5": "只有自然雷击才能完成这个多方块结构。",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_6": "玩家携带过载水晶引来的人工闪电不会生效。",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_7": "雷击命中后，周围八个方块会被消耗，并留下无暇的过载水晶母岩。",
-  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "之后就能用它培育过载水晶芽和过载水晶簇。"
+  "ae2lt.ponder.flawless_budding_overload_crystal.text_8": "之后就能用它培育过载水晶芽和过载水晶簇。",
+  "block.ae2lt.overloaded_pattern_provider": "过载样板供应器",
+  "ae2lt.gui.provider_mode.normal": "普通模式",
+  "ae2lt.gui.provider_mode.wireless": "无线模式",
+  "ae2lt.gui.auto_return.on": "自动抽回：开",
+  "ae2lt.gui.auto_return.off": "自动抽回：关",
+  "ae2lt.gui.wireless_strategy.single": "逐台发配",
+  "ae2lt.gui.wireless_strategy.even": "均分发配"
 }
