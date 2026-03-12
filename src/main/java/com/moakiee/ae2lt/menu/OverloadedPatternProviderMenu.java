@@ -11,12 +11,15 @@ import appeng.menu.implementations.PatternProviderMenu;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessStrategy;
 
 /**
  * Menu (container) for the Overloaded Pattern Provider.
  * <p>
  * Extends vanilla PatternProviderMenu (slots, blocking mode, etc. fully reused).
  * Syncs three custom fields to the client Screen via {@code @GuiSync}.
+ * Registers client actions so the Screen can toggle server-side state.
  */
 public class OverloadedPatternProviderMenu extends PatternProviderMenu {
 
@@ -44,6 +47,11 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
     public OverloadedPatternProviderMenu(int id, Inventory playerInventory, PatternProviderLogicHost host) {
         super(TYPE, id, playerInventory, host);
         this.host = host;
+
+        // Register server-side handlers for client button clicks
+        registerClientAction("toggleMode", this::toggleMode);
+        registerClientAction("toggleAutoReturn", this::toggleAutoReturn);
+        registerClientAction("toggleWirelessStrategy", this::toggleWirelessStrategy);
     }
 
     @Override
@@ -56,10 +64,47 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
         super.broadcastChanges();
     }
 
-    // -- Client helpers --──
+    // -- Server-side action handlers --
+
+    private void toggleMode() {
+        if (isServerSide() && host instanceof OverloadedPatternProviderBlockEntity be) {
+            var current = be.getProviderMode();
+            be.setProviderMode(current == ProviderMode.NORMAL ? ProviderMode.WIRELESS : ProviderMode.NORMAL);
+        }
+    }
+
+    private void toggleAutoReturn() {
+        if (isServerSide() && host instanceof OverloadedPatternProviderBlockEntity be) {
+            be.setAutoReturn(!be.isAutoReturn());
+        }
+    }
+
+    private void toggleWirelessStrategy() {
+        if (isServerSide() && host instanceof OverloadedPatternProviderBlockEntity be) {
+            var current = be.getWirelessStrategy();
+            be.setWirelessStrategy(current == WirelessStrategy.SINGLE_TARGET
+                    ? WirelessStrategy.EVEN_DISTRIBUTION : WirelessStrategy.SINGLE_TARGET);
+        }
+    }
+
+    // -- Public forwarding methods for Screen button callbacks --
+
+    public void clientToggleMode() {
+        sendClientAction("toggleMode");
+    }
+
+    public void clientToggleAutoReturn() {
+        sendClientAction("toggleAutoReturn");
+    }
+
+    public void clientToggleWirelessStrategy() {
+        sendClientAction("toggleWirelessStrategy");
+    }
+
+    // -- Client helpers --
 
     public boolean isWirelessMode() {
-        return providerMode == OverloadedPatternProviderBlockEntity.ProviderMode.WIRELESS.ordinal();
+        return providerMode == ProviderMode.WIRELESS.ordinal();
     }
 
     public boolean isAutoReturnEnabled() {
@@ -67,6 +112,6 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
     }
 
     public boolean isEvenDistribution() {
-        return wirelessStrategy == OverloadedPatternProviderBlockEntity.WirelessStrategy.EVEN_DISTRIBUTION.ordinal();
+        return wirelessStrategy == WirelessStrategy.EVEN_DISTRIBUTION.ordinal();
     }
 }
