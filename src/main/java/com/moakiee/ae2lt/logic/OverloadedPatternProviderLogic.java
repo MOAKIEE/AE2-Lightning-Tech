@@ -10,6 +10,8 @@ import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -20,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
@@ -45,7 +48,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private final OverloadedPatternProviderBlockEntity overloadedHost;
     private final IManagedGridNode gridNode;
-    private final appeng.api.networking.security.IActionSource wirelessSource;
+    private final IActionSource wirelessSource;
 
     // ---- wireless dispatch state ------------------------------------------------
 
@@ -215,15 +218,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
 
-        // Reset backoff for this machine so auto-return checks it promptly
+        // Reset backoff so auto-return checks this machine promptly
         if (overloadedHost.isAutoReturn()) {
-            var lvl = overloadedHost.getLevel();
-            if (lvl instanceof ServerLevel sl) {
-                var mkey = machineKey(sl.getServer().getLevel(conn.dimension()),
-                        conn.pos(), conn.boundFace());
-                machineBackoff.put(mkey, BACKOFF_MIN);
-                machineNextPoll.put(mkey, sl.getGameTime() + BACKOFF_MIN);
-            }
+            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
+            machineBackoff.put(mkey, BACKOFF_MIN);
+            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
         }
         return true;
     }
@@ -269,9 +268,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /**
      * Return stuck overflow items to the ME network as a last resort.
-     * Items that cannot be inserted are dropped as entity items.
+     * Items that the network cannot absorb are dropped as entity items.
      */
     private void returnOverflowToNetwork() {
+        var drops = new ArrayList<ItemStack>();
         gridNode.ifPresent((grid, node) -> {
             var storage = grid.getStorageService().getInventory();
             var it = wirelessSendList.listIterator();
@@ -286,13 +286,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 }
             }
         });
-        // Anything left after network insert → drop as items
+        // Anything left after network insert → collect and spawn as item drops
         if (!wirelessSendList.isEmpty()) {
             for (var stack : wirelessSendList) {
-                stack.what().addDrops(stack.amount(), new ArrayList<>(),
+                stack.what().addDrops(stack.amount(), drops,
                         overloadedHost.getLevel(), overloadedHost.getBlockPos());
             }
             wirelessSendList.clear();
+        }
+        for (var drop : drops) {
+            var level = overloadedHost.getLevel();
+            var pos = overloadedHost.getBlockPos();
+            if (level != null) {
+                net.minecraft.world.level.block.Block.popResource(level, pos, drop);
+            }
         }
         wirelessSendConn = null;
         wirelessFlushFailures = 0;
@@ -381,9 +388,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    /** Unified machine key: "dim|x,y,z|face". */
-    private static String machineKey(ServerLevel level, net.minecraft.core.BlockPos pos,
-                                     net.minecraft.core.Direction face) {
+    /** Unified machine key: "dim|posLong|faceOrdinal". */
+    private static String machineKey(ServerLevel level, BlockPos pos, Direction face) {
         return level.dimension().location() + "|" + pos.asLong() + "|" + face.ordinal();
     }
 

@@ -118,15 +118,17 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         return new OverloadedPatternProviderLogic(this.getMainNode(), this, 36);
     }
 
-    /**
-     * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
-     * path (in PatternProviderLogic.getActiveSides) finds no targets.
-     */
+    // -- Server tick --
+
     public static void serverTick(Level level, BlockPos pos, BlockState state,
                                     OverloadedPatternProviderBlockEntity be) {
         ((OverloadedPatternProviderLogic) be.getLogic()).tickAutoReturn();
     }
 
+    /**
+     * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
+     * path (in PatternProviderLogic) finds no targets.
+     */
     @Override
     public EnumSet<Direction> getTargets() {
         if (providerMode == ProviderMode.WIRELESS) {
