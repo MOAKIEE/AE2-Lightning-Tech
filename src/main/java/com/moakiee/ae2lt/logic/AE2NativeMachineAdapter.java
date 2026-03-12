@@ -13,9 +13,13 @@ import appeng.api.crafting.IPatternDetails;
 import appeng.api.implementations.blockentities.ICraftingMachine;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.helpers.patternprovider.PatternProviderTarget;
+
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.items.IItemHandler;
 
 /**
  * Built-in fallback {@link MachineAdapter} that handles any target reachable
@@ -106,6 +110,31 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
         });
 
         return new PushResult(1, overflow);
+    }
+
+    // ---- extractOutputs ---------------------------------------------------------
+
+    @Override
+    public List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
+                                             Set<AEKey> allowedOutputs, IActionSource source) {
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, face);
+        if (handler == null) return List.of();
+
+        var extracted = new ArrayList<GenericStack>();
+        for (int slot = 0; slot < handler.getSlots(); slot++) {
+            // Peek first — only extract if the item is an allowed output
+            var peek = handler.getStackInSlot(slot);
+            if (peek.isEmpty()) continue;
+
+            var key = AEItemKey.of(peek);
+            if (!allowedOutputs.contains(key)) continue;
+
+            var stack = handler.extractItem(slot, peek.getCount(), false);
+            if (!stack.isEmpty()) {
+                extracted.add(new GenericStack(AEItemKey.of(stack), stack.getCount()));
+            }
+        }
+        return extracted;
     }
 
     // ---- helpers ----------------------------------------------------------------

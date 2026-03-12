@@ -78,13 +78,15 @@ public interface MachineAdapter {
     }
 
     /**
-     * Extract available outputs from the machine (for future auto-return).
-     * <p>
-     * Skeleton — returns empty by default; concrete adapters override when
-     * they know how to pull results out of a specific machine type.
+     * Extract items from the machine that match the allowed output keys.
+     * Only items whose {@link appeng.api.stacks.AEKey} is in {@code allowedOutputs}
+     * will be extracted — input materials, catalysts, upgrades etc. are left alone.
+     *
+     * @param allowedOutputs the set of AEKeys that are valid pattern outputs
+     * @return extracted stacks (already committed, caller must store them)
      */
     default List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
-                                              IActionSource source) {
+                                              Set<AEKey> allowedOutputs, IActionSource source) {
         return List.of();
     }
 }

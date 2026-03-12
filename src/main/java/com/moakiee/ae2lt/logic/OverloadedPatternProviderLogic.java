@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,7 @@ import net.minecraft.world.item.ItemStack;
 import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.helpers.patternprovider.PatternProviderLogic;
@@ -66,6 +68,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
     private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
 
+    // ---- auto-return state (per-machine exponential backoff) --------------------
+
+    /** Per-machine: game-tick at which the next poll is allowed. */
+    private final Map<String, Long> machineNextPoll = new HashMap<>();
+
+    /** Per-machine: current backoff interval in ticks. */
+    private final Map<String, Integer> machineBackoff = new HashMap<>();
+
+    /** Minimum polling interval (reset value after a successful extraction). */
+    private static final int BACKOFF_MIN = 10;    // 0.5 second
+
+    /** Maximum polling interval (cap for exponential growth). */
+    private static final int BACKOFF_MAX = 1200;  // 60 seconds
+
     // ---- construction -----------------------------------------------------------
 
     public OverloadedPatternProviderLogic(IManagedGridNode mainNode,
@@ -87,7 +103,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
-            return super.pushPattern(patternDetails, inputHolder);
+            boolean result = super.pushPattern(patternDetails, inputHolder);
+            if (result && overloadedHost.isAutoReturn()) {
+                resetBackoffAllTargets();
+            }
+            return result;
         }
         return wirelessPushPattern(patternDetails, inputHolder);
     }
@@ -194,6 +214,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+
+        // Reset backoff for this machine so auto-return checks it promptly
+        if (overloadedHost.isAutoReturn()) {
+            var lvl = overloadedHost.getLevel();
+            if (lvl instanceof ServerLevel sl) {
+                var mkey = machineKey(sl.getServer().getLevel(conn.dimension()),
+                        conn.pos(), conn.boundFace());
+                machineBackoff.put(mkey, BACKOFF_MIN);
+                machineNextPoll.put(mkey, sl.getGameTime() + BACKOFF_MIN);
+            }
+        }
         return true;
     }
 
@@ -267,6 +298,140 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         wirelessFlushFailures = 0;
     }
 
+    // ---- auto-return (full-scan + per-machine exponential backoff) ---------------
+
+    /**
+     * Called every server tick (via BlockEntityTicker).
+     * <p>
+     * Iterates <b>all</b> connected machines each tick, but only actually polls
+     * a machine when its individual backoff timer has elapsed.
+     * <ul>
+     *   <li>Extraction found → reset that machine's interval to {@link #BACKOFF_MIN}.</li>
+     *   <li>Empty poll → double the interval (capped at {@link #BACKOFF_MAX}).</li>
+     * </ul>
+     * Only items whose {@link AEKey} matches a loaded pattern output are extracted.
+     */
+    public void tickAutoReturn() {
+        if (!overloadedHost.isAutoReturn()) return;
+        if (!gridNode.isActive()) return;
+
+        // Build the set of allowed output keys from all loaded patterns
+        var allowedOutputs = collectPatternOutputKeys();
+        if (allowedOutputs.isEmpty()) return;
+
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return;
+
+        long gameTick = sl.getGameTime();
+
+        if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
+            autoReturnNormal(sl, allowedOutputs, gameTick);
+        } else {
+            autoReturnWireless(sl, allowedOutputs, gameTick);
+        }
+    }
+
+    /**
+     * Collect all output AEKeys from every pattern loaded in this provider.
+     */
+    private Set<AEKey> collectPatternOutputKeys() {
+        var keys = new HashSet<AEKey>();
+        for (var pattern : getAvailablePatterns()) {
+            for (var output : pattern.getOutputs()) {
+                keys.add(output.what());
+            }
+        }
+        return keys;
+    }
+
+    private void autoReturnNormal(ServerLevel level, Set<AEKey> allowedOutputs, long gameTick) {
+        var providerPos = overloadedHost.getBlockPos();
+        for (var dir : overloadedHost.getTargets()) {
+            var targetPos = providerPos.relative(dir);
+            var key = machineKey(level, targetPos, dir.getOpposite());
+
+            if (gameTick < machineNextPoll.getOrDefault(key, 0L)) continue;
+
+            var adapter = MachineAdapterRegistry.find(level, targetPos);
+            if (adapter == null) continue;
+
+            var face = dir.getOpposite();
+            var outputs = adapter.extractOutputs(level, targetPos, face, allowedOutputs, wirelessSource);
+            returnToNetwork(outputs);
+            updateBackoff(key, gameTick, !outputs.isEmpty());
+        }
+    }
+
+    private void autoReturnWireless(ServerLevel sl, Set<AEKey> allowedOutputs, long gameTick) {
+        var server = sl.getServer();
+        for (var conn : overloadedHost.getConnections()) {
+            var targetLevel = server.getLevel(conn.dimension());
+            if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) continue;
+
+            var key = machineKey(targetLevel, conn.pos(), conn.boundFace());
+            if (gameTick < machineNextPoll.getOrDefault(key, 0L)) continue;
+
+            var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+            if (adapter == null) continue;
+
+            var outputs = adapter.extractOutputs(
+                    targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
+            returnToNetwork(outputs);
+            updateBackoff(key, gameTick, !outputs.isEmpty());
+        }
+    }
+
+    /** Unified machine key: "dim|x,y,z|face". */
+    private static String machineKey(ServerLevel level, net.minecraft.core.BlockPos pos,
+                                     net.minecraft.core.Direction face) {
+        return level.dimension().location() + "|" + pos.asLong() + "|" + face.ordinal();
+    }
+
+    /**
+     * Reset backoff for all adjacent machine targets (NORMAL mode).
+     * Called after a successful pushPattern so auto-return starts
+     * checking promptly.
+     */
+    private void resetBackoffAllTargets() {
+        var lvl = overloadedHost.getLevel();
+        if (!(lvl instanceof ServerLevel sl)) return;
+        long gameTick = sl.getGameTime();
+        var providerPos = overloadedHost.getBlockPos();
+        for (var dir : overloadedHost.getTargets()) {
+            var key = machineKey(sl, providerPos.relative(dir), dir.getOpposite());
+            machineBackoff.put(key, BACKOFF_MIN);
+            machineNextPoll.put(key, gameTick + BACKOFF_MIN);
+        }
+    }
+
+    /**
+     * After polling a machine, update its backoff state.
+     *
+     * @param foundItems true if at least one output was extracted
+     */
+    private void updateBackoff(String key, long gameTick, boolean foundItems) {
+        int interval;
+        if (foundItems) {
+            interval = BACKOFF_MIN;
+        } else {
+            int current = machineBackoff.getOrDefault(key, BACKOFF_MIN);
+            interval = Math.min(current * 2, BACKOFF_MAX);
+        }
+        machineBackoff.put(key, interval);
+        machineNextPoll.put(key, gameTick + interval);
+    }
+
+    private void returnToNetwork(List<GenericStack> outputs) {
+        if (outputs.isEmpty()) return;
+        gridNode.ifPresent((grid, node) -> {
+            var storage = grid.getStorageService().getInventory();
+            for (var stack : outputs) {
+                storage.insert(stack.what(), stack.amount(),
+                        appeng.api.config.Actionable.MODULATE, wirelessSource);
+            }
+        });
+    }
+
     // ---- isBusy override --------------------------------------------------------
 
     @Override
@@ -298,6 +463,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         wirelessSendList.clear();
         wirelessSendConn = null;
         distributionCounts.clear();
+        machineNextPoll.clear();
+        machineBackoff.clear();
     }
 
     // ---- NBT persistence --------------------------------------------------------
