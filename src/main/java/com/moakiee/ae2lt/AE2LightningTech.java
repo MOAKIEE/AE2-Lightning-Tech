@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
+import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
@@ -47,6 +48,24 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
+                        output.accept(ModBlocks.OVERLOADED_CONTROLLER);
+                        output.accept(ModItems.OVERLOADED_CABLE);
+                        output.accept(ModItems.OVERLOADED_CABLE_WHITE);
+                        output.accept(ModItems.OVERLOADED_CABLE_ORANGE);
+                        output.accept(ModItems.OVERLOADED_CABLE_MAGENTA);
+                        output.accept(ModItems.OVERLOADED_CABLE_LIGHT_BLUE);
+                        output.accept(ModItems.OVERLOADED_CABLE_YELLOW);
+                        output.accept(ModItems.OVERLOADED_CABLE_LIME);
+                        output.accept(ModItems.OVERLOADED_CABLE_PINK);
+                        output.accept(ModItems.OVERLOADED_CABLE_GRAY);
+                        output.accept(ModItems.OVERLOADED_CABLE_LIGHT_GRAY);
+                        output.accept(ModItems.OVERLOADED_CABLE_CYAN);
+                        output.accept(ModItems.OVERLOADED_CABLE_PURPLE);
+                        output.accept(ModItems.OVERLOADED_CABLE_BLUE);
+                        output.accept(ModItems.OVERLOADED_CABLE_BROWN);
+                        output.accept(ModItems.OVERLOADED_CABLE_GREEN);
+                        output.accept(ModItems.OVERLOADED_CABLE_RED);
+                        output.accept(ModItems.OVERLOADED_CABLE_BLACK);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECTOR);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
@@ -82,6 +101,11 @@ public class AE2LightningTech {
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
     }
@@ -93,6 +117,14 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            var controllerBlock = ModBlocks.OVERLOADED_CONTROLLER.get();
+            var controllerBeType = ModBlockEntities.OVERLOADED_CONTROLLER.get();
+            controllerBlock.setBlockEntity(
+                    OverloadedControllerBlockEntity.class,
+                    controllerBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(

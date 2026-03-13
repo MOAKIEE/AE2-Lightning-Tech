@@ -5,7 +5,10 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "ServerLevelMixin",
-    "PatternProviderLogicAccessor"
+    "PatternProviderLogicAccessor",
+    "GridNodeMaxChannelsMixin",
+    "GridConnectionMaxChannelsMixin",
+    "GridGetMachineNodesMixin"
   ],
   "client": [
   ],

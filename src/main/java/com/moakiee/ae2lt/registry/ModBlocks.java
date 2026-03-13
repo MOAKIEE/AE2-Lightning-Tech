@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
+import com.moakiee.ae2lt.block.OverloadedControllerBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
@@ -49,6 +50,9 @@ public final class ModBlocks {
                     .sound(SoundType.COPPER)
                     .forceSolidOn()
                     .noOcclusion()));
+
+    public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
+            registerBlock("overloaded_controller", OverloadedControllerBlock::new);
 
     public static final DeferredBlock<BuddingOverloadCrystalBlock> FLAWLESS_BUDDING_OVERLOAD_CRYSTAL =
             registerBlock("flawless_budding_overload_crystal", () ->
