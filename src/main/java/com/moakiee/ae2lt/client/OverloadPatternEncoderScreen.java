@@ -24,6 +24,7 @@ import com.moakiee.ae2lt.overload.model.MatchMode;
  * inputs/outputs with per-entry mode toggles.
  */
 public class OverloadPatternEncoderScreen extends AbstractContainerScreen<OverloadPatternEncoderMenu> {
+    private static final Component SCREEN_TITLE = Component.translatable("item.ae2lt.overload_pattern_encoder");
     private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/ae2lt_pattern_encoder.png");
     private static final ResourceLocation CHECKBOX_TEXTURE = ResourceLocation.fromNamespaceAndPath(
@@ -49,8 +50,9 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     private static final int SLOT_V = 0;
     private static final int SLOT_SIZE = 18;
     private static final int ENTRY_TOP_OFFSET = 3;
-    private static final int ENTRY_SLOT_X = 52;
-    private static final int ENTRY_TEXT_X = 70;
+    private static final int ENTRY_CONTENT_Y_OFFSET = 3;
+    private static final int ENTRY_SLOT_X = 60;
+    private static final int ENTRY_TEXT_X = 90;
     private static final int ENTRY_SWITCH_X = 138;
     private static final int ENTRY_ROW_HEIGHT = 22;
     private static final int ENTRY_SWITCH_WIDTH = 22;
@@ -89,7 +91,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
 
     @Override
     protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, title, 8, 6, 0x404040, false);
+        graphics.drawString(font, SCREEN_TITLE, 8, 6, 0x404040, false);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
@@ -160,14 +162,15 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         int slotX = leftPos + ENTRY_SLOT_X;
         int textX = leftPos + ENTRY_TEXT_X;
         int switchX = leftPos + ENTRY_SWITCH_X;
+        int contentY = rowY + ENTRY_CONTENT_Y_OFFSET;
 
-        graphics.blit(TEXTURE, slotX, rowY, SLOT_U, SLOT_V, SLOT_SIZE, SLOT_SIZE, TEXTURE_SIZE, TEXTURE_SIZE);
-        graphics.renderItem(entry.stack(), slotX + 1, rowY + 1);
-        graphics.renderItemDecorations(font, entry.stack(), slotX + 1, rowY + 1);
+        graphics.blit(TEXTURE, slotX, contentY, SLOT_U, SLOT_V, SLOT_SIZE, SLOT_SIZE, TEXTURE_SIZE, TEXTURE_SIZE);
+        graphics.renderItem(entry.stack(), slotX + 1, contentY + 1);
+        graphics.renderItemDecorations(font, entry.stack(), slotX + 1, contentY + 1);
 
-        graphics.drawString(font, entryLabel(entry), textX, rowY + 5, 0x404040, false);
+        graphics.drawString(font, entryLabel(entry), textX, contentY + 5, 0x404040, false);
 
-        renderModeSwitch(graphics, switchX, rowY + 3, entry.mode());
+        renderModeSwitch(graphics, switchX, contentY + 3, entry.mode());
     }
 
     private void renderModeSwitch(GuiGraphics graphics, int x, int y, MatchMode mode) {
@@ -193,7 +196,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
             return;
         }
 
-        int rowY = topPos + PANEL_Y + ENTRY_TOP_OFFSET + entry.row() * ENTRY_ROW_HEIGHT;
+        int rowY = topPos + PANEL_Y + ENTRY_TOP_OFFSET + entry.row() * ENTRY_ROW_HEIGHT + ENTRY_CONTENT_Y_OFFSET;
         int slotX = leftPos + ENTRY_SLOT_X;
         if (isWithin(mouseX, mouseY, slotX, rowY, SLOT_SIZE, SLOT_SIZE)) {
             graphics.renderTooltip(font, entry.stack(), mouseX, mouseY);
@@ -213,7 +216,6 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         lines.add(entry.mode() == MatchMode.ID_ONLY
                 ? Component.translatable("ae2lt.gui.overload_pattern_encoder.mode.id_only")
                 : Component.translatable("ae2lt.gui.overload_pattern_encoder.mode.strict"));
-        lines.add(entryLabel(entry));
         return lines;
     }
 
@@ -290,7 +292,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     private boolean isWithinEntrySwitch(double mouseX, double mouseY, int row) {
-        int y = topPos + PANEL_Y + ENTRY_TOP_OFFSET + row * ENTRY_ROW_HEIGHT + 3;
+        int y = topPos + PANEL_Y + ENTRY_TOP_OFFSET + row * ENTRY_ROW_HEIGHT + ENTRY_CONTENT_Y_OFFSET + 3;
         return isWithin(mouseX, mouseY, leftPos + ENTRY_SWITCH_X, y, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT);
     }
 

@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.mixin;
 
+import java.util.LinkedHashSet;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
@@ -20,6 +22,18 @@ public abstract class GridGetMachineNodesMixin {
     @Shadow
     @Final
     private SetMultimap<Class<?>, IGridNode> machines;
+
+    @Inject(method = "getMachineClasses", at = @At("HEAD"), cancellable = true)
+    private void ae2lt$normalizeControllerMachineClasses(CallbackInfoReturnable<Iterable<Class<?>>> cir) {
+        if (!this.machines.containsKey(OverloadedControllerBlockEntity.class)) {
+            return;
+        }
+
+        var machineClasses = new LinkedHashSet<Class<?>>(this.machines.keySet());
+        machineClasses.remove(OverloadedControllerBlockEntity.class);
+        machineClasses.add(ControllerBlockEntity.class);
+        cir.setReturnValue(machineClasses);
+    }
 
     @Inject(method = "getMachineNodes", at = @At("HEAD"), cancellable = true)
     private void ae2lt$includeOverloadedControllersForControllerQueries(Class<?> machineClass,

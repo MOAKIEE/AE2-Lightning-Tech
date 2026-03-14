@@ -13,10 +13,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
-import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -83,7 +81,7 @@ public class AE2LightningTech {
                     })
                     .build());
 
-    public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
+    public AE2LightningTech(IEventBus modEventBus) {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
@@ -93,7 +91,6 @@ public class AE2LightningTech {
         modEventBus.addListener(this::commonSetup);
 
         registerOptionalClientIntegrations();
-        modContainer.registerConfig(ModConfig.Type.COMMON, Config.SPEC);
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
