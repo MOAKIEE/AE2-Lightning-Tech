@@ -109,6 +109,16 @@ public class AE2LightningTech {
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.GENERIC_INTERNAL_INV,
+                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
+                (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
+                (blockEntity, side) -> blockEntity.getExposedPatternInventory().toItemHandler());
     }
 
     /**

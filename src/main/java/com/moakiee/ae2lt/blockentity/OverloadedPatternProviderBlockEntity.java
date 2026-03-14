@@ -28,6 +28,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.orientation.BlockOrientation;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.AEItemKey;
 import appeng.block.crafting.PatternProviderBlock;
 import appeng.block.crafting.PushDirection;
@@ -162,6 +163,14 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     public WirelessStrategy getWirelessStrategy() {
         return wirelessStrategy;
+    }
+
+    /**
+     * Exposes the pattern slots as a standard item inventory for external automation
+     * and addon compatibility.
+     */
+    public InternalInventory getExposedPatternInventory() {
+        return getLogic().getPatternInv();
     }
 
     public void setWirelessStrategy(WirelessStrategy wirelessStrategy) {
