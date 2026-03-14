@@ -6,6 +6,11 @@
   "mixins": [
     "ServerLevelMixin",
     "PatternProviderLogicAccessor",
+    "PatternProviderLogicMixin",
+    "CraftingCpuLogicAccessor",
+    "ExecutingCraftingJobAccessor",
+    "ElapsedTimeTrackerAccessor",
+    "CraftingCpuLogicMixin",
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",
     "GridGetMachineNodesMixin"

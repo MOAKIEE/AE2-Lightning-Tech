@@ -21,7 +21,9 @@ import net.minecraft.world.item.ItemStack;
 
 import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
@@ -94,6 +96,35 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         this.overloadedHost = host;
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
+    }
+
+    @Override
+    public void updatePatterns() {
+        var accessor = (PatternProviderLogicAccessor) this;
+        var patterns = accessor.getPatterns();
+        var patternInputs = accessor.getPatternInputs();
+        var inventory = accessor.getPatternInventory();
+
+        patterns.clear();
+        patternInputs.clear();
+
+        var level = overloadedHost.getLevel();
+        for (int slot = 0; slot < inventory.size(); slot++) {
+            var patternStack = inventory.getStackInSlot(slot);
+            var details = PatternDetailsHelper.decodePattern(patternStack, level);
+            if (details == null) {
+                continue;
+            }
+
+            patterns.add(details);
+            for (var input : details.getInputs()) {
+                for (var possibleInput : input.getPossibleInputs()) {
+                    patternInputs.add(possibleInput.what().dropSecondary());
+                }
+            }
+        }
+
+        ICraftingProvider.requestUpdate(accessor.getMainNode());
     }
 
     // ---- pushPattern override ---------------------------------------------------

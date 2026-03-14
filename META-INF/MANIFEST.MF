@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Specification-Title: Ponder
+Specification-Vendor: simibubi, Pepper, zelophed
+Specification-Version: 1.0.82+mc1.21.1
+Implementation-Title: neoforge
+Implementation-Version: 1.0.82+mc1.21.1
+Implementation-Vendor: simibubi, Pepper, zelophed
+Built-On-Minecraft: 1.21.1
+Git-Hash: "355b488f3d5c5756b33de190d2dd4f7e483480e0"
+

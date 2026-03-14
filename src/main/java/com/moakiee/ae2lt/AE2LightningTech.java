@@ -26,9 +26,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 
 import appeng.api.AECapabilities;
+import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
 
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
@@ -67,6 +69,8 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOADED_CABLE_RED);
                         output.accept(ModItems.OVERLOADED_CABLE_BLACK);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
+                        output.accept(ModItems.OVERLOAD_PATTERN);
+                        output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECTOR);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -136,6 +140,7 @@ public class AE2LightningTech {
 
             // Register built-in machine adapters (AE2-native fallback)
             MachineAdapterRegistry.init();
+            PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
         });
     }
 

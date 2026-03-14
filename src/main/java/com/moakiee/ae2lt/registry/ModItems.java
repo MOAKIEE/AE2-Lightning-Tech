@@ -2,6 +2,8 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
+import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
+import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.world.item.Item;
@@ -25,6 +27,16 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECTOR = ITEMS.registerItem(
             "overloaded_wireless_connector",
             OverloadedWirelessConnectorItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_PATTERN = ITEMS.registerItem(
+            "overload_pattern",
+            OverloadPatternItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_PATTERN_ENCODER = ITEMS.registerItem(
+            "overload_pattern_encoder",
+            OverloadPatternEncoderItem::new,
             new Item.Properties());
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =

@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -15,6 +16,11 @@ public final class ModMenuTypes {
             OVERLOADED_PATTERN_PROVIDER = MENU_TYPES.register(
                     "overloaded_pattern_provider",
                     () -> OverloadedPatternProviderMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadPatternEncoderMenu>>
+            OVERLOAD_PATTERN_ENCODER = MENU_TYPES.register(
+                    "overload_pattern_encoder",
+                    () -> OverloadPatternEncoderMenu.TYPE);
 
     private ModMenuTypes() {
     }

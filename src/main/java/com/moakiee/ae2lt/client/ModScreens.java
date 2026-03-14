@@ -10,6 +10,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 
 /**
@@ -21,6 +22,7 @@ public class ModScreens {
     @SubscribeEvent
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(OverloadedPatternProviderMenu.TYPE, ModScreens::createOverloadedPatternProviderScreen);
+        event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
