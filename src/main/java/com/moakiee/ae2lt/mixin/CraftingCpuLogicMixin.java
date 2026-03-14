@@ -6,7 +6,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
+
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
@@ -41,10 +43,7 @@ public abstract class CraftingCpuLogicMixin {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void ae2lt$logCpuMixinApplied(CraftingCPUCluster cluster, CallbackInfo ci) {
-        AE2LightningTech.LOGGER.info(
-                "[ae2lt] CraftingCpuLogicMixin applied to CPU instance. cpu={} cluster={}",
-                System.identityHashCode(this),
-                cluster);
+        AE2LightningTech.LOGGER.trace("CpuLogicMixin applied cpu={}", System.identityHashCode(this));
     }
 
     @Inject(method = "insert", at = @At("HEAD"))
@@ -53,7 +52,7 @@ public abstract class CraftingCpuLogicMixin {
         this.ae2lt$insertContext = new InsertContext(what, amount, type);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "insert",
             at = @At(
                     value = "INVOKE",
@@ -63,8 +62,8 @@ public abstract class CraftingCpuLogicMixin {
             remap = false
     )
     private long ae2lt$captureStrictWaitingMatch(ListCraftingInventory waitingFor, AEKey what, long amount,
-                                                 Actionable mode) {
-        long strictMatched = waitingFor.extract(what, amount, mode);
+                                                 Actionable mode, Operation<Long> original) {
+        long strictMatched = original.call(waitingFor, what, amount, mode);
         if (mode == Actionable.SIMULATE && this.ae2lt$insertContext != null) {
             this.ae2lt$insertContext.setStrictMatched(strictMatched);
         }
@@ -91,39 +90,21 @@ public abstract class CraftingCpuLogicMixin {
             return;
         }
 
-        AE2LightningTech.LOGGER.info(
-                "[ae2lt] overload CPU insert observed pending outputs. cpu={} incoming={} requested={} strictMatched={} remainder={} mode={} pending={}",
-                System.identityHashCode(logic),
-                what,
-                ctx.getRequestedAmount(),
-                ctx.getStrictMatched(),
-                remainder,
-                type,
-                ae2lt$describePending(pendingBefore));
+        AE2LightningTech.LOGGER.debug(
+                "Overload insert: cpu={} item={} remainder={}/{} mode={}",
+                System.identityHashCode(logic), what, remainder, ctx.getRequestedAmount(), type);
 
         var claims = OverloadCpuStateManager.INSTANCE.claim(logic, what, remainder, type);
         if (!claims.claimedAnything()) {
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] overload CPU insert found no ID_ONLY claim. cpu={} incoming={} requested={} strictMatched={} remainder={} mode={} pending={}",
-                    System.identityHashCode(logic),
-                    what,
-                    ctx.getRequestedAmount(),
-                    ctx.getStrictMatched(),
-                    remainder,
-                    type,
-                    ae2lt$describePending(pendingBefore));
+            AE2LightningTech.LOGGER.debug(
+                    "Overload insert: no claim found. cpu={} item={} remainder={}",
+                    System.identityHashCode(logic), what, remainder);
             return;
         }
 
-        var pendingAfterClaim = OverloadCpuStateManager.INSTANCE.snapshotPending(logic);
-        AE2LightningTech.LOGGER.info(
-                "[ae2lt] overload CPU insert claimed ID_ONLY outputs. cpu={} incoming={} remainder={} mode={} claims={} pendingAfter={}",
-                System.identityHashCode(logic),
-                what,
-                remainder,
-                type,
-                ae2lt$describeClaims(claims),
-                ae2lt$describePending(pendingAfterClaim));
+        AE2LightningTech.LOGGER.debug(
+                "Overload insert: claimed {} for cpu={} item={} mode={}",
+                claims.claimedAmount(), System.identityHashCode(logic), what, type);
 
         long supplementalReturn = 0;
         if (type == Actionable.MODULATE) {
@@ -141,7 +122,7 @@ public abstract class CraftingCpuLogicMixin {
         cir.setReturnValue(cir.getReturnValue() + supplementalReturn);
     }
 
-    @Redirect(
+    @WrapOperation(
             method = "executeCrafting",
             at = @At(
                     value = "INVOKE",
@@ -150,13 +131,8 @@ public abstract class CraftingCpuLogicMixin {
             remap = false
     )
     private boolean ae2lt$registerOverloadExpectedOutputs(ICraftingProvider provider, IPatternDetails details,
-                                                          KeyCounter[] inputHolder) {
+                                                          KeyCounter[] inputHolder, Operation<Boolean> original) {
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
-        AE2LightningTech.LOGGER.info(
-                "[ae2lt] CraftingCpuLogic executeCrafting redirect entered. cpu={} detailsClass={} outputs={}",
-                System.identityHashCode(logic),
-                details.getClass().getName(),
-                details.getOutputs());
         OverloadPatternReference patternReference = null;
         if (details instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
             patternReference = new OverloadPatternReference(
@@ -174,7 +150,7 @@ public abstract class CraftingCpuLogicMixin {
             }
         }
 
-        boolean pushed = provider.pushPattern(details, inputHolder);
+        boolean pushed = original.call(provider, details, inputHolder);
         if (pushed && details instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
             var job = ((CraftingCpuLogicAccessor) logic).getJob();
             var finalOutputKey = job != null
@@ -191,13 +167,11 @@ public abstract class CraftingCpuLogicMixin {
                     details.getOutputs(),
                     finalOutputKey,
                     1L);
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] registered overload expected outputs. cpu={} pattern={} finalOutput={} actualOutputs={} pending={}",
+            AE2LightningTech.LOGGER.debug(
+                    "Overload pattern registered: cpu={} pattern={} finalOutput={}",
                     System.identityHashCode(logic),
                     overloadDetails.overloadPatternIdentity(),
-                    finalOutputKey,
-                    details.getOutputs(),
-                    ae2lt$describePending(OverloadCpuStateManager.INSTANCE.snapshotPending(logic)));
+                    finalOutputKey);
         }
         return pushed;
     }
@@ -288,56 +262,11 @@ public abstract class CraftingCpuLogicMixin {
     private void ae2lt$deductClaimedWaitingFor(ExecutingCraftingJob job, OverloadClaimResult claims) {
         var waitingFor = ((ExecutingCraftingJobAccessor) job).getWaitingFor();
         for (var claim : claims.claims()) {
-            long before = waitingFor.extract(claim.exactExpectedKey(), Long.MAX_VALUE, Actionable.SIMULATE);
             long deducted = waitingFor.extract(claim.exactExpectedKey(), claim.claimedAmount(), Actionable.MODULATE);
-            long after = waitingFor.extract(claim.exactExpectedKey(), Long.MAX_VALUE, Actionable.SIMULATE);
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] deducted waitingFor for overload claim. expectedKey={} claimedAmount={} deducted={} waitingBefore={} waitingAfter={} routesToRequester={}",
-                    claim.exactExpectedKey(),
-                    claim.claimedAmount(),
-                    deducted,
-                    before,
-                    after,
-                    claim.routesToRequester());
+            AE2LightningTech.LOGGER.debug(
+                    "Overload waitingFor deducted: key={} claimed={} deducted={} toRequester={}",
+                    claim.exactExpectedKey(), claim.claimedAmount(), deducted, claim.routesToRequester());
         }
-    }
-
-    @Unique
-    private static String ae2lt$describePending(
-            java.util.List<com.moakiee.ae2lt.overload.cpu.PendingOverloadOutput> pending) {
-        if (pending.isEmpty()) {
-            return "[]";
-        }
-
-        var parts = new java.util.ArrayList<String>(pending.size());
-        for (var entry : pending) {
-            parts.add("{pattern=" + entry.key().patternIdentity()
-                    + ",slot=" + entry.key().outputSlotIndex()
-                    + ",item=" + entry.itemId()
-                    + ",remaining=" + entry.remainingAmount()
-                    + ",expectedKey=" + entry.exactExpectedKey()
-                    + ",toRequester=" + entry.routesToRequester()
-                    + "}");
-        }
-        return parts.toString();
-    }
-
-    @Unique
-    private static String ae2lt$describeClaims(OverloadClaimResult claims) {
-        if (!claims.claimedAnything()) {
-            return "[]";
-        }
-
-        var parts = new java.util.ArrayList<String>(claims.claims().size());
-        for (var claim : claims.claims()) {
-            parts.add("{pattern=" + claim.key().patternIdentity()
-                    + ",slot=" + claim.key().outputSlotIndex()
-                    + ",amount=" + claim.claimedAmount()
-                    + ",expectedKey=" + claim.exactExpectedKey()
-                    + ",toRequester=" + claim.routesToRequester()
-                    + "}");
-        }
-        return parts.toString();
     }
 
 }
