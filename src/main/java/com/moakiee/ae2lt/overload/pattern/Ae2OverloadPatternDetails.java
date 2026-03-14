@@ -15,6 +15,7 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.crafting.pattern.AEProcessingPattern;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
 
@@ -72,12 +73,20 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
 
     @Override
     public void pushInputsToExternalInventory(KeyCounter[] inputHolder, PatternInputSink inputSink) {
-        sourceDetails.pushInputsToExternalInventory(inputHolder, inputSink);
+        if (sourceDetails instanceof AEProcessingPattern processingPattern) {
+            pushProcessingInputsToExternalInventory(processingPattern, inputHolder, inputSink);
+            return;
+        }
+
+        IPatternDetails.super.pushInputsToExternalInventory(inputHolder, inputSink);
     }
 
     @Override
     public PatternDetailsTooltip getTooltip(Level level, TooltipFlag flags) {
-        return sourceDetails.getTooltip(level, flags);
+        var tooltip = sourceDetails.getTooltip(level, flags);
+        tooltip.addProperty(net.minecraft.network.chat.Component.translatable(
+                "tooltip.ae2lt.overload_pattern.provider_only"));
+        return tooltip;
     }
 
     @Override
@@ -180,5 +189,122 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
             }
             return List.copyOf(result);
         }
+    }
+
+    private void pushProcessingInputsToExternalInventory(
+            AEProcessingPattern processingPattern,
+            KeyCounter[] inputHolder,
+            PatternInputSink inputSink
+    ) {
+        var availableInputs = new KeyCounter();
+        for (var counter : inputHolder) {
+            availableInputs.addAll(counter);
+        }
+
+        for (var sparseInput : processingPattern.getSparseInputs()) {
+            if (sparseInput == null) {
+                continue;
+            }
+
+            var expectedKey = sparseInput.what();
+            var requiredAmount = sparseInput.amount();
+            var matchMode = resolveMatchMode(expectedKey);
+
+            if (matchMode == MatchMode.ID_ONLY && expectedKey instanceof AEItemKey expectedItemKey) {
+                pushIdOnlyInput(expectedItemKey, requiredAmount, availableInputs, inputSink);
+            } else {
+                pushStrictInput(expectedKey, requiredAmount, availableInputs, inputSink);
+            }
+        }
+    }
+
+    private MatchMode resolveMatchMode(AEKey expectedKey) {
+        var sourceInputs = sourceDetails.getInputs();
+        for (int slot = 0; slot < sourceInputs.length; slot++) {
+            for (var possibleInput : sourceInputs[slot].getPossibleInputs()) {
+                if (possibleInput.what().equals(expectedKey)) {
+                    return overloadDetails.inputs().get(slot).matchMode();
+                }
+            }
+        }
+        return MatchMode.STRICT;
+    }
+
+    private static void pushStrictInput(
+            AEKey expectedKey,
+            long requiredAmount,
+            KeyCounter availableInputs,
+            PatternInputSink inputSink
+    ) {
+        long available = availableInputs.get(expectedKey);
+        if (available < requiredAmount) {
+            throw new RuntimeException("Expected at least %d of %s when pushing pattern, but only %d available"
+                    .formatted(requiredAmount, expectedKey, available));
+        }
+
+        inputSink.pushInput(expectedKey, requiredAmount);
+        availableInputs.remove(expectedKey, requiredAmount);
+    }
+
+    private static void pushIdOnlyInput(
+            AEItemKey expectedItemKey,
+            long requiredAmount,
+            KeyCounter availableInputs,
+            PatternInputSink inputSink
+    ) {
+        long remaining = requiredAmount;
+
+        remaining -= pushMatchingKey(expectedItemKey, remaining, availableInputs, inputSink);
+
+        if (remaining > 0) {
+            for (var availableKey : snapshotKeys(availableInputs)) {
+                if (remaining <= 0) {
+                    break;
+                }
+                if (availableKey.equals(expectedItemKey)) {
+                    continue;
+                }
+                if (!(availableKey instanceof AEItemKey availableItemKey)) {
+                    continue;
+                }
+                if (availableItemKey.getItem() != expectedItemKey.getItem()) {
+                    continue;
+                }
+
+                remaining -= pushMatchingKey(availableKey, remaining, availableInputs, inputSink);
+            }
+        }
+
+        if (remaining > 0) {
+            throw new RuntimeException("Expected at least %d of %s by item id when pushing pattern, but only %d available"
+                    .formatted(requiredAmount, expectedItemKey, requiredAmount - remaining));
+        }
+    }
+
+    private static long pushMatchingKey(
+            AEKey key,
+            long requiredAmount,
+            KeyCounter availableInputs,
+            PatternInputSink inputSink
+    ) {
+        long available = availableInputs.get(key);
+        if (available <= 0 || requiredAmount <= 0) {
+            return 0;
+        }
+
+        long toPush = Math.min(available, requiredAmount);
+        inputSink.pushInput(key, toPush);
+        availableInputs.remove(key, toPush);
+        return toPush;
+    }
+
+    private static List<AEKey> snapshotKeys(KeyCounter counter) {
+        var keys = new ArrayList<AEKey>();
+        for (var entry : counter) {
+            if (entry.getLongValue() > 0) {
+                keys.add(entry.getKey());
+            }
+        }
+        return keys;
     }
 }

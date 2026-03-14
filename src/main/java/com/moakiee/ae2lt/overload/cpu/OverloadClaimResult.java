@@ -23,4 +23,18 @@ public record OverloadClaimResult(
     public boolean claimedAnything() {
         return claimedAmount > 0;
     }
+
+    public long claimedForRequester() {
+        long total = 0;
+        for (var claim : claims) {
+            if (claim.routesToRequester()) {
+                total += claim.claimedAmount();
+            }
+        }
+        return total;
+    }
+
+    public long claimedForInventory() {
+        return claimedAmount - claimedForRequester();
+    }
 }

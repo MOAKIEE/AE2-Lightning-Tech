@@ -4,6 +4,8 @@ import java.util.Objects;
 
 import net.minecraft.resources.ResourceLocation;
 
+import appeng.api.stacks.AEKey;
+
 /**
  * One overload-only pending output tracked beside AE2's native waiting list.
  * <p>
@@ -15,7 +17,8 @@ public final class PendingOverloadOutput {
     private final OverloadCpuOwner owner;
     private final OverloadPatternReference patternReference;
     private final ResourceLocation itemId;
-    private final boolean primaryOutput;
+    private final AEKey exactExpectedKey;
+    private final boolean routesToRequester;
     private final long registeredOrder;
     private long remainingAmount;
 
@@ -24,19 +27,21 @@ public final class PendingOverloadOutput {
             OverloadCpuOwner owner,
             OverloadPatternReference patternReference,
             ResourceLocation itemId,
+            AEKey exactExpectedKey,
             long remainingAmount,
-            boolean primaryOutput,
+            boolean routesToRequester,
             long registeredOrder
     ) {
         this.key = Objects.requireNonNull(key, "key");
         this.owner = Objects.requireNonNull(owner, "owner");
         this.patternReference = Objects.requireNonNull(patternReference, "patternReference");
         this.itemId = Objects.requireNonNull(itemId, "itemId");
+        this.exactExpectedKey = Objects.requireNonNull(exactExpectedKey, "exactExpectedKey");
         if (remainingAmount <= 0) {
             throw new IllegalArgumentException("remainingAmount must be > 0");
         }
         this.remainingAmount = remainingAmount;
-        this.primaryOutput = primaryOutput;
+        this.routesToRequester = routesToRequester;
         this.registeredOrder = registeredOrder;
     }
 
@@ -56,12 +61,16 @@ public final class PendingOverloadOutput {
         return itemId;
     }
 
+    public AEKey exactExpectedKey() {
+        return exactExpectedKey;
+    }
+
     public long remainingAmount() {
         return remainingAmount;
     }
 
-    public boolean primaryOutput() {
-        return primaryOutput;
+    public boolean routesToRequester() {
+        return routesToRequester;
     }
 
     public int outputSlotIndex() {

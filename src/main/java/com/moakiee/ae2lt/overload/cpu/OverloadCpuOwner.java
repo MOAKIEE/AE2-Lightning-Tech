@@ -6,8 +6,6 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
-import appeng.crafting.execution.CraftingCpuLogic;
-
 /**
  * Runtime handle for the crafting CPU instance that owns an overload-side
  * pending-output state.
@@ -18,21 +16,18 @@ import appeng.crafting.execution.CraftingCpuLogic;
 public final class OverloadCpuOwner {
     private final UUID craftingId;
     private final int logicIdentity;
-    private final WeakReference<CraftingCpuLogic> logicRef;
+    private final WeakReference<Object> logicRef;
 
-    private OverloadCpuOwner(UUID craftingId, CraftingCpuLogic logic) {
+    private OverloadCpuOwner(UUID craftingId, Object logic) {
         this.craftingId = Objects.requireNonNull(craftingId, "craftingId");
         this.logicIdentity = System.identityHashCode(logic);
         this.logicRef = new WeakReference<>(logic);
     }
 
-    public static OverloadCpuOwner from(CraftingCpuLogic logic) {
+    public static OverloadCpuOwner from(UUID craftingId, Object logic) {
+        Objects.requireNonNull(craftingId, "craftingId");
         Objects.requireNonNull(logic, "logic");
-        var link = logic.getLastLink();
-        if (link == null) {
-            throw new IllegalStateException("crafting logic has no active link");
-        }
-        return new OverloadCpuOwner(link.getCraftingID(), logic);
+        return new OverloadCpuOwner(craftingId, logic);
     }
 
     public UUID craftingId() {
@@ -43,7 +38,7 @@ public final class OverloadCpuOwner {
         return logicIdentity;
     }
 
-    public @Nullable CraftingCpuLogic logic() {
+    public @Nullable Object logic() {
         return logicRef.get();
     }
 

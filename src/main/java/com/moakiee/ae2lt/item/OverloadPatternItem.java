@@ -5,11 +5,15 @@ import java.util.Optional;
 
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.Level;
+
+import appeng.api.crafting.IPatternDetails;
+import appeng.crafting.pattern.EncodedPatternItem;
 
 import com.moakiee.ae2lt.overload.model.EncodedOverloadPattern;
+import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternPayload;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternPayloadTagCodec;
 import com.moakiee.ae2lt.overload.pattern.PatternExecutionHostKind;
@@ -22,11 +26,11 @@ import com.moakiee.ae2lt.overload.pattern.SourcePatternSnapshot;
  * payload. It must not be treated as a transparent variant of a normal AE2
  * pattern item.
  */
-public class OverloadPatternItem extends Item {
+public class OverloadPatternItem extends EncodedPatternItem<IPatternDetails> {
     private static final String TAG_OVERLOAD_PATTERN = "OverloadPattern";
 
     public OverloadPatternItem(Properties properties) {
-        super(properties.stacksTo(1));
+        super(properties.stacksTo(1), OverloadPatternDecoder.INSTANCE::decodePattern, null);
     }
 
     public boolean hasPayload(ItemStack stack) {
@@ -82,6 +86,11 @@ public class OverloadPatternItem extends Item {
         var stack = new ItemStack(this);
         writePayload(stack, payload);
         return stack;
+    }
+
+    @Override
+    public IPatternDetails decode(ItemStack stack, Level level) {
+        return stack.getItem() == this ? OverloadPatternDecoder.INSTANCE.decodePattern(stack, level) : null;
     }
 
     private static CompoundTag readRootTag(ItemStack stack) {

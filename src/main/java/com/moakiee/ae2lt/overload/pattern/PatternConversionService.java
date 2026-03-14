@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.overload.pattern;
 import java.util.Objects;
 import java.util.Optional;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.item.OverloadPatternItem;
@@ -81,15 +82,17 @@ public final class PatternConversionService {
     public Optional<EditableOverloadPatternState> restoreEditableState(
             OverloadPatternItem overloadPatternItem,
             ItemStack overloadPatternStack,
-            PlainPatternResolver plainPatternResolver
+            PlainPatternResolver plainPatternResolver,
+            HolderLookup.Provider registries
     ) {
         Objects.requireNonNull(overloadPatternItem, "overloadPatternItem");
         Objects.requireNonNull(overloadPatternStack, "overloadPatternStack");
         Objects.requireNonNull(plainPatternResolver, "plainPatternResolver");
+        Objects.requireNonNull(registries, "registries");
 
         return overloadPatternItem.readPayload(overloadPatternStack)
                 .map(payload -> {
-                    var sourcePatternStack = payload.sourcePattern().toItemStack();
+                    var sourcePatternStack = payload.sourcePattern().toItemStack(registries);
                     var parsedPattern = plainPatternResolver.resolve(sourcePatternStack);
                     return new EditableOverloadPatternState(parsedPattern, payload.encodedPattern());
                 });
@@ -97,17 +100,19 @@ public final class PatternConversionService {
 
     public Optional<EditableOverloadPatternState> resolveEditableSource(
             ItemStack sourcePatternStack,
-            PlainPatternResolver plainPatternResolver
+            PlainPatternResolver plainPatternResolver,
+            HolderLookup.Provider registries
     ) {
         Objects.requireNonNull(sourcePatternStack, "sourcePatternStack");
         Objects.requireNonNull(plainPatternResolver, "plainPatternResolver");
+        Objects.requireNonNull(registries, "registries");
 
         if (sourcePatternStack.isEmpty()) {
             return Optional.empty();
         }
 
         if (sourcePatternStack.getItem() instanceof OverloadPatternItem overloadPatternItem) {
-            return restoreEditableState(overloadPatternItem, sourcePatternStack, plainPatternResolver);
+            return restoreEditableState(overloadPatternItem, sourcePatternStack, plainPatternResolver, registries);
         }
 
         var parsedPattern = plainPatternResolver.resolve(sourcePatternStack);

@@ -10,6 +10,8 @@
     "CraftingCpuLogicAccessor",
     "ExecutingCraftingJobAccessor",
     "ElapsedTimeTrackerAccessor",
+    "AdvCraftingCpuAccessor",
+    "AdvCraftingCpuLogicMixin",
     "CraftingCpuLogicMixin",
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",

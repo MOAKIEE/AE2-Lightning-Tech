@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -29,8 +30,8 @@ public final class ParsedPatternDefinition {
         this.outputs = List.copyOf(Objects.requireNonNull(outputs, "outputs"));
     }
 
-    public static Builder builder(ItemStack sourcePatternStack) {
-        return new Builder(SourcePatternSnapshot.fromItemStack(sourcePatternStack));
+    public static Builder builder(ItemStack sourcePatternStack, HolderLookup.Provider registries) {
+        return new Builder(SourcePatternSnapshot.fromItemStack(sourcePatternStack, registries));
     }
 
     public SourcePatternSnapshot sourcePattern() {

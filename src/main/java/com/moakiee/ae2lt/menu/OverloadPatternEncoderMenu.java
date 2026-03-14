@@ -12,6 +12,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.GuiSync;
@@ -22,6 +23,7 @@ import appeng.util.inv.InternalInventoryHost;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.overload.pattern.Ae2PlainPatternResolver;
+import com.moakiee.ae2lt.overload.pattern.EditableOverloadPatternState;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternEditState;
 import com.moakiee.ae2lt.overload.pattern.ParsedPatternDefinition;
 import com.moakiee.ae2lt.overload.pattern.PatternConversionService;
@@ -34,6 +36,8 @@ import com.moakiee.ae2lt.registry.ModItems;
  * exposes editable slot modes, and produces a new {@link OverloadPatternItem}.
  */
 public class OverloadPatternEncoderMenu extends AEBaseMenu {
+    private static final int RESULT_SLOT_INDEX = 1;
+
     public static final MenuType<OverloadPatternEncoderMenu> TYPE = MenuTypeBuilder
             .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class)
             .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
@@ -120,7 +124,6 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
     public void removed(Player player) {
         super.removed(player);
         returnInventory(player, sourceInventory);
-        returnInventory(player, resultInventory);
     }
 
     public ItemStack getSourceStack() {
@@ -189,8 +192,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
             return;
         }
 
-        var resolver = new Ae2PlainPatternResolver(getPlayer().level());
-        var editable = conversionService.resolveEditableSource(sourceStack, resolver).orElse(null);
+        var editable = tryResolveEditableSource(sourceStack);
         if (editable == null) {
             syncedState = OverloadPatternEditState.empty();
             return;
@@ -202,6 +204,47 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
                 editable.encodedPattern(),
                 sourceStack.getItem() instanceof OverloadPatternItem);
         populatePreviewInventories(editable.parsedPattern());
+    }
+
+    @Nullable
+    private EditableOverloadPatternState tryResolveEditableSource(ItemStack sourceStack) {
+        if (sourceStack.isEmpty()) {
+            return null;
+        }
+
+        try {
+            var plainSource = tryResolvePlainSourceStack(sourceStack);
+            if (plainSource == null) {
+                return null;
+            }
+
+            var plainDetails = PatternDetailsHelper.decodePattern(plainSource, getPlayer().level());
+            if (plainDetails == null || plainDetails instanceof IMolecularAssemblerSupportedPattern) {
+                return null;
+            }
+
+            var resolver = new Ae2PlainPatternResolver(getPlayer().level());
+            return conversionService.resolveEditableSource(sourceStack, resolver, registryAccess()).orElse(null);
+        } catch (RuntimeException exception) {
+            AE2LightningTech.LOGGER.debug("Failed to load overload pattern encoder source stack {}", sourceStack,
+                    exception);
+            return null;
+        }
+    }
+
+    @Nullable
+    private ItemStack tryResolvePlainSourceStack(ItemStack sourceStack) {
+        if (sourceStack.getItem() instanceof OverloadPatternItem overloadPatternItem) {
+            try {
+                var payload = overloadPatternItem.readPayload(sourceStack).orElse(null);
+                return payload != null ? payload.sourcePattern().toItemStack(registryAccess()) : null;
+            } catch (RuntimeException exception) {
+                AE2LightningTech.LOGGER.debug("Failed to decode source snapshot from overload pattern {}", sourceStack,
+                        exception);
+                return null;
+            }
+        }
+        return sourceStack;
     }
 
     private void populatePreviewInventories(ParsedPatternDefinition parsedPattern) {
@@ -229,6 +272,20 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
     private void clearEncodedResult() {
         resultInventory.setItemDirect(0, ItemStack.EMPTY);
+    }
+
+    private void consumeSourcePattern() {
+        if (!isServerSide()) {
+            return;
+        }
+
+        if (sourceInventory.getStackInSlot(0).isEmpty()) {
+            return;
+        }
+
+        sourceInventory.extractItem(0, 1, false);
+        sourceDirty = true;
+        clearEncodedResult();
     }
 
     private static ItemStack normalizedPreview(ItemStack stack) {
@@ -267,14 +324,15 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
         }
     }
 
-    private static final class SourcePatternSlot extends Slot {
+    private final class SourcePatternSlot extends Slot {
         private SourcePatternSlot(AppEngInternalInventory inventory, int invSlot, int x, int y) {
             super(new InventoryContainerAdapter(inventory), invSlot, x, y);
         }
 
         @Override
         public boolean mayPlace(ItemStack stack) {
-            return !stack.isEmpty() && PatternDetailsHelper.isEncodedPattern(stack);
+            return !stack.isEmpty() && PatternDetailsHelper.isEncodedPattern(stack)
+                    && tryResolveEditableSource(stack) != null;
         }
 
         @Override
@@ -304,7 +362,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
         }
     }
 
-    private static final class ResultPatternSlot extends Slot {
+    private final class ResultPatternSlot extends Slot {
         private ResultPatternSlot(AppEngInternalInventory inventory, int invSlot, int x, int y) {
             super(new InventoryContainerAdapter(inventory), invSlot, x, y);
         }
@@ -313,6 +371,32 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
         public boolean mayPlace(ItemStack stack) {
             return false;
         }
+
+        @Override
+        public void onTake(Player player, ItemStack stack) {
+            super.onTake(player, stack);
+            consumeSourcePattern();
+        }
+    }
+
+    @Override
+    public ItemStack quickMoveStack(Player player, int idx) {
+        if (idx == RESULT_SLOT_INDEX && isServerSide()) {
+            var resultSlot = getSlot(idx);
+            var before = resultSlot.getItem().copy();
+            if (before.isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+
+            super.quickMoveStack(player, idx);
+            if (resultSlot.getItem().isEmpty()) {
+                consumeSourcePattern();
+                return before;
+            }
+            return ItemStack.EMPTY;
+        }
+
+        return super.quickMoveStack(player, idx);
     }
 
     private static final class InventoryContainerAdapter extends SimpleContainer {

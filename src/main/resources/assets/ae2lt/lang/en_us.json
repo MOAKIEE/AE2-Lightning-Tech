@@ -49,6 +49,7 @@
   "ae2lt.gui.overload_pattern_encoder.entry.input": "Input",
   "ae2lt.gui.overload_pattern_encoder.entry.output": "Output",
   "ae2lt.gui.overload_pattern_encoder.entry.primary_output": "Byproduct",
+  "tooltip.ae2lt.overload_pattern.provider_only": "Only usable in an Overloaded Pattern Provider",
   "ae2lt.gui.auto_return.on": "Auto Return: ON",
   "ae2lt.gui.auto_return.off": "Auto Return: OFF",
   "ae2lt.gui.wireless_strategy.single": "Single Target",

@@ -49,6 +49,7 @@
   "ae2lt.gui.overload_pattern_encoder.entry.input": "输入",
   "ae2lt.gui.overload_pattern_encoder.entry.output": "输出",
   "ae2lt.gui.overload_pattern_encoder.entry.primary_output": "副产物",
+  "tooltip.ae2lt.overload_pattern.provider_only": "只能用于过载样板供应器",
   "ae2lt.gui.auto_return.on": "自动拉回：开",
   "ae2lt.gui.auto_return.off": "自动拉回：关",
   "ae2lt.gui.wireless_strategy.single": "逐台分配",

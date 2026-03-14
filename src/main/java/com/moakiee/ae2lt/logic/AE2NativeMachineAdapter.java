@@ -21,6 +21,8 @@ import appeng.helpers.patternprovider.PatternProviderTarget;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 
+import com.moakiee.ae2lt.AE2LightningTech;
+
 /**
  * Built-in fallback {@link MachineAdapter} that handles any target reachable
  * through AE2's native APIs:
@@ -116,7 +118,7 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
 
     @Override
     public List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
-                                             Set<AEKey> allowedOutputs, IActionSource source) {
+                                             AllowedOutputFilter allowedOutputs, IActionSource source) {
         IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, face);
         if (handler == null) return List.of();
 
@@ -127,11 +129,39 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             if (peek.isEmpty()) continue;
 
             var key = AEItemKey.of(peek);
-            if (!allowedOutputs.contains(key)) continue;
+            if (key == null) {
+                AE2LightningTech.LOGGER.info(
+                        "[ae2lt] auto-return skipped machine slot because stack did not resolve to AEItemKey. pos={} face={} slot={} stack={}",
+                        pos,
+                        face,
+                        slot,
+                        peek);
+                continue;
+            }
+            if (!allowedOutputs.matches(key)) {
+                AE2LightningTech.LOGGER.info(
+                        "[ae2lt] auto-return filter rejected machine slot. pos={} face={} slot={} key={} count={} filter={}",
+                        pos,
+                        face,
+                        slot,
+                        key,
+                        peek.getCount(),
+                        allowedOutputs);
+                continue;
+            }
 
             var stack = handler.extractItem(slot, peek.getCount(), false);
             if (!stack.isEmpty()) {
-                extracted.add(new GenericStack(AEItemKey.of(stack), stack.getCount()));
+                var extractedKey = AEItemKey.of(stack);
+                extracted.add(new GenericStack(extractedKey, stack.getCount()));
+                AE2LightningTech.LOGGER.info(
+                        "[ae2lt] auto-return extracted machine output. pos={} face={} slot={} key={} count={} filter={}",
+                        pos,
+                        face,
+                        slot,
+                        extractedKey,
+                        stack.getCount(),
+                        allowedOutputs);
             }
         }
         return extracted;

@@ -121,6 +121,7 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            LOGGER.info("[ae2lt] common setup completed for diagnostics build");
             var controllerBlock = ModBlocks.OVERLOADED_CONTROLLER.get();
             var controllerBeType = ModBlockEntities.OVERLOADED_CONTROLLER.get();
             controllerBlock.setBlockEntity(
