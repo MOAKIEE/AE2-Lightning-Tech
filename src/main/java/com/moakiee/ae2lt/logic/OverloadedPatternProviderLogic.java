@@ -17,9 +17,14 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
+import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
@@ -30,6 +35,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.me.helpers.MachineSource;
 
@@ -386,6 +392,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * Only items whose {@link AEKey} matches a loaded pattern output are extracted.
      */
     public void tickAutoReturn() {
+        tickWirelessInductionEnergy();
+
         if (!overloadedHost.isAutoReturn()) return;
         if (!gridNode.isActive()) return;
 
@@ -539,6 +547,215 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         inserted);
             }
         });
+    }
+
+    private void tickWirelessInductionEnergy() {
+        if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) {
+            return;
+        }
+        if (!gridNode.isActive() || !isInductionCardInstalled()) {
+            return;
+        }
+
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) {
+            return;
+        }
+
+        var feKey = getAppliedFluxFeKey();
+        if (feKey == null) {
+            return;
+        }
+
+        int transferBudget = getAppliedFluxTransferPerTick();
+        if (transferBudget <= 0) {
+            return;
+        }
+
+        overloadedHost.clearInvalidConnections();
+        var valid = collectValidWirelessConnections(sl);
+        if (valid.isEmpty()) {
+            return;
+        }
+
+        if (overloadedHost.getWirelessStrategy() == WirelessStrategy.EVEN_DISTRIBUTION) {
+            distributeWirelessEnergyEven(valid, feKey, transferBudget);
+        } else {
+            distributeWirelessEnergySingle(valid, feKey, transferBudget);
+        }
+    }
+
+    private List<WirelessConnection> collectValidWirelessConnections(ServerLevel providerLevel) {
+        var server = providerLevel.getServer();
+        var valid = new ArrayList<WirelessConnection>();
+        for (var conn : overloadedHost.getConnections()) {
+            var targetLevel = server.getLevel(conn.dimension());
+            if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) {
+                continue;
+            }
+            if (targetLevel.getBlockEntity(conn.pos()) == null) {
+                continue;
+            }
+            valid.add(conn);
+        }
+        return valid;
+    }
+
+    private void distributeWirelessEnergySingle(List<WirelessConnection> valid, AEKey feKey, int transferBudget) {
+        if (valid.isEmpty() || transferBudget <= 0) {
+            return;
+        }
+
+        int index = Math.floorMod(wirelessRoundRobin, valid.size());
+        wirelessRoundRobin = index + 1;
+        transferEnergyToConnection(valid.get(index), feKey, transferBudget);
+    }
+
+    private void distributeWirelessEnergyEven(List<WirelessConnection> valid, AEKey feKey, int transferBudget) {
+        if (valid.isEmpty() || transferBudget <= 0) {
+            return;
+        }
+
+        int remaining = transferBudget;
+        int targetsLeft = valid.size();
+        for (var conn : valid) {
+            if (remaining <= 0) {
+                return;
+            }
+
+            int share = Math.max(1, remaining / targetsLeft);
+            int sent = transferEnergyToConnection(conn, feKey, share);
+            remaining -= Math.max(sent, 0);
+            targetsLeft--;
+        }
+    }
+
+    private int transferEnergyToConnection(WirelessConnection conn, AEKey feKey, int maxToSend) {
+        if (maxToSend <= 0) {
+            return 0;
+        }
+
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel providerLevel)) {
+            return 0;
+        }
+
+        var targetLevel = providerLevel.getServer().getLevel(conn.dimension());
+        if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) {
+            return 0;
+        }
+
+        IEnergyStorage storage = targetLevel.getCapability(
+                Capabilities.EnergyStorage.BLOCK,
+                conn.pos(),
+                conn.boundFace());
+        if (storage == null) {
+            return 0;
+        }
+
+        int canReceive = storage.receiveEnergy(maxToSend, true);
+        if (canReceive <= 0) {
+            return 0;
+        }
+
+        long extracted = extractAppliedFluxEnergy(feKey, canReceive);
+        if (extracted <= 0) {
+            return 0;
+        }
+
+        int extractedInt = (int) Math.min(Integer.MAX_VALUE, extracted);
+        int accepted = storage.receiveEnergy(extractedInt, false);
+        if (accepted < extractedInt) {
+            long refund = extractedInt - accepted;
+            if (refund > 0) {
+                insertAppliedFluxEnergy(feKey, refund);
+            }
+        }
+        return accepted;
+    }
+
+    private boolean isInductionCardInstalled() {
+        Item card = getAppliedFluxInductionCard();
+        if (card == null) {
+            return false;
+        }
+
+        if (this instanceof IUpgradeableObject upgradeableLogic) {
+            return upgradeableLogic.getUpgrades().isInstalled(card);
+        }
+        return false;
+    }
+
+    private long extractAppliedFluxEnergy(AEKey feKey, long amount) {
+        if (amount <= 0) {
+            return 0;
+        }
+        final long[] extracted = {0};
+        gridNode.ifPresent((grid, node) -> extracted[0] = grid.getStorageService().getInventory().extract(
+                feKey,
+                amount,
+                Actionable.MODULATE,
+                wirelessSource));
+        return extracted[0];
+    }
+
+    private void insertAppliedFluxEnergy(AEKey feKey, long amount) {
+        if (amount <= 0) {
+            return;
+        }
+        gridNode.ifPresent((grid, node) -> grid.getStorageService().getInventory().insert(
+                feKey,
+                amount,
+                Actionable.MODULATE,
+                wirelessSource));
+    }
+
+    private static final ResourceLocation APPFLUX_INDUCTION_CARD_ID =
+            ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
+    private static final Item APPFLUX_INDUCTION_CARD =
+            BuiltInRegistries.ITEM.get(APPFLUX_INDUCTION_CARD_ID);
+
+    @Nullable
+    private static Item getAppliedFluxInductionCard() {
+        if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
+            return null;
+        }
+        return APPFLUX_INDUCTION_CARD;
+    }
+
+    @Nullable
+    private static AEKey getAppliedFluxFeKey() {
+        try {
+            var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
+            @SuppressWarnings("unchecked")
+            Class<? extends Enum> enumClass = (Class<? extends Enum>) energyTypeClass.asSubclass(Enum.class);
+            Object feType = Enum.valueOf(enumClass, "FE");
+
+            var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
+            var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
+            Object key = ofMethod.invoke(null, feType);
+            return key instanceof AEKey aeKey ? aeKey : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private static int getAppliedFluxTransferPerTick() {
+        try {
+            var configClass = Class.forName("com.glodblock.github.appflux.config.AFConfig");
+            var method = configClass.getMethod("getFluxAccessorIO");
+            Object result = method.invoke(null);
+            if (result instanceof Number num) {
+                long value = num.longValue();
+                if (value <= 0) {
+                    return 0;
+                }
+                return (int) Math.min(Integer.MAX_VALUE, value);
+            }
+        } catch (ReflectiveOperationException ignored) {
+            // Applied Flux not loaded or API changed.
+        }
+        return 0;
     }
 
     // ---- isBusy override --------------------------------------------------------

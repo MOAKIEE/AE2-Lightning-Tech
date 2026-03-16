@@ -10,8 +10,10 @@ import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
+import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
@@ -26,6 +28,7 @@ import org.slf4j.Logger;
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.upgrades.Upgrades;
 
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -114,11 +117,6 @@ public class AE2LightningTech {
                 AECapabilities.GENERIC_INTERNAL_INV,
                 ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> blockEntity.getLogic().getReturnInv());
-
-        event.registerBlockEntity(
-                Capabilities.ItemHandler.BLOCK,
-                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
-                (blockEntity, side) -> blockEntity.getExposedPatternInventory().toItemHandler());
     }
 
     /**
@@ -149,7 +147,20 @@ public class AE2LightningTech {
             // Register built-in machine adapters (AE2-native fallback)
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
+
+            registerAppliedFluxInductionCardCompat();
         });
+    }
+
+    private static void registerAppliedFluxInductionCardCompat() {
+        var inductionId = ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
+        Item inductionCard = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(inductionId);
+        if (inductionCard == null || inductionCard == net.minecraft.world.item.Items.AIR) {
+            return;
+        }
+
+        Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
+        LOGGER.info("[ae2lt] registered Applied Flux induction card upgrade compat for overloaded pattern provider.");
     }
 
     private static void registerOptionalClientIntegrations() {
