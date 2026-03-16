@@ -77,8 +77,11 @@
   "ae2lt.connector.provider_lost": "Selected Overloaded Pattern Provider is missing or unloaded",
   "ae2lt.connector.not_machine": "Target is not a machine",
   "ae2lt.connector.disconnected": "Disconnected from [%d, %d, %d]",
+  "ae2lt.connector.disconnected_many": "Disconnected %d machines from face %s",
   "ae2lt.connector.updated": "Updated connection to [%d, %d, %d] face %s",
+  "ae2lt.connector.updated_many": "Updated %d machines to face %s",
   "ae2lt.connector.connected": "Connected to [%d, %d, %d] face %s",
+  "ae2lt.connector.connected_many": "Connected %d machines to face %s",
   "ae2lt.connector.deselected": "Overloaded Pattern Provider deselected",
   "ae2lt.connector.need_wireless": "Please enable wireless mode first"
 }

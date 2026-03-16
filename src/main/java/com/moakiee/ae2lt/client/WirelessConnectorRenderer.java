@@ -31,6 +31,7 @@ import appeng.client.render.overlay.OverlayRenderType;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
+import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 
 /**
  * Client-side renderer for the Overloaded Wireless Connector.
@@ -45,6 +46,8 @@ public class WirelessConnectorRenderer {
     private static final int COLOR_PREVIEW = 0x60FFFF00;
     // Connected face color: semi-transparent blue (ARGB)
     private static final int COLOR_CONNECTED = 0x600080FF;
+    // Preview line color: bright yellow
+    private static final int COLOR_PREVIEW_LINE = 0xC0FFFF00;
     // Provider inner cube color (unselected): semi-transparent blue (ARGB)
     private static final int COLOR_PROVIDER = 0x800080FF;
     // Provider inner cube color (selected): semi-transparent yellow (ARGB)
@@ -137,15 +140,21 @@ public class WirelessConnectorRenderer {
                     && !bhr.getBlockPos().equals(selectedPos)
                     && mc.level.getBlockEntity(bhr.getBlockPos()) != null) {
 
-                BlockPos lookPos = bhr.getBlockPos();
+                var previewTargets = WirelessConnectorTargetHelper.collectTargets(
+                        mc.level,
+                        bhr.getBlockPos(),
+                        net.minecraft.client.gui.screens.Screen.hasControlDown());
                 Direction lookFace = bhr.getDirection();
-                boolean alreadyConnected = selectedProvider.getConnections().stream()
-                        .anyMatch(c -> c.dimension().equals(mc.level.dimension())
-                                && c.pos().equals(lookPos)
-                                && c.boundFace() == lookFace);
+                for (var lookPos : previewTargets) {
+                    boolean alreadyConnected = selectedProvider.getConnections().stream()
+                            .anyMatch(c -> c.dimension().equals(mc.level.dimension())
+                                    && c.pos().equals(lookPos)
+                                    && c.boundFace() == lookFace);
 
-                if (!alreadyConnected) {
-                    renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
+                    if (!alreadyConnected) {
+                        renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
+                        renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
+                    }
                 }
             }
         }

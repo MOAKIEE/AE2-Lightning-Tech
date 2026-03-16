@@ -1,5 +1,8 @@
 package com.moakiee.ae2lt.item;
 
+import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -19,20 +22,17 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.entity.BlockEntity;
-
-import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
-import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 /**
- * Overloaded Wireless Connector — a tool item for establishing / managing
- * wireless connections between an Overloaded Pattern Provider and remote machines.
+ * A tool item for establishing and managing wireless connections between an
+ * Overloaded Pattern Provider and remote machines.
  * <p>
  * Workflow:
  * <ol>
- *   <li>Shift + right-click an Overloaded Pattern Provider → select it (saved in item NBT).</li>
- *   <li>Shift + right-click a machine block face → create / update / disconnect connection.</li>
- *   <li>Right-click air → deselect the current Provider.</li>
+ *   <li>Right-click an Overloaded Pattern Provider to select it.</li>
+ *   <li>Right-click a machine block face to create, update, or remove a connection.</li>
+ *   <li>Right-click air to clear the current provider selection.</li>
  * </ol>
  */
 public class OverloadedWirelessConnectorItem extends Item {
@@ -45,115 +45,43 @@ public class OverloadedWirelessConnectorItem extends Item {
         super(properties.stacksTo(1));
     }
 
-    // ── Shift + right-click on a block ──────────────────────────────────────
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        return handleBlockUse(context);
+    }
 
     @Override
     public InteractionResult useOn(UseOnContext context) {
+        return handleBlockUse(context);
+    }
+
+    private InteractionResult handleBlockUse(UseOnContext context) {
         var player = context.getPlayer();
-        if (player == null || !player.isShiftKeyDown()) {
+        if (player == null) {
             return InteractionResult.PASS;
         }
 
-        // Client side: return SUCCESS to consume the event and prevent use() from firing
         var level = context.getLevel();
-        if (level.isClientSide()) {
-            return InteractionResult.SUCCESS;
-        }
-
         var pos = context.getClickedPos();
-        var face = context.getClickedFace();
-        var stack = context.getItemInHand();
         var state = level.getBlockState(pos);
-
-        // Case 1: Shift + right-click on an Overloaded Pattern Provider → select it
-        if (state.getBlock() instanceof OverloadedPatternProviderBlock) {
-            var be = level.getBlockEntity(pos);
-            if (be instanceof OverloadedPatternProviderBlockEntity provider
-                    && provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
-                player.displayClientMessage(
-                        Component.translatable("ae2lt.connector.need_wireless")
-                                .withStyle(ChatFormatting.GREEN),
-                        true);
-                return InteractionResult.FAIL;
-            }
-            selectProvider(stack, level, pos);
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.selected",
-                            pos.getX(), pos.getY(), pos.getZ())
-                            .withStyle(ChatFormatting.GREEN),
-                    true);
-            return InteractionResult.SUCCESS;
-        }
-
-        // Case 2: Shift + right-click on any other block → attempt to connect / update / disconnect
-        if (!hasSelectedProvider(stack)) {
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.no_provider")
-                            .withStyle(ChatFormatting.GREEN),
-                    true);
-            return InteractionResult.FAIL;
-        }
-
-        var provider = getSelectedProvider(level, stack);
-        if (provider == null) {
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.provider_lost")
-                            .withStyle(ChatFormatting.GREEN),
-                    true);
-            clearSelection(stack);
-            return InteractionResult.FAIL;
-        }
-
-        // Target must have a BlockEntity (i.e. it is a "machine")
         var targetBe = level.getBlockEntity(pos);
-        if (targetBe == null) {
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.not_machine")
-                            .withStyle(ChatFormatting.GREEN),
-                    true);
-            return InteractionResult.FAIL;
+        boolean isProvider = state.getBlock() instanceof OverloadedPatternProviderBlock;
+        boolean isMachine = targetBe != null;
+
+        if (!isProvider && !isMachine) {
+            return InteractionResult.PASS;
         }
 
-        var targetDim = level.dimension();
-
-        // Check existing connection to this machine
-        var existing = provider.getConnections().stream()
-                .filter(c -> c.sameTarget(targetDim, pos))
-                .findFirst()
-                .orElse(null);
-
-        if (existing != null) {
-            if (existing.boundFace() == face) {
-                // Same face → disconnect
-                provider.removeConnection(targetDim, pos);
-                player.displayClientMessage(
-                        Component.translatable("ae2lt.connector.disconnected",
-                                pos.getX(), pos.getY(), pos.getZ())
-                                .withStyle(ChatFormatting.GREEN),
-                        true);
-            } else {
-                // Different face → update bound face
-                provider.addOrUpdateConnection(targetDim, pos, face);
-                player.displayClientMessage(
-                        Component.translatable("ae2lt.connector.updated",
-                                pos.getX(), pos.getY(), pos.getZ(), face.getName())
-                                .withStyle(ChatFormatting.GREEN),
-                        true);
-            }
-        } else {
-            // New connection
-            provider.addOrUpdateConnection(targetDim, pos, face);
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.connected",
-                            pos.getX(), pos.getY(), pos.getZ(), face.getName())
-                            .withStyle(ChatFormatting.GREEN),
-                    true);
+        if (level.isClientSide()) {
+            PacketDistributor.sendToServer(new WirelessConnectorUsePacket(
+                    context.getHand(),
+                    pos,
+                    context.getClickedFace(),
+                    net.minecraft.client.gui.screens.Screen.hasControlDown()));
+            return InteractionResult.SUCCESS_NO_ITEM_USED;
         }
-
         return InteractionResult.SUCCESS;
     }
-
-    // ── Right-click air → deselect Provider ─────────────────────────────────
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
@@ -165,17 +93,14 @@ public class OverloadedWirelessConnectorItem extends Item {
         if (hasSelectedProvider(stack)) {
             clearSelection(stack);
             player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.deselected")
-                            .withStyle(ChatFormatting.GREEN),
+                    Component.translatable("ae2lt.connector.deselected").withStyle(ChatFormatting.GREEN),
                     true);
             return InteractionResultHolder.success(stack);
         }
         return InteractionResultHolder.pass(stack);
     }
 
-    // ── NBT helpers (using DataComponents.CUSTOM_DATA) ────────────────────
-
-    private void selectProvider(ItemStack stack, Level level, BlockPos pos) {
+    public static void selectProvider(ItemStack stack, Level level, BlockPos pos) {
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
             var sel = new CompoundTag();
             sel.putString(TAG_DIM, level.dimension().location().toString());
@@ -184,12 +109,12 @@ public class OverloadedWirelessConnectorItem extends Item {
         });
     }
 
-    private boolean hasSelectedProvider(ItemStack stack) {
+    public static boolean hasSelectedProvider(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND);
     }
 
-    private void clearSelection(ItemStack stack) {
+    public static void clearSelection(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         tag.remove(TAG_SELECTED);
         if (tag.isEmpty()) {
@@ -200,20 +125,19 @@ public class OverloadedWirelessConnectorItem extends Item {
     }
 
     /**
-     * Resolve the selected Provider BlockEntity from the item's custom data.
-     * Returns null if the provider is unloaded, missing, or wrong type.
+     * Resolve the selected provider from the item's custom data.
+     * Returns null if the provider is unloaded, missing, or the block entity type changed.
      */
-    private OverloadedPatternProviderBlockEntity getSelectedProvider(Level level, ItemStack stack) {
+    public static OverloadedPatternProviderBlockEntity getSelectedProvider(Level level, ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(TAG_SELECTED)) {
             return null;
         }
+
         var sel = tag.getCompound(TAG_SELECTED);
-        var dimKey = ResourceKey.create(Registries.DIMENSION,
-                ResourceLocation.parse(sel.getString(TAG_DIM)));
+        var dimKey = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(sel.getString(TAG_DIM)));
         var pos = BlockPos.of(sel.getLong(TAG_POS));
 
-        // Resolve the target level (supports cross-dimension)
         Level targetLevel = level;
         if (!level.dimension().equals(dimKey) && level instanceof ServerLevel sl) {
             targetLevel = sl.getServer().getLevel(dimKey);
@@ -221,6 +145,7 @@ public class OverloadedWirelessConnectorItem extends Item {
         if (targetLevel == null || !targetLevel.isLoaded(pos)) {
             return null;
         }
+
         var be = targetLevel.getBlockEntity(pos);
         return be instanceof OverloadedPatternProviderBlockEntity provider ? provider : null;
     }
