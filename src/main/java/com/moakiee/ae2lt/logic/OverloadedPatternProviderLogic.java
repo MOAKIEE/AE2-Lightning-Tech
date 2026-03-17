@@ -803,6 +803,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         wakeWirelessEnergyWork();
     }
 
+    public void onPersistentStateChanged() {
+        wakeWirelessEnergyWork();
+    }
+
     public void onNeighborChanged() {
         invalidateEnergyStorageCache();
         wakeWirelessEnergyWork();

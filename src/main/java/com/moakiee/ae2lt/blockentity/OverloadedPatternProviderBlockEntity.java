@@ -147,6 +147,18 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         }
     }
 
+    @Override
+    public void saveChanges() {
+        super.saveChanges();
+        var level = getLevel();
+        if (level != null && !level.isClientSide) {
+            var logic = getOverloadedLogic();
+            if (logic != null) {
+                logic.onPersistentStateChanged();
+            }
+        }
+    }
+
     /**
      * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
      * path (in PatternProviderLogic) finds no targets.
