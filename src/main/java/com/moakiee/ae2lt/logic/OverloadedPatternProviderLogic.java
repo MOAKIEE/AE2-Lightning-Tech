@@ -17,10 +17,12 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
@@ -92,11 +94,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     // ---- auto-return state (per-machine exponential backoff) --------------------
 
+    /** Per-machine key for backoff maps without transient String allocation. */
+    private record MachineId(ResourceKey<Level> dimension, long posLong, Direction face) {}
+
     /** Per-machine: game-tick at which the next poll is allowed. */
-    private final Map<String, Long> machineNextPoll = new HashMap<>();
+    private final Map<MachineId, Long> machineNextPoll = new HashMap<>();
 
     /** Per-machine: current backoff interval in ticks. */
-    private final Map<String, Integer> machineBackoff = new HashMap<>();
+    private final Map<MachineId, Integer> machineBackoff = new HashMap<>();
 
     /** Minimum polling interval (reset value after a successful extraction). */
     private static final int BACKOFF_MIN = 10;    // 0.5 second
@@ -104,11 +109,44 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Maximum polling interval (cap for exponential growth). */
     private static final int BACKOFF_MAX = 1200;  // 60 seconds
 
-    /** Last game tick when wireless connections were validated. */
+    /** Refresh the validated wireless-connection view at most once per second. */
+    private static final int VALIDATE_INTERVAL = 20;
+
+    /** Short sleep for the wireless energy path when ME is empty or all targets are saturated. */
+    private static final int ENERGY_COOLDOWN_TICKS = 10;
+
+    /** Sentinel: the target can accept energy, but the ME network currently cannot provide it. */
+    private static final int NETWORK_EMPTY = -1;
+
+    /** Last game tick when wireless connections were validated / collected. */
     private long lastConnectionValidation = -1;
 
-    /** Validate wireless connections at most once per second. */
-    private static final int VALIDATE_INTERVAL = 20;
+    /** Cached list of valid wireless connections (shared by energy + auto-return). */
+    private List<WirelessConnection> validConnectionsCache = List.of();
+
+    /** Game tick at which validConnectionsCache was last refreshed. */
+    private long validConnectionsCacheTick = -1;
+
+    /** External host changes force the next wireless lookup to rebuild the cache immediately. */
+    private boolean connectionsDirty = true;
+
+    /** External state changes force the energy path to bypass cooldown once. */
+    private boolean energyWorkDirty = true;
+
+    /** Current short-term cooldown reason for the wireless energy path. */
+    private EnergyCooldownReason wirelessEnergyCooldownReason = EnergyCooldownReason.NONE;
+
+    /** Earliest game tick when the wireless energy path should retry after a cooldown. */
+    private long wirelessEnergyCooldownUntilTick = -1;
+
+    /** Single-target mode only enters saturation cooldown after a full no-progress sweep. */
+    private int singleTargetEnergyMisses = 0;
+
+    private enum EnergyCooldownReason {
+        NONE,
+        ME_EMPTY,
+        TARGETS_SATURATED
+    }
 
     // ---- construction -----------------------------------------------------------
 
@@ -164,6 +202,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             boolean result = super.pushPattern(patternDetails, inputHolder);
             if (result && overloadedHost.isAutoReturn()) {
                 resetBackoffAllTargets();
+            }
+            if (result) {
+                wakeWirelessEnergyWork();
             }
             return result;
         }
@@ -271,6 +312,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        wakeWirelessEnergyWork();
 
         // Reset backoff so auto-return checks this machine promptly
         if (overloadedHost.isAutoReturn()) {
@@ -373,6 +415,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * Only items whose {@link AEKey} matches a loaded pattern output are extracted.
      */
     public void tickAutoReturn() {
+        // Top-level short-circuit: skip entire tick when there is no work at all
+        if (!hasAnyTickWork()) return;
+
         tickWirelessInductionEnergy();
 
         if (!overloadedHost.isAutoReturn()) return;
@@ -386,17 +431,27 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!(level instanceof ServerLevel sl)) return;
 
         long gameTick = sl.getGameTime();
-        if (overloadedHost.getProviderMode() == ProviderMode.WIRELESS
-                && gameTick - lastConnectionValidation >= VALIDATE_INTERVAL) {
-            overloadedHost.clearInvalidConnections();
-            lastConnectionValidation = gameTick;
-        }
 
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
             autoReturnNormal(sl, allowedOutputs, gameTick);
         } else {
             autoReturnWireless(sl, allowedOutputs, gameTick);
         }
+    }
+
+    /**
+     * Quick check: is there any reason to run the server tick at all?
+     * Returns false when NORMAL mode + autoReturn off + no wireless overflow,
+     * allowing the tick to be completely skipped.
+     */
+    public boolean hasAnyTickWork() {
+        // Wireless overflow always needs flushing
+        if (!wirelessSendList.isEmpty()) return true;
+        // Wireless mode energy induction needs ticking
+        if (overloadedHost.getProviderMode() == ProviderMode.WIRELESS) return true;
+        // Auto-return needs ticking
+        if (overloadedHost.isAutoReturn()) return true;
+        return false;
     }
 
     private AllowedOutputFilter getOrBuildOutputFilter() {
@@ -453,10 +508,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void autoReturnWireless(ServerLevel sl, AllowedOutputFilter allowedOutputs, long gameTick) {
-        var server = sl.getServer();
-        for (var conn : overloadedHost.getConnections()) {
-            var targetLevel = server.getLevel(conn.dimension());
-            if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) continue;
+        var valid = getOrRefreshValidConnections(sl, gameTick);
+        for (var conn : valid) {
+            var targetLevel = sl.getServer().getLevel(conn.dimension());
+            if (targetLevel == null) continue;
 
             var key = machineKey(targetLevel, conn.pos(), conn.boundFace());
             if (gameTick < machineNextPoll.getOrDefault(key, 0L)) continue;
@@ -471,9 +526,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    /** Unified machine key: "dim|posLong|faceOrdinal". */
-    private static String machineKey(ServerLevel level, BlockPos pos, Direction face) {
-        return level.dimension().location() + "|" + pos.asLong() + "|" + face.ordinal();
+    /** Unified machine key without transient String allocation. */
+    private static MachineId machineKey(ServerLevel level, BlockPos pos, Direction face) {
+        return new MachineId(level.dimension(), pos.asLong(), face);
     }
 
     /**
@@ -498,7 +553,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      *
      * @param foundItems true if at least one output was extracted
      */
-    private void updateBackoff(String key, long gameTick, boolean foundItems) {
+    private void updateBackoff(MachineId key, long gameTick, boolean foundItems) {
         int interval;
         if (foundItems) {
             interval = BACKOFF_MIN;
@@ -534,30 +589,61 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return;
         }
 
-        var feKey = getAppliedFluxFeKey();
+        // Use cached reflection results instead of per-tick reflection
+        var feKey = CACHED_APPFLUX_FE_KEY;
         if (feKey == null) {
             return;
         }
 
-        int transferBudget = getAppliedFluxTransferPerTick();
+        int transferBudget = CACHED_APPFLUX_TRANSFER_RATE;
         if (transferBudget <= 0) {
             return;
         }
 
-        overloadedHost.clearInvalidConnections();
-        var valid = collectValidWirelessConnections(sl);
-        if (valid.isEmpty()) {
+        long gameTick = sl.getGameTime();
+        if (isWirelessEnergyCooldownActive(gameTick, feKey)) {
             return;
         }
 
+        energyWorkDirty = false;
+        // Reuse unified valid-connections cache (no duplicate clearInvalidConnections)
+        var valid = getOrRefreshValidConnections(sl, gameTick);
+        if (valid.isEmpty()) {
+            singleTargetEnergyMisses = 0;
+            return;
+        }
+
+        WirelessEnergyTickResult result;
         if (overloadedHost.getWirelessStrategy() == WirelessStrategy.EVEN_DISTRIBUTION) {
-            distributeWirelessEnergyEven(valid, feKey, transferBudget);
+            result = distributeWirelessEnergyEven(valid, feKey, transferBudget);
         } else {
-            distributeWirelessEnergySingle(valid, feKey, transferBudget);
+            result = distributeWirelessEnergySingle(valid, feKey, transferBudget);
+        }
+
+        switch (result) {
+            case TRANSFERRED -> clearWirelessEnergyCooldown();
+            case NO_ME_ENERGY -> enterWirelessEnergyCooldown(gameTick, EnergyCooldownReason.ME_EMPTY);
+            case TARGETS_SATURATED ->
+                    enterWirelessEnergyCooldown(gameTick, EnergyCooldownReason.TARGETS_SATURATED);
+            case NO_PROGRESS -> {
+                // Single-target mode is still rotating through the connection set.
+            }
         }
     }
 
-    private List<WirelessConnection> collectValidWirelessConnections(ServerLevel providerLevel) {
+    /**
+     * Returns a cached list of valid wireless connections.
+     * The cache is refreshed at most once per {@link #VALIDATE_INTERVAL} ticks.
+     * Both the energy-induction path and auto-return path share this cache
+     * to avoid duplicate world queries within a single tick.
+     */
+    private List<WirelessConnection> getOrRefreshValidConnections(ServerLevel providerLevel, long gameTick) {
+        if (!connectionsDirty && gameTick - validConnectionsCacheTick < VALIDATE_INTERVAL) {
+            return validConnectionsCache;
+        }
+
+        // Validate + collect in a single pass
+        overloadedHost.clearInvalidConnections();
         var server = providerLevel.getServer();
         var valid = new ArrayList<WirelessConnection>();
         for (var conn : overloadedHost.getConnections()) {
@@ -570,36 +656,71 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
             valid.add(conn);
         }
-        return valid;
+        validConnectionsCache = List.copyOf(valid);
+        validConnectionsCacheTick = gameTick;
+        lastConnectionValidation = gameTick;
+        connectionsDirty = false;
+        singleTargetEnergyMisses = 0;
+        return validConnectionsCache;
     }
 
-    private void distributeWirelessEnergySingle(List<WirelessConnection> valid, AEKey feKey, int transferBudget) {
+    private WirelessEnergyTickResult distributeWirelessEnergySingle(List<WirelessConnection> valid,
+            AEKey feKey, int transferBudget) {
         if (valid.isEmpty() || transferBudget <= 0) {
-            return;
+            return WirelessEnergyTickResult.NO_PROGRESS;
         }
 
         int index = Math.floorMod(wirelessRoundRobin, valid.size());
         wirelessRoundRobin = index + 1;
-        transferEnergyToConnection(valid.get(index), feKey, transferBudget);
+        int sent = transferEnergyToConnection(valid.get(index), feKey, transferBudget);
+        if (sent > 0) {
+            singleTargetEnergyMisses = 0;
+            return WirelessEnergyTickResult.TRANSFERRED;
+        }
+        if (sent == NETWORK_EMPTY) {
+            singleTargetEnergyMisses = 0;
+            return WirelessEnergyTickResult.NO_ME_ENERGY;
+        }
+
+        singleTargetEnergyMisses++;
+        if (singleTargetEnergyMisses >= valid.size()) {
+            singleTargetEnergyMisses = 0;
+            return WirelessEnergyTickResult.TARGETS_SATURATED;
+        }
+        return WirelessEnergyTickResult.NO_PROGRESS;
     }
 
-    private void distributeWirelessEnergyEven(List<WirelessConnection> valid, AEKey feKey, int transferBudget) {
+    private WirelessEnergyTickResult distributeWirelessEnergyEven(List<WirelessConnection> valid,
+            AEKey feKey, int transferBudget) {
         if (valid.isEmpty() || transferBudget <= 0) {
-            return;
+            return WirelessEnergyTickResult.NO_PROGRESS;
         }
 
         int remaining = transferBudget;
         int targetsLeft = valid.size();
+        boolean transferredAny = false;
         for (var conn : valid) {
             if (remaining <= 0) {
-                return;
+                return WirelessEnergyTickResult.TRANSFERRED;
             }
 
             int share = Math.max(1, remaining / targetsLeft);
             int sent = transferEnergyToConnection(conn, feKey, share);
-            remaining -= Math.max(sent, 0);
+            if (sent == NETWORK_EMPTY) {
+                return transferredAny
+                        ? WirelessEnergyTickResult.TRANSFERRED
+                        : WirelessEnergyTickResult.NO_ME_ENERGY;
+            }
+            if (sent > 0) {
+                transferredAny = true;
+                remaining -= sent;
+            }
             targetsLeft--;
         }
+        if (transferredAny) {
+            return WirelessEnergyTickResult.TRANSFERRED;
+        }
+        return WirelessEnergyTickResult.TARGETS_SATURATED;
     }
 
     private int transferEnergyToConnection(WirelessConnection conn, AEKey feKey, int maxToSend) {
@@ -632,7 +753,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         long extracted = extractAppliedFluxEnergy(feKey, canReceive);
         if (extracted <= 0) {
-            return 0;
+            return NETWORK_EMPTY;
         }
 
         int extractedInt = (int) Math.min(Integer.MAX_VALUE, extracted);
@@ -644,6 +765,61 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
         }
         return accepted;
+    }
+
+    public void onHostStateChanged() {
+        invalidateValidConnectionsCache();
+        wakeWirelessEnergyWork();
+    }
+
+    private void invalidateValidConnectionsCache() {
+        connectionsDirty = true;
+        validConnectionsCache = List.of();
+        validConnectionsCacheTick = -1;
+        lastConnectionValidation = -1;
+        singleTargetEnergyMisses = 0;
+    }
+
+    private void wakeWirelessEnergyWork() {
+        energyWorkDirty = true;
+        clearWirelessEnergyCooldown();
+    }
+
+    private void clearWirelessEnergyCooldown() {
+        wirelessEnergyCooldownReason = EnergyCooldownReason.NONE;
+        wirelessEnergyCooldownUntilTick = -1;
+    }
+
+    private void enterWirelessEnergyCooldown(long gameTick, EnergyCooldownReason reason) {
+        clearWirelessEnergyCooldown();
+        wirelessEnergyCooldownReason = reason;
+        wirelessEnergyCooldownUntilTick = gameTick + ENERGY_COOLDOWN_TICKS;
+    }
+
+    private boolean isWirelessEnergyCooldownActive(long gameTick, AEKey feKey) {
+        if (energyWorkDirty || wirelessEnergyCooldownReason == EnergyCooldownReason.NONE) {
+            return false;
+        }
+        if (gameTick >= wirelessEnergyCooldownUntilTick) {
+            clearWirelessEnergyCooldown();
+            return false;
+        }
+        if (wirelessEnergyCooldownReason == EnergyCooldownReason.ME_EMPTY
+                && hasAppliedFluxEnergyAvailable(feKey)) {
+            wakeWirelessEnergyWork();
+            return false;
+        }
+        return true;
+    }
+
+    private boolean hasAppliedFluxEnergyAvailable(AEKey feKey) {
+        final boolean[] available = {false};
+        gridNode.ifPresent((grid, node) -> available[0] = grid.getStorageService().getInventory().extract(
+                feKey,
+                1,
+                Actionable.SIMULATE,
+                wirelessSource) > 0);
+        return available[0];
     }
 
     private boolean isInductionCardInstalled() {
@@ -687,16 +863,24 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final Item APPFLUX_INDUCTION_CARD =
             BuiltInRegistries.ITEM.get(APPFLUX_INDUCTION_CARD_ID);
 
+    // ---- Cached reflection results (resolved once at class-load, never per-tick) ----
+
+    /** Cached AEKey for Applied Flux FE energy type. Null if Applied Flux is not loaded. */
     @Nullable
-    private static Item getAppliedFluxInductionCard() {
-        if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
-            return null;
-        }
-        return APPFLUX_INDUCTION_CARD;
+    private static final AEKey CACHED_APPFLUX_FE_KEY;
+
+    /** Cached transfer rate from Applied Flux config. 0 if not available. */
+    private static final int CACHED_APPFLUX_TRANSFER_RATE;
+
+    private enum WirelessEnergyTickResult {
+        TRANSFERRED,
+        NO_PROGRESS,
+        NO_ME_ENERGY,
+        TARGETS_SATURATED
     }
 
-    @Nullable
-    private static AEKey getAppliedFluxFeKey() {
+    static {
+        AEKey resolvedKey = null;
         try {
             var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
             @SuppressWarnings("unchecked")
@@ -706,28 +890,35 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
             var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
             Object key = ofMethod.invoke(null, feType);
-            return key instanceof AEKey aeKey ? aeKey : null;
+            resolvedKey = key instanceof AEKey aeKey ? aeKey : null;
         } catch (ReflectiveOperationException ignored) {
-            return null;
+            // Applied Flux not loaded or API changed
         }
-    }
+        CACHED_APPFLUX_FE_KEY = resolvedKey;
 
-    private static int getAppliedFluxTransferPerTick() {
+        int resolvedRate = 0;
         try {
             var configClass = Class.forName("com.glodblock.github.appflux.config.AFConfig");
             var method = configClass.getMethod("getFluxAccessorIO");
             Object result = method.invoke(null);
             if (result instanceof Number num) {
                 long value = num.longValue();
-                if (value <= 0) {
-                    return 0;
+                if (value > 0) {
+                    resolvedRate = (int) Math.min(Integer.MAX_VALUE, value);
                 }
-                return (int) Math.min(Integer.MAX_VALUE, value);
             }
         } catch (ReflectiveOperationException ignored) {
-            // Applied Flux not loaded or API changed.
+            // Applied Flux not loaded or API changed
         }
-        return 0;
+        CACHED_APPFLUX_TRANSFER_RATE = resolvedRate;
+    }
+
+    @Nullable
+    private static Item getAppliedFluxInductionCard() {
+        if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
+            return null;
+        }
+        return APPFLUX_INDUCTION_CARD;
     }
 
     // ---- isBusy override --------------------------------------------------------
@@ -765,7 +956,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         machineBackoff.clear();
         cachedOutputFilter = null;
         outputFilterDirty = true;
-        lastConnectionValidation = -1;
+        invalidateValidConnectionsCache();
+        energyWorkDirty = true;
+        clearWirelessEnergyCooldown();
     }
 
     // ---- NBT persistence --------------------------------------------------------
@@ -810,5 +1003,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
         cachedOutputFilter = null;
         outputFilterDirty = true;
+        invalidateValidConnectionsCache();
+        energyWorkDirty = true;
+        clearWirelessEnergyCooldown();
     }
 }

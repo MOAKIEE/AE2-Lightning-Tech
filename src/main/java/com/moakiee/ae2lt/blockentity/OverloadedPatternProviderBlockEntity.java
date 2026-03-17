@@ -127,6 +127,19 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         ((OverloadedPatternProviderLogic) be.getLogic()).tickAutoReturn();
     }
 
+    @Nullable
+    private OverloadedPatternProviderLogic getOverloadedLogic() {
+        var logic = getLogic();
+        return logic instanceof OverloadedPatternProviderLogic overloadedLogic ? overloadedLogic : null;
+    }
+
+    private void notifyLogicStateChanged() {
+        var logic = getOverloadedLogic();
+        if (logic != null) {
+            logic.onHostStateChanged();
+        }
+    }
+
     /**
      * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
      * path (in PatternProviderLogic) finds no targets.
@@ -146,7 +159,11 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     public void setProviderMode(ProviderMode providerMode) {
+        if (this.providerMode == providerMode) {
+            return;
+        }
         this.providerMode = providerMode;
+        notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
     }
@@ -156,7 +173,11 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     public void setAutoReturn(boolean autoReturn) {
+        if (this.autoReturn == autoReturn) {
+            return;
+        }
         this.autoReturn = autoReturn;
+        notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
     }
@@ -174,7 +195,11 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     public void setWirelessStrategy(WirelessStrategy wirelessStrategy) {
+        if (this.wirelessStrategy == wirelessStrategy) {
+            return;
+        }
         this.wirelessStrategy = wirelessStrategy;
+        notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
     }
@@ -188,13 +213,19 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction boundFace) {
         for (int i = 0; i < connections.size(); i++) {
             if (connections.get(i).sameTarget(dimension, pos)) {
-                connections.set(i, new WirelessConnection(dimension, pos, boundFace));
+                var updated = new WirelessConnection(dimension, pos, boundFace);
+                if (connections.get(i).equals(updated)) {
+                    return;
+                }
+                connections.set(i, updated);
+                notifyLogicStateChanged();
                 saveChanges();
                 markForClientUpdate();
                 return;
             }
         }
         connections.add(new WirelessConnection(dimension, pos, boundFace));
+        notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
     }
@@ -207,6 +238,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
         boolean removed = connections.removeIf(c -> c.sameTarget(dimension, pos));
         if (removed) {
+            notifyLogicStateChanged();
             saveChanges();
             markForClientUpdate();
         }
@@ -250,6 +282,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         }
         if (removed > 0) {
+            notifyLogicStateChanged();
             saveChanges();
             markForClientUpdate();
         }
@@ -293,6 +326,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             wirelessStrategy = newStrategy;
             connections.clear();
             connections.addAll(newConns);
+            notifyLogicStateChanged();
             changed = true;
         }
         return changed;
@@ -345,6 +379,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
             }
         }
+        notifyLogicStateChanged();
     }
 
     // -- Menu binding --
