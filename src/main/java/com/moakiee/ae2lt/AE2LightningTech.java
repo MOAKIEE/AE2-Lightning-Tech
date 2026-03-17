@@ -2,6 +2,7 @@ package com.moakiee.ae2lt;
 
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
+import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
@@ -47,6 +48,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
+                        output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -84,6 +86,7 @@ public class AE2LightningTech {
     public AE2LightningTech(IEventBus modEventBus) {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
+        ModEntities.ENTITY_TYPES.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModMenuTypes.MENU_TYPES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);

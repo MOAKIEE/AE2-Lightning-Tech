@@ -1,0 +1,342 @@
+package com.moakiee.ae2lt.logic;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.Vec3;
+
+public class LightningBlastTask {
+    public static final int DEFAULT_RADIUS = 48;
+    public static final int DEFAULT_BLOCKS_PER_TICK = 1800;
+    public static final int DEFAULT_INITIAL_LIGHTNING_COUNT = 16;
+    public static final int DEFAULT_AFTERSHOCK_TICKS = 8;
+    public static final int DEFAULT_AFTERSHOCK_MIN_LIGHTNING = 3;
+    public static final int DEFAULT_AFTERSHOCK_MAX_LIGHTNING = 6;
+    public static final int DEFAULT_SHORT_THUNDERSTORM_TICKS = 160;
+    public static final int DEFAULT_LIGHTNING_HORIZONTAL_RADIUS = 24;
+    public static final int DEFAULT_SHELLS_PER_TICK = 3;
+
+    private static final Set<Block> PROTECTED_BLOCKS = Set.of(
+            Blocks.BEDROCK,
+            Blocks.BARRIER,
+            Blocks.END_PORTAL_FRAME,
+            Blocks.COMMAND_BLOCK,
+            Blocks.CHAIN_COMMAND_BLOCK,
+            Blocks.REPEATING_COMMAND_BLOCK);
+
+    private final ServerLevel level;
+    private final BlockPos center;
+    private final int radius;
+    private final int radiusSquared;
+    private final int blocksPerTick;
+    private final int shellsPerTick;
+
+    private int currentShellRadius;
+    private List<BlockPos> currentShellBlocks;
+    private int currentShellIndex;
+    private boolean scanFinished;
+    private int destroyedBlocks;
+    private boolean strikeSequenceStarted;
+    private int remainingAftershockTicks;
+    private int pendingLightningStrikes;
+    private boolean centerStrikeSpawned;
+    private boolean completed;
+
+    public LightningBlastTask(ServerLevel level, BlockPos center) {
+        this(level, center, DEFAULT_RADIUS, DEFAULT_BLOCKS_PER_TICK, DEFAULT_SHELLS_PER_TICK);
+    }
+
+    public LightningBlastTask(ServerLevel level, BlockPos center, int radius, int blocksPerTick) {
+        this(level, center, radius, blocksPerTick, DEFAULT_SHELLS_PER_TICK);
+    }
+
+    public LightningBlastTask(ServerLevel level, BlockPos center, int radius, int blocksPerTick, int shellsPerTick) {
+        this.level = level;
+        this.center = center.immutable();
+        this.radius = Math.max(0, radius);
+        this.radiusSquared = this.radius * this.radius;
+        this.blocksPerTick = Math.max(1, blocksPerTick);
+        this.shellsPerTick = Math.max(1, shellsPerTick);
+        this.currentShellRadius = 0;
+        this.currentShellBlocks = List.of(this.center);
+        this.currentShellIndex = 0;
+    }
+
+    public ServerLevel getLevel() {
+        return this.level;
+    }
+
+    public BlockPos getCenter() {
+        return this.center;
+    }
+
+    public int getRadius() {
+        return this.radius;
+    }
+
+    public int getBlocksPerTick() {
+        return this.blocksPerTick;
+    }
+
+    public int getShellsPerTick() {
+        return this.shellsPerTick;
+    }
+
+    public int getDestroyedBlocks() {
+        return this.destroyedBlocks;
+    }
+
+    public boolean isCompleted() {
+        return this.completed;
+    }
+
+    public int tick(int blockBudget, int lightningBudget) {
+        if (this.completed) {
+            return 0;
+        }
+
+        int consumedLightning = processLightning(lightningBudget);
+        processShells(blockBudget);
+
+        if (this.scanFinished && this.remainingAftershockTicks <= 0 && this.pendingLightningStrikes <= 0) {
+            this.completed = true;
+        }
+
+        return consumedLightning;
+    }
+
+    private int processLightning(int lightningBudget) {
+        if (lightningBudget <= 0) {
+            return 0;
+        }
+
+        if (!this.strikeSequenceStarted) {
+            startStrikeSequence();
+        }
+
+        int spawned = 0;
+        while (spawned < lightningBudget) {
+            if (this.pendingLightningStrikes > 0) {
+                BlockPos strikePos = this.centerStrikeSpawned
+                        ? getRandomStrikePos()
+                        : resolveStrikePos(this.center.getX(), this.center.getZ(), this.center.getY());
+                spawnLightningAt(strikePos);
+                this.centerStrikeSpawned = true;
+                this.pendingLightningStrikes--;
+                spawned++;
+                continue;
+            }
+
+            if (this.remainingAftershockTicks <= 0) {
+                break;
+            }
+
+            queueAftershockBurst();
+            this.remainingAftershockTicks--;
+        }
+
+        return spawned;
+    }
+
+    private void processShells(int blockBudget) {
+        if (this.scanFinished || blockBudget <= 0) {
+            return;
+        }
+
+        int destroyLimit = Math.min(this.blocksPerTick, blockBudget);
+        int destroyedThisTick = 0;
+        int completedShells = 0;
+
+        while (!this.scanFinished && destroyedThisTick < destroyLimit) {
+            if (this.currentShellIndex >= this.currentShellBlocks.size()) {
+                completedShells++;
+                if (this.currentShellRadius >= this.radius) {
+                    this.scanFinished = true;
+                    break;
+                }
+
+                if (completedShells >= this.shellsPerTick) {
+                    break;
+                }
+
+                advanceShell();
+                continue;
+            }
+
+            BlockPos pos = this.currentShellBlocks.get(this.currentShellIndex++);
+            if (!this.level.isInWorldBounds(pos) || !this.level.hasChunkAt(pos)) {
+                continue;
+            }
+
+            BlockState state = this.level.getBlockState(pos);
+            if (!shouldDestroy(state, this.level, pos)) {
+                continue;
+            }
+
+            destroyBlockFast(pos, state);
+            destroyedThisTick++;
+            this.destroyedBlocks++;
+        }
+    }
+
+    private void advanceShell() {
+        this.currentShellRadius++;
+        if (this.currentShellRadius > this.radius) {
+            this.scanFinished = true;
+            this.currentShellBlocks = List.of();
+            this.currentShellIndex = 0;
+            return;
+        }
+
+        this.currentShellBlocks = buildShell(this.currentShellRadius);
+        this.currentShellIndex = 0;
+    }
+
+    private void startStrikeSequence() {
+        this.strikeSequenceStarted = true;
+        this.remainingAftershockTicks = DEFAULT_AFTERSHOCK_TICKS;
+        this.pendingLightningStrikes = DEFAULT_INITIAL_LIGHTNING_COUNT;
+
+        tryStartShortThunderstorm();
+    }
+
+    private void queueAftershockBurst() {
+        this.pendingLightningStrikes += DEFAULT_AFTERSHOCK_MIN_LIGHTNING
+                + this.level.random.nextInt(DEFAULT_AFTERSHOCK_MAX_LIGHTNING - DEFAULT_AFTERSHOCK_MIN_LIGHTNING + 1);
+    }
+
+    private BlockPos getRandomStrikePos() {
+        int horizontalRadius = Math.min(this.radius, DEFAULT_LIGHTNING_HORIZONTAL_RADIUS);
+        while (true) {
+            int dx = this.level.random.nextInt(horizontalRadius * 2 + 1) - horizontalRadius;
+            int dz = this.level.random.nextInt(horizontalRadius * 2 + 1) - horizontalRadius;
+            if (dx * dx + dz * dz > horizontalRadius * horizontalRadius) {
+                continue;
+            }
+
+            return resolveStrikePos(this.center.getX() + dx, this.center.getZ() + dz, this.center.getY());
+        }
+    }
+
+    private BlockPos resolveStrikePos(int x, int z, int fallbackY) {
+        int minY = this.level.getMinBuildHeight();
+        int maxY = this.level.getMaxBuildHeight() - 1;
+        int y = this.level.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+
+        if (y <= minY) {
+            y = fallbackY;
+        } else {
+            y = Math.min(y, maxY);
+        }
+
+        BlockPos candidate = new BlockPos(x, clamp(y, minY, maxY), z);
+        if (!this.level.isInWorldBounds(candidate)) {
+            candidate = new BlockPos(this.center.getX(), clamp(fallbackY, minY, maxY), this.center.getZ());
+        }
+
+        if (!this.level.hasChunkAt(candidate)) {
+            return new BlockPos(this.center.getX(), clamp(fallbackY, minY, maxY), this.center.getZ());
+        }
+
+        if (this.level.getBlockState(candidate).isAir()) {
+            for (int dy = 1; dy <= 6 && candidate.getY() - dy >= minY; dy++) {
+                BlockPos lower = candidate.below(dy);
+                if (!this.level.getBlockState(lower).isAir()) {
+                    return lower.above();
+                }
+            }
+        }
+
+        return candidate;
+    }
+
+    private void spawnLightningAt(BlockPos strikePos) {
+        LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(this.level);
+        if (lightningBolt == null) {
+            return;
+        }
+
+        Vec3 centerPos = Vec3.atBottomCenterOf(strikePos);
+        lightningBolt.moveTo(centerPos.x, strikePos.getY(), centerPos.z);
+        lightningBolt.setVisualOnly(false);
+        this.level.addFreshEntity(lightningBolt);
+    }
+
+    private void tryStartShortThunderstorm() {
+        if (!supportsWeather(this.level)) {
+            return;
+        }
+
+        this.level.setWeatherParameters(0, DEFAULT_SHORT_THUNDERSTORM_TICKS, true, true);
+    }
+
+    private static boolean shouldDestroy(BlockState state, ServerLevel level, BlockPos pos) {
+        if (state.isAir()) {
+            return false;
+        }
+
+        if (isProtectedBlock(state)) {
+            return false;
+        }
+
+        return state.getDestroySpeed(level, pos) >= 0.0F;
+    }
+
+    private void destroyBlockFast(BlockPos pos, BlockState state) {
+        state.getBlock().destroy(this.level, pos, state);
+        this.level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_SUPPRESS_DROPS | Block.UPDATE_CLIENTS, 0);
+    }
+
+    private static boolean isProtectedBlock(BlockState state) {
+        for (Block block : PROTECTED_BLOCKS) {
+            if (state.is(block)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean supportsWeather(ServerLevel level) {
+        return level.dimensionType().hasSkyLight() && !level.dimensionType().hasCeiling();
+    }
+
+    private List<BlockPos> buildShell(int shellRadius) {
+        if (shellRadius <= 0) {
+            return List.of(this.center);
+        }
+
+        int outer = shellRadius * shellRadius;
+        int inner = (shellRadius - 1) * (shellRadius - 1);
+        List<BlockPos> shell = new ArrayList<>(shellRadius * shellRadius * 8);
+
+        for (int dx = -shellRadius; dx <= shellRadius; dx++) {
+            int dx2 = dx * dx;
+            for (int dy = -shellRadius; dy <= shellRadius; dy++) {
+                int dy2 = dy * dy;
+                for (int dz = -shellRadius; dz <= shellRadius; dz++) {
+                    int distanceSq = dx2 + dy2 + dz * dz;
+                    if (distanceSq > outer || distanceSq <= inner) {
+                        continue;
+                    }
+
+                    shell.add(this.center.offset(dx, dy, dz).immutable());
+                }
+            }
+        }
+
+        return shell;
+    }
+
+    private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+}
