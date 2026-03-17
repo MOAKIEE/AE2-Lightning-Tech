@@ -23,6 +23,12 @@ public interface PatternProviderLogicAccessor {
     @Invoker("onPushPatternSuccess")
     void invokeOnPushPatternSuccess(IPatternDetails pattern);
 
+    @Invoker("doWork")
+    boolean invokeDoWork();
+
+    @Invoker("hasWorkToDo")
+    boolean invokeHasWorkToDo();
+
     @Accessor("mainNode")
     IManagedGridNode getMainNode();
 

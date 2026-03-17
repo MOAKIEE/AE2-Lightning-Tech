@@ -1,12 +1,20 @@
 package com.moakiee.ae2lt.logic;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+
+import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 import appeng.api.config.Actionable;
 import appeng.api.crafting.IPatternDetails;
@@ -37,7 +45,24 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
 
     static final AE2NativeMachineAdapter INSTANCE = new AE2NativeMachineAdapter();
 
+    private final Map<TargetFaceKey, ItemHandlerCacheEntry> itemHandlerCache = new HashMap<>();
+
     private AE2NativeMachineAdapter() {}
+
+    private record TargetFaceKey(ResourceKey<Level> dimension, long posLong, Direction face) {}
+
+    private record ItemHandlerCacheEntry(
+            WeakReference<BlockEntity> blockEntityRef,
+            WeakReference<IItemHandler> handlerRef) {
+        boolean matches(BlockEntity blockEntity) {
+            return blockEntityRef.get() == blockEntity;
+        }
+
+        @Nullable
+        IItemHandler getHandler() {
+            return handlerRef.get();
+        }
+    }
 
     // ---- supports ---------------------------------------------------------------
 
@@ -117,7 +142,7 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
     @Override
     public List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
                                              AllowedOutputFilter allowedOutputs, IActionSource source) {
-        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, face);
+        IItemHandler handler = resolveItemHandler(level, pos, face);
         if (handler == null) return List.of();
 
         var extracted = new ArrayList<GenericStack>();
@@ -154,5 +179,34 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             }
         }
         return true;
+    }
+
+    @Nullable
+    private IItemHandler resolveItemHandler(ServerLevel level, BlockPos pos, Direction face) {
+        BlockEntity blockEntity = level.getBlockEntity(pos);
+        if (blockEntity == null) {
+            itemHandlerCache.remove(new TargetFaceKey(level.dimension(), pos.asLong(), face));
+            return null;
+        }
+
+        var key = new TargetFaceKey(level.dimension(), pos.asLong(), face);
+        var cached = itemHandlerCache.get(key);
+        if (cached != null && cached.matches(blockEntity)) {
+            var handler = cached.getHandler();
+            if (handler != null) {
+                return handler;
+            }
+        }
+
+        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, face);
+        if (handler == null) {
+            itemHandlerCache.remove(key);
+            return null;
+        }
+
+        itemHandlerCache.put(key, new ItemHandlerCacheEntry(
+                new WeakReference<>(blockEntity),
+                new WeakReference<>(handler)));
+        return handler;
     }
 }

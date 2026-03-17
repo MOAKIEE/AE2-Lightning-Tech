@@ -12,13 +12,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.entity.BlockEntityTicker;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
-
-import com.moakiee.ae2lt.registry.ModBlockEntities;
 
 import appeng.block.AEBaseEntityBlock;
 import appeng.block.crafting.PatternProviderBlock;
@@ -57,23 +53,13 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
         builder.add(PatternProviderBlock.PUSH_DIRECTION);
     }
 
-    @SuppressWarnings("unchecked")
-    @Override
-    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state,
-                                                                   BlockEntityType<T> type) {
-        if (!level.isClientSide() && type == ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get()) {
-            return (BlockEntityTicker<T>) (BlockEntityTicker<OverloadedPatternProviderBlockEntity>)
-                    OverloadedPatternProviderBlockEntity::serverTick;
-        }
-        return null;
-    }
-
     @Override
     public void neighborChanged(BlockState state, Level level, BlockPos pos,
                                 Block block, BlockPos fromPos, boolean isMoving) {
         var be = this.getBlockEntity(level, pos);
         if (be != null) {
             be.getLogic().updateRedstoneState();
+            be.onNeighborChanged();
         }
     }
 
@@ -117,5 +103,9 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
         }
 
         level.setBlockAndUpdate(pos, currentState.setValue(PatternProviderBlock.PUSH_DIRECTION, newPushDirection));
+        var be = this.getBlockEntity(level, pos);
+        if (be != null) {
+            be.onNeighborChanged();
+        }
     }
 }

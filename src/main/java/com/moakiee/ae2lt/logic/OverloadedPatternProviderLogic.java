@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.logic;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -23,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
@@ -31,8 +33,12 @@ import appeng.api.config.LockCraftingMode;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
@@ -40,6 +46,7 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.me.helpers.MachineSource;
+import appeng.core.settings.TickRates;
 
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
@@ -85,6 +92,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
     private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
 
+    /** Weak capability cache for wireless energy targets to avoid repeated capability lookup churn. */
+    private final Map<WirelessConnection, EnergyStorageCacheEntry> energyStorageCache = new HashMap<>();
+
     /** Cached output filter derived from loaded patterns. */
     @Nullable
     private AllowedOutputFilter cachedOutputFilter;
@@ -108,6 +118,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Maximum polling interval (cap for exponential growth). */
     private static final int BACKOFF_MAX = 1200;  // 60 seconds
+
+    /** AE2 grid tick range for the overloaded provider's custom scheduler. */
+    private static final int GRID_TICK_MIN = 1;
+    private static final int GRID_TICK_MAX = 20;
 
     /** Refresh the validated wireless-connection view at most once per second. */
     private static final int VALIDATE_INTERVAL = 20;
@@ -148,12 +162,26 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         TARGETS_SATURATED
     }
 
+    private record EnergyStorageCacheEntry(
+            WeakReference<BlockEntity> blockEntityRef,
+            WeakReference<IEnergyStorage> storageRef) {
+        boolean matches(BlockEntity blockEntity) {
+            return blockEntityRef.get() == blockEntity;
+        }
+
+        @Nullable
+        IEnergyStorage getStorage() {
+            return storageRef.get();
+        }
+    }
+
     // ---- construction -----------------------------------------------------------
 
     public OverloadedPatternProviderLogic(IManagedGridNode mainNode,
                                           OverloadedPatternProviderBlockEntity host,
                                           int patternInventorySize) {
         super(mainNode, host, patternInventorySize);
+        mainNode.addService(IGridTickable.class, new Ticker());
         this.overloadedHost = host;
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
@@ -187,6 +215,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         outputFilterDirty = true;
 
         ICraftingProvider.requestUpdate(accessor.getMainNode());
+        alertGridTick();
     }
 
     // ---- pushPattern override ---------------------------------------------------
@@ -528,7 +557,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Unified machine key without transient String allocation. */
     private static MachineId machineKey(ServerLevel level, BlockPos pos, Direction face) {
-        return new MachineId(level.dimension(), pos.asLong(), face);
+        return machineKey(level.dimension(), pos, face);
+    }
+
+    private static MachineId machineKey(ResourceKey<Level> dimension, BlockPos pos, Direction face) {
+        return new MachineId(dimension, pos.asLong(), face);
     }
 
     /**
@@ -738,10 +771,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return 0;
         }
 
-        IEnergyStorage storage = targetLevel.getCapability(
-                Capabilities.EnergyStorage.BLOCK,
-                conn.pos(),
-                conn.boundFace());
+        IEnergyStorage storage = resolveEnergyStorage(targetLevel, conn);
         if (storage == null) {
             return 0;
         }
@@ -769,7 +799,90 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     public void onHostStateChanged() {
         invalidateValidConnectionsCache();
+        invalidateEnergyStorageCache();
         wakeWirelessEnergyWork();
+    }
+
+    public void onNeighborChanged() {
+        invalidateEnergyStorageCache();
+        wakeWirelessEnergyWork();
+    }
+
+    private boolean hasCombinedGridTickWork() {
+        var accessor = (PatternProviderLogicAccessor) this;
+        return accessor.invokeHasWorkToDo() || hasAnyTickWork();
+    }
+
+    private boolean hasActiveOverloadedTickWork(long gameTick) {
+        if (!wirelessSendList.isEmpty()) {
+            return true;
+        }
+        if (shouldTickWirelessEnergyNow(gameTick)) {
+            return true;
+        }
+        return shouldPollAutoReturnNow(gameTick);
+    }
+
+    private boolean shouldTickWirelessEnergyNow(long gameTick) {
+        if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) {
+            return false;
+        }
+        if (!gridNode.isActive() || !isInductionCardInstalled()) {
+            return false;
+        }
+        if (CACHED_APPFLUX_FE_KEY == null || CACHED_APPFLUX_TRANSFER_RATE <= 0) {
+            return false;
+        }
+        return energyWorkDirty
+                || wirelessEnergyCooldownReason == EnergyCooldownReason.NONE
+                || gameTick >= wirelessEnergyCooldownUntilTick;
+    }
+
+    private boolean shouldPollAutoReturnNow(long gameTick) {
+        if (!overloadedHost.isAutoReturn() || !gridNode.isActive()) {
+            return false;
+        }
+        if (getOrBuildOutputFilter().isEmpty()) {
+            return false;
+        }
+        return getNextAutoReturnPollTick() <= gameTick;
+    }
+
+    private long getNextAutoReturnPollTick() {
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) {
+            return Long.MAX_VALUE;
+        }
+
+        long nextPollTick = Long.MAX_VALUE;
+        if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
+            var providerPos = overloadedHost.getBlockPos();
+            var targets = overloadedHost.getTargets();
+            if (targets.isEmpty()) {
+                return Long.MAX_VALUE;
+            }
+
+            for (var dir : targets) {
+                var key = machineKey(sl.dimension(), providerPos.relative(dir), dir.getOpposite());
+                nextPollTick = Math.min(nextPollTick, machineNextPoll.getOrDefault(key, 0L));
+            }
+            return nextPollTick;
+        }
+
+        var connections = overloadedHost.getConnections();
+        if (connections.isEmpty()) {
+            return Long.MAX_VALUE;
+        }
+
+        for (var conn : connections) {
+            var key = machineKey(conn.dimension(), conn.pos(), conn.boundFace());
+            nextPollTick = Math.min(nextPollTick, machineNextPoll.getOrDefault(key, 0L));
+        }
+        return nextPollTick;
+    }
+
+    private void alertGridTick() {
+        gridNode.ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
     }
 
     private void invalidateValidConnectionsCache() {
@@ -780,9 +893,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         singleTargetEnergyMisses = 0;
     }
 
+    private void invalidateEnergyStorageCache() {
+        energyStorageCache.clear();
+    }
+
     private void wakeWirelessEnergyWork() {
         energyWorkDirty = true;
         clearWirelessEnergyCooldown();
+        alertGridTick();
     }
 
     private void clearWirelessEnergyCooldown() {
@@ -820,6 +938,37 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 Actionable.SIMULATE,
                 wirelessSource) > 0);
         return available[0];
+    }
+
+    @Nullable
+    private IEnergyStorage resolveEnergyStorage(ServerLevel targetLevel, WirelessConnection conn) {
+        BlockEntity blockEntity = targetLevel.getBlockEntity(conn.pos());
+        if (blockEntity == null) {
+            energyStorageCache.remove(conn);
+            return null;
+        }
+
+        var cached = energyStorageCache.get(conn);
+        if (cached != null && cached.matches(blockEntity)) {
+            var storage = cached.getStorage();
+            if (storage != null) {
+                return storage;
+            }
+        }
+
+        IEnergyStorage storage = targetLevel.getCapability(
+                Capabilities.EnergyStorage.BLOCK,
+                conn.pos(),
+                conn.boundFace());
+        if (storage == null) {
+            energyStorageCache.remove(conn);
+            return null;
+        }
+
+        energyStorageCache.put(conn, new EnergyStorageCacheEntry(
+                new WeakReference<>(blockEntity),
+                new WeakReference<>(storage)));
+        return storage;
     }
 
     private boolean isInductionCardInstalled() {
@@ -921,6 +1070,42 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return APPFLUX_INDUCTION_CARD;
     }
 
+    private class Ticker implements IGridTickable {
+
+        @Override
+        public TickingRequest getTickingRequest(IGridNode node) {
+            return new TickingRequest(GRID_TICK_MIN, GRID_TICK_MAX, !hasCombinedGridTickWork());
+        }
+
+        @Override
+        public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+            if (!gridNode.isActive()) {
+                return TickRateModulation.SLEEP;
+            }
+
+            var accessor = (PatternProviderLogicAccessor) OverloadedPatternProviderLogic.this;
+            boolean parentDidWork = accessor.invokeDoWork();
+            tickAutoReturn();
+            var level = overloadedHost.getLevel();
+            long gameTick = level instanceof ServerLevel sl ? sl.getGameTime() : Long.MAX_VALUE;
+
+            if (hasActiveOverloadedTickWork(gameTick)) {
+                return TickRateModulation.URGENT;
+            }
+
+            boolean parentHasWork = accessor.invokeHasWorkToDo();
+            if (parentHasWork) {
+                return parentDidWork ? TickRateModulation.URGENT : TickRateModulation.SLOWER;
+            }
+
+            if (hasAnyTickWork()) {
+                return TickRateModulation.SLOWER;
+            }
+
+            return TickRateModulation.SLEEP;
+        }
+    }
+
     // ---- isBusy override --------------------------------------------------------
 
     @Override
@@ -952,6 +1137,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         wirelessSendList.clear();
         wirelessSendConn = null;
         distributionCounts.clear();
+        energyStorageCache.clear();
         machineNextPoll.clear();
         machineBackoff.clear();
         cachedOutputFilter = null;

@@ -140,6 +140,13 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         }
     }
 
+    public void onNeighborChanged() {
+        var logic = getOverloadedLogic();
+        if (logic != null) {
+            logic.onNeighborChanged();
+        }
+    }
+
     /**
      * In WIRELESS mode return an empty set so the vanilla adjacent-block dispatch
      * path (in PatternProviderLogic) finds no targets.
