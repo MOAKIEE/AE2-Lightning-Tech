@@ -28,12 +28,22 @@ public final class OverloadPatternSupport {
 
         var inputs = sourceDetails.getInputs();
         for (int slot = 0; slot < inputs.length; slot++) {
-            builder.input(slot, firstItemTemplate(inputs[slot].getPossibleInputs()));
+            var inputTemplate = firstItemTemplate(inputs[slot].getPossibleInputs());
+            if (!inputTemplate.isEmpty()) {
+                builder.input(slot, inputTemplate);
+            }
         }
 
         var outputs = sourceDetails.getOutputs();
+        boolean primaryOutputAssigned = false;
         for (int slot = 0; slot < outputs.size(); slot++) {
-            builder.output(slot, toItemStack(outputs.get(slot)), slot == 0);
+            var outputStack = toItemStack(outputs.get(slot));
+            if (outputStack.isEmpty()) {
+                continue;
+            }
+
+            builder.output(slot, outputStack, !primaryOutputAssigned);
+            primaryOutputAssigned = true;
         }
 
         return builder.build();
@@ -42,7 +52,7 @@ public final class OverloadPatternSupport {
     public static ItemStack toItemStack(GenericStack stack) {
         Objects.requireNonNull(stack, "stack");
         if (!(stack.what() instanceof AEItemKey itemKey)) {
-            throw new IllegalArgumentException("overload patterns currently only support item stacks");
+            return ItemStack.EMPTY;
         }
         return itemKey.toStack((int) stack.amount());
     }
@@ -53,6 +63,6 @@ public final class OverloadPatternSupport {
                 return itemKey.toStack((int) possible.amount());
             }
         }
-        throw new IllegalArgumentException("overload patterns currently only support item inputs");
+        return ItemStack.EMPTY;
     }
 }

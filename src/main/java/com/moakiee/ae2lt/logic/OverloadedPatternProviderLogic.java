@@ -185,6 +185,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         this.overloadedHost = host;
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
+
+        // Keep automation behavior aligned with the menu slot restriction:
+        // pattern slots only accept encoded patterns, even through external handlers.
+        ((PatternProviderLogicAccessor) this).getPatternInventory()
+                .setFilter((inv, slot, stack) -> PatternDetailsHelper.isEncodedPattern(stack));
     }
 
     @Override
