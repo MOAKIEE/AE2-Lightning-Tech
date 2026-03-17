@@ -47,6 +47,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.me.helpers.MachineSource;
 import appeng.core.settings.TickRates;
+import appeng.util.inv.filter.IAEItemFilter;
 
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
@@ -188,8 +189,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         // Keep automation behavior aligned with the menu slot restriction:
         // pattern slots only accept encoded patterns, even through external handlers.
-        ((PatternProviderLogicAccessor) this).getPatternInventory()
-                .setFilter((inv, slot, stack) -> PatternDetailsHelper.isEncodedPattern(stack));
+        ((PatternProviderLogicAccessor) this).getPatternInventory().setFilter(new IAEItemFilter() {
+            @Override
+            public boolean allowInsert(appeng.api.inventories.InternalInventory inv, int slot, ItemStack stack) {
+                return PatternDetailsHelper.isEncodedPattern(stack);
+            }
+        });
     }
 
     @Override
