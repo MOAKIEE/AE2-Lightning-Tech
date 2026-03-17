@@ -21,8 +21,6 @@ import appeng.helpers.patternprovider.PatternProviderTarget;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.items.IItemHandler;
 
-import com.moakiee.ae2lt.AE2LightningTech;
-
 /**
  * Built-in fallback {@link MachineAdapter} that handles any target reachable
  * through AE2's native APIs:
@@ -130,23 +128,9 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
 
             var key = AEItemKey.of(peek);
             if (key == null) {
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return skipped machine slot because stack did not resolve to AEItemKey. pos={} face={} slot={} stack={}",
-                        pos,
-                        face,
-                        slot,
-                        peek);
                 continue;
             }
             if (!allowedOutputs.matches(key)) {
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return filter rejected machine slot. pos={} face={} slot={} key={} count={} filter={}",
-                        pos,
-                        face,
-                        slot,
-                        key,
-                        peek.getCount(),
-                        allowedOutputs);
                 continue;
             }
 
@@ -154,14 +138,6 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             if (!stack.isEmpty()) {
                 var extractedKey = AEItemKey.of(stack);
                 extracted.add(new GenericStack(extractedKey, stack.getCount()));
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return extracted machine output. pos={} face={} slot={} key={} count={} filter={}",
-                        pos,
-                        face,
-                        slot,
-                        extractedKey,
-                        stack.getCount(),
-                        allowedOutputs);
             }
         }
         return extracted;

@@ -29,7 +29,6 @@ import appeng.api.stacks.KeyCounter;
 import appeng.crafting.CraftingLink;
 import appeng.crafting.inv.ListCraftingInventory;
 
-import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.overload.cpu.InsertContext;
 import com.moakiee.ae2lt.overload.cpu.OverloadClaimResult;
 import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
@@ -155,10 +154,6 @@ public abstract class AdvCraftingCpuLogicMixin {
             return;
         }
 
-        AE2LightningTech.LOGGER.debug(
-                "AAE overload insert: cpu={} item={} remainder={}/{} mode={}",
-                System.identityHashCode(this), what, remainder, ctx.getRequestedAmount(), type);
-
         var claims = OverloadCpuStateManager.INSTANCE.claim(this, what, remainder, type);
         if (!claims.claimedAnything()) {
             return;
@@ -222,11 +217,6 @@ public abstract class AdvCraftingCpuLogicMixin {
                         details.getOutputs(),
                         finalOutputKey,
                         1L);
-                AE2LightningTech.LOGGER.debug(
-                        "AAE overload pattern registered: cpu={} pattern={} finalOutput={}",
-                        System.identityHashCode(this),
-                        overloadDetails.overloadPatternIdentity(),
-                        finalOutputKey);
             }
         }
         return pushed;
@@ -327,10 +317,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (waitingFor == null) return;
 
         for (var claim : claims.claims()) {
-            long deducted = waitingFor.extract(claim.exactExpectedKey(), claim.claimedAmount(), Actionable.MODULATE);
-            AE2LightningTech.LOGGER.debug(
-                    "AAE overload waitingFor deducted: key={} claimed={} deducted={} toRequester={}",
-                    claim.exactExpectedKey(), claim.claimedAmount(), deducted, claim.routesToRequester());
+            waitingFor.extract(claim.exactExpectedKey(), claim.claimedAmount(), Actionable.MODULATE);
         }
     }
 
@@ -380,8 +367,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD == null) return;
         try {
             AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD.setLong(job, remainingAmount);
-        } catch (ReflectiveOperationException e) {
-            AE2LightningTech.LOGGER.warn("[ae2lt] Failed to update AdvancedAE remainingAmount", e);
+        } catch (ReflectiveOperationException ignored) {
         }
     }
 
@@ -399,8 +385,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (timeTracker == null) return;
         try {
             AE2LT_ADV_DECREMENT_ITEMS_METHOD.invoke(timeTracker, amount, keyType);
-        } catch (ReflectiveOperationException e) {
-            AE2LightningTech.LOGGER.warn("[ae2lt] Failed to decrement AdvancedAE elapsed time tracker", e);
+        } catch (ReflectiveOperationException ignored) {
         }
     }
 
@@ -409,8 +394,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_FINISH_JOB_METHOD == null) return;
         try {
             AE2LT_ADV_FINISH_JOB_METHOD.invoke(this, success);
-        } catch (ReflectiveOperationException e) {
-            AE2LightningTech.LOGGER.warn("[ae2lt] Failed to invoke AdvancedAE finishJob", e);
+        } catch (ReflectiveOperationException ignored) {
         }
     }
 
@@ -419,8 +403,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_POST_CHANGE_METHOD == null) return;
         try {
             AE2LT_ADV_POST_CHANGE_METHOD.invoke(this, what);
-        } catch (ReflectiveOperationException e) {
-            AE2LightningTech.LOGGER.warn("[ae2lt] Failed to invoke AdvancedAE postChange", e);
+        } catch (ReflectiveOperationException ignored) {
         }
     }
 
@@ -432,8 +415,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (field == null) return null;
         try {
             return field.get(target);
-        } catch (ReflectiveOperationException e) {
-            AE2LightningTech.LOGGER.warn("[ae2lt] Failed to read field {}", field.getName(), e);
+        } catch (ReflectiveOperationException ignored) {
             return null;
         }
     }
@@ -457,17 +439,6 @@ public abstract class AdvCraftingCpuLogicMixin {
                 && AE2LT_ADV_JOB_LINK_FIELD != null
                 && AE2LT_ADV_DECREMENT_ITEMS_METHOD != null;
 
-        if (!available) {
-            AE2LightningTech.LOGGER.warn(
-                    "[ae2lt] AdvancedAE reflection targets not fully available. "
-                            + "Overload CPU features will be disabled for AdvancedAE CPUs. "
-                            + "This is expected if AdvancedAE is not installed or has an incompatible version.");
-        } else {
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] AdvancedAE reflection targets resolved successfully. "
-                            + "Overload CPU features enabled for AdvancedAE CPUs.");
-        }
-
         return available;
     }
 
@@ -476,8 +447,7 @@ public abstract class AdvCraftingCpuLogicMixin {
     private static Class<?> ae2lt$findClassSafe(String name) {
         try {
             return Class.forName(name);
-        } catch (Exception e) {
-            AE2LightningTech.LOGGER.debug("[ae2lt] AdvancedAE class not found: {} ({})", name, e.getMessage());
+        } catch (Exception ignored) {
             return null;
         }
     }
@@ -490,9 +460,7 @@ public abstract class AdvCraftingCpuLogicMixin {
             var field = owner.getDeclaredField(name);
             field.setAccessible(true);
             return field;
-        } catch (Exception e) {
-            AE2LightningTech.LOGGER.debug("[ae2lt] AdvancedAE field not found: {}.{} ({})",
-                    owner.getSimpleName(), name, e.getMessage());
+        } catch (Exception ignored) {
             return null;
         }
     }
@@ -506,9 +474,7 @@ public abstract class AdvCraftingCpuLogicMixin {
             var method = owner.getDeclaredMethod(name, parameterTypes);
             method.setAccessible(true);
             return method;
-        } catch (Exception e) {
-            AE2LightningTech.LOGGER.debug("[ae2lt] AdvancedAE method not found: {}.{} ({})",
-                    owner.getSimpleName(), name, e.getMessage());
+        } catch (Exception ignored) {
             return null;
         }
     }

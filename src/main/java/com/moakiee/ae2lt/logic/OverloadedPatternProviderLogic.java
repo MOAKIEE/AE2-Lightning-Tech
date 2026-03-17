@@ -39,7 +39,6 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.me.helpers.MachineSource;
 
-import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
@@ -84,6 +83,13 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
     private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
 
+    /** Cached output filter derived from loaded patterns. */
+    @Nullable
+    private AllowedOutputFilter cachedOutputFilter;
+
+    /** Marks the cached output filter dirty when patterns change. */
+    private boolean outputFilterDirty = true;
+
     // ---- auto-return state (per-machine exponential backoff) --------------------
 
     /** Per-machine: game-tick at which the next poll is allowed. */
@@ -97,6 +103,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Maximum polling interval (cap for exponential growth). */
     private static final int BACKOFF_MAX = 1200;  // 60 seconds
+
+    /** Last game tick when wireless connections were validated. */
+    private long lastConnectionValidation = -1;
+
+    /** Validate wireless connections at most once per second. */
+    private static final int VALIDATE_INTERVAL = 20;
 
     // ---- construction -----------------------------------------------------------
 
@@ -115,7 +127,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var patterns = accessor.getPatterns();
         var patternInputs = accessor.getPatternInputs();
         var inventory = accessor.getPatternInventory();
-        int overloadPatternCount = 0;
 
         patterns.clear();
         patternInputs.clear();
@@ -127,9 +138,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (details == null) {
                 continue;
             }
-            if (details instanceof OverloadedProviderOnlyPatternDetails) {
-                overloadPatternCount++;
-            }
 
             patterns.add(details);
             for (var input : details.getInputs()) {
@@ -138,16 +146,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 }
             }
         }
-
-        if (overloadPatternCount > 0) {
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] overloaded provider refreshed patterns. pos={} totalPatterns={} overloadPatterns={} mode={} autoReturn={}",
-                    overloadedHost.getBlockPos(),
-                    patterns.size(),
-                    overloadPatternCount,
-                    overloadedHost.getProviderMode(),
-                    overloadedHost.isAutoReturn());
-        }
+        outputFilterDirty = true;
 
         ICraftingProvider.requestUpdate(accessor.getMainNode());
     }
@@ -161,25 +160,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             flushWirelessSends();
         }
 
-        if (patternDetails instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
-            AE2LightningTech.LOGGER.info(
-                    "[ae2lt] overloaded provider received pushPattern call. pos={} mode={} pattern={} outputs={}",
-                    overloadedHost.getBlockPos(),
-                    overloadedHost.getProviderMode(),
-                    overloadDetails.overloadPatternIdentity(),
-                    patternDetails.getOutputs());
-        }
-
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
             boolean result = super.pushPattern(patternDetails, inputHolder);
-            if (patternDetails instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] overloaded provider pushPattern completed. pos={} mode={} pattern={} result={}",
-                        overloadedHost.getBlockPos(),
-                        overloadedHost.getProviderMode(),
-                        overloadDetails.overloadPatternIdentity(),
-                        result);
-            }
             if (result && overloadedHost.isAutoReturn()) {
                 resetBackoffAllTargets();
             }
@@ -199,8 +181,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!getAvailablePatterns().contains(pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
-        // 3. Clean invalid connections & collect valid targets
-        overloadedHost.clearInvalidConnections();
+        // 3. Collect valid targets
         var connections = overloadedHost.getConnections();
         if (connections.isEmpty()) return false;
 
@@ -398,19 +379,34 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!gridNode.isActive()) return;
 
         // Build the output filter from all loaded patterns
-        var allowedOutputs = collectPatternOutputFilter();
+        var allowedOutputs = getOrBuildOutputFilter();
         if (allowedOutputs.isEmpty()) return;
 
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return;
 
         long gameTick = sl.getGameTime();
+        if (overloadedHost.getProviderMode() == ProviderMode.WIRELESS
+                && gameTick - lastConnectionValidation >= VALIDATE_INTERVAL) {
+            overloadedHost.clearInvalidConnections();
+            lastConnectionValidation = gameTick;
+        }
 
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
             autoReturnNormal(sl, allowedOutputs, gameTick);
         } else {
             autoReturnWireless(sl, allowedOutputs, gameTick);
         }
+    }
+
+    private AllowedOutputFilter getOrBuildOutputFilter() {
+        if (!outputFilterDirty && cachedOutputFilter != null) {
+            return cachedOutputFilter;
+        }
+
+        cachedOutputFilter = collectPatternOutputFilter();
+        outputFilterDirty = false;
+        return cachedOutputFilter;
     }
 
     /**
@@ -451,15 +447,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             var face = dir.getOpposite();
             var outputs = adapter.extractOutputs(level, targetPos, face, allowedOutputs, wirelessSource);
-            if (!outputs.isEmpty()) {
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return polled adjacent machine and extracted outputs. providerPos={} targetPos={} face={} outputs={} filter={}",
-                        providerPos,
-                        targetPos,
-                        face,
-                        outputs,
-                        allowedOutputs);
-            }
             returnToNetwork(outputs);
             updateBackoff(key, gameTick, !outputs.isEmpty());
         }
@@ -479,15 +466,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             var outputs = adapter.extractOutputs(
                     targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
-            if (!outputs.isEmpty()) {
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return polled wireless machine and extracted outputs. providerPos={} targetPos={} face={} outputs={} filter={}",
-                        overloadedHost.getBlockPos(),
-                        conn.pos(),
-                        conn.boundFace(),
-                        outputs,
-                        allowedOutputs);
-            }
             returnToNetwork(outputs);
             updateBackoff(key, gameTick, !outputs.isEmpty());
         }
@@ -537,14 +515,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         gridNode.ifPresent((grid, node) -> {
             var storage = grid.getStorageService().getInventory();
             for (var stack : outputs) {
-                var inserted = storage.insert(stack.what(), stack.amount(),
+                storage.insert(stack.what(), stack.amount(),
                         appeng.api.config.Actionable.MODULATE, wirelessSource);
-                AE2LightningTech.LOGGER.info(
-                        "[ae2lt] auto-return inserted output back into ME network. providerPos={} key={} amount={} inserted={}",
-                        overloadedHost.getBlockPos(),
-                        stack.what(),
-                        stack.amount(),
-                        inserted);
             }
         });
     }
@@ -791,6 +763,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         distributionCounts.clear();
         machineNextPoll.clear();
         machineBackoff.clear();
+        cachedOutputFilter = null;
+        outputFilterDirty = true;
+        lastConnectionValidation = -1;
     }
 
     // ---- NBT persistence --------------------------------------------------------
@@ -833,5 +808,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (tag.contains(TAG_W_SEND_CONN, Tag.TAG_COMPOUND)) {
             wirelessSendConn = WirelessConnection.fromTag(tag.getCompound(TAG_W_SEND_CONN));
         }
+        cachedOutputFilter = null;
+        outputFilterDirty = true;
     }
 }

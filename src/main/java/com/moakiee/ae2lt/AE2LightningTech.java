@@ -6,7 +6,6 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
-import com.mojang.logging.LogUtils;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -23,7 +22,6 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import org.slf4j.Logger;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
@@ -36,7 +34,6 @@ import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
-    public static final Logger LOGGER = LogUtils.getLogger();
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
@@ -126,7 +123,6 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            LOGGER.info("[ae2lt] common setup completed for diagnostics build");
             var controllerBlock = ModBlocks.OVERLOADED_CONTROLLER.get();
             var controllerBeType = ModBlockEntities.OVERLOADED_CONTROLLER.get();
             controllerBlock.setBlockEntity(
@@ -160,7 +156,6 @@ public class AE2LightningTech {
         }
 
         Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
-        LOGGER.info("[ae2lt] registered Applied Flux induction card upgrade compat for overloaded pattern provider.");
     }
 
     private static void registerOptionalClientIntegrations() {
@@ -172,8 +167,7 @@ public class AE2LightningTech {
             Class.forName("com.moakiee.ae2lt.integration.ponder.PonderCompat")
                     .getMethod("register")
                     .invoke(null);
-        } catch (ReflectiveOperationException exception) {
-            LOGGER.error("Failed to register optional Ponder integration.", exception);
+        } catch (ReflectiveOperationException ignored) {
         }
     }
 }

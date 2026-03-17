@@ -225,9 +225,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
             var resolver = new Ae2PlainPatternResolver(getPlayer().level());
             return conversionService.resolveEditableSource(sourceStack, resolver, registryAccess()).orElse(null);
-        } catch (RuntimeException exception) {
-            AE2LightningTech.LOGGER.debug("Failed to load overload pattern encoder source stack {}", sourceStack,
-                    exception);
+        } catch (RuntimeException ignored) {
             return null;
         }
     }
@@ -238,9 +236,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
             try {
                 var payload = overloadPatternItem.readPayload(sourceStack).orElse(null);
                 return payload != null ? payload.sourcePattern().toItemStack(registryAccess()) : null;
-            } catch (RuntimeException exception) {
-                AE2LightningTech.LOGGER.debug("Failed to decode source snapshot from overload pattern {}", sourceStack,
-                        exception);
+            } catch (RuntimeException ignored) {
                 return null;
             }
         }

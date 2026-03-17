@@ -25,7 +25,6 @@ import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 
-import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.overload.cpu.InsertContext;
 import com.moakiee.ae2lt.overload.cpu.OverloadClaimResult;
 import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
@@ -40,11 +39,6 @@ public abstract class CraftingCpuLogicMixin {
     @Unique
     @Nullable
     private InsertContext ae2lt$insertContext;
-
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void ae2lt$logCpuMixinApplied(CraftingCPUCluster cluster, CallbackInfo ci) {
-        AE2LightningTech.LOGGER.trace("CpuLogicMixin applied cpu={}", System.identityHashCode(this));
-    }
 
     @Inject(method = "insert", at = @At("HEAD"))
     private void ae2lt$beginInsertContext(AEKey what, long amount, Actionable type,
@@ -90,21 +84,10 @@ public abstract class CraftingCpuLogicMixin {
             return;
         }
 
-        AE2LightningTech.LOGGER.debug(
-                "Overload insert: cpu={} item={} remainder={}/{} mode={}",
-                System.identityHashCode(logic), what, remainder, ctx.getRequestedAmount(), type);
-
         var claims = OverloadCpuStateManager.INSTANCE.claim(logic, what, remainder, type);
         if (!claims.claimedAnything()) {
-            AE2LightningTech.LOGGER.debug(
-                    "Overload insert: no claim found. cpu={} item={} remainder={}",
-                    System.identityHashCode(logic), what, remainder);
             return;
         }
-
-        AE2LightningTech.LOGGER.debug(
-                "Overload insert: claimed {} for cpu={} item={} mode={}",
-                claims.claimedAmount(), System.identityHashCode(logic), what, type);
 
         long supplementalReturn = 0;
         if (type == Actionable.MODULATE) {
@@ -142,10 +125,6 @@ public abstract class CraftingCpuLogicMixin {
                     logic,
                     patternReference,
                     overloadDetails.overloadPatternDetailsView())) {
-                AE2LightningTech.LOGGER.debug(
-                        "Deferring overload pattern push because concurrent ID_ONLY outputs with the same item id "
-                                + "would become ambiguous. pattern={}",
-                        overloadDetails.overloadPatternIdentity());
                 return false;
             }
         }
@@ -167,11 +146,6 @@ public abstract class CraftingCpuLogicMixin {
                     details.getOutputs(),
                     finalOutputKey,
                     1L);
-            AE2LightningTech.LOGGER.debug(
-                    "Overload pattern registered: cpu={} pattern={} finalOutput={}",
-                    System.identityHashCode(logic),
-                    overloadDetails.overloadPatternIdentity(),
-                    finalOutputKey);
         }
         return pushed;
     }
@@ -262,10 +236,7 @@ public abstract class CraftingCpuLogicMixin {
     private void ae2lt$deductClaimedWaitingFor(ExecutingCraftingJob job, OverloadClaimResult claims) {
         var waitingFor = ((ExecutingCraftingJobAccessor) job).getWaitingFor();
         for (var claim : claims.claims()) {
-            long deducted = waitingFor.extract(claim.exactExpectedKey(), claim.claimedAmount(), Actionable.MODULATE);
-            AE2LightningTech.LOGGER.debug(
-                    "Overload waitingFor deducted: key={} claimed={} deducted={} toRequester={}",
-                    claim.exactExpectedKey(), claim.claimedAmount(), deducted, claim.routesToRequester());
+            waitingFor.extract(claim.exactExpectedKey(), claim.claimedAmount(), Actionable.MODULATE);
         }
     }
 
