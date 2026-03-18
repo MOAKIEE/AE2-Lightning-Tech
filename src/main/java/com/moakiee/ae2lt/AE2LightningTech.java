@@ -43,10 +43,16 @@ public class AE2LightningTech {
             CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.ae2lt"))
                     .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
-                    .icon(() -> ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL.get().asItem().getDefaultInstance())
+                    .icon(() -> ModItems.OVERLOAD_CRYSTAL.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
+                        output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);
+                        output.accept(ModItems.OVERLOAD_PROCESSOR);
+                        output.accept(ModItems.OVERLOAD_ALLOY);
+                        output.accept(ModItems.OVERLOAD_ALLOY_PLATE);
+                        output.accept(ModItems.OVERLOAD_SINGULARITY);
+                        output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);

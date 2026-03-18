@@ -24,6 +24,24 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL_DUST =
             ITEMS.registerSimpleItem("overload_crystal_dust", new Item.Properties());
 
+    public static final DeferredItem<Item> OVERLOAD_CIRCUIT_BOARD =
+            ITEMS.registerSimpleItem("overload_circuit_board", new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_PROCESSOR =
+            ITEMS.registerSimpleItem("overload_processor", new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_ALLOY =
+            ITEMS.registerSimpleItem("overload_alloy", new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_ALLOY_PLATE =
+            ITEMS.registerSimpleItem("overload_alloy_plate", new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_SINGULARITY =
+            ITEMS.registerSimpleItem("overload_singularity", new Item.Properties());
+
+    public static final DeferredItem<Item> ULTIMATE_OVERLOAD_CORE =
+            ITEMS.registerSimpleItem("ultimate_overload_core", new Item.Properties());
+
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECTOR = ITEMS.registerItem(
             "overloaded_wireless_connector",
             OverloadedWirelessConnectorItem::new,
