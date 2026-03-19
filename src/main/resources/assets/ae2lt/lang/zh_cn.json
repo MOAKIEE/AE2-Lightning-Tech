@@ -23,6 +23,7 @@
   "jei.ae2lt.overload_growth.getting": "将 AE2 不同等级的赛特斯石英母岩放入充能器，可得到对应链路中的过载水晶母岩。",
   "jei.ae2lt.overload_growth.acceleration": "水晶生长加速器会影响过载水晶生长。",
   "block.ae2lt.overload_crystal_block": "过载水晶块",
+  "block.ae2lt.silicon_block": "硅块",
   "block.ae2lt.overload_tnt": "过载TNT",
   "block.ae2lt.high_voltage_aggregator": "高压聚合器",
   "block.ae2lt.flawless_budding_overload_crystal": "无瑕的过载水晶母岩",
