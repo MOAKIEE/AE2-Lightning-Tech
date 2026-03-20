@@ -10,6 +10,7 @@ group = mod_group_id
 
 repositories {
     mavenLocal()
+    mavenCentral()
     maven {
         url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
     }
@@ -109,10 +110,19 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:7027323"
+    runtimeOnly "org.appliedenergistics:guideme:${guideme_version}"
     compileOnly "curse.maven:jei-238222:7391682"
+    runtimeOnly "curse.maven:jei-238222:7391682"
     compileOnly "curse.maven:jade-324717:5427817"
     runtimeOnly "curse.maven:jade-324717:5427817"
     implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
+    runtimeOnly "curse.maven:mekanism-268560:7621971"
+    runtimeOnly "curse.maven:extendedae-892005:7727948"
+    runtimeOnly "curse.maven:glodium-957920:5821676"
+    runtimeOnly "curse.maven:advancedae-1084104:7668664"
+    runtimeOnly "curse.maven:geckolib-388172:7707149"
+    runtimeOnly "curse.maven:applied-flux-965012:7429565"
+    runtimeOnly "curse.maven:just-enough-characters-250702:7320033"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

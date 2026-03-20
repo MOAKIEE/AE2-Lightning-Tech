@@ -36,6 +36,7 @@
   "block.ae2lt.overload_crystal_cluster": "过载水晶簇",
   "block.ae2lt.overloaded_controller": "过载 ME 控制器",
   "block.ae2lt.overloaded_pattern_provider": "过载样板供应器",
+  "config.jade.plugin_ae2lt.high_voltage_aggregator": "高压聚合器",
   "jade.ae2lt.high_voltage_aggregator.mode": "模式：%s",
   "jade.ae2lt.high_voltage_aggregator.mode.standby": "待机",
   "jade.ae2lt.high_voltage_aggregator.mode.high": "高压",
