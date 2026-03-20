@@ -40,13 +40,9 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
         this.sourceDetails = Objects.requireNonNull(sourceDetails, "sourceDetails");
 
         var sourceInputs = sourceDetails.getInputs();
-        if (sourceInputs.length != overloadDetails.inputs().size()) {
-            throw new IllegalArgumentException("input slot count mismatch between source and overload details");
-        }
-
         this.inputs = new IInput[sourceInputs.length];
         for (int slot = 0; slot < sourceInputs.length; slot++) {
-            this.inputs[slot] = new OverloadInput(sourceInputs[slot], overloadDetails.inputs().get(slot).matchMode());
+            this.inputs[slot] = wrapInput(sourceInputs[slot], overloadDetails.inputMode(slot));
         }
         this.outputs = List.copyOf(sourceDetails.getOutputs());
     }
@@ -223,11 +219,27 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
         for (int slot = 0; slot < sourceInputs.length; slot++) {
             for (var possibleInput : sourceInputs[slot].getPossibleInputs()) {
                 if (possibleInput.what().equals(expectedKey)) {
-                    return overloadDetails.inputs().get(slot).matchMode();
+                    return overloadDetails.inputMode(slot);
                 }
             }
         }
         return MatchMode.STRICT;
+    }
+
+    private static IInput wrapInput(IInput sourceInput, MatchMode matchMode) {
+        if (matchMode != MatchMode.ID_ONLY || !hasItemVariants(sourceInput.getPossibleInputs())) {
+            return sourceInput;
+        }
+        return new OverloadInput(sourceInput, matchMode);
+    }
+
+    private static boolean hasItemVariants(GenericStack[] possibleInputs) {
+        for (var possibleInput : possibleInputs) {
+            if (possibleInput.what() instanceof AEItemKey) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void pushStrictInput(
