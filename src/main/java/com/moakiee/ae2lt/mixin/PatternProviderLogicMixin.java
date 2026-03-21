@@ -12,7 +12,6 @@ import net.minecraft.world.level.Level;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.helpers.patternprovider.PatternProviderLogic;
-
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 
 /**
@@ -23,6 +22,7 @@ import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
  */
 @Mixin(PatternProviderLogic.class)
 public abstract class PatternProviderLogicMixin {
+
     @WrapOperation(
             method = "updatePatterns",
             at = @At(

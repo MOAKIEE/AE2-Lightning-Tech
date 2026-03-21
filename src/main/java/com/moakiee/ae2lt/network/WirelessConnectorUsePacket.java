@@ -109,6 +109,13 @@ public record WirelessConnectorUsePacket(
             return;
         }
 
+        if (level.getBlockEntity(pos) instanceof OverloadedPatternProviderBlockEntity) {
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.cannot_bind_provider")
+                            .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         var targets = WirelessConnectorTargetHelper.collectTargets(level, pos, contiguous);
         if (targets.isEmpty()) {
             player.displayClientMessage(

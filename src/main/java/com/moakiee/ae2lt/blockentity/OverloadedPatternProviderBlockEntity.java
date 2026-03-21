@@ -57,17 +57,20 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  */
 public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity {
 
+    /** Pattern slots displayed per GUI page. */
+    public static final int SLOTS_PER_PAGE = 36;
+
     // -- Custom fields --
 
     /** Operating mode: NORMAL (adjacent) or WIRELESS (remote). */
     public enum ProviderMode { NORMAL, WIRELESS }
 
-    /** Wireless dispatch strategy: one machine at a time, or split evenly. */
-    public enum WirelessStrategy { SINGLE_TARGET, EVEN_DISTRIBUTION }
+    /** Return mode: OFF (no auto-return), AUTO (active extraction), EJECT (virtual output hatch). */
+    public enum ReturnMode { OFF, AUTO, EJECT }
 
     private ProviderMode providerMode = ProviderMode.NORMAL;
-    private boolean autoReturn = false;
-    private WirelessStrategy wirelessStrategy = WirelessStrategy.SINGLE_TARGET;
+    private ReturnMode returnMode = ReturnMode.OFF;
+    private boolean filteredImport = false;
 
     /** Active wireless connection records. */
     private final List<WirelessConnection> connections = new ArrayList<>();
@@ -115,9 +118,27 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super(ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(), pos, blockState);
     }
 
+    protected OverloadedPatternProviderBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type,
+                                                    BlockPos pos, BlockState blockState) {
+        super(type, pos, blockState);
+    }
+
+    public int getTotalPatternCapacity() {
+        return SLOTS_PER_PAGE;
+    }
+
     @Override
     protected PatternProviderLogic createLogic() {
-        return new OverloadedPatternProviderLogic(this.getMainNode(), this, 36);
+        return new OverloadedPatternProviderLogic(this.getMainNode(), this, getTotalPatternCapacity());
+    }
+
+    @Override
+    public void onReady() {
+        var logic = getOverloadedLogic();
+        if (logic != null) {
+            logic.onBlockEntityReady();
+        }
+        super.onReady();
     }
 
     // -- Server tick --
@@ -187,22 +208,35 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         markForClientUpdate();
     }
 
-    public boolean isAutoReturn() {
-        return autoReturn;
+    public ReturnMode getReturnMode() {
+        return returnMode;
     }
 
-    public void setAutoReturn(boolean autoReturn) {
-        if (this.autoReturn == autoReturn) {
+    public void setReturnMode(ReturnMode mode) {
+        if (this.returnMode == mode) {
             return;
         }
-        this.autoReturn = autoReturn;
+        this.returnMode = mode;
         notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
     }
 
-    public WirelessStrategy getWirelessStrategy() {
-        return wirelessStrategy;
+    public boolean isAutoReturn() {
+        return returnMode != ReturnMode.OFF;
+    }
+
+    public boolean isFilteredImport() {
+        return filteredImport;
+    }
+
+    public void setFilteredImport(boolean filteredImport) {
+        if (this.filteredImport == filteredImport) {
+            return;
+        }
+        this.filteredImport = filteredImport;
+        saveChanges();
+        markForClientUpdate();
     }
 
     /**
@@ -211,16 +245,6 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
      */
     public InternalInventory getExposedPatternInventory() {
         return getLogic().getPatternInv();
-    }
-
-    public void setWirelessStrategy(WirelessStrategy wirelessStrategy) {
-        if (this.wirelessStrategy == wirelessStrategy) {
-            return;
-        }
-        this.wirelessStrategy = wirelessStrategy;
-        notifyLogicStateChanged();
-        saveChanges();
-        markForClientUpdate();
     }
 
     // -- Connection management --
@@ -314,8 +338,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     protected void writeToStream(RegistryFriendlyByteBuf data) {
         super.writeToStream(data);
         data.writeByte(providerMode.ordinal());
-        data.writeBoolean(autoReturn);
-        data.writeByte(wirelessStrategy.ordinal());
+        data.writeByte(returnMode.ordinal());
+        data.writeBoolean(filteredImport);
         data.writeVarInt(connections.size());
         for (var conn : connections) {
             data.writeResourceLocation(conn.dimension().location());
@@ -328,8 +352,10 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         var newMode = ProviderMode.values()[data.readByte()];
-        var newAutoReturn = data.readBoolean();
-        var newStrategy = WirelessStrategy.values()[data.readByte()];
+        var rmOrd = data.readByte();
+        var newReturnMode = rmOrd >= 0 && rmOrd < ReturnMode.values().length
+                ? ReturnMode.values()[rmOrd] : ReturnMode.OFF;
+        var newFilteredImport = data.readBoolean();
         int count = data.readVarInt();
         var newConns = new ArrayList<WirelessConnection>(count);
         for (int i = 0; i < count; i++) {
@@ -338,11 +364,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             var face = Direction.from3DDataValue(data.readByte());
             newConns.add(new WirelessConnection(dim, pos, face));
         }
-        if (newMode != providerMode || newAutoReturn != autoReturn || newStrategy != wirelessStrategy
+        if (newMode != providerMode || newReturnMode != returnMode
+                || newFilteredImport != filteredImport
                 || !newConns.equals(connections)) {
             providerMode = newMode;
-            autoReturn = newAutoReturn;
-            wirelessStrategy = newStrategy;
+            returnMode = newReturnMode;
+            filteredImport = newFilteredImport;
             connections.clear();
             connections.addAll(newConns);
             notifyLogicStateChanged();
@@ -355,15 +382,16 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     private static final String TAG_PROVIDER_MODE = "OverloadMode";
     private static final String TAG_AUTO_RETURN = "AutoReturn";
-    private static final String TAG_WIRELESS_STRATEGY = "WirelessStrategy";
+    private static final String TAG_RETURN_MODE = "ReturnMode";
+    private static final String TAG_FILTERED_IMPORT = "FilteredImport";
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
     @Override
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         super.saveAdditional(data, registries);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
-        data.putBoolean(TAG_AUTO_RETURN, autoReturn);
-        data.putString(TAG_WIRELESS_STRATEGY, wirelessStrategy.name());
+        data.putString(TAG_RETURN_MODE, returnMode.name());
+        data.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
 
         var connList = new ListTag();
         for (var conn : connections) {
@@ -382,15 +410,16 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 providerMode = ProviderMode.NORMAL;
             }
         }
-        autoReturn = data.getBoolean(TAG_AUTO_RETURN);
-        if (data.contains(TAG_WIRELESS_STRATEGY)) {
+        if (data.contains(TAG_RETURN_MODE)) {
             try {
-                wirelessStrategy = WirelessStrategy.valueOf(data.getString(TAG_WIRELESS_STRATEGY));
+                returnMode = ReturnMode.valueOf(data.getString(TAG_RETURN_MODE));
             } catch (IllegalArgumentException ignored) {
-                wirelessStrategy = WirelessStrategy.SINGLE_TARGET;
+                returnMode = ReturnMode.OFF;
             }
+        } else if (data.contains(TAG_AUTO_RETURN)) {
+            returnMode = data.getBoolean(TAG_AUTO_RETURN) ? ReturnMode.AUTO : ReturnMode.OFF;
         }
-
+        filteredImport = data.getBoolean(TAG_FILTERED_IMPORT);
         connections.clear();
         if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
             var connList = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
@@ -399,6 +428,23 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         }
         notifyLogicStateChanged();
+    }
+
+    // -- Cleanup --
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        var removed = com.moakiee.ae2lt.logic.EjectModeRegistry.unregisterAll(this);
+        if (level instanceof net.minecraft.server.level.ServerLevel sl) {
+            var server = sl.getServer();
+            for (var dp : removed) {
+                var targetLevel = server.getLevel(dp.dimension());
+                if (targetLevel != null) {
+                    targetLevel.invalidateCapabilities(dp.pos());
+                }
+            }
+        }
     }
 
     // -- Menu binding --
