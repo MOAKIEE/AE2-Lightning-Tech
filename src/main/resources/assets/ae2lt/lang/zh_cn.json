@@ -98,5 +98,19 @@
   "ae2lt.connector.need_wireless": "需要先开启无线模式",
   "ae2lt.connector.cannot_bind_provider": "不能将过载样板供应器绑定到另一个样板供应器",
   "ae2lt.gui.filtered_import.on": "输入过滤：开（仅允许样板产物）",
-  "ae2lt.gui.filtered_import.off": "输入过滤：关"
+  "ae2lt.gui.filtered_import.off": "输入过滤：关",
+  "block.ae2lt.lightning_simulation_chamber": "雷击模拟室",
+  "block.ae2lt.lightning_simulation_chamber.working": "工作中的雷击模拟室",
+  "ae2lt.gui.lightning_simulation.auto_export.title": "自动弹出",
+  "ae2lt.gui.lightning_simulation.auto_export.on": "自动弹出已开启",
+  "ae2lt.gui.lightning_simulation.auto_export.off": "自动弹出已关闭",
+  "ae2lt.gui.lightning_simulation.configure_output": "配置输出面",
+  "ae2lt.gui.lightning_simulation.output_config": "输出面配置",
+  "ae2lt.gui.lightning_simulation.output_side.clear": "清空输出面",
+  "ae2lt.gui.lightning_simulation.output_side.enabled": "该面允许自动弹出",
+  "ae2lt.gui.lightning_simulation.output_side.disabled": "该面禁止自动弹出",
+  "ae2lt.gui.lightning_simulation.energy.title": "FE 储量",
+  "ae2lt.gui.lightning_simulation.energy.tooltip": "%s / %s FE",
+  "ae2lt.gui.lightning_simulation.progress": "进度：%s%%",
+  "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE"
 }

@@ -1,0 +1,64 @@
+{
+  "format_version": "1.9.0",
+  "credit": "Made with _leng",
+  "textures": {
+    "particle": "ae2lt:block/particle",
+    "work": "ae2lt:block/ae2lt_lightning_simulation_room_light"
+  },
+  "elements": [
+    {
+      "from": [6.998, 6.998, 6.998],
+      "to": [9.002, 8.002, 9.002],
+      "faces": {
+        "north": {"uv": [2, 0, 4, 1], "texture": "#work"},
+        "east": {"uv": [0, 2, 2, 3], "texture": "#work"},
+        "south": {"uv": [2, 3, 4, 4], "texture": "#work"},
+        "west": {"uv": [4, 2, 6, 3], "texture": "#work"},
+        "down": {"uv": [4, 1, 2, 3], "texture": "#work"}
+      }
+    },
+    {
+      "from": [6, 14, 3.999],
+      "to": [10, 16, 3.999],
+      "faces": {
+        "north": {"uv": [12, 0, 16, 2], "texture": "#work"}
+      }
+    }
+  ],
+  "display": {
+    "thirdperson_righthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 3.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "thirdperson_lefthand": {
+      "rotation": [75, 45, 0],
+      "translation": [0, 3.5, 0],
+      "scale": [0.375, 0.375, 0.375]
+    },
+    "firstperson_righthand": {
+      "rotation": [0, 45, 0],
+      "translation": [-1, 2, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "firstperson_lefthand": {
+      "rotation": [0, 50.25, 0],
+      "translation": [-1, 2.25, 0],
+      "scale": [0.4, 0.4, 0.4]
+    },
+    "ground": {
+      "translation": [0, 2, 0],
+      "scale": [0.5, 0.5, 0.5]
+    },
+    "gui": {
+      "rotation": [30, -135, 0],
+      "scale": [0.625, 0.625, 0.625]
+    },
+    "head": {
+      "translation": [0, 14, 0]
+    },
+    "fixed": {
+      "rotation": [0, -90, 0]
+    }
+  }
+}

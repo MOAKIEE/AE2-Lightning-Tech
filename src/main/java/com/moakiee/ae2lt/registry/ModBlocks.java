@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
+import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
@@ -64,6 +65,9 @@ public final class ModBlocks {
                     .sound(SoundType.COPPER)
                     .forceSolidOn()
                     .noOcclusion()));
+
+    public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
+            registerBlock("lightning_simulation_chamber", LightningSimulationChamberBlock::new);
 
     public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
             registerBlock("overloaded_controller", OverloadedControllerBlock::new);

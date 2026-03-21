@@ -1,0 +1,191 @@
+package com.moakiee.ae2lt.machine.lightningchamber;
+
+import java.util.Optional;
+
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.networking.ticking.TickRateModulation;
+import appeng.api.networking.ticking.TickingRequest;
+import appeng.api.upgrades.IUpgradeableObject;
+import appeng.core.definitions.AEItems;
+
+import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationLockedRecipe;
+import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeCandidate;
+import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
+
+/**
+ * AE grid tick driver for the lightning simulation chamber.
+ *
+ * <p>No normal BlockEntity ticker is used for processing. Recipe progression is
+ * advanced exclusively from AE grid ticks, while FE remains the energy source.</p>
+ */
+public final class LightningSimulationChamberLogic implements IGridTickable {
+    public static final int MIN_PROCESS_TICKS = 5;
+    public static final long BASE_MAX_ENERGY_PER_TICK = 200L;
+
+    private final LightningSimulationChamberBlockEntity host;
+
+    public LightningSimulationChamberLogic(LightningSimulationChamberBlockEntity host) {
+        this.host = host;
+    }
+
+    @Override
+    public TickingRequest getTickingRequest(IGridNode node) {
+        return new TickingRequest(1, 20, !hasGridTickWork());
+    }
+
+    @Override
+    public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
+        if (host.isRemoved() || host.getLevel() == null || host.isClientSide()) {
+            return TickRateModulation.SLEEP;
+        }
+
+        if (!host.hasLockedRecipe()) {
+            tryStartProcessing();
+        }
+
+        if (!host.hasLockedRecipe()) {
+            host.setWorking(false);
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return host.hasAutoExportWork() ? TickRateModulation.SLOWER : TickRateModulation.SLEEP;
+        }
+
+        host.setWorking(true);
+
+        Optional<LightningSimulationLockedRecipe> lockedRecipe = host.getLockedRecipe();
+        if (lockedRecipe.isEmpty()) {
+            host.setWorking(false);
+            return TickRateModulation.SLEEP;
+        }
+
+        Optional<LightningSimulationRecipeCandidate> lockedCandidate = validateLockedRecipe(lockedRecipe.get());
+        if (lockedCandidate.isEmpty()) {
+            host.abortProcessing();
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return host.hasAutoExportWork() ? TickRateModulation.SLOWER : TickRateModulation.SLEEP;
+        }
+
+        return tickActiveRecipe(lockedRecipe.get(), lockedCandidate.get());
+    }
+
+    public void onStateChanged() {
+        host.getMainNode().ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
+    }
+
+    public boolean hasGridTickWork() {
+        return host.hasLockedRecipe() || host.findProcessableRecipe().isPresent() || host.hasAutoExportWork();
+    }
+
+    public long getCurrentMaxEnergyPerTick() {
+        int speedCards = 0;
+        if (host instanceof IUpgradeableObject upgradeableObject) {
+            speedCards = upgradeableObject.getInstalledUpgrades(AEItems.SPEED_CARD);
+        }
+
+        return switch (speedCards) {
+            case 0 -> 200L;
+            case 1 -> 2_000L;
+            case 2 -> 10_000L;
+            case 3 -> 50_000L;
+            default -> 200_000L;
+        };
+    }
+
+    public long getMinDurationLimitedMaxEnergyPerTick(long remainingEnergy, int processingTicksSpent) {
+        int remainingRequiredTicks = Math.max(1, MIN_PROCESS_TICKS - processingTicksSpent);
+        return divideCeil(remainingEnergy, remainingRequiredTicks);
+    }
+
+    public long computeEnergyToConsumeThisTick(LightningSimulationLockedRecipe lockedRecipe) {
+        long remainingEnergy = lockedRecipe.totalEnergy() - host.getConsumedEnergy();
+        if (remainingEnergy <= 0) {
+            return 0L;
+        }
+
+        long upgradedMachineCap = getCurrentMaxEnergyPerTick();
+        long minDurationLimitedCap = getMinDurationLimitedMaxEnergyPerTick(
+                remainingEnergy,
+                host.getProcessingTicksSpent());
+        long availableFe = host.getEnergyStorage().getStoredEnergyLong();
+
+        return Math.min(
+                Math.min(upgradedMachineCap, minDurationLimitedCap),
+                Math.min(availableFe, remainingEnergy));
+    }
+
+    private TickRateModulation tickActiveRecipe(
+            LightningSimulationLockedRecipe lockedRecipe,
+            LightningSimulationRecipeCandidate lockedCandidate) {
+        if (host.getConsumedEnergy() >= lockedRecipe.totalEnergy()) {
+            completeRecipe(lockedCandidate);
+            return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
+        }
+
+        long toConsume = computeEnergyToConsumeThisTick(lockedRecipe);
+        if (toConsume <= 0) {
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return TickRateModulation.SLEEP;
+        }
+
+        int consumed = host.getEnergyStorage().extractInternal(toConsume, false);
+        if (consumed <= 0) {
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return TickRateModulation.SLEEP;
+        }
+
+        host.addConsumedEnergy(consumed);
+        host.incrementProcessingTicksSpent();
+
+        if (host.getConsumedEnergy() >= lockedRecipe.totalEnergy()) {
+            completeRecipe(lockedCandidate);
+            return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
+        }
+
+        host.pushOutResult();
+        return TickRateModulation.URGENT;
+    }
+
+    private void tryStartProcessing() {
+        Optional<LightningSimulationLockedRecipe> lockedRecipe = host.lockCurrentRecipe();
+        if (lockedRecipe.isEmpty()) {
+            host.resetProgressState();
+            host.setWorking(false);
+            return;
+        }
+
+        host.resetProgressState();
+        host.setWorking(true);
+    }
+
+    private Optional<LightningSimulationRecipeCandidate> validateLockedRecipe(LightningSimulationLockedRecipe lockedRecipe) {
+        return LightningSimulationRecipeService.findLockedRecipeMatch(
+                host.getLevel(),
+                host.getInventory(),
+                lockedRecipe);
+    }
+
+    private void completeRecipe(LightningSimulationRecipeCandidate lockedCandidate) {
+        if (!host.completeLockedRecipe(lockedCandidate)) {
+            host.abortProcessing();
+        }
+    }
+
+    private static long divideCeil(long dividend, long divisor) {
+        if (divisor <= 0) {
+            throw new IllegalArgumentException("divisor must be positive");
+        }
+        if (dividend <= 0) {
+            return 0L;
+        }
+        return (dividend + divisor - 1L) / divisor;
+    }
+}

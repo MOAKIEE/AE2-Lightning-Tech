@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.registries.Registries;
@@ -29,6 +30,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedControllerBlockEntity::new,
                             ModBlocks.OVERLOADED_CONTROLLER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LightningSimulationChamberBlockEntity>>
+            LIGHTNING_SIMULATION_CHAMBER = BLOCK_ENTITY_TYPES.register(
+                    "lightning_simulation_chamber",
+                    () -> BlockEntityType.Builder.of(
+                            LightningSimulationChamberBlockEntity::new,
+                            ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPatternProviderBlockEntity>>

@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -29,6 +30,7 @@ import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.upgrades.Upgrades;
+import appeng.core.definitions.AEItems;
 
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -58,6 +60,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
+                        output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
                         output.accept(ModItems.OVERLOADED_CABLE_WHITE);
@@ -112,10 +115,25 @@ public class AE2LightningTech {
                 ModBlockEntities.HIGH_VOLTAGE_AGGREGATOR.get(),
                 (blockEntity, side) -> side == Direction.UP ? null : blockEntity.getEnergyStorage());
 
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -152,6 +170,14 @@ public class AE2LightningTech {
                     null,
                     OverloadedControllerBlockEntity::serverTick);
 
+            var lightningChamberBlock = ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get();
+            var lightningChamberBeType = ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get();
+            lightningChamberBlock.setBlockEntity(
+                    LightningSimulationChamberBlockEntity.class,
+                    lightningChamberBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(
@@ -164,6 +190,8 @@ public class AE2LightningTech {
             // Register built-in machine adapters (AE2-native fallback)
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
+            Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
+                    LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
 
             registerAppliedFluxInductionCardCompat();
         });
