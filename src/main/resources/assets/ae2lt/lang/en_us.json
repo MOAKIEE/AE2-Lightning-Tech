@@ -36,6 +36,7 @@
   "block.ae2lt.overload_crystal_cluster": "Overload Crystal Cluster",
   "block.ae2lt.overloaded_controller": "Overloaded ME Controller",
   "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
+  "block.ae2lt.extended_pattern_provider": "Extended Overloaded Pattern Provider",
   "config.jade.plugin_ae2lt.high_voltage_aggregator": "High Voltage Aggregator",
   "jade.ae2lt.high_voltage_aggregator.mode": "Mode: %s",
   "jade.ae2lt.high_voltage_aggregator.mode.standby": "Standby",
@@ -61,8 +62,9 @@
   "tooltip.ae2lt.overload_pattern.provider_only": "Only usable in an Overloaded Pattern Provider",
   "ae2lt.gui.auto_return.on": "Auto Return: ON",
   "ae2lt.gui.auto_return.off": "Auto Return: OFF",
-  "ae2lt.gui.wireless_strategy.single": "Single Target",
-  "ae2lt.gui.wireless_strategy.even": "Even Distribution",
+  "ae2lt.gui.return_mode.off": "Return Mode: OFF",
+  "ae2lt.gui.return_mode.auto": "Return Mode: AUTO",
+  "ae2lt.gui.return_mode.eject": "Return Mode: EJECT",
   "item.ae2lt.overloaded_wireless_connector": "Overloaded Wireless Connector",
   "item.ae2lt.overloaded_cable": "Fluix ME Overloaded Cable",
   "item.ae2lt.overloaded_cable_white": "White ME Overloaded Cable",
@@ -92,5 +94,8 @@
   "ae2lt.connector.connected": "Connected to [%d, %d, %d] face %s",
   "ae2lt.connector.connected_many": "Connected %d machines to face %s",
   "ae2lt.connector.deselected": "Overloaded Pattern Provider deselected",
-  "ae2lt.connector.need_wireless": "Please enable wireless mode first"
+  "ae2lt.connector.need_wireless": "Please enable wireless mode first",
+  "ae2lt.connector.cannot_bind_provider": "Cannot bind an Overloaded Pattern Provider to another Pattern Provider",
+  "ae2lt.gui.filtered_import.on": "Filtered Import: ON (Pattern outputs only)",
+  "ae2lt.gui.filtered_import.off": "Filtered Import: OFF"
 }

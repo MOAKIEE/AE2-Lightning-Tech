@@ -40,13 +40,15 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
         this.sourceDetails = Objects.requireNonNull(sourceDetails, "sourceDetails");
 
         var sourceInputs = sourceDetails.getInputs();
-        if (sourceInputs.length != overloadDetails.inputs().size()) {
-            throw new IllegalArgumentException("input slot count mismatch between source and overload details");
-        }
 
         this.inputs = new IInput[sourceInputs.length];
         for (int slot = 0; slot < sourceInputs.length; slot++) {
-            this.inputs[slot] = new OverloadInput(sourceInputs[slot], overloadDetails.inputs().get(slot).matchMode());
+            var sourceInput = sourceInputs[slot];
+            if (hasItemInputs(sourceInput.getPossibleInputs())) {
+                this.inputs[slot] = new OverloadInput(sourceInput, overloadDetails.inputMode(slot));
+            } else {
+                this.inputs[slot] = sourceInput;
+            }
         }
         this.outputs = List.copyOf(sourceDetails.getOutputs());
     }
@@ -112,6 +114,15 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
     @Override
     public int hashCode() {
         return definition.hashCode();
+    }
+
+    private static boolean hasItemInputs(GenericStack[] possibleInputs) {
+        for (var possible : possibleInputs) {
+            if (possible.what() instanceof AEItemKey) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static final class OverloadInput implements IInput {

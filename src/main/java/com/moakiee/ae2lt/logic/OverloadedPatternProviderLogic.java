@@ -44,14 +44,19 @@ import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderReturnInventory;
+import appeng.helpers.patternprovider.PatternProviderTarget;
 import appeng.me.helpers.MachineSource;
+import appeng.api.storage.AEKeySlotFilter;
 import appeng.util.inv.filter.IAEItemFilter;
 
+import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
-import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessStrategy;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
+
 import com.moakiee.ae2lt.overload.model.MatchMode;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 
@@ -66,9 +71,23 @@ import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
  */
 public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
+    private final UnlimitedReturnInventory unlimitedReturnInv;
+    /** Full return inventory with totalPages * 9 slots; same as unlimitedReturnInv when pages == 1. */
+    private final UnlimitedReturnInventory fullReturnInv;
+    /** 9-slot return page view exposed via getReturnInv() for the GUI. */
+    private final UnlimitedReturnInventory returnPageView;
+    private boolean returnSyncing = false;
+
     private final OverloadedPatternProviderBlockEntity overloadedHost;
     private final IManagedGridNode gridNode;
     private final IActionSource wirelessSource;
+    private final int totalCapacity;
+
+    /** Currently displayed page index (0-based). */
+    private int currentPage = 0;
+
+    /** Set by readFromNBT when Level is not yet available; consumed by onReady(). */
+    private boolean needsSavedDataLoad = false;
 
     // ---- wireless dispatch state ------------------------------------------------
 
@@ -156,11 +175,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Last game tick when single-machine pre-distribution return was executed. */
     private long lastSingleReturnTick = -1;
 
-    /** Last game tick when the return buffer was flushed to the network. */
-    private long lastReturnFlushTick = -1;
-
-    /** Aggregated items awaiting bulk insertion into the ME network. */
-    private final Map<AEKey, Long> returnBuffer = new HashMap<>();
+    // ---- eject mode state --------------------------------------------------------
 
     /** Cached result of induction card check; invalidated on state/upgrade change. */
     private boolean cachedInductionCardInstalled;
@@ -218,20 +233,120 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     public OverloadedPatternProviderLogic(IManagedGridNode mainNode,
                                           OverloadedPatternProviderBlockEntity host,
                                           int patternInventorySize) {
-        super(mainNode, host, patternInventorySize);
+        super(mainNode, host, Math.min(patternInventorySize, 36));
         mainNode.addService(IGridTickable.class, new Ticker());
         this.overloadedHost = host;
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
+        this.totalCapacity = patternInventorySize;
 
-        // Keep automation behavior aligned with the menu slot restriction:
-        // pattern slots only accept encoded patterns, even through external handlers.
-        ((PatternProviderLogicAccessor) this).getPatternInventory().setFilter(new IAEItemFilter() {
+        var accessor = (PatternProviderLogicAccessor) this;
+        IAEItemFilter patternFilter = new IAEItemFilter() {
             @Override
             public boolean allowInsert(appeng.api.inventories.InternalInventory inv, int slot, ItemStack stack) {
                 return PatternDetailsHelper.isEncodedPattern(stack);
             }
-        });
+        };
+
+        if (totalCapacity > 36) {
+            var largeInv = new appeng.util.inv.AppEngInternalInventory(this, totalCapacity);
+            largeInv.setFilter(patternFilter);
+            accessor.setPatternInventory(largeInv);
+        } else {
+            accessor.getPatternInventory().setFilter(patternFilter);
+        }
+
+        Runnable returnListener = () -> {
+            gridNode.ifPresent((grid, node) ->
+                    grid.getTickManager().alertDevice(node));
+            overloadedHost.saveChanges();
+        };
+        AEKeySlotFilter returnFilter = (slot, key) -> {
+            if (!overloadedHost.isFilteredImport()) return true;
+            var filter = getOrBuildOutputFilter();
+            return !filter.isEmpty() && filter.matches(key);
+        };
+
+        int totalPages = (totalCapacity + 35) / 36;
+        int fullReturnSlots = totalPages * 9;
+
+        if (fullReturnSlots > 9) {
+            this.fullReturnInv = UnlimitedReturnInventory.create(returnListener, returnFilter, fullReturnSlots);
+        } else {
+            this.fullReturnInv = UnlimitedReturnInventory.create(returnListener, returnFilter);
+        }
+        this.unlimitedReturnInv = this.fullReturnInv;
+
+        this.returnPageView = UnlimitedReturnInventory.create(() -> {
+            if (!returnSyncing) {
+                syncReturnFullFromPageView();
+                returnListener.run();
+            }
+        }, returnFilter);
+
+        accessor.setReturnInv(this.fullReturnInv);
+    }
+
+    @Override
+    public PatternProviderReturnInventory getReturnInv() {
+        return returnPageView;
+    }
+
+    public PatternProviderReturnInventory getInternalReturnInv() {
+        return fullReturnInv;
+    }
+
+    @Override
+    public void onChangeInventory(appeng.util.inv.AppEngInternalInventory inv, int slot) {
+        super.onChangeInventory(inv, slot);
+    }
+
+    // ---- page management --------------------------------------------------------
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    public int getTotalPages() {
+        return (totalCapacity + 35) / 36;
+    }
+
+    public void setCurrentPage(int page) {
+        int maxPage = getTotalPages() - 1;
+        page = Math.max(0, Math.min(page, maxPage));
+        if (page == currentPage) return;
+        syncReturnFullFromPageView();
+        currentPage = page;
+        syncReturnPageViewFromFull();
+    }
+
+    /** Copy 9 slots from fullReturnInv to returnPageView based on currentPage. */
+    public void syncReturnPageViewFromFull() {
+        returnSyncing = true;
+        try {
+            int offset = currentPage * 9;
+            for (int i = 0; i < 9; i++) {
+                int fullIdx = offset + i;
+                if (fullIdx < fullReturnInv.size()) {
+                    returnPageView.setStack(i, fullReturnInv.getStack(fullIdx));
+                } else {
+                    returnPageView.setStack(i, null);
+                }
+            }
+        } finally {
+            returnSyncing = false;
+        }
+    }
+
+    /** Copy 9 slots from returnPageView back to fullReturnInv. */
+    private void syncReturnFullFromPageView() {
+        int offset = currentPage * 9;
+        for (int i = 0; i < 9; i++) {
+            int fullIdx = offset + i;
+            if (fullIdx < fullReturnInv.size()) {
+                fullReturnInv.setStack(fullIdx, returnPageView.getStack(i));
+            }
+        }
     }
 
     @Override
@@ -260,6 +375,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
         }
         outputFilterDirty = true;
+        refreshEjectRegistrations();
 
         ICraftingProvider.requestUpdate(accessor.getMainNode());
         alertGridTick();
@@ -275,6 +391,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
+            if (AdvancedAECompat.isDirectional(patternDetails)) {
+                boolean result = pushPatternDirectionally(patternDetails, inputHolder);
+                if (result && overloadedHost.isAutoReturn()) {
+                    resetBackoffAllTargets();
+                }
+                if (result) alertGridTick();
+                return result;
+            }
             boolean result = super.pushPattern(patternDetails, inputHolder);
             if (result && overloadedHost.isAutoReturn()) {
                 resetBackoffAllTargets();
@@ -316,39 +440,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
         if (valid.isEmpty()) return false;
 
-        // 4. Dispatch according to strategy
-        var strategy = overloadedHost.getWirelessStrategy();
-        if (strategy == WirelessStrategy.EVEN_DISTRIBUTION) {
-            return dispatchEvenDistribution(pattern, inputs, valid, server);
-        }
-        return dispatchSingleTarget(pattern, inputs, valid, server);
-    }
-
-    // ---- dispatch strategies ----------------------------------------------------
-
-    /**
-     * SINGLE_TARGET: sticky — always send to the first valid connection.
-     * Only returns false if that machine refuses; never auto-rotates to others.
-     */
-    private boolean dispatchSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
-            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
-        return tryPushToConnection(pattern, inputs, valid.get(0), server);
-    }
-
-    /**
-     * EVEN_DISTRIBUTION: load-balanced — sort machines by accumulated push count
-     * (least loaded first) and try each until one accepts.
-     * <p>
-     * Per pushPattern() call we still push exactly 1 copy; the "even" property
-     * emerges over many consecutive calls as the least-loaded machine is always
-     * preferred, naturally spreading tasks across all connected machines.
-     */
-    private boolean dispatchEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
-            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
-        // Prune counters for connections that are no longer valid
+        // 4. Dispatch with automatic load balancing (least-pushed-first).
+        //    With a single connection this degenerates to a direct push.
         distributionCounts.keySet().retainAll(new HashSet<>(valid));
-
-        // Sort by push count ascending — least loaded machine first
         valid.sort(Comparator.comparingInt(c -> distributionCounts.getOrDefault(c, 0)));
 
         for (var conn : valid) {
@@ -366,6 +460,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      */
     private boolean tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
+        if (AdvancedAECompat.isDirectional(pattern)) {
+            return tryPushToConnectionDirectionally(pattern, inputs, conn, server);
+        }
+
         var targetLevel = server.getLevel(conn.dimension());
         if (targetLevel == null) return false;
 
@@ -399,6 +497,209 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
         }
         return true;
+    }
+
+    // ---- AdvancedAE directional push (NORMAL mode) --------------------------------
+
+    /**
+     * Push a directional AdvancedAE pattern through adjacent machines in NORMAL mode.
+     * Each input key is routed to the target-machine face specified by the pattern's
+     * directionMap; keys without a mapping use the default face (pushDir.getOpposite()).
+     */
+    private boolean pushPatternDirectionally(IPatternDetails pattern, KeyCounter[] inputs) {
+        var accessor = (PatternProviderLogicAccessor) this;
+        if (!accessor.getSendList().isEmpty()) return false;
+        if (!gridNode.isActive()) return false;
+        if (!getAvailablePatterns().contains(pattern)) return false;
+        if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
+        if (!pattern.supportsPushInputsToExternalInventory()) return false;
+
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return false;
+
+        var targets = overloadedHost.getTargets();
+        if (targets.isEmpty()) return false;
+
+        var providerPos = overloadedHost.getBlockPos();
+        var patternInputKeys = accessor.getPatternInputs();
+
+        EjectModeRegistry.setBypass(true);
+        try {
+            for (var pushDir : targets) {
+                var targetPos = providerPos.relative(pushDir);
+                var defaultFace = pushDir.getOpposite();
+                var be = sl.getBlockEntity(targetPos);
+                if (be == null) continue;
+
+                var faceToTarget = buildDirectionalTargets(
+                        sl, targetPos, be, defaultFace, pattern, inputs, wirelessSource);
+                if (faceToTarget == null) continue;
+
+                if (isBlocking()) {
+                    var anyTarget = faceToTarget.values().iterator().next();
+                    if (anyTarget.containsPatternInput(patternInputKeys)) continue;
+                }
+
+                if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) continue;
+
+                commitDirectionalPush(pattern, inputs, faceToTarget, defaultFace);
+
+                accessor.setSendDirection(defaultFace);
+                accessor.invokeSendStacksOut();
+                accessor.invokeOnPushPatternSuccess(pattern);
+                return true;
+            }
+            return false;
+        } finally {
+            EjectModeRegistry.setBypass(false);
+        }
+    }
+
+    // ---- AdvancedAE directional push (WIRELESS mode) -----------------------------
+
+    /**
+     * Push a directional AdvancedAE pattern to a wireless target.
+     * Behaves as if the provider were physically placed on {@code conn.boundFace()}.
+     * Each input key is routed to the target-machine face from the directionMap;
+     * keys without a mapping default to {@code conn.boundFace()}.
+     */
+    private boolean tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
+            WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
+        var targetLevel = server.getLevel(conn.dimension());
+        if (targetLevel == null) return false;
+        if (!pattern.supportsPushInputsToExternalInventory()) return false;
+
+        autoReturnBeforePush(targetLevel, conn);
+
+        var be = targetLevel.getBlockEntity(conn.pos());
+        if (be == null) return false;
+
+        var defaultFace = conn.boundFace();
+
+        EjectModeRegistry.setBypass(true);
+        try {
+            var faceToTarget = buildDirectionalTargets(
+                    targetLevel, conn.pos(), be, defaultFace, pattern, inputs, wirelessSource);
+            if (faceToTarget == null) return false;
+
+            if (isBlocking()) {
+                var patternInputKeys = ((PatternProviderLogicAccessor) this).getPatternInputs();
+                var anyTarget = faceToTarget.values().iterator().next();
+                if (anyTarget.containsPatternInput(patternInputKeys)) return false;
+            }
+
+            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) return false;
+
+            var overflow = commitDirectionalPushWithOverflow(pattern, inputs, faceToTarget, defaultFace);
+            if (!overflow.isEmpty()) {
+                wirelessSendList.addAll(overflow);
+                wirelessSendConn = conn;
+            }
+        } finally {
+            EjectModeRegistry.setBypass(false);
+        }
+
+        ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        alertGridTick();
+
+        if (overloadedHost.isAutoReturn()) {
+            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
+            machineBackoff.put(mkey, BACKOFF_MIN);
+            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
+        }
+        return true;
+    }
+
+    // ---- directional push helpers ------------------------------------------------
+
+    /**
+     * Build a map of face → PatternProviderTarget for all unique faces
+     * referenced by the directional pattern's inputs.
+     *
+     * @return the map, or {@code null} if any required target cannot be resolved
+     */
+    @Nullable
+    private static Map<Direction, PatternProviderTarget> buildDirectionalTargets(
+            ServerLevel level, BlockPos targetPos, BlockEntity be,
+            Direction defaultFace, IPatternDetails pattern,
+            KeyCounter[] inputs, IActionSource source) {
+        var map = new HashMap<Direction, PatternProviderTarget>();
+        for (var inputList : inputs) {
+            for (var entry : inputList) {
+                var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
+                var face = dir != null ? dir : defaultFace;
+                map.computeIfAbsent(face, f -> PatternProviderTarget.get(level, targetPos, be, f, source));
+            }
+        }
+        if (map.containsValue(null)) return null;
+        return map;
+    }
+
+    /**
+     * Simulate whether all directional targets can accept their respective inputs.
+     */
+    private static boolean simulateDirectionalAcceptance(
+            Map<Direction, PatternProviderTarget> faceToTarget,
+            Direction defaultFace,
+            IPatternDetails pattern, KeyCounter[] inputs) {
+        for (var inputList : inputs) {
+            for (var entry : inputList) {
+                var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
+                var face = dir != null ? dir : defaultFace;
+                var target = faceToTarget.get(face);
+                if (target == null) return false;
+                if (target.insert(entry.getKey(), entry.getLongValue(), Actionable.SIMULATE) == 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Commit directional push for NORMAL mode.
+     * Overflow goes to the parent's sendList via accessor.
+     */
+    private void commitDirectionalPush(IPatternDetails pattern, KeyCounter[] inputs,
+            Map<Direction, PatternProviderTarget> faceToTarget, Direction defaultFace) {
+        var accessor = (PatternProviderLogicAccessor) this;
+        pattern.pushInputsToExternalInventory(inputs, (what, amount) -> {
+            var dir = AdvancedAECompat.getDirectionForKey(pattern, what);
+            var face = dir != null ? dir : defaultFace;
+            var target = faceToTarget.get(face);
+            if (target != null) {
+                var inserted = target.insert(what, amount, Actionable.MODULATE);
+                if (inserted < amount) {
+                    accessor.invokeAddToSendList(what, amount - inserted);
+                }
+            } else {
+                accessor.invokeAddToSendList(what, amount);
+            }
+        });
+    }
+
+    /**
+     * Commit directional push for WIRELESS mode.
+     * Returns overflow items directly instead of using the parent's sendList.
+     */
+    private static List<GenericStack> commitDirectionalPushWithOverflow(
+            IPatternDetails pattern, KeyCounter[] inputs,
+            Map<Direction, PatternProviderTarget> faceToTarget, Direction defaultFace) {
+        var overflow = new ArrayList<GenericStack>();
+        pattern.pushInputsToExternalInventory(inputs, (what, amount) -> {
+            var dir = AdvancedAECompat.getDirectionForKey(pattern, what);
+            var face = dir != null ? dir : defaultFace;
+            var target = faceToTarget.get(face);
+            if (target != null) {
+                var inserted = target.insert(what, amount, Actionable.MODULATE);
+                if (inserted < amount) {
+                    overflow.add(new GenericStack(what, amount - inserted));
+                }
+            } else {
+                overflow.add(new GenericStack(what, amount));
+            }
+        });
+        return overflow;
     }
 
     // ---- overflow flush ---------------------------------------------------------
@@ -493,15 +794,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * Only items whose {@link AEKey} matches a loaded pattern output are extracted.
      */
     public void tickAutoReturn() {
-        // Top-level short-circuit: skip entire tick when there is no work at all
         if (!hasAnyTickWork()) return;
 
         tickWirelessInductionEnergy();
 
-        if (!overloadedHost.isAutoReturn()) return;
+        var returnMode = overloadedHost.getReturnMode();
+        if (returnMode != ReturnMode.AUTO) return;
         if (!gridNode.isActive()) return;
 
-        // Build the output filter from all loaded patterns
         var allowedOutputs = getOrBuildOutputFilter();
         if (allowedOutputs.isEmpty()) return;
 
@@ -529,6 +829,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 && isInductionCardInstalled()
                 && CACHED_APPFLUX_FE_KEY != null) return true;
         if (overloadedHost.isAutoReturn()) return true;
+        if (!getReturnInv().isEmpty()) return true;
         return false;
     }
 
@@ -609,12 +910,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             var outputs = adapter.extractOutputs(
                     targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
-            bufferReturn(outputs);
-        }
-
-        if (gameTick - lastReturnFlushTick >= RETURN_FLUSH_INTERVAL) {
-            flushReturnBuffer();
-            lastReturnFlushTick = gameTick;
+            insertOutputsToReturnInv(outputs);
         }
     }
 
@@ -672,26 +968,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         });
     }
 
-    private void bufferReturn(List<GenericStack> outputs) {
-        for (var stack : outputs) {
-            returnBuffer.merge(stack.what(), stack.amount(), Long::sum);
-        }
-    }
-
-    private void flushReturnBuffer() {
-        if (returnBuffer.isEmpty()) return;
-        gridNode.ifPresent((grid, node) -> {
-            var storage = grid.getStorageService().getInventory();
-            for (var entry : returnBuffer.entrySet()) {
-                storage.insert(entry.getKey(), entry.getValue(),
-                        appeng.api.config.Actionable.MODULATE, wirelessSource);
-            }
-        });
-        returnBuffer.clear();
-    }
 
     private void autoReturnBeforePush(ServerLevel sl, WirelessConnection conn) {
-        if (!overloadedHost.isAutoReturn()) return;
+        if (overloadedHost.getReturnMode() != ReturnMode.AUTO) return;
         long gameTick = sl.getGameTime();
         if (gameTick == lastSingleReturnTick) return;
         lastSingleReturnTick = gameTick;
@@ -707,7 +986,67 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         var outputs = adapter.extractOutputs(
                 targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
-        bufferReturn(outputs);
+        insertOutputsToReturnInv(outputs);
+    }
+
+    private void insertOutputsToReturnInv(List<GenericStack> outputs) {
+        var inv = getReturnInv();
+        for (var stack : outputs) {
+            inv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
+        }
+    }
+
+    // ---- eject mode lifecycle ----------------------------------------------------
+
+    /**
+     * Rebuild eject-mode registrations based on the current return mode
+     * and wireless connections. Should be called whenever return mode,
+     * connections, or patterns change.
+     */
+    public void refreshEjectRegistrations() {
+        var removed = EjectModeRegistry.unregisterAll(overloadedHost);
+        invalidateCapabilitiesAt(removed);
+
+        if (overloadedHost.getReturnMode() != ReturnMode.EJECT) return;
+        if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return;
+
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return;
+
+        for (var conn : overloadedHost.getConnections()) {
+            var adjacentPos = conn.pos().relative(conn.boundFace());
+            var queryFace = conn.boundFace().getOpposite();
+            var ghostBE = new GhostOutputBlockEntity(adjacentPos);
+            ghostBE.setLevel(sl);
+
+            var entry = new EjectModeRegistry.EjectEntry(
+                    new java.lang.ref.WeakReference<>(overloadedHost),
+                    ghostBE
+            );
+
+            var targetLevel = sl.getServer().getLevel(conn.dimension());
+            var dim = targetLevel != null ? targetLevel.dimension() : conn.dimension();
+            EjectModeRegistry.register(dim, adjacentPos.asLong(), queryFace, entry);
+            invalidateCapabilitiesAt(targetLevel, adjacentPos);
+        }
+    }
+
+    private void invalidateCapabilitiesAt(List<EjectModeRegistry.DimPos> positions) {
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return;
+        var server = sl.getServer();
+        for (var dp : positions) {
+            var targetLevel = server.getLevel(dp.dimension());
+            if (targetLevel != null) {
+                targetLevel.invalidateCapabilities(dp.pos());
+            }
+        }
+    }
+
+    private static void invalidateCapabilitiesAt(@Nullable ServerLevel level, BlockPos pos) {
+        if (level != null) {
+            level.invalidateCapabilities(pos);
+        }
     }
 
     private void tickWirelessInductionEnergy() {
@@ -960,6 +1299,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         invalidateValidConnectionsCache();
         invalidateEnergyStorageCache();
         inductionCardCacheDirty = true;
+        refreshEjectRegistrations();
         alertGridTick();
     }
 
@@ -1179,6 +1519,66 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         CACHED_APPFLUX_TRANSFER_RATE = resolvedRate;
     }
 
+
+    // ---- SavedData persistence helpers ------------------------------------------
+
+    private void saveToSavedData() {
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return;
+        var inv = ((PatternProviderLogicAccessor) this).getPatternInventory();
+        var patterns = new ItemStack[inv.size()];
+        for (int i = 0; i < inv.size(); i++) {
+            patterns[i] = inv.getStackInSlot(i);
+        }
+        PatternStorageSavedData.get(sl).set(overloadedHost.getBlockPos().asLong(), patterns);
+    }
+
+    private void loadFromSavedData() {
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) {
+            org.slf4j.LoggerFactory.getLogger("ae2lt").warn(
+                    "[SavedData] loadFromSavedData skipped: level={} pos={}",
+                    level, overloadedHost.getBlockPos());
+            return;
+        }
+        var savedData = PatternStorageSavedData.get(sl);
+        var stored = savedData.get(overloadedHost.getBlockPos().asLong());
+        if (stored == null) {
+            org.slf4j.LoggerFactory.getLogger("ae2lt").info(
+                    "[SavedData] No stored data for pos={}", overloadedHost.getBlockPos());
+            return;
+        }
+        org.slf4j.LoggerFactory.getLogger("ae2lt").info(
+                "[SavedData] Loaded {} patterns for pos={}", stored.length, overloadedHost.getBlockPos());
+        var inv = ((PatternProviderLogicAccessor) this).getPatternInventory();
+        int limit = Math.min(stored.length, inv.size());
+        for (int i = 0; i < limit; i++) {
+            inv.setItemDirect(i, stored[i] != null ? stored[i] : ItemStack.EMPTY);
+        }
+    }
+
+    public void removeSavedData() {
+        var level = overloadedHost.getLevel();
+        if (!(level instanceof ServerLevel sl)) return;
+        PatternStorageSavedData.get(sl).remove(overloadedHost.getBlockPos().asLong());
+    }
+
+    /**
+     * Called from {@code OverloadedPatternProviderBlockEntity.onReady()} when
+     * Level is guaranteed to be available. Completes deferred SavedData loading
+     * that was skipped during readFromNBT (where Level is still null).
+     */
+    public void onBlockEntityReady() {
+        if (needsSavedDataLoad) {
+            needsSavedDataLoad = false;
+            loadFromSavedData();
+        }
+    }
+
+    public int getTotalCapacity() {
+        return totalCapacity;
+    }
+
     @Nullable
     private static Item getAppliedFluxInductionCard() {
         if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
@@ -1246,11 +1646,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             stack.what().addDrops(stack.amount(), drops,
                     overloadedHost.getLevel(), overloadedHost.getBlockPos());
         }
+        if (totalCapacity > 36) {
+            removeSavedData();
+        }
     }
 
     @Override
     public void clearContent() {
         super.clearContent();
+        if (totalCapacity > 36) {
+            removeSavedData();
+        }
         wirelessSendList.clear();
         wirelessSendConn = null;
         distributionCounts.clear();
@@ -1269,8 +1675,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
-        lastReturnFlushTick = -1;
-        returnBuffer.clear();
+        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost));
     }
 
     // ---- NBT persistence --------------------------------------------------------
@@ -1281,7 +1686,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     @Override
     public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
-        super.writeToNBT(tag, registries);
+        if (totalCapacity > 36) {
+            var accessor = (PatternProviderLogicAccessor) this;
+            var realInv = accessor.getPatternInventory();
+            accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
+            super.writeToNBT(tag, registries);
+            accessor.setPatternInventory(realInv);
+            saveToSavedData();
+        } else {
+            super.writeToNBT(tag, registries);
+        }
         tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
         if (!wirelessSendList.isEmpty()) {
             var list = new ListTag();
@@ -1298,6 +1712,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     @Override
     public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
         super.readFromNBT(tag, registries);
+        if (totalCapacity > 36) {
+            needsSavedDataLoad = true;
+        }
         wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
         wirelessSendList.clear();
         wirelessSendConn = null;
@@ -1323,7 +1740,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
-        lastReturnFlushTick = -1;
-        returnBuffer.clear();
+        refreshEjectRegistrations();
     }
 }

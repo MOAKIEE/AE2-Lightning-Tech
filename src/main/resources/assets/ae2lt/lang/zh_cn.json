@@ -36,6 +36,7 @@
   "block.ae2lt.overload_crystal_cluster": "过载水晶簇",
   "block.ae2lt.overloaded_controller": "过载 ME 控制器",
   "block.ae2lt.overloaded_pattern_provider": "过载样板供应器",
+  "block.ae2lt.extended_pattern_provider": "超级扩展过载样板供应器",
   "config.jade.plugin_ae2lt.high_voltage_aggregator": "高压聚合器",
   "jade.ae2lt.high_voltage_aggregator.mode": "模式：%s",
   "jade.ae2lt.high_voltage_aggregator.mode.standby": "待机",
@@ -61,8 +62,9 @@
   "tooltip.ae2lt.overload_pattern.provider_only": "只能用于过载样板供应器",
   "ae2lt.gui.auto_return.on": "自动回收：开",
   "ae2lt.gui.auto_return.off": "自动回收：关",
-  "ae2lt.gui.wireless_strategy.single": "单目标",
-  "ae2lt.gui.wireless_strategy.even": "均匀分配",
+  "ae2lt.gui.return_mode.off": "回收模式：关",
+  "ae2lt.gui.return_mode.auto": "回收模式：自动",
+  "ae2lt.gui.return_mode.eject": "回收模式：弹出",
   "item.ae2lt.overloaded_wireless_connector": "过载无线连接器",
   "item.ae2lt.overloaded_cable": "福鲁伊克斯色 ME 过载线缆",
   "item.ae2lt.overloaded_cable_white": "白色 ME 过载线缆",
@@ -92,5 +94,8 @@
   "ae2lt.connector.connected": "已连接 [%d, %d, %d] 的 %s 面",
   "ae2lt.connector.connected_many": "已连接 %d 台机器的 %s 面",
   "ae2lt.connector.deselected": "已取消选中过载样板供应器",
-  "ae2lt.connector.need_wireless": "需要先开启无线模式"
+  "ae2lt.connector.need_wireless": "需要先开启无线模式",
+  "ae2lt.connector.cannot_bind_provider": "不能将过载样板供应器绑定到另一个样板供应器",
+  "ae2lt.gui.filtered_import.on": "输入过滤：开（仅允许样板产物）",
+  "ae2lt.gui.filtered_import.off": "输入过滤：关"
 }

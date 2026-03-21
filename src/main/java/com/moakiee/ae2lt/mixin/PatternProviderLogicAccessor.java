@@ -4,13 +4,18 @@ import java.util.List;
 import java.util.Set;
 
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Mutable;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
+
+import net.minecraft.core.Direction;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.GenericStack;
 import appeng.helpers.patternprovider.PatternProviderLogic;
+import appeng.helpers.patternprovider.PatternProviderReturnInventory;
 import appeng.util.inv.AppEngInternalInventory;
 
 /**
@@ -35,10 +40,34 @@ public interface PatternProviderLogicAccessor {
     @Accessor("patternInventory")
     AppEngInternalInventory getPatternInventory();
 
+    @Mutable
+    @Accessor("patternInventory")
+    void setPatternInventory(AppEngInternalInventory inv);
+
+    @Mutable
+    @Accessor("returnInv")
+    void setReturnInv(PatternProviderReturnInventory inv);
+
     @Accessor("patterns")
     List<IPatternDetails> getPatterns();
 
     /** The union of all possible pattern inputs (keys with secondary dropped). */
     @Accessor("patternInputs")
     Set<AEKey> getPatternInputs();
+
+    @Accessor("sendList")
+    List<GenericStack> getSendList();
+
+    @Accessor("sendDirection")
+    Direction getSendDirection();
+
+    @Accessor("sendDirection")
+    void setSendDirection(Direction direction);
+
+    @Invoker("addToSendList")
+    void invokeAddToSendList(AEKey what, long amount);
+
+    @Invoker("sendStacksOut")
+    boolean invokeSendStacksOut();
+
 }

@@ -15,7 +15,9 @@
     "CraftingCpuLogicMixin",
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",
-    "GridGetMachineNodesMixin"
+    "GridGetMachineNodesMixin",
+    "EjectCapabilityMixin",
+    "EjectGhostBEMixin"
   ],
   "client": [
   ],

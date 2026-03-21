@@ -117,12 +117,19 @@ dependencies {
     runtimeOnly "curse.maven:jade-324717:5427817"
     implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
     runtimeOnly "curse.maven:mekanism-268560:7621971"
+    runtimeOnly "curse.maven:mekanism-generators-268566:7621974"
     runtimeOnly "curse.maven:extendedae-892005:7727948"
     runtimeOnly "curse.maven:glodium-957920:5821676"
+    compileOnly "curse.maven:advancedae-1084104:7668664"
     runtimeOnly "curse.maven:advancedae-1084104:7668664"
     runtimeOnly "curse.maven:geckolib-388172:7707149"
     runtimeOnly "curse.maven:applied-flux-965012:7429565"
+    runtimeOnly "curse.maven:mekanism-extras-1026040:7628313"
     runtimeOnly "curse.maven:just-enough-characters-250702:7320033"
+    runtimeOnly "curse.maven:building-gadgets-298187:6850515"
+    runtimeOnly "curse.maven:ftb-ultimine-forge-386134:7570482"
+    runtimeOnly "curse.maven:ftb-library-forge-404465:7746959"
+    runtimeOnly "curse.maven:architectury-api-419699:5786327"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
