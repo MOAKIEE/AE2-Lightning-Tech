@@ -36,7 +36,6 @@
   "block.ae2lt.overload_crystal_cluster": "Overload Crystal Cluster",
   "block.ae2lt.overloaded_controller": "Overloaded ME Controller",
   "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
-  "block.ae2lt.extended_pattern_provider": "Extended Overloaded Pattern Provider",
   "config.jade.plugin_ae2lt.high_voltage_aggregator": "High Voltage Aggregator",
   "jade.ae2lt.high_voltage_aggregator.mode": "Mode: %s",
   "jade.ae2lt.high_voltage_aggregator.mode.standby": "Standby",

@@ -7,7 +7,6 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
-import com.moakiee.ae2lt.blockentity.ExtendedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -89,7 +88,6 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
-                        output.accept(ModBlocks.EXTENDED_PATTERN_PROVIDER);
                     })
                     .build());
 
@@ -125,11 +123,6 @@ public class AE2LightningTech {
                 ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
-        event.registerBlockEntity(
-                AECapabilities.IN_WORLD_GRID_NODE_HOST,
-                ModBlockEntities.EXTENDED_PATTERN_PROVIDER.get(),
-                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
-
         event.registerBlock(
                 AECapabilities.GENERIC_INTERNAL_INV,
                 (level, pos, state, blockEntity, context) -> {
@@ -141,8 +134,7 @@ public class AE2LightningTech {
                     }
                     return null;
                 },
-                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(),
-                ModBlocks.EXTENDED_PATTERN_PROVIDER.get());
+                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get());
     }
 
     /**
@@ -169,15 +161,6 @@ public class AE2LightningTech {
                     null
             );
 
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            var extBlock = (appeng.block.AEBaseEntityBlock) ModBlocks.EXTENDED_PATTERN_PROVIDER.get();
-            extBlock.setBlockEntity(
-                    ExtendedPatternProviderBlockEntity.class,
-                    ModBlockEntities.EXTENDED_PATTERN_PROVIDER.get(),
-                    null,
-                    null
-            );
-
             // Register built-in machine adapters (AE2-native fallback)
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
@@ -194,7 +177,6 @@ public class AE2LightningTech {
         }
 
         Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
-        Upgrades.add(inductionCard, ModBlocks.EXTENDED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
     }
 
     private static void registerOptionalClientIntegrations() {

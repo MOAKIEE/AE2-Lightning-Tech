@@ -55,6 +55,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessDispatchMode;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -67,7 +68,8 @@ import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
  * {@link PatternProviderLogic} implementation (incl. ticker, sendList, etc.).
  * <p>
  * In {@link ProviderMode#WIRELESS} the {@link #pushPattern} override performs
- * SINGLE_TARGET round-robin dispatch over the host's wireless connection list.
+ * either round-robin single-target dispatch or even distribution across the
+ * host's wireless connection list.
  */
 public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
@@ -422,26 +424,36 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!getAvailablePatterns().contains(pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
-        // 3. Collect valid targets
-        var connections = overloadedHost.getConnections();
-        if (connections.isEmpty()) return false;
-
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return false;
         var server = sl.getServer();
-
-        var valid = new ArrayList<WirelessConnection>();
-        for (var conn : connections) {
-            var targetLevel = server.getLevel(conn.dimension());
-            if (targetLevel != null && targetLevel.isLoaded(conn.pos())
-                    && targetLevel.getBlockEntity(conn.pos()) != null) {
-                valid.add(conn);
-            }
-        }
+        var valid = new ArrayList<>(getOrRefreshValidConnections(sl, sl.getGameTime()));
         if (valid.isEmpty()) return false;
 
-        // 4. Dispatch with automatic load balancing (least-pushed-first).
-        //    With a single connection this degenerates to a direct push.
+        return switch (overloadedHost.getWirelessDispatchMode()) {
+            case SINGLE_TARGET -> wirelessPushSingleTarget(pattern, inputs, valid, server);
+            case EVEN_DISTRIBUTION -> wirelessPushEvenDistribution(pattern, inputs, valid, server);
+        };
+    }
+
+    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
+        int total = valid.size();
+        int start = Math.floorMod(wirelessRoundRobin, total);
+
+        for (int offset = 0; offset < total; offset++) {
+            int index = (start + offset) % total;
+            var conn = valid.get(index);
+            if (tryPushToConnection(pattern, inputs, conn, server)) {
+                wirelessRoundRobin = (index + 1) % total;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean wirelessPushEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
         distributionCounts.keySet().retainAll(new HashSet<>(valid));
         valid.sort(Comparator.comparingInt(c -> distributionCounts.getOrDefault(c, 0)));
 

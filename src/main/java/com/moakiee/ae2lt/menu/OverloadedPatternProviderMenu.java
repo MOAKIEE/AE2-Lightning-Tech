@@ -17,6 +17,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessDispatchMode;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 
 public class OverloadedPatternProviderMenu extends PatternProviderMenu {
@@ -38,9 +39,12 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
     public int filteredImport;
 
     @GuiSync(13)
-    public int currentPage;
+    public int wirelessDispatchMode;
 
     @GuiSync(14)
+    public int currentPage;
+
+    @GuiSync(15)
     public int totalPages;
 
     private final PatternProviderLogicHost host;
@@ -52,6 +56,7 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
 
         registerClientAction("toggleMode", this::toggleMode);
         registerClientAction("toggleAutoReturn", this::toggleAutoReturn);
+        registerClientAction("toggleWirelessDispatchMode", this::toggleWirelessDispatchMode);
         registerClientAction("toggleFilteredImport", this::toggleFilteredImport);
         registerClientAction("nextPage", this::nextPage);
         registerClientAction("prevPage", this::prevPage);
@@ -84,6 +89,7 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
             providerMode = be.getProviderMode().ordinal();
             returnMode = be.getReturnMode().ordinal();
             filteredImport = be.isFilteredImport() ? 1 : 0;
+            wirelessDispatchMode = be.getWirelessDispatchMode().ordinal();
             var logic = (OverloadedPatternProviderLogic) be.getLogic();
             currentPage = logic.getCurrentPage();
             totalPages = logic.getTotalPages();
@@ -107,6 +113,14 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
             var values = ReturnMode.values();
             var current = be.getReturnMode();
             be.setReturnMode(values[(current.ordinal() + 1) % values.length]);
+        }
+    }
+
+    private void toggleWirelessDispatchMode() {
+        if (isServerSide() && host instanceof OverloadedPatternProviderBlockEntity be) {
+            var values = WirelessDispatchMode.values();
+            var current = be.getWirelessDispatchMode();
+            be.setWirelessDispatchMode(values[(current.ordinal() + 1) % values.length]);
         }
     }
 
@@ -140,6 +154,10 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
         sendClientAction("toggleAutoReturn");
     }
 
+    public void clientToggleWirelessDispatchMode() {
+        sendClientAction("toggleWirelessDispatchMode");
+    }
+
     public void clientToggleFilteredImport() {
         sendClientAction("toggleFilteredImport");
     }
@@ -160,6 +178,10 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
 
     public boolean isFilteredImport() {
         return filteredImport != 0;
+    }
+
+    public boolean isEvenDistributionMode() {
+        return wirelessDispatchMode == WirelessDispatchMode.EVEN_DISTRIBUTION.ordinal();
     }
 
     public void clientNextPage() {

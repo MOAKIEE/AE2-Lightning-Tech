@@ -100,6 +100,7 @@ public class TextureToggleButton extends Button implements ITooltip {
     public enum ButtonType {
         MODE(texture("wireless_mode"), texture("wired_mode")),
         AUTO_RETURN(texture("auto_return_on"), texture("auto_return_off")),
+        WIRELESS_STRATEGY(texture("even_distribution"), texture("single_target")),
         FILTERED_IMPORT(texture("filtered_import_on"), texture("filtered_import_off"));
 
         private final ResourceLocation textureOn;

@@ -26,9 +26,14 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
             List.of(Component.translatable("ae2lt.gui.filtered_import.on"));
     private static final List<Component> FILTER_TIP_OFF =
             List.of(Component.translatable("ae2lt.gui.filtered_import.off"));
+    private static final List<Component> STRATEGY_TIP_SINGLE =
+            List.of(Component.translatable("ae2lt.gui.wireless_strategy.single"));
+    private static final List<Component> STRATEGY_TIP_EVEN =
+            List.of(Component.translatable("ae2lt.gui.wireless_strategy.even"));
 
     private final TextureToggleButton modeButton;
     private final TextureToggleButton autoReturnButton;
+    private final TextureToggleButton wirelessStrategyButton;
     private final TextureToggleButton filteredImportButton;
 
     private static final int SLOTS_PER_PAGE = 36;
@@ -51,6 +56,13 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         this.modeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.provider_mode.wireless")));
         this.modeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.provider_mode.normal")));
         addToLeftToolbar(this.modeButton);
+
+        this.wirelessStrategyButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.WIRELESS_STRATEGY,
+                btn -> menu.clientToggleWirelessDispatchMode());
+        this.wirelessStrategyButton.setTooltipOn(STRATEGY_TIP_EVEN);
+        this.wirelessStrategyButton.setTooltipOff(STRATEGY_TIP_SINGLE);
+        addToLeftToolbar(this.wirelessStrategyButton);
 
         this.filteredImportButton = new TextureToggleButton(
                 TextureToggleButton.ButtonType.FILTERED_IMPORT,
@@ -127,6 +139,10 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         }
 
         this.filteredImportButton.setState(this.menu.isFilteredImport());
+        this.filteredImportButton.setVisibility(true);
+
+        this.wirelessStrategyButton.setState(this.menu.isEvenDistributionMode());
+        this.wirelessStrategyButton.setVisibility(this.menu.isWirelessMode());
 
         boolean multiPage = this.menu.getTotalPages() > 1;
         prevPageButton.visible = multiPage;

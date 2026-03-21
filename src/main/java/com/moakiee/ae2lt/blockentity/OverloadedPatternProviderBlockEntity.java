@@ -68,8 +68,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     /** Return mode: OFF (no auto-return), AUTO (active extraction), EJECT (virtual output hatch). */
     public enum ReturnMode { OFF, AUTO, EJECT }
 
+    /** Wireless dispatch strategy. */
+    public enum WirelessDispatchMode { SINGLE_TARGET, EVEN_DISTRIBUTION }
+
     private ProviderMode providerMode = ProviderMode.NORMAL;
     private ReturnMode returnMode = ReturnMode.OFF;
+    private WirelessDispatchMode wirelessDispatchMode = WirelessDispatchMode.EVEN_DISTRIBUTION;
     private boolean filteredImport = false;
 
     /** Active wireless connection records. */
@@ -226,6 +230,20 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         return returnMode != ReturnMode.OFF;
     }
 
+    public WirelessDispatchMode getWirelessDispatchMode() {
+        return wirelessDispatchMode;
+    }
+
+    public void setWirelessDispatchMode(WirelessDispatchMode wirelessDispatchMode) {
+        if (this.wirelessDispatchMode == wirelessDispatchMode) {
+            return;
+        }
+        this.wirelessDispatchMode = wirelessDispatchMode;
+        notifyLogicStateChanged();
+        saveChanges();
+        markForClientUpdate();
+    }
+
     public boolean isFilteredImport() {
         return filteredImport;
     }
@@ -339,6 +357,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super.writeToStream(data);
         data.writeByte(providerMode.ordinal());
         data.writeByte(returnMode.ordinal());
+        data.writeByte(wirelessDispatchMode.ordinal());
         data.writeBoolean(filteredImport);
         data.writeVarInt(connections.size());
         for (var conn : connections) {
@@ -355,6 +374,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         var rmOrd = data.readByte();
         var newReturnMode = rmOrd >= 0 && rmOrd < ReturnMode.values().length
                 ? ReturnMode.values()[rmOrd] : ReturnMode.OFF;
+        var dispatchOrd = data.readByte();
+        var newDispatchMode = dispatchOrd >= 0 && dispatchOrd < WirelessDispatchMode.values().length
+                ? WirelessDispatchMode.values()[dispatchOrd] : WirelessDispatchMode.EVEN_DISTRIBUTION;
         var newFilteredImport = data.readBoolean();
         int count = data.readVarInt();
         var newConns = new ArrayList<WirelessConnection>(count);
@@ -365,10 +387,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             newConns.add(new WirelessConnection(dim, pos, face));
         }
         if (newMode != providerMode || newReturnMode != returnMode
+                || newDispatchMode != wirelessDispatchMode
                 || newFilteredImport != filteredImport
                 || !newConns.equals(connections)) {
             providerMode = newMode;
             returnMode = newReturnMode;
+            wirelessDispatchMode = newDispatchMode;
             filteredImport = newFilteredImport;
             connections.clear();
             connections.addAll(newConns);
@@ -383,6 +407,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private static final String TAG_PROVIDER_MODE = "OverloadMode";
     private static final String TAG_AUTO_RETURN = "AutoReturn";
     private static final String TAG_RETURN_MODE = "ReturnMode";
+    private static final String TAG_WIRELESS_DISPATCH_MODE = "WirelessDispatchMode";
     private static final String TAG_FILTERED_IMPORT = "FilteredImport";
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
@@ -391,6 +416,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super.saveAdditional(data, registries);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putString(TAG_RETURN_MODE, returnMode.name());
+        data.putString(TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode.name());
         data.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
 
         var connList = new ListTag();
@@ -418,6 +444,13 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         } else if (data.contains(TAG_AUTO_RETURN)) {
             returnMode = data.getBoolean(TAG_AUTO_RETURN) ? ReturnMode.AUTO : ReturnMode.OFF;
+        }
+        if (data.contains(TAG_WIRELESS_DISPATCH_MODE)) {
+            try {
+                wirelessDispatchMode = WirelessDispatchMode.valueOf(data.getString(TAG_WIRELESS_DISPATCH_MODE));
+            } catch (IllegalArgumentException ignored) {
+                wirelessDispatchMode = WirelessDispatchMode.EVEN_DISTRIBUTION;
+            }
         }
         filteredImport = data.getBoolean(TAG_FILTERED_IMPORT);
         connections.clear();
