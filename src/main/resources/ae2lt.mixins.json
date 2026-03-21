@@ -20,6 +20,9 @@
     "EjectGhostBEMixin"
   ],
   "client": [
+    "client.CableBusRenderStateMixin",
+    "client.CableBusContainerRenderMixin",
+    "client.CableBusBakedModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -150,7 +150,7 @@ public class AE2LightningTech {
                     OverloadedControllerBlockEntity.class,
                     controllerBeType,
                     null,
-                    null);
+                    OverloadedControllerBlockEntity::serverTick);
 
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();

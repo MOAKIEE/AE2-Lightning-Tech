@@ -5,9 +5,11 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.BlockState;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.util.AECableType;
 import appeng.blockentity.networking.ControllerBlockEntity;
@@ -21,9 +23,20 @@ import appeng.blockentity.networking.ControllerBlockEntity;
  * so vanilla ControllerBlockEntity instances remain untouched.
  */
 public class OverloadedControllerBlockEntity extends ControllerBlockEntity implements OverloadedGridNodeOwner {
+    private static final double INTERNAL_MAX_POWER = 16_000_000.0;
+    private static final double PASSIVE_GENERATION_PER_TICK = 100.0;
 
     public OverloadedControllerBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.OVERLOADED_CONTROLLER.get(), pos, blockState);
+        this.setInternalMaxPower(INTERNAL_MAX_POWER);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadedControllerBlockEntity be) {
+        if (level.isClientSide) {
+            return;
+        }
+
+        be.injectAEPower(PASSIVE_GENERATION_PER_TICK, Actionable.MODULATE);
     }
 
     @Override
