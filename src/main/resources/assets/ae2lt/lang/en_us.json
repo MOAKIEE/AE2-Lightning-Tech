@@ -65,6 +65,8 @@
   "ae2lt.gui.return_mode.off": "Return Mode: OFF",
   "ae2lt.gui.return_mode.auto": "Return Mode: AUTO",
   "ae2lt.gui.return_mode.eject": "Return Mode: EJECT",
+  "ae2lt.gui.wireless_strategy.single": "Round Robin",
+  "ae2lt.gui.wireless_strategy.even": "Balanced Distribution",
   "item.ae2lt.overloaded_wireless_connector": "Overloaded Wireless Connector",
   "item.ae2lt.overloaded_cable": "Fluix ME Overloaded Cable",
   "item.ae2lt.overloaded_cable_white": "White ME Overloaded Cable",

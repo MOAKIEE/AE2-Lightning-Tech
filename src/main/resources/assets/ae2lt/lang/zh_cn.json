@@ -65,6 +65,8 @@
   "ae2lt.gui.return_mode.off": "回收模式：关",
   "ae2lt.gui.return_mode.auto": "回收模式：自动",
   "ae2lt.gui.return_mode.eject": "回收模式：弹出",
+  "ae2lt.gui.wireless_strategy.single": "逐台发配",
+  "ae2lt.gui.wireless_strategy.even": "均分发配",
   "item.ae2lt.overloaded_wireless_connector": "过载无线连接器",
   "item.ae2lt.overloaded_cable": "福鲁伊克斯色 ME 过载线缆",
   "item.ae2lt.overloaded_cable_white": "白色 ME 过载线缆",
