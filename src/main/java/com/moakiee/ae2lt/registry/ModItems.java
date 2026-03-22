@@ -30,6 +30,9 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_PROCESSOR =
             ITEMS.registerSimpleItem("overload_processor", new Item.Properties());
 
+    public static final DeferredItem<Item> OVERLOAD_INSCRIBER_PRESS =
+            ITEMS.registerSimpleItem("overload_inscriber_press", new Item.Properties());
+
     public static final DeferredItem<Item> OVERLOAD_ALLOY =
             ITEMS.registerSimpleItem("overload_alloy", new Item.Properties());
 

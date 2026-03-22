@@ -51,7 +51,7 @@ public final class LightningTransformService {
             return;
         }
 
-        if (level.random.nextDouble() >= LightningTransformRules.SUCCESS_CHANCE) {
+        if (level.random.nextDouble() >= matchedRecipe.get().recipe().value().successChance()) {
             return;
         }
 
