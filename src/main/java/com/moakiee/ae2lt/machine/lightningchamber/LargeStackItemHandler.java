@@ -25,6 +25,9 @@ import appeng.api.inventories.InternalInventory;
  * 1024.</p>
  */
 public abstract class LargeStackItemHandler implements IItemHandlerModifiable, InternalInventory {
+    private static final String TAG_SLOT = "Slot";
+    private static final String TAG_COUNT_INT = "CountInt";
+    private static final String TAG_STACK = "Stack";
 
     private final NonNullList<ItemStack> stacks;
     @Nullable
@@ -226,8 +229,11 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
             }
 
             CompoundTag itemTag = new CompoundTag();
-            itemTag.putInt("Slot", slot);
-            items.add(stack.save(registries, itemTag));
+            itemTag.putInt(TAG_SLOT, slot);
+            itemTag.putInt(TAG_COUNT_INT, stack.getCount());
+            Tag stackTag = stack.copyWithCount(1).save(registries, new CompoundTag());
+            itemTag.put(TAG_STACK, stackTag);
+            items.add(itemTag);
         }
         tag.put(key, items);
     }
@@ -244,20 +250,23 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
         ListTag items = tag.getList(key, Tag.TAG_COMPOUND);
         for (int i = 0; i < items.size(); i++) {
             CompoundTag itemTag = items.getCompound(i);
-            int slot = itemTag.getInt("Slot");
+            int slot = itemTag.getInt(TAG_SLOT);
             if (slot < 0 || slot >= stacks.size()) {
                 continue;
             }
 
-            ItemStack stack = ItemStack.parseOptional(registries, itemTag);
+            ItemStack stack = itemTag.contains(TAG_STACK, Tag.TAG_COMPOUND)
+                    ? ItemStack.parseOptional(registries, itemTag.getCompound(TAG_STACK))
+                    : ItemStack.parseOptional(registries, itemTag);
             if (stack.isEmpty()) {
                 continue;
             }
 
             int limit = getSlotLimit(slot);
-            if (stack.getCount() > limit) {
-                stack = stack.copyWithCount(limit);
-            }
+            int savedCount = itemTag.contains(TAG_COUNT_INT, Tag.TAG_INT)
+                    ? itemTag.getInt(TAG_COUNT_INT)
+                    : stack.getCount();
+            stack = stack.copyWithCount(Math.min(limit, Math.max(1, savedCount)));
             stacks.set(slot, stack);
         }
     }

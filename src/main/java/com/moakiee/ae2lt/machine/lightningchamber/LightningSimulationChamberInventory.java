@@ -82,4 +82,8 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
     public boolean canAcceptRecipeOutput(ItemStack stack) {
         return insertRecipeOutput(stack, true).isEmpty();
     }
+
+    public void setClientRenderStack(int slot, ItemStack stack) {
+        setStackInSlotUnchecked(slot, stack);
+    }
 }

@@ -6,6 +6,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -14,6 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -33,6 +35,7 @@ import appeng.api.orientation.RelativeSide;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.orientation.BlockOrientation;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
@@ -365,6 +368,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
 
     private void onInventoryChanged() {
         saveChanges();
+        markForClientUpdate();
         logic.onStateChanged();
     }
 
@@ -455,6 +459,32 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
+             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
+             slot++) {
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
+             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
+             slot++) {
+            ItemStack oldStack = inventory.getStackInSlot(slot);
+            ItemStack newStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+            if (!ItemStack.matches(oldStack, newStack)) {
+                inventory.setClientRenderStack(slot, newStack);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    @Override
     public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
         super.addAdditionalDrops(level, pos, drops);
         for (int slot = 0; slot < inventory.getSlots(); slot++) {
@@ -485,5 +515,10 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     @Override
     public IGridNode getActionableNode() {
         return getMainNode().getNode();
+    }
+
+    @Override
+    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
+        return EnumSet.allOf(Direction.class);
     }
 }

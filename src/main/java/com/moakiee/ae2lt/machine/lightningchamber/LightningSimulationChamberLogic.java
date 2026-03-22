@@ -2,10 +2,15 @@ package com.moakiee.ae2lt.machine.lightningchamber;
 
 import java.util.Optional;
 
+import org.jetbrains.annotations.Nullable;
+
+import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
+import appeng.api.stacks.AEKey;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.core.definitions.AEItems;
 
@@ -23,6 +28,25 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationReci
 public final class LightningSimulationChamberLogic implements IGridTickable {
     public static final int MIN_PROCESS_TICKS = 5;
     public static final long BASE_MAX_ENERGY_PER_TICK = 200L;
+    @Nullable
+    private static final AEKey CACHED_APPFLUX_FE_KEY;
+
+    static {
+        AEKey resolvedKey = null;
+        try {
+            var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
+            @SuppressWarnings("unchecked")
+            Class<? extends Enum> enumClass = (Class<? extends Enum>) energyTypeClass.asSubclass(Enum.class);
+            Object feType = Enum.valueOf(enumClass, "FE");
+
+            var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
+            var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
+            Object key = ofMethod.invoke(null, feType);
+            resolvedKey = key instanceof AEKey aeKey ? aeKey : null;
+        } catch (ReflectiveOperationException ignored) {
+        }
+        CACHED_APPFLUX_FE_KEY = resolvedKey;
+    }
 
     private final LightningSimulationChamberBlockEntity host;
 
@@ -40,6 +64,8 @@ public final class LightningSimulationChamberLogic implements IGridTickable {
         if (host.isRemoved() || host.getLevel() == null || host.isClientSide()) {
             return TickRateModulation.SLEEP;
         }
+
+        rechargeFromAppliedFlux();
 
         if (!host.hasLockedRecipe()) {
             tryStartProcessing();
@@ -177,6 +203,36 @@ public final class LightningSimulationChamberLogic implements IGridTickable {
         if (!host.completeLockedRecipe(lockedCandidate)) {
             host.abortProcessing();
         }
+    }
+
+    private void rechargeFromAppliedFlux() {
+        if (CACHED_APPFLUX_FE_KEY == null) {
+            return;
+        }
+
+        long missing = host.getEnergyStorage().getCapacityLong() - host.getEnergyStorage().getStoredEnergyLong();
+        if (missing <= 0L) {
+            return;
+        }
+
+        host.getMainNode().ifPresent((grid, node) -> {
+            long extracted = grid.getStorageService().getInventory()
+                    .extract(
+                            CACHED_APPFLUX_FE_KEY,
+                            Math.min(missing, Integer.MAX_VALUE),
+                            Actionable.MODULATE,
+                            IActionSource.ofMachine(host));
+            if (extracted <= 0L) {
+                return;
+            }
+
+            int inserted = host.getEnergyStorage().receiveEnergy((int) extracted, false);
+            long remainder = extracted - inserted;
+            if (remainder > 0L) {
+                grid.getStorageService().getInventory()
+                        .insert(CACHED_APPFLUX_FE_KEY, remainder, Actionable.MODULATE, IActionSource.ofMachine(host));
+            }
+        });
     }
 
     private static long divideCeil(long dividend, long divisor) {
