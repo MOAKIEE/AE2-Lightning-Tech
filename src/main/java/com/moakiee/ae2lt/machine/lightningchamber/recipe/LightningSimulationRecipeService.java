@@ -105,8 +105,14 @@ public final class LightningSimulationRecipeService {
     }
 
     public static boolean hasRequiredOverloadDust(LightningSimulationChamberInventory inventory) {
-        ItemStack overloadDust = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST);
-        return !overloadDust.isEmpty() && overloadDust.getCount() >= REQUIRED_OVERLOAD_DUST;
+        ItemStack catalyst = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST);
+        if (catalyst.isEmpty()) {
+            return false;
+        }
+        if (inventory.isLightningCollapseMatrix(catalyst)) {
+            return catalyst.getCount() >= 1;
+        }
+        return inventory.isOverloadCrystalDust(catalyst) && catalyst.getCount() >= REQUIRED_OVERLOAD_DUST;
     }
 
     public static boolean canAcceptOutput(LightningSimulationChamberInventory inventory, ItemStack result) {

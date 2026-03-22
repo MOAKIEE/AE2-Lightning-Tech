@@ -238,7 +238,7 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        if (host.getInventory().isOverloadCrystalDust(stack)) {
+        if (host.getInventory().isSimulationCatalyst(stack)) {
             return moveIntoSlots(stack, List.of(overloadDustSlot));
         }
 

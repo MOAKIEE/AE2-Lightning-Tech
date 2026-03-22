@@ -11,7 +11,7 @@ import com.moakiee.ae2lt.registry.ModItems;
  *
  * <p>Slot layout:
  * 0-2 = unordered recipe inputs
- * 3   = overload crystal dust
+ * 3   = reaction catalyst
  * 4   = output only
  */
 public class LightningSimulationChamberInventory extends LargeStackItemHandler {
@@ -23,7 +23,6 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
 
     public static final int SLOT_COUNT = 5;
     public static final int LARGE_SLOT_LIMIT = 1024;
-
     public LightningSimulationChamberInventory(@Nullable Runnable changeListener) {
         super(SLOT_COUNT, changeListener);
     }
@@ -45,12 +44,12 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
             return false;
         }
 
-        boolean overloadDust = isOverloadCrystalDust(stack);
+        boolean catalyst = isSimulationCatalyst(stack);
         if (slot == SLOT_OVERLOAD_DUST) {
-            return overloadDust;
+            return catalyst;
         }
 
-        return isInputSlot(slot) && !overloadDust;
+        return isInputSlot(slot) && !catalyst;
     }
 
     public boolean isInputSlot(int slot) {
@@ -67,6 +66,14 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
 
     public boolean isOverloadCrystalDust(ItemStack stack) {
         return stack.is(ModItems.OVERLOAD_CRYSTAL_DUST.get());
+    }
+
+    public boolean isLightningCollapseMatrix(ItemStack stack) {
+        return stack.is(ModItems.LIGHTNING_COLLAPSE_MATRIX.get());
+    }
+
+    public boolean isSimulationCatalyst(ItemStack stack) {
+        return isOverloadCrystalDust(stack) || isLightningCollapseMatrix(stack);
     }
 
     /**

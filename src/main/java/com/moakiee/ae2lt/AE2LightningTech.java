@@ -58,6 +58,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_ALLOY_PLATE);
                         output.accept(ModItems.OVERLOAD_SINGULARITY);
                         output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
+                        output.accept(ModItems.LIGHTNING_COLLAPSE_MATRIX);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);

@@ -9,7 +9,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
  * Capability-facing inventory wrapper.
  *
  * <p>Important behavior:
- * overload crystal dust is always routed to slot 3 first, even when an
+ * reaction catalysts are always routed to slot 3 first, even when an
  * automation helper starts probing slots from 0 upward.</p>
  */
 public class LightningSimulationChamberAutomationInventory implements IItemHandlerModifiable {
@@ -43,7 +43,7 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isOverloadCrystalDust(stack)) {
+        if (inventory.isSimulationCatalyst(stack)) {
             return inventory.insertItem(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST, stack, simulate);
         }
 
@@ -64,7 +64,7 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isOverloadCrystalDust(stack)) {
+        if (inventory.isSimulationCatalyst(stack)) {
             return inventory.insertItem(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST, stack, simulate);
         }
 
@@ -97,7 +97,7 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return false;
         }
 
-        if (inventory.isOverloadCrystalDust(stack)) {
+        if (inventory.isSimulationCatalyst(stack)) {
             return slot != LightningSimulationChamberInventory.SLOT_OUTPUT;
         }
 

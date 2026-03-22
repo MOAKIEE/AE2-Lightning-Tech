@@ -295,8 +295,15 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             }
         }
 
-        if (inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST).getCount()
-                < LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
+        ItemStack catalyst = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST);
+        if (catalyst.isEmpty()) {
+            return false;
+        }
+        boolean consumesDust = inventory.isOverloadCrystalDust(catalyst);
+        if (consumesDust && catalyst.getCount() < LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
+            return false;
+        }
+        if (!consumesDust && !inventory.isLightningCollapseMatrix(catalyst)) {
             return false;
         }
 
@@ -314,12 +321,14 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             }
         }
 
-        ItemStack dustExtracted = inventory.extractItem(
-                LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST,
-                LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST,
-                false);
-        if (dustExtracted.getCount() != LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
-            return false;
+        if (consumesDust) {
+            ItemStack dustExtracted = inventory.extractItem(
+                    LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST,
+                    LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST,
+                    false);
+            if (dustExtracted.getCount() != LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
+                return false;
+            }
         }
 
         if (!inventory.insertRecipeOutput(candidate.recipe().value().getResultStack(), false).isEmpty()) {
@@ -522,3 +531,4 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         return EnumSet.allOf(Direction.class);
     }
 }
+
