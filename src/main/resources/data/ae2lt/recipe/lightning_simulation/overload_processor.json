@@ -1,0 +1,29 @@
+{
+  "type": "ae2lt:lightning_simulation",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_circuit_board"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:redstone"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2:printed_silicon"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "ae2lt:overload_processor",
+    "count": 1
+  },
+  "totalEnergy": 20000
+}

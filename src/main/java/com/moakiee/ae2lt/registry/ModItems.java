@@ -30,6 +30,9 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_PROCESSOR =
             ITEMS.registerSimpleItem("overload_processor", new Item.Properties());
 
+    public static final DeferredItem<Item> OVERLOAD_INSCRIBER_PRESS =
+            ITEMS.registerSimpleItem("overload_inscriber_press", new Item.Properties());
+
     public static final DeferredItem<Item> OVERLOAD_ALLOY =
             ITEMS.registerSimpleItem("overload_alloy", new Item.Properties());
 
@@ -41,6 +44,9 @@ public final class ModItems {
 
     public static final DeferredItem<Item> ULTIMATE_OVERLOAD_CORE =
             ITEMS.registerSimpleItem("ultimate_overload_core", new Item.Properties());
+
+    public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
+            ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECTOR = ITEMS.registerItem(
             "overloaded_wireless_connector",

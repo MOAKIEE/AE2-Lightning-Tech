@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.logic;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -67,7 +68,8 @@ import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
  * {@link PatternProviderLogic} implementation (incl. ticker, sendList, etc.).
  * <p>
  * In {@link ProviderMode#WIRELESS} the {@link #pushPattern} override performs
- * SINGLE_TARGET round-robin dispatch over the host's wireless connection list.
+ * either round-robin single-target dispatch or even distribution across the
+ * host's wireless connection list.
  */
 public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
@@ -116,6 +118,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final int COOLDOWN_NEAR_BAND = 4;
     /** Consecutive post-cooldown successes in fine mode before decreasing cooldownN by 1. */
     private static final int COOLDOWN_STABLE_SUCCESSES = 2;
+    private static final float[] PROBE_LEVELS = {5f, 3f, 2f, 1f, 0.5f, 0.3f, 0.1f};
+    private static final int PROBE_LEVEL_INIT_IDX = 0;
+
     static final class ConnectionState {
         int pushCount;
 
@@ -129,6 +134,37 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         /** Fine mode: consecutive post-cooldown fails. */
         int cooldownFailStreak;
 
+        // early-probe: fixed level table, one probe per cooldown cycle
+        int probeLevelIdx = PROBE_LEVEL_INIT_IDX;
+        int probeSkipCounter;
+        boolean probedThisCycle;
+
+        // timing-wheel dispatch state
+        boolean ready = true;
+        int readyGeneration;
+        boolean probeArmed;
+
+        // adapter cache (avoids MachineAdapterRegistry.find() scan every push)
+        @Nullable WeakReference<BlockEntity> adapterBERef;
+        @Nullable MachineAdapter cachedAdapter;
+
+        @Nullable
+        MachineAdapter resolveAdapter(ServerLevel level, BlockPos pos) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be == null) {
+                adapterBERef = null;
+                cachedAdapter = null;
+                return null;
+            }
+            if (adapterBERef != null && adapterBERef.get() == be && cachedAdapter != null) {
+                return cachedAdapter;
+            }
+            var adapter = MachineAdapterRegistry.find(level, pos);
+            adapterBERef = new WeakReference<>(be);
+            cachedAdapter = adapter;
+            return adapter;
+        }
+
         // energy cap cache
         @Nullable WeakReference<BlockEntity> energyBERef;
         @Nullable WeakReference<IEnergyStorage> energyStorageRef;
@@ -141,8 +177,29 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         int scheduleDelay = ENERGY_DELAY_MEAN;
         long lastCanReceive;
 
-        boolean isCooling(long gameTick) {
-            return cooldownUntil >= 0 && gameTick < cooldownUntil;
+        boolean isInProbeWindow(long gameTick) {
+            if (cooldownUntil < 0 || gameTick >= cooldownUntil) return false;
+            if (probedThisCycle) return false;
+            float level = PROBE_LEVELS[probeLevelIdx];
+            if (level >= 1.0f) {
+                return gameTick == cooldownUntil - (int) level;
+            } else {
+                int interval = Math.round(1.0f / level);
+                return probeSkipCounter >= interval && gameTick == cooldownUntil - 1;
+            }
+        }
+
+        void onProbeSuccess() {
+            probeLevelIdx = 0;
+            probeSkipCounter = 0;
+            probedThisCycle = true;
+            cooldownUntil = -1;
+        }
+
+        void onProbeFail() {
+            probeLevelIdx = Math.min(probeLevelIdx + 1, PROBE_LEVELS.length - 1);
+            probeSkipCounter = 0;
+            probedThisCycle = true;
         }
 
         /** True when search interval is narrow — use +/- instead of binary. */
@@ -172,6 +229,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (cooldownUntil < 0) {
                 cooldownUntil = gameTick + cooldownN;
                 cooldownStableSuccessStreak = 0;
+                probedThisCycle = false;
+                probeSkipCounter++;
                 return;
             }
             cooldownStableSuccessStreak = 0;
@@ -192,6 +251,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 }
             }
             cooldownUntil = gameTick + cooldownN;
+            probedThisCycle = false;
+            probeSkipCounter++;
         }
 
         void resetBackoff(long gameTick) {
@@ -236,14 +297,25 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return connectionStates.computeIfAbsent(conn, k -> new ConnectionState());
     }
 
-    // ---- push priority queue (O(log n) load balancing) ----------------------------
+    // ---- push timing wheel + ready queue ----------------------------------------
 
-    private record PushEntry(WirelessConnection conn, ConnectionState state) {}
+    private record PushEntry(WirelessConnection conn, ConnectionState state, int generation) {}
 
-    private final PriorityQueue<PushEntry> pushPQ = new PriorityQueue<>(
+    private static final int PUSH_WHEEL_BITS = 6;
+    private static final int PUSH_WHEEL_SIZE = 1 << PUSH_WHEEL_BITS; // 64 — comfortably covers COOLDOWN_MAX (40)
+    private static final int PUSH_WHEEL_MASK = PUSH_WHEEL_SIZE - 1;
+
+    @SuppressWarnings("unchecked")
+    private final List<WirelessConnection>[] pushWheel = new List[PUSH_WHEEL_SIZE];
+    {
+        for (int i = 0; i < PUSH_WHEEL_SIZE; i++) pushWheel[i] = new ArrayList<>();
+    }
+
+    private final PriorityQueue<PushEntry> readyPQ = new PriorityQueue<>(
             Comparator.comparingInt(e -> e.state().pushCount));
-
-    private List<WirelessConnection> pushPQValidRef = List.of();
+    private final ArrayDeque<WirelessConnection> readyQueue = new ArrayDeque<>();
+    private List<WirelessConnection> pushWheelValidRef = List.of();
+    private long lastPushWheelTick = -1;
 
     private enum PushOutcome { SUCCESS, SOFT_FAIL, HARD_FAIL }
 
@@ -561,48 +633,121 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var valid = getOrRefreshValidConnections(sl, sl.getGameTime());
         if (valid.isEmpty()) return false;
 
-        if (valid != pushPQValidRef) {
-            rebuildPushPQ(valid);
-        }
-
         long gameTick = sl.getGameTime();
-        var retried = new ArrayList<PushEntry>(pushPQ.size());
-        boolean success = false;
+        boolean fastMode = overloadedHost.getWirelessSpeedMode()
+                == OverloadedPatternProviderBlockEntity.WirelessSpeedMode.FAST;
 
-        while (!pushPQ.isEmpty()) {
-            var entry = pushPQ.poll();
+        if (valid != pushWheelValidRef) {
+            rebuildPushStructures(valid, gameTick);
+        }
+        advancePushWheel(gameTick, fastMode);
+
+        return switch (overloadedHost.getWirelessDispatchMode()) {
+            case EVEN_DISTRIBUTION -> wirelessPushEvenDistribution(pattern, inputs, valid, server, gameTick, fastMode);
+            case SINGLE_TARGET -> wirelessPushSingleTarget(pattern, inputs, valid, server, gameTick, fastMode);
+        };
+    }
+
+    // ---- EVEN_DISTRIBUTION: PQ-based balanced push --------------------------------
+
+    private boolean wirelessPushEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
+            long gameTick, boolean fastMode) {
+
+        while (!readyPQ.isEmpty()) {
+            var entry = readyPQ.poll();
             var state = entry.state();
 
-            if (state.isCooling(gameTick)) {
-                retried.add(entry);
-                continue;
-            }
+            if (entry.generation() != state.readyGeneration) continue;
+            if (!state.ready) continue;
+
+            boolean probing = state.probeArmed
+                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
+            state.probeArmed = false;
 
             var outcome = tryPushToConnection(pattern, inputs, entry.conn(), server);
             switch (outcome) {
                 case SUCCESS -> {
-                    state.onPushSuccess(gameTick);
+                    if (probing) {
+                        state.onProbeSuccess();
+                    } else {
+                        state.onPushSuccess(gameTick);
+                    }
                     state.pushCount++;
-                    pushPQ.offer(entry);
-                    success = true;
+                    state.readyGeneration++;
+                    readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
+                    return true;
                 }
                 case HARD_FAIL -> {
-                    if (isConnectionAlive(entry.conn(), server)) {
-                        retried.add(entry);
-                    } else {
+                    if (!isConnectionAlive(entry.conn(), server)) {
                         connectionsDirty = true;
+                    } else {
+                        state.readyGeneration++;
+                        readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
                     }
                 }
                 case SOFT_FAIL -> {
-                    state.onPushFail(gameTick);
-                    retried.add(entry);
+                    if (probing) {
+                        state.onProbeFail();
+                        schedulePushWheel(entry.conn(), state, fastMode);
+                    } else {
+                        state.onPushFail(gameTick);
+                        schedulePushWheel(entry.conn(), state, fastMode);
+                    }
                 }
             }
-            if (success) break;
         }
+        return false;
+    }
 
-        for (var r : retried) pushPQ.offer(r);
-        return success;
+    // ---- SINGLE_TARGET: sticky round-robin push -----------------------------------
+
+    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
+            long gameTick, boolean fastMode) {
+
+        while (!readyQueue.isEmpty()) {
+            var conn = readyQueue.peek();
+            var state = connectionStates.get(conn);
+
+            if (state == null) {
+                readyQueue.poll();
+                continue;
+            }
+
+            boolean probing = state.probeArmed
+                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
+            state.probeArmed = false;
+
+            var outcome = tryPushToConnection(pattern, inputs, conn, server);
+            switch (outcome) {
+                case SUCCESS -> {
+                    if (probing) {
+                        state.onProbeSuccess();
+                    } else {
+                        state.onPushSuccess(gameTick);
+                    }
+                    state.pushCount++;
+                    return true;
+                }
+                case SOFT_FAIL -> {
+                    readyQueue.poll();
+                    if (probing) {
+                        state.onProbeFail();
+                    } else {
+                        state.onPushFail(gameTick);
+                    }
+                    schedulePushWheel(conn, state, fastMode);
+                }
+                case HARD_FAIL -> {
+                    readyQueue.poll();
+                    if (!isConnectionAlive(conn, server)) {
+                        connectionsDirty = true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean isConnectionAlive(WirelessConnection conn,
@@ -612,12 +757,92 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 && level.getBlockEntity(conn.pos()) != null;
     }
 
-    private void rebuildPushPQ(List<WirelessConnection> valid) {
-        pushPQ.clear();
+    private void rebuildPushStructures(List<WirelessConnection> valid, long gameTick) {
+        for (var slot : pushWheel) slot.clear();
+        readyPQ.clear();
+        readyQueue.clear();
         for (var conn : valid) {
-            pushPQ.offer(new PushEntry(conn, getOrCreateState(conn)));
+            var state = getOrCreateState(conn);
+            if (state.cooldownUntil >= 0 && gameTick < state.cooldownUntil) {
+                state.ready = false;
+                state.probeArmed = false;
+                int slot = (int) (state.cooldownUntil & PUSH_WHEEL_MASK);
+                pushWheel[slot].add(conn);
+            } else {
+                state.ready = true;
+                state.probeArmed = false;
+                state.readyGeneration++;
+                readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+                readyQueue.addLast(conn);
+            }
         }
-        pushPQValidRef = valid;
+        pushWheelValidRef = valid;
+        lastPushWheelTick = gameTick;
+    }
+
+    private void advancePushWheel(long gameTick, boolean fastMode) {
+        if (lastPushWheelTick < 0) lastPushWheelTick = gameTick - 1;
+        long delta = gameTick - lastPushWheelTick;
+        if (delta <= 0) return;
+        int steps = (int) Math.min(delta, PUSH_WHEEL_SIZE);
+        for (int i = 0; i < steps; i++) {
+            long t = lastPushWheelTick + 1 + i;
+            int slot = (int) (t & PUSH_WHEEL_MASK);
+            var list = pushWheel[slot];
+            if (list.isEmpty()) continue;
+            var iter = list.iterator();
+            while (iter.hasNext()) {
+                var conn = iter.next();
+                var state = connectionStates.get(conn);
+                if (state == null) { iter.remove(); continue; }
+                boolean fire = false;
+                boolean probe = false;
+                if (state.cooldownUntil < 0 || t >= state.cooldownUntil) {
+                    fire = true;
+                } else if (fastMode && !state.probedThisCycle && state.isInProbeWindow(t)) {
+                    fire = true;
+                    probe = true;
+                }
+                if (fire) {
+                    iter.remove();
+                    state.ready = true;
+                    state.probeArmed = probe;
+                    state.readyGeneration++;
+                    readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+                    readyQueue.addLast(conn);
+                }
+            }
+        }
+        lastPushWheelTick = gameTick;
+    }
+
+    private void schedulePushWheel(WirelessConnection conn, ConnectionState state, boolean fastMode) {
+        state.ready = false;
+        state.probeArmed = false;
+        if (state.cooldownUntil < 0) {
+            state.ready = true;
+            state.readyGeneration++;
+            readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+            readyQueue.addLast(conn);
+            return;
+        }
+        long targetTick = state.cooldownUntil;
+        if (fastMode && !state.probedThisCycle) {
+            float level = PROBE_LEVELS[state.probeLevelIdx];
+            if (level >= 1.0f) {
+                long probeTick = state.cooldownUntil - (int) level;
+                if (probeTick > lastPushWheelTick) targetTick = probeTick;
+            } else {
+                int interval = Math.round(1.0f / level);
+                if (state.probeSkipCounter >= interval) {
+                    long probeTick = state.cooldownUntil - 1;
+                    if (probeTick > lastPushWheelTick) targetTick = probeTick;
+                }
+            }
+        }
+        targetTick = Math.max(targetTick, lastPushWheelTick + 1);
+        int slot = (int) (targetTick & PUSH_WHEEL_MASK);
+        pushWheel[slot].add(conn);
     }
 
     private PushOutcome tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
@@ -631,7 +856,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         autoReturnBeforePush(targetLevel, conn);
 
-        var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+        var state = getOrCreateState(conn);
+        var adapter = state.resolveAdapter(targetLevel, conn.pos());
         if (adapter == null) return PushOutcome.HARD_FAIL;
 
         boolean blocking = isBlocking();
@@ -806,7 +1032,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 map.computeIfAbsent(face, f -> getCachedTarget(level, targetPos, be, f, source));
             }
         }
-        if (map.containsValue(null)) return null;
+        if (map.isEmpty() || map.containsValue(null)) return null;
         return map;
     }
 
@@ -891,7 +1117,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (level instanceof ServerLevel sl) {
             var targetLevel = sl.getServer().getLevel(wirelessSendConn.dimension());
             if (targetLevel != null) {
-                var adapter = MachineAdapterRegistry.find(targetLevel, wirelessSendConn.pos());
+                var state = getOrCreateState(wirelessSendConn);
+                var adapter = state.resolveAdapter(targetLevel, wirelessSendConn.pos());
                 if (adapter != null) {
                     adapter.flushOverflow(
                             targetLevel, wirelessSendConn.pos(), wirelessSendConn.boundFace(),
@@ -1085,7 +1312,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var targetLevel = resolveTargetLevel(sl, conn);
             if (targetLevel == null) continue;
 
-            var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+            var state = getOrCreateState(conn);
+            var adapter = state.resolveAdapter(targetLevel, conn.pos());
             if (adapter == null) continue;
 
             var outputs = adapter.extractOutputs(
@@ -1161,7 +1389,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var targetLevel = resolveTargetLevel(sl, conn);
         if (targetLevel == null) return;
 
-        var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+        var state = getOrCreateState(conn);
+        var adapter = state.resolveAdapter(targetLevel, conn.pos());
         if (adapter == null) return;
 
         var outputs = adapter.extractOutputs(
@@ -1183,7 +1412,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * connections, or patterns change.
      */
     public void refreshEjectRegistrations() {
-        var removed = EjectModeRegistry.unregisterAll(overloadedHost);
+        var removed = EjectModeRegistry.unregisterAll(overloadedHost, true);
         invalidateCapabilitiesAt(removed);
 
         if (overloadedHost.getReturnMode() != ReturnMode.EJECT) return;
@@ -1203,7 +1432,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             var entry = new EjectModeRegistry.EjectEntry(
                     new java.lang.ref.WeakReference<>(overloadedHost),
-                    ghostBE
+                    ghostBE,
+                    sl.dimension(),
+                    overloadedHost.getBlockPos()
             );
 
             EjectModeRegistry.register(targetLevel.dimension(), adjacentPos.asLong(), queryFace, entry);
@@ -1467,7 +1698,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 else if (delay < ENERGY_DELAY_MEAN) delay++;
             }
         } else {
-            delay = delay < ENERGY_DELAY_MEAN ? delay * 2 : delay + 1;
+            delay++;
         }
 
         st.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
@@ -1574,7 +1805,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         validConnectionsCacheTick = -1;
         lastConnectionValidation = -1;
         wheelDirty = true;
-        pushPQValidRef = List.of();
+        pushWheelValidRef = List.of();
+        for (var slot : pushWheel) slot.clear();
+        readyPQ.clear();
+        readyQueue.clear();
+        lastPushWheelTick = -1;
         targetCache.clear();
         connectionStates.clear();
     }
@@ -1828,7 +2063,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
-        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost));
+        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost, true));
     }
 
     // ---- NBT persistence --------------------------------------------------------

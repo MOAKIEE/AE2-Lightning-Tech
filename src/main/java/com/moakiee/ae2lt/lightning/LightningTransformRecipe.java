@@ -33,11 +33,12 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
             CountedIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
 
     private final int priority;
+    private final double successChance;
     private final List<CountedIngredient> inputs;
     private final ItemStack result;
     private final int totalInputCount;
 
-    public LightningTransformRecipe(int priority, List<CountedIngredient> inputs, ItemStack result) {
+    public LightningTransformRecipe(int priority, double successChance, List<CountedIngredient> inputs, ItemStack result) {
         Objects.requireNonNull(inputs, "inputs");
         Objects.requireNonNull(result, "result");
         if (inputs.isEmpty()) {
@@ -46,8 +47,12 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
         if (result.isEmpty()) {
             throw new IllegalArgumentException("result cannot be empty");
         }
+        if (successChance < 0.0D || successChance > 1.0D) {
+            throw new IllegalArgumentException("successChance must be between 0.0 and 1.0");
+        }
 
         this.priority = priority;
+        this.successChance = successChance;
         this.inputs = List.copyOf(inputs);
         this.result = result.copy();
         this.totalInputCount = this.inputs.stream().mapToInt(CountedIngredient::count).sum();
@@ -55,6 +60,10 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
 
     public int priority() {
         return priority;
+    }
+
+    public double successChance() {
+        return successChance;
     }
 
     public List<CountedIngredient> inputs() {
@@ -277,12 +286,17 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
     public static final class Serializer implements RecipeSerializer<LightningTransformRecipe> {
         private static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningTransformRecipe::priority),
+                        Codec.doubleRange(0.0D, 1.0D)
+                                .optionalFieldOf("success_chance", LightningTransformRules.SUCCESS_CHANCE)
+                                .forGetter(LightningTransformRecipe::successChance),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningTransformRecipe::inputs),
                         ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
                 .apply(instance, LightningTransformRecipe::new));
         private static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT,
                 LightningTransformRecipe::priority,
+                ByteBufCodecs.DOUBLE,
+                LightningTransformRecipe::successChance,
                 INPUTS_STREAM_CODEC,
                 LightningTransformRecipe::inputs,
                 ItemStack.STREAM_CODEC,

@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import net.minecraft.core.registries.Registries;
@@ -21,6 +22,11 @@ public final class ModMenuTypes {
             OVERLOAD_PATTERN_ENCODER = MENU_TYPES.register(
                     "overload_pattern_encoder",
                     () -> OverloadPatternEncoderMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<LightningSimulationChamberMenu>>
+            LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(
+                    "lightning_simulation_chamber",
+                    () -> LightningSimulationChamberMenu.TYPE);
 
     private ModMenuTypes() {
     }

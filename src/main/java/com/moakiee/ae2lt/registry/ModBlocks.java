@@ -3,10 +3,10 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
+import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
-import com.moakiee.ae2lt.block.ExtendedPatternProviderBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
@@ -66,6 +66,9 @@ public final class ModBlocks {
                     .forceSolidOn()
                     .noOcclusion()));
 
+    public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
+            registerBlock("lightning_simulation_chamber", LightningSimulationChamberBlock::new);
+
     public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
             registerBlock("overloaded_controller", OverloadedControllerBlock::new);
 
@@ -103,9 +106,6 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadedPatternProviderBlock> OVERLOADED_PATTERN_PROVIDER =
             registerBlock("overloaded_pattern_provider", OverloadedPatternProviderBlock::new);
-
-    public static final DeferredBlock<ExtendedPatternProviderBlock> EXTENDED_PATTERN_PROVIDER =
-            registerBlock("extended_pattern_provider", ExtendedPatternProviderBlock::new);
 
     private ModBlocks() {
     }

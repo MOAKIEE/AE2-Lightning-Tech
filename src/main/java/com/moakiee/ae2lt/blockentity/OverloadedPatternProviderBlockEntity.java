@@ -68,8 +68,16 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     /** Return mode: OFF (no auto-return), AUTO (active extraction), EJECT (virtual output hatch). */
     public enum ReturnMode { OFF, AUTO, EJECT }
 
+    /** Wireless dispatch strategy. */
+    public enum WirelessDispatchMode { SINGLE_TARGET, EVEN_DISTRIBUTION }
+
+    /** Wireless speed mode: NORMAL = standard cooldown, FAST = probe-based early detection. */
+    public enum WirelessSpeedMode { NORMAL, FAST }
+
     private ProviderMode providerMode = ProviderMode.NORMAL;
     private ReturnMode returnMode = ReturnMode.OFF;
+    private WirelessDispatchMode wirelessDispatchMode = WirelessDispatchMode.EVEN_DISTRIBUTION;
+    private WirelessSpeedMode wirelessSpeedMode = WirelessSpeedMode.NORMAL;
     private boolean filteredImport = false;
 
     /** Active wireless connection records. */
@@ -226,6 +234,33 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         return returnMode != ReturnMode.OFF;
     }
 
+    public WirelessDispatchMode getWirelessDispatchMode() {
+        return wirelessDispatchMode;
+    }
+
+    public void setWirelessDispatchMode(WirelessDispatchMode wirelessDispatchMode) {
+        if (this.wirelessDispatchMode == wirelessDispatchMode) {
+            return;
+        }
+        this.wirelessDispatchMode = wirelessDispatchMode;
+        notifyLogicStateChanged();
+        saveChanges();
+        markForClientUpdate();
+    }
+
+    public WirelessSpeedMode getWirelessSpeedMode() {
+        return wirelessSpeedMode;
+    }
+
+    public void setWirelessSpeedMode(WirelessSpeedMode wirelessSpeedMode) {
+        if (this.wirelessSpeedMode == wirelessSpeedMode) {
+            return;
+        }
+        this.wirelessSpeedMode = wirelessSpeedMode;
+        saveChanges();
+        markForClientUpdate();
+    }
+
     public boolean isFilteredImport() {
         return filteredImport;
     }
@@ -339,6 +374,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super.writeToStream(data);
         data.writeByte(providerMode.ordinal());
         data.writeByte(returnMode.ordinal());
+        data.writeByte(wirelessDispatchMode.ordinal());
+        data.writeByte(wirelessSpeedMode.ordinal());
         data.writeBoolean(filteredImport);
         data.writeVarInt(connections.size());
         for (var conn : connections) {
@@ -355,6 +392,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         var rmOrd = data.readByte();
         var newReturnMode = rmOrd >= 0 && rmOrd < ReturnMode.values().length
                 ? ReturnMode.values()[rmOrd] : ReturnMode.OFF;
+        var dispatchOrd = data.readByte();
+        var newDispatchMode = dispatchOrd >= 0 && dispatchOrd < WirelessDispatchMode.values().length
+                ? WirelessDispatchMode.values()[dispatchOrd] : WirelessDispatchMode.EVEN_DISTRIBUTION;
+        var speedOrd = data.readByte();
+        var newSpeedMode = speedOrd >= 0 && speedOrd < WirelessSpeedMode.values().length
+                ? WirelessSpeedMode.values()[speedOrd] : WirelessSpeedMode.NORMAL;
         var newFilteredImport = data.readBoolean();
         int count = data.readVarInt();
         var newConns = new ArrayList<WirelessConnection>(count);
@@ -365,10 +408,14 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             newConns.add(new WirelessConnection(dim, pos, face));
         }
         if (newMode != providerMode || newReturnMode != returnMode
+                || newDispatchMode != wirelessDispatchMode
+                || newSpeedMode != wirelessSpeedMode
                 || newFilteredImport != filteredImport
                 || !newConns.equals(connections)) {
             providerMode = newMode;
             returnMode = newReturnMode;
+            wirelessDispatchMode = newDispatchMode;
+            wirelessSpeedMode = newSpeedMode;
             filteredImport = newFilteredImport;
             connections.clear();
             connections.addAll(newConns);
@@ -383,6 +430,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private static final String TAG_PROVIDER_MODE = "OverloadMode";
     private static final String TAG_AUTO_RETURN = "AutoReturn";
     private static final String TAG_RETURN_MODE = "ReturnMode";
+    private static final String TAG_WIRELESS_DISPATCH_MODE = "WirelessDispatchMode";
+    private static final String TAG_WIRELESS_SPEED_MODE = "WirelessSpeedMode";
     private static final String TAG_FILTERED_IMPORT = "FilteredImport";
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
@@ -391,6 +440,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super.saveAdditional(data, registries);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putString(TAG_RETURN_MODE, returnMode.name());
+        data.putString(TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode.name());
+        data.putString(TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode.name());
         data.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
 
         var connList = new ListTag();
@@ -419,6 +470,20 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         } else if (data.contains(TAG_AUTO_RETURN)) {
             returnMode = data.getBoolean(TAG_AUTO_RETURN) ? ReturnMode.AUTO : ReturnMode.OFF;
         }
+        if (data.contains(TAG_WIRELESS_DISPATCH_MODE)) {
+            try {
+                wirelessDispatchMode = WirelessDispatchMode.valueOf(data.getString(TAG_WIRELESS_DISPATCH_MODE));
+            } catch (IllegalArgumentException ignored) {
+                wirelessDispatchMode = WirelessDispatchMode.EVEN_DISTRIBUTION;
+            }
+        }
+        if (data.contains(TAG_WIRELESS_SPEED_MODE)) {
+            try {
+                wirelessSpeedMode = WirelessSpeedMode.valueOf(data.getString(TAG_WIRELESS_SPEED_MODE));
+            } catch (IllegalArgumentException ignored) {
+                wirelessSpeedMode = WirelessSpeedMode.NORMAL;
+            }
+        }
         filteredImport = data.getBoolean(TAG_FILTERED_IMPORT);
         connections.clear();
         if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
@@ -432,19 +497,29 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     // -- Cleanup --
 
+    private boolean unloadingChunk = false;
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        unloadingChunk = true;
+    }
+
     @Override
     public void setRemoved() {
-        super.setRemoved();
-        var removed = com.moakiee.ae2lt.logic.EjectModeRegistry.unregisterAll(this);
-        if (level instanceof net.minecraft.server.level.ServerLevel sl) {
-            var server = sl.getServer();
-            for (var dp : removed) {
-                var targetLevel = server.getLevel(dp.dimension());
-                if (targetLevel != null) {
-                    targetLevel.invalidateCapabilities(dp.pos());
+        if (!unloadingChunk) {
+            var removed = com.moakiee.ae2lt.logic.EjectModeRegistry.unregisterAll(this, true);
+            if (level instanceof net.minecraft.server.level.ServerLevel sl) {
+                var server = sl.getServer();
+                for (var dp : removed) {
+                    var targetLevel = server.getLevel(dp.dimension());
+                    if (targetLevel != null) {
+                        targetLevel.invalidateCapabilities(dp.pos());
+                    }
                 }
             }
         }
+        super.setRemoved();
     }
 
     // -- Menu binding --

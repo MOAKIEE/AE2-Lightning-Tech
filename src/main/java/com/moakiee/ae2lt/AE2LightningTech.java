@@ -7,7 +7,7 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
-import com.moakiee.ae2lt.blockentity.ExtendedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
@@ -30,9 +30,15 @@ import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.upgrades.Upgrades;
+import appeng.core.definitions.AEItems;
 
+import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
+
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStartingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
@@ -52,13 +58,16 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);
                         output.accept(ModItems.OVERLOAD_PROCESSOR);
+                        output.accept(ModItems.OVERLOAD_INSCRIBER_PRESS);
                         output.accept(ModItems.OVERLOAD_ALLOY);
                         output.accept(ModItems.OVERLOAD_ALLOY_PLATE);
                         output.accept(ModItems.OVERLOAD_SINGULARITY);
                         output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
+                        output.accept(ModItems.LIGHTNING_COLLAPSE_MATRIX);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
+                        output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
                         output.accept(ModItems.OVERLOADED_CABLE_WHITE);
@@ -89,7 +98,6 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
-                        output.accept(ModBlocks.EXTENDED_PATTERN_PROVIDER);
                     })
                     .build());
 
@@ -105,6 +113,9 @@ public class AE2LightningTech {
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::commonSetup);
 
+        NeoForge.EVENT_BUS.addListener(this::onServerStarting);
+        NeoForge.EVENT_BUS.addListener(this::onServerStopped);
+
         registerOptionalClientIntegrations();
     }
 
@@ -114,6 +125,16 @@ public class AE2LightningTech {
                 ModBlockEntities.HIGH_VOLTAGE_AGGREGATOR.get(),
                 (blockEntity, side) -> side == Direction.UP ? null : blockEntity.getEnergyStorage());
 
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
@@ -122,12 +143,12 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
-                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
-                ModBlockEntities.EXTENDED_PATTERN_PROVIDER.get(),
+                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlock(
@@ -140,8 +161,7 @@ public class AE2LightningTech {
                     }
                     return null;
                 },
-                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(),
-                ModBlocks.EXTENDED_PATTERN_PROVIDER.get());
+                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get());
     }
 
     /**
@@ -157,6 +177,14 @@ public class AE2LightningTech {
                     OverloadedControllerBlockEntity.class,
                     controllerBeType,
                     null,
+                    OverloadedControllerBlockEntity::serverTick);
+
+            var lightningChamberBlock = ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get();
+            var lightningChamberBeType = ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get();
+            lightningChamberBlock.setBlockEntity(
+                    LightningSimulationChamberBlockEntity.class,
+                    lightningChamberBeType,
+                    null,
                     null);
 
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
@@ -165,21 +193,14 @@ public class AE2LightningTech {
                     OverloadedPatternProviderBlockEntity.class,
                     beType,
                     null,
-                    null
-            );
-
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            var extBlock = (appeng.block.AEBaseEntityBlock) ModBlocks.EXTENDED_PATTERN_PROVIDER.get();
-            extBlock.setBlockEntity(
-                    ExtendedPatternProviderBlockEntity.class,
-                    ModBlockEntities.EXTENDED_PATTERN_PROVIDER.get(),
-                    null,
-                    null
+                    OverloadedPatternProviderBlockEntity::serverTick
             );
 
             // Register built-in machine adapters (AE2-native fallback)
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
+            Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
+                    LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
 
             registerAppliedFluxInductionCardCompat();
         });
@@ -193,7 +214,14 @@ public class AE2LightningTech {
         }
 
         Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
-        Upgrades.add(inductionCard, ModBlocks.EXTENDED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
+    }
+
+    private void onServerStarting(ServerStartingEvent event) {
+        EjectModeRegistry.onServerStart(event.getServer());
+    }
+
+    private void onServerStopped(ServerStoppedEvent event) {
+        EjectModeRegistry.onServerStop();
     }
 
     private static void registerOptionalClientIntegrations() {
