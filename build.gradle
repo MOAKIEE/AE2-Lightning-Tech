@@ -136,6 +136,7 @@ dependencies {
     runtimeOnly "curse.maven:construction-sticks-1156098:7687867"
 
     runtimeOnly files("libs/observable-5.4.4.jar")
+    runtimeOnly "curse.maven:kotlin-for-forge-351264:7471280"
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

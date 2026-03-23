@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cross",
-  "render_type": "minecraft:cutout",
-  "textures": {
-    "cross": "ae2lt:block/large_overload_crystal_bud"
-  }
-}

@@ -4,7 +4,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -108,17 +107,142 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Round-robin index across the *valid* connection list for SINGLE_TARGET. */
     private int wirelessRoundRobin = 0;
 
-    /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
-    private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
+    // ---- unified per-connection state ---------------------------------------------
+
+    private static final int COOLDOWN_INIT = 5;
+    private static final int COOLDOWN_MIN  = 1;
+    private static final int COOLDOWN_MAX  = 40;
+    /** When (searchHi - searchLo) <= this, switch from binary search to +/- fine tuning. */
+    private static final int COOLDOWN_NEAR_BAND = 4;
+    /** Consecutive post-cooldown successes in fine mode before decreasing cooldownN by 1. */
+    private static final int COOLDOWN_STABLE_SUCCESSES = 2;
+    static final class ConnectionState {
+        int pushCount;
+
+        // push cooldown — far: binary search on [searchLo, searchHi]; near: +/- with streaks
+        long cooldownUntil = -1;
+        int cooldownN = COOLDOWN_INIT;
+        int searchLo = COOLDOWN_MIN;
+        int searchHi = COOLDOWN_MAX;
+        /** Fine mode: successes after cooldown before one tick down. */
+        int cooldownStableSuccessStreak;
+        /** Fine mode: consecutive post-cooldown fails. */
+        int cooldownFailStreak;
+
+        // energy cap cache
+        @Nullable WeakReference<BlockEntity> energyBERef;
+        @Nullable WeakReference<IEnergyStorage> energyStorageRef;
+
+        // auto-return backoff
+        long nextPollTick;
+        int backoffInterval = BACKOFF_MIN;
+
+        // energy schedule
+        int scheduleDelay = ENERGY_DELAY_MEAN;
+        long lastCanReceive;
+
+        boolean isCooling(long gameTick) {
+            return cooldownUntil >= 0 && gameTick < cooldownUntil;
+        }
+
+        /** True when search interval is narrow — use +/- instead of binary. */
+        private boolean nearBand() {
+            return searchHi - searchLo <= COOLDOWN_NEAR_BAND;
+        }
+
+        void onPushSuccess(long gameTick) {
+            if (cooldownUntil < 0) return;
+            cooldownFailStreak = 0;
+            if (nearBand()) {
+                cooldownStableSuccessStreak++;
+                if (cooldownStableSuccessStreak >= COOLDOWN_STABLE_SUCCESSES) {
+                    cooldownN = Math.max(COOLDOWN_MIN, cooldownN - 1);
+                    cooldownStableSuccessStreak = 0;
+                }
+            } else {
+                cooldownStableSuccessStreak = 0;
+                searchHi = cooldownN;
+                cooldownN = Math.max(searchLo, (searchLo + searchHi) / 2);
+                cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+            }
+            cooldownUntil = -1;
+        }
+
+        void onPushFail(long gameTick) {
+            if (cooldownUntil < 0) {
+                cooldownUntil = gameTick + cooldownN;
+                cooldownStableSuccessStreak = 0;
+                return;
+            }
+            cooldownStableSuccessStreak = 0;
+            if (nearBand()) {
+                cooldownFailStreak++;
+                int step = Math.min(2, 1 + (cooldownFailStreak - 1) / 4);
+                cooldownN = Math.min(COOLDOWN_MAX, cooldownN + step);
+            } else {
+                cooldownFailStreak = 0;
+                searchLo = cooldownN + 1;
+                if (searchLo > searchHi) {
+                    searchLo = COOLDOWN_MAX;
+                    searchHi = COOLDOWN_MAX;
+                    cooldownN = COOLDOWN_MAX;
+                } else {
+                    cooldownN = (searchLo + searchHi) / 2;
+                    cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                }
+            }
+            cooldownUntil = gameTick + cooldownN;
+        }
+
+        void resetBackoff(long gameTick) {
+            backoffInterval = BACKOFF_MIN;
+            nextPollTick = gameTick + BACKOFF_MIN;
+        }
+
+        void updateBackoff(long gameTick, boolean foundItems) {
+            backoffInterval = foundItems ? BACKOFF_MIN
+                    : Math.min(backoffInterval * 2, BACKOFF_MAX);
+            nextPollTick = gameTick + backoffInterval;
+        }
+
+        @Nullable
+        IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
+            BlockEntity be = level.getBlockEntity(conn.pos());
+            if (be == null) {
+                energyBERef = null;
+                energyStorageRef = null;
+                return null;
+            }
+            if (energyBERef != null && energyBERef.get() == be && energyStorageRef != null) {
+                var s = energyStorageRef.get();
+                if (s != null) return s;
+            }
+            IEnergyStorage storage = level.getCapability(
+                    Capabilities.EnergyStorage.BLOCK, conn.pos(), conn.boundFace());
+            if (storage == null) {
+                energyBERef = null;
+                energyStorageRef = null;
+                return null;
+            }
+            energyBERef = new WeakReference<>(be);
+            energyStorageRef = new WeakReference<>(storage);
+            return storage;
+        }
+    }
+
+    private final Map<WirelessConnection, ConnectionState> connectionStates = new HashMap<>();
+
+    private ConnectionState getOrCreateState(WirelessConnection conn) {
+        return connectionStates.computeIfAbsent(conn, k -> new ConnectionState());
+    }
 
     // ---- push priority queue (O(log n) load balancing) ----------------------------
 
-    private record PushEntry(WirelessConnection conn, int snapshotCount) {}
+    private record PushEntry(WirelessConnection conn, ConnectionState state) {}
 
     private final PriorityQueue<PushEntry> pushPQ = new PriorityQueue<>(
-            Comparator.comparingInt(PushEntry::snapshotCount));
+            Comparator.comparingInt(e -> e.state().pushCount));
 
-    /** Reference to the valid-connections snapshot the PQ was built from. */
     private List<WirelessConnection> pushPQValidRef = List.of();
 
     private enum PushOutcome { SUCCESS, SOFT_FAIL, HARD_FAIL }
@@ -145,9 +269,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private static final int TARGET_CACHE_TTL = 20;
     private final Map<TargetCacheKey, TargetCacheEntry> targetCache = new HashMap<>();
-
-    /** Weak capability cache for wireless energy targets to avoid repeated capability lookup churn. */
-    private final Map<WirelessConnection, EnergyStorageCacheEntry> energyStorageCache = new HashMap<>();
 
     /** Cached output filter derived from loaded patterns. */
     @Nullable
@@ -225,19 +346,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final int WHEEL_SLOTS = ENERGY_DELAY_MAX; // 20
 
     static final class ScheduleEntry {
-        final int connectionIndex;
-        int currentDelay;
-        long lastCanReceive;
+        final WirelessConnection conn;
+        final ConnectionState state;
 
-        ScheduleEntry(int connectionIndex) {
-            this.connectionIndex = connectionIndex;
-            this.currentDelay = ENERGY_DELAY_MEAN;
-            this.lastCanReceive = 0;
-        }
-
-        void update(int newDelay, long newCanReceive) {
-            this.currentDelay = newDelay;
-            this.lastCanReceive = newCanReceive;
+        ScheduleEntry(WirelessConnection conn, ConnectionState state) {
+            this.conn = conn;
+            this.state = state;
         }
     }
 
@@ -250,19 +364,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private int wheelPointer = 0;
     private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
     private boolean wheelDirty = true;
-
-    private record EnergyStorageCacheEntry(
-            WeakReference<BlockEntity> blockEntityRef,
-            WeakReference<IEnergyStorage> storageRef) {
-        boolean matches(BlockEntity blockEntity) {
-            return blockEntityRef.get() == blockEntity;
-        }
-
-        @Nullable
-        IEnergyStorage getStorage() {
-            return storageRef.get();
-        }
-    }
 
     // ---- construction -----------------------------------------------------------
 
@@ -464,17 +565,25 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             rebuildPushPQ(valid);
         }
 
+        long gameTick = sl.getGameTime();
         var retried = new ArrayList<PushEntry>(pushPQ.size());
         boolean success = false;
 
         while (!pushPQ.isEmpty()) {
             var entry = pushPQ.poll();
+            var state = entry.state();
+
+            if (state.isCooling(gameTick)) {
+                retried.add(entry);
+                continue;
+            }
+
             var outcome = tryPushToConnection(pattern, inputs, entry.conn(), server);
             switch (outcome) {
                 case SUCCESS -> {
-                    int newCount = entry.snapshotCount() + 1;
-                    distributionCounts.put(entry.conn(), newCount);
-                    pushPQ.offer(new PushEntry(entry.conn(), newCount));
+                    state.onPushSuccess(gameTick);
+                    state.pushCount++;
+                    pushPQ.offer(entry);
                     success = true;
                 }
                 case HARD_FAIL -> {
@@ -484,7 +593,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         connectionsDirty = true;
                     }
                 }
-                case SOFT_FAIL -> retried.add(entry);
+                case SOFT_FAIL -> {
+                    state.onPushFail(gameTick);
+                    retried.add(entry);
+                }
             }
             if (success) break;
         }
@@ -502,11 +614,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private void rebuildPushPQ(List<WirelessConnection> valid) {
         pushPQ.clear();
-        if (distributionCounts.size() > valid.size() * 2) {
-            distributionCounts.keySet().retainAll(new HashSet<>(valid));
-        }
         for (var conn : valid) {
-            pushPQ.offer(new PushEntry(conn, distributionCounts.getOrDefault(conn, 0)));
+            pushPQ.offer(new PushEntry(conn, getOrCreateState(conn)));
         }
         pushPQValidRef = valid;
     }
@@ -542,9 +651,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
-            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
-            machineBackoff.put(mkey, BACKOFF_MIN);
-            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
+            getOrCreateState(conn).resetBackoff(targetLevel.getGameTime());
         }
         return PushOutcome.SUCCESS;
     }
@@ -655,9 +762,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
-            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
-            machineBackoff.put(mkey, BACKOFF_MIN);
-            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
+            getOrCreateState(conn).resetBackoff(targetLevel.getGameTime());
         }
         return PushOutcome.SUCCESS;
     }
@@ -1188,15 +1293,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void scheduleToWheel(ScheduleEntry entry) {
-        int slot = (wheelPointer + entry.currentDelay) % WHEEL_SLOTS;
+        int slot = (wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS;
         wheel[slot].add(entry);
     }
 
-    private void rebuildWheel(int connectionCount) {
+    private void rebuildWheel(List<WirelessConnection> valid) {
         for (var slot : wheel) slot.clear();
         deferredMachines.clear();
-        for (int i = 0; i < connectionCount; i++) {
-            var entry = new ScheduleEntry(i);
+        for (var conn : valid) {
+            var entry = new ScheduleEntry(conn, getOrCreateState(conn));
             scheduleToWheel(entry);
         }
         wheelDirty = false;
@@ -1210,14 +1315,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (valid.isEmpty()) return;
 
         wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-        if (wheelDirty) rebuildWheel(valid.size());
+        if (wheelDirty) rebuildWheel(valid);
 
         // Phase 1: deferred machines get priority
         if (!deferredMachines.isEmpty()) {
             long available = simulateAvailableFluxEnergy(feKey,
                     (long) CACHED_APPFLUX_TRANSFER_RATE * deferredMachines.size());
             if (available <= 0) return;
-            processBatch(sl, valid, deferredMachines, feKey, available);
+            processBatch(sl, deferredMachines, feKey, available);
             if (!deferredMachines.isEmpty()) return;
         }
 
@@ -1236,11 +1341,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             eligible.clear();
             return;
         }
-        processBatch(sl, valid, eligible, feKey, available);
+        processBatch(sl, eligible, feKey, available);
     }
 
-    private void processBatch(ServerLevel sl, List<WirelessConnection> valid,
-            List<ScheduleEntry> machines, AEKey feKey, long available) {
+    private void processBatch(ServerLevel sl, List<ScheduleEntry> machines,
+            AEKey feKey, long available) {
         int count = machines.size();
 
         // 1. Target SIM
@@ -1250,10 +1355,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         long[] storedEnergy = new long[count];
         for (int i = 0; i < count; i++) {
             var entry = machines.get(i);
-            if (entry.connectionIndex >= valid.size()) continue;
-            var conn = valid.get(entry.connectionIndex);
-            var targetLevel = resolveTargetLevel(sl, conn);
-            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, conn) : null;
+            var targetLevel = resolveTargetLevel(sl, entry.conn);
+            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
             if (storage != null) {
                 canReceive[i] = storage.receiveEnergy(Integer.MAX_VALUE, true);
                 capacity[i] = storage.getMaxEnergyStored();
@@ -1277,7 +1380,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var earlyDeferred = new ArrayList<ScheduleEntry>();
             for (int i = 0; i < count; i++) {
                 var entry = machines.get(i);
-                if (entry.connectionIndex >= valid.size()) continue;
                 if (canReceive[i] == 0) {
                     adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
                     scheduleToWheel(entry);
@@ -1297,13 +1399,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var stillDeferred = new ArrayList<ScheduleEntry>();
         for (int i = 0; i < count; i++) {
             var entry = machines.get(i);
-            if (entry.connectionIndex >= valid.size()) continue;
 
             if (canReceive[i] > 0 && remaining > 0) {
                 long share = Math.min(canReceive[i], remaining);
-                var conn = valid.get(entry.connectionIndex);
-                var targetLevel = resolveTargetLevel(sl, conn);
-                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, conn) : null;
+                var targetLevel = resolveTargetLevel(sl, entry.conn);
+                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
                 long accepted = 0;
                 if (storage != null) {
                     accepted = storage.receiveEnergy(
@@ -1314,10 +1414,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 boolean budgetSufficient = (share == canReceive[i]);
                 if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
                     int ratio = (int)(canReceive[i] / accepted);
-                    entry.update(Math.min(entry.currentDelay * ratio, ENERGY_DELAY_MAX),
-                                 canReceive[i]);
+                    var st = entry.state;
+                    st.scheduleDelay = Math.min(st.scheduleDelay * ratio, ENERGY_DELAY_MAX);
+                    st.lastCanReceive = canReceive[i];
                 } else if (budgetSufficient && accepted == 0) {
-                    entry.update(ENERGY_DELAY_MAX, canReceive[i]);
+                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
+                    entry.state.lastCanReceive = canReceive[i];
                 } else {
                     adjustDelay(entry, canReceive[i], storedEnergy[i], capacity[i]);
                 }
@@ -1352,11 +1454,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private void adjustDelay(ScheduleEntry entry, long canReceive,
                              long storedEnergy, int machineCapacity) {
-        int delay = entry.currentDelay;
+        var st = entry.state;
+        int delay = st.scheduleDelay;
 
-        if (canReceive > entry.lastCanReceive) {
+        if (canReceive > st.lastCanReceive) {
             delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-        } else if ((entry.lastCanReceive - canReceive) << 2 < machineCapacity) {
+        } else if ((st.lastCanReceive - canReceive) << 2 < machineCapacity) {
             if (storedEnergy * 3 <= (long) machineCapacity << 1) {
                 delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
             } else {
@@ -1367,12 +1470,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             delay = delay < ENERGY_DELAY_MEAN ? delay * 2 : delay + 1;
         }
 
-        entry.update(Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX), canReceive);
+        st.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
+        st.lastCanReceive = canReceive;
     }
 
     public void onHostStateChanged() {
         invalidateValidConnectionsCache();
-        invalidateEnergyStorageCache();
         inductionCardCacheDirty = true;
         refreshEjectRegistrations();
         alertGridTick();
@@ -1384,7 +1487,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     public void onNeighborChanged() {
-        invalidateEnergyStorageCache();
         alertGridTick();
     }
 
@@ -1452,8 +1554,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         for (var conn : connections) {
-            var key = machineKey(conn.dimension(), conn.pos(), conn.boundFace());
-            nextPollTick = Math.min(nextPollTick, machineNextPoll.getOrDefault(key, 0L));
+            var state = connectionStates.get(conn);
+            if (state != null) {
+                nextPollTick = Math.min(nextPollTick, state.nextPollTick);
+            } else {
+                return 0L;
+            }
         }
         return nextPollTick;
     }
@@ -1470,41 +1576,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         wheelDirty = true;
         pushPQValidRef = List.of();
         targetCache.clear();
-    }
-
-    private void invalidateEnergyStorageCache() {
-        energyStorageCache.clear();
+        connectionStates.clear();
     }
 
     @Nullable
     private IEnergyStorage resolveEnergyStorage(ServerLevel targetLevel, WirelessConnection conn) {
-        BlockEntity blockEntity = targetLevel.getBlockEntity(conn.pos());
-        if (blockEntity == null) {
-            energyStorageCache.remove(conn);
-            return null;
-        }
-
-        var cached = energyStorageCache.get(conn);
-        if (cached != null && cached.matches(blockEntity)) {
-            var storage = cached.getStorage();
-            if (storage != null) {
-                return storage;
-            }
-        }
-
-        IEnergyStorage storage = targetLevel.getCapability(
-                Capabilities.EnergyStorage.BLOCK,
-                conn.pos(),
-                conn.boundFace());
-        if (storage == null) {
-            energyStorageCache.remove(conn);
-            return null;
-        }
-
-        energyStorageCache.put(conn, new EnergyStorageCacheEntry(
-                new WeakReference<>(blockEntity),
-                new WeakReference<>(storage)));
-        return storage;
+        return getOrCreateState(conn).resolveEnergy(targetLevel, conn);
     }
 
     private boolean isInductionCardInstalled() {
@@ -1736,8 +1813,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
         wirelessSendList.clear();
         wirelessSendConn = null;
-        distributionCounts.clear();
-        energyStorageCache.clear();
+        connectionStates.clear();
         machineNextPoll.clear();
         machineBackoff.clear();
         cachedOutputFilter = null;

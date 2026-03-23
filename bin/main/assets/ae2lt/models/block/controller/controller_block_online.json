@@ -1,8 +1,0 @@
-{
-  "parent": "ae2lt:block/controller/controller_block_lights",
-  "textures": {
-    "block": "ae2lt:block/controller_powered",
-    "lights": "ae2lt:block/controller_lights"
-  }
-}
-

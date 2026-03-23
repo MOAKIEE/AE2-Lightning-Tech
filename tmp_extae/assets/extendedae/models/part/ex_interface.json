@@ -1,6 +1,0 @@
-{
-  "parent": "ae2:part/interface_base",
-  "textures": {
-    "front": "extendedae:part/ex_interface"
-  }
-}

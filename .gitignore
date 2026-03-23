@@ -36,6 +36,8 @@ logs/
 run/
 out/
 tmp/
+bin/
+tmp_extae/
 
 #log
 DevLog/

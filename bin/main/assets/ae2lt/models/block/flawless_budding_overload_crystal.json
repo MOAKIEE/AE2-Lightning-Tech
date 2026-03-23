@@ -1,6 +1,0 @@
-{
-  "parent": "minecraft:block/cube_all",
-  "textures": {
-    "all": "ae2lt:block/flawless_budding_overload_crystal"
-  }
-}
