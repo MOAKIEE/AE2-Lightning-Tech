@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -109,6 +110,41 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
     private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
+
+    // ---- push priority queue (O(log n) load balancing) ----------------------------
+
+    private record PushEntry(WirelessConnection conn, int snapshotCount) {}
+
+    private final PriorityQueue<PushEntry> pushPQ = new PriorityQueue<>(
+            Comparator.comparingInt(PushEntry::snapshotCount));
+
+    /** Reference to the valid-connections snapshot the PQ was built from. */
+    private List<WirelessConnection> pushPQValidRef = List.of();
+
+    private enum PushOutcome { SUCCESS, SOFT_FAIL, HARD_FAIL }
+
+    // ---- PatternProviderTarget cache (avoids recreating strategies every push) -----
+
+    private record TargetCacheKey(ResourceKey<Level> dimension, long posLong, Direction face) {}
+
+    private static final class TargetCacheEntry {
+        final WeakReference<BlockEntity> beRef;
+        final PatternProviderTarget target;
+        final long createdTick;
+
+        TargetCacheEntry(BlockEntity be, PatternProviderTarget target, long tick) {
+            this.beRef = new WeakReference<>(be);
+            this.target = target;
+            this.createdTick = tick;
+        }
+
+        boolean isValid(BlockEntity currentBE, long currentTick) {
+            return beRef.get() == currentBE && (currentTick - createdTick) < TARGET_CACHE_TTL;
+        }
+    }
+
+    private static final int TARGET_CACHE_TTL = 20;
+    private final Map<TargetCacheKey, TargetCacheEntry> targetCache = new HashMap<>();
 
     /** Weak capability cache for wireless energy targets to avoid repeated capability lookup churn. */
     private final Map<WirelessConnection, EnergyStorageCacheEntry> energyStorageCache = new HashMap<>();
@@ -412,65 +448,82 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private boolean wirelessPushPattern(IPatternDetails pattern, KeyCounter[] inputs) {
-        // 1. Cannot push if overflow still pending
-        if (!wirelessSendList.isEmpty()) {
-            return false;
-        }
-
-        // 2. Basic pre-conditions (mirrors vanilla checks)
+        if (!wirelessSendList.isEmpty()) return false;
         if (!gridNode.isActive()) return false;
         if (!getAvailablePatterns().contains(pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
-
-        // 3. Collect valid targets
-        var connections = overloadedHost.getConnections();
-        if (connections.isEmpty()) return false;
 
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return false;
         var server = sl.getServer();
 
-        var valid = new ArrayList<WirelessConnection>();
-        for (var conn : connections) {
-            var targetLevel = server.getLevel(conn.dimension());
-            if (targetLevel != null && targetLevel.isLoaded(conn.pos())
-                    && targetLevel.getBlockEntity(conn.pos()) != null) {
-                valid.add(conn);
-            }
-        }
+        var valid = getOrRefreshValidConnections(sl, sl.getGameTime());
         if (valid.isEmpty()) return false;
 
-        // 4. Dispatch with automatic load balancing (least-pushed-first).
-        //    With a single connection this degenerates to a direct push.
-        distributionCounts.keySet().retainAll(new HashSet<>(valid));
-        valid.sort(Comparator.comparingInt(c -> distributionCounts.getOrDefault(c, 0)));
-
-        for (var conn : valid) {
-            if (tryPushToConnection(pattern, inputs, conn, server)) {
-                distributionCounts.merge(conn, 1, Integer::sum);
-                return true;
-            }
+        if (valid != pushPQValidRef) {
+            rebuildPushPQ(valid);
         }
-        return false;
+
+        var retried = new ArrayList<PushEntry>(pushPQ.size());
+        boolean success = false;
+
+        while (!pushPQ.isEmpty()) {
+            var entry = pushPQ.poll();
+            var outcome = tryPushToConnection(pattern, inputs, entry.conn(), server);
+            switch (outcome) {
+                case SUCCESS -> {
+                    int newCount = entry.snapshotCount() + 1;
+                    distributionCounts.put(entry.conn(), newCount);
+                    pushPQ.offer(new PushEntry(entry.conn(), newCount));
+                    success = true;
+                }
+                case HARD_FAIL -> {
+                    if (isConnectionAlive(entry.conn(), server)) {
+                        retried.add(entry);
+                    } else {
+                        connectionsDirty = true;
+                    }
+                }
+                case SOFT_FAIL -> retried.add(entry);
+            }
+            if (success) break;
+        }
+
+        for (var r : retried) pushPQ.offer(r);
+        return success;
     }
 
-    /**
-     * Try to push one pattern copy to a single wireless connection.
-     * On success, stores any overflow and triggers lock-mode transitions.
-     */
-    private boolean tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
+    private static boolean isConnectionAlive(WirelessConnection conn,
+                                             net.minecraft.server.MinecraftServer server) {
+        var level = server.getLevel(conn.dimension());
+        return level != null && level.isLoaded(conn.pos())
+                && level.getBlockEntity(conn.pos()) != null;
+    }
+
+    private void rebuildPushPQ(List<WirelessConnection> valid) {
+        pushPQ.clear();
+        if (distributionCounts.size() > valid.size() * 2) {
+            distributionCounts.keySet().retainAll(new HashSet<>(valid));
+        }
+        for (var conn : valid) {
+            pushPQ.offer(new PushEntry(conn, distributionCounts.getOrDefault(conn, 0)));
+        }
+        pushPQValidRef = valid;
+    }
+
+    private PushOutcome tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
         if (AdvancedAECompat.isDirectional(pattern)) {
             return tryPushToConnectionDirectionally(pattern, inputs, conn, server);
         }
 
         var targetLevel = server.getLevel(conn.dimension());
-        if (targetLevel == null) return false;
+        if (targetLevel == null) return PushOutcome.HARD_FAIL;
 
         autoReturnBeforePush(targetLevel, conn);
 
         var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
-        if (adapter == null) return false;
+        if (adapter == null) return PushOutcome.HARD_FAIL;
 
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
@@ -478,25 +531,22 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 targetLevel, conn.pos(), conn.boundFace(),
                 pattern, inputs, 1,
                 blocking, patternInputs, wirelessSource);
-        if (result.acceptedCopies() == 0) return false;
+        if (result.acceptedCopies() == 0) return PushOutcome.SOFT_FAIL;
 
-        // Track overflow for later flushing
         if (!result.overflow().isEmpty()) {
             wirelessSendList.addAll(result.overflow());
             wirelessSendConn = conn;
         }
 
-        // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
         alertGridTick();
 
-        // Reset backoff so auto-return checks this machine promptly
         if (overloadedHost.isAutoReturn()) {
             var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
             machineBackoff.put(mkey, BACKOFF_MIN);
             machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
         }
-        return true;
+        return PushOutcome.SUCCESS;
     }
 
     // ---- AdvancedAE directional push (NORMAL mode) --------------------------------
@@ -563,16 +613,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * Each input key is routed to the target-machine face from the directionMap;
      * keys without a mapping default to {@code conn.boundFace()}.
      */
-    private boolean tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
+    private PushOutcome tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
         var targetLevel = server.getLevel(conn.dimension());
-        if (targetLevel == null) return false;
-        if (!pattern.supportsPushInputsToExternalInventory()) return false;
+        if (targetLevel == null) return PushOutcome.HARD_FAIL;
+        if (!targetLevel.isLoaded(conn.pos())) return PushOutcome.HARD_FAIL;
+        if (!pattern.supportsPushInputsToExternalInventory()) return PushOutcome.SOFT_FAIL;
 
         autoReturnBeforePush(targetLevel, conn);
 
         var be = targetLevel.getBlockEntity(conn.pos());
-        if (be == null) return false;
+        if (be == null) return PushOutcome.HARD_FAIL;
 
         var defaultFace = conn.boundFace();
 
@@ -580,15 +631,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         try {
             var faceToTarget = buildDirectionalTargets(
                     targetLevel, conn.pos(), be, defaultFace, pattern, inputs, wirelessSource);
-            if (faceToTarget == null) return false;
+            if (faceToTarget == null) return PushOutcome.SOFT_FAIL;
 
             if (isBlocking()) {
                 var patternInputKeys = ((PatternProviderLogicAccessor) this).getPatternInputs();
                 var anyTarget = faceToTarget.values().iterator().next();
-                if (anyTarget.containsPatternInput(patternInputKeys)) return false;
+                if (anyTarget.containsPatternInput(patternInputKeys)) return PushOutcome.SOFT_FAIL;
             }
 
-            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) return false;
+            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs))
+                return PushOutcome.SOFT_FAIL;
 
             var overflow = commitDirectionalPushWithOverflow(pattern, inputs, faceToTarget, defaultFace);
             if (!overflow.isEmpty()) {
@@ -607,19 +659,37 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             machineBackoff.put(mkey, BACKOFF_MIN);
             machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
         }
-        return true;
+        return PushOutcome.SUCCESS;
     }
 
     // ---- directional push helpers ------------------------------------------------
 
+    @Nullable
+    private PatternProviderTarget getCachedTarget(
+            ServerLevel level, BlockPos pos, BlockEntity be, Direction face, IActionSource source) {
+        long gameTick = level.getGameTime();
+        var key = new TargetCacheKey(level.dimension(), pos.asLong(), face);
+        var entry = targetCache.get(key);
+        if (entry != null && entry.isValid(be, gameTick)) {
+            return entry.target;
+        }
+        var target = PatternProviderTarget.get(level, pos, be, face, source);
+        if (target != null) {
+            targetCache.put(key, new TargetCacheEntry(be, target, gameTick));
+        } else {
+            targetCache.remove(key);
+        }
+        return target;
+    }
+
     /**
-     * Build a map of face → PatternProviderTarget for all unique faces
+     * Build a map of face -> PatternProviderTarget for all unique faces
      * referenced by the directional pattern's inputs.
      *
      * @return the map, or {@code null} if any required target cannot be resolved
      */
     @Nullable
-    private static Map<Direction, PatternProviderTarget> buildDirectionalTargets(
+    private Map<Direction, PatternProviderTarget> buildDirectionalTargets(
             ServerLevel level, BlockPos targetPos, BlockEntity be,
             Direction defaultFace, IPatternDetails pattern,
             KeyCounter[] inputs, IActionSource source) {
@@ -628,7 +698,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             for (var entry : inputList) {
                 var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
                 var face = dir != null ? dir : defaultFace;
-                map.computeIfAbsent(face, f -> PatternProviderTarget.get(level, targetPos, be, f, source));
+                map.computeIfAbsent(face, f -> getCachedTarget(level, targetPos, be, f, source));
             }
         }
         if (map.containsValue(null)) return null;
@@ -829,7 +899,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 && isInductionCardInstalled()
                 && CACHED_APPFLUX_FE_KEY != null) return true;
         if (overloadedHost.isAutoReturn()) return true;
-        if (!getReturnInv().isEmpty()) return true;
+        if (!fullReturnInv.isEmpty()) return true;
         return false;
     }
 
@@ -845,17 +915,22 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /**
      * Collect all output AEKeys from every pattern loaded in this provider.
+     * Uses AE2-level outputs (GenericStack) to handle both items and fluids,
+     * cross-referencing with overload details for ID_ONLY match modes.
      */
     private AllowedOutputFilter collectPatternOutputFilter() {
         var filter = new AllowedOutputFilter();
         for (var pattern : getAvailablePatterns()) {
             if (pattern instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
-                for (var output : overloadDetails.overloadPatternDetailsView().outputs()) {
-                    var key = AEItemKey.of(output.template());
-                    if (output.matchMode() == MatchMode.ID_ONLY) {
-                        filter.allowIdOnly(BuiltInRegistries.ITEM.getKey(output.template().getItem()));
-                    } else if (key != null) {
-                        filter.allowStrict(key);
+                var ae2Outputs = pattern.getOutputs();
+                var overloadOutputs = overloadDetails.overloadPatternDetailsView().outputs();
+                int count = Math.min(ae2Outputs.size(), overloadOutputs.size());
+                for (int i = 0; i < count; i++) {
+                    var aeKey = ae2Outputs.get(i).what();
+                    if (overloadOutputs.get(i).matchMode() == MatchMode.ID_ONLY) {
+                        filter.allowIdOnly(aeKey);
+                    } else {
+                        filter.allowStrict(aeKey);
                     }
                 }
                 continue;
@@ -990,9 +1065,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void insertOutputsToReturnInv(List<GenericStack> outputs) {
-        var inv = getReturnInv();
         for (var stack : outputs) {
-            inv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
+            fullReturnInv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
         }
     }
 
@@ -1014,19 +1088,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!(level instanceof ServerLevel sl)) return;
 
         for (var conn : overloadedHost.getConnections()) {
+            var targetLevel = sl.getServer().getLevel(conn.dimension());
+            if (targetLevel == null) continue;
+
             var adjacentPos = conn.pos().relative(conn.boundFace());
             var queryFace = conn.boundFace().getOpposite();
             var ghostBE = new GhostOutputBlockEntity(adjacentPos);
-            ghostBE.setLevel(sl);
+            ghostBE.setLevel(targetLevel);
 
             var entry = new EjectModeRegistry.EjectEntry(
                     new java.lang.ref.WeakReference<>(overloadedHost),
                     ghostBE
             );
 
-            var targetLevel = sl.getServer().getLevel(conn.dimension());
-            var dim = targetLevel != null ? targetLevel.dimension() : conn.dimension();
-            EjectModeRegistry.register(dim, adjacentPos.asLong(), queryFace, entry);
+            EjectModeRegistry.register(targetLevel.dimension(), adjacentPos.asLong(), queryFace, entry);
             invalidateCapabilitiesAt(targetLevel, adjacentPos);
         }
     }
@@ -1393,6 +1468,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         validConnectionsCacheTick = -1;
         lastConnectionValidation = -1;
         wheelDirty = true;
+        pushPQValidRef = List.of();
+        targetCache.clear();
     }
 
     private void invalidateEnergyStorageCache() {

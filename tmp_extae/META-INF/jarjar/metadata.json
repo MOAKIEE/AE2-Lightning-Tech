@@ -1,0 +1,16 @@
+{
+  "jars": [
+    {
+      "identifier": {
+        "group": "de.mari_023",
+        "artifact": "ae2wtlib_api"
+      },
+      "version": {
+        "range": "[19.2.0,)",
+        "artifactVersion": "19.2.0"
+      },
+      "path": "META-INF/jarjar/ae2wtlib_api-19.2.0.jar",
+      "isObfuscated": false
+    }
+  ]
+}

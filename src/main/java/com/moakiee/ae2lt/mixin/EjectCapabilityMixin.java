@@ -44,11 +44,16 @@ public abstract class EjectCapabilityMixin<T, C> {
         var provider = entry.providerRef().get();
         if (provider == null) return;
 
+        Level providerLevel = provider.getLevel();
+        if (providerLevel == null) return;
+        BlockPos providerPos = provider.getBlockPos();
+        BlockState providerState = providerLevel.getBlockState(providerPos);
+
         PROXYING.set(true);
         try {
             BlockCapability<T, C> cap = (BlockCapability<T, C>) (Object) this;
-            T result = cap.getCapability(level, provider.getBlockPos(),
-                    null, provider, context);
+            T result = cap.getCapability(providerLevel, providerPos,
+                    providerState, provider, context);
             if (result != null) {
                 cir.setReturnValue(result);
             }

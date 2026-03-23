@@ -124,12 +124,18 @@ dependencies {
     runtimeOnly "curse.maven:advancedae-1084104:7668664"
     runtimeOnly "curse.maven:geckolib-388172:7707149"
     runtimeOnly "curse.maven:applied-flux-965012:7429565"
+    runtimeOnly "curse.maven:ae2-jei-integration-1074338:7727898"
+    runtimeOnly "curse.maven:applied-mekanistics-574300:7096962"
     runtimeOnly "curse.maven:mekanism-extras-1026040:7628313"
     runtimeOnly "curse.maven:just-enough-characters-250702:7320033"
     runtimeOnly "curse.maven:building-gadgets-298187:6850515"
     runtimeOnly "curse.maven:ftb-ultimine-forge-386134:7570482"
     runtimeOnly "curse.maven:ftb-library-forge-404465:7746959"
     runtimeOnly "curse.maven:architectury-api-419699:5786327"
+    runtimeOnly "curse.maven:spark-361579:6225208"
+    runtimeOnly "curse.maven:construction-sticks-1156098:7687867"
+
+    runtimeOnly files("libs/observable-5.4.4.jar")
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

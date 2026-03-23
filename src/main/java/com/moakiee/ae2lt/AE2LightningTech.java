@@ -136,8 +136,7 @@ public class AE2LightningTech {
                     if (blockEntity instanceof OverloadedPatternProviderBlockEntity be) {
                         var logic = (com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic) be.getLogic();
                         return new com.moakiee.ae2lt.logic.InsertOnlyReturnInvWrapper(
-                                (com.moakiee.ae2lt.logic.UnlimitedReturnInventory) logic.getInternalReturnInv(),
-                                be.getTotalPatternCapacity());
+                                (com.moakiee.ae2lt.logic.UnlimitedReturnInventory) logic.getInternalReturnInv());
                     }
                     return null;
                 },

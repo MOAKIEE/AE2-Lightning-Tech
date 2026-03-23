@@ -22,16 +22,14 @@ import appeng.api.stacks.GenericStack;
 public class InsertOnlyReturnInvWrapper implements GenericInternalInventory {
 
     private final UnlimitedReturnInventory delegate;
-    private final int exposedSlots;
 
-    public InsertOnlyReturnInvWrapper(UnlimitedReturnInventory delegate, int patternSlotCount) {
+    public InsertOnlyReturnInvWrapper(UnlimitedReturnInventory delegate) {
         this.delegate = delegate;
-        this.exposedSlots = patternSlotCount;
     }
 
     @Override
     public int size() {
-        return exposedSlots;
+        return delegate.size();
     }
 
     @Override
