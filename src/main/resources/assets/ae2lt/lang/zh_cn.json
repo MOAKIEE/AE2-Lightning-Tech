@@ -68,7 +68,7 @@
   "ae2lt.gui.return_mode.eject": "回收模式：弹出",
   "ae2lt.gui.wireless_strategy.single": "逐台发配",
   "ae2lt.gui.wireless_strategy.even": "均分发配",
-  "item.ae2lt.overloaded_wireless_connector": "过载无线连接器",
+  "item.ae2lt.overloaded_wireless_connect_tool": "过载无线连接工具",
   "item.ae2lt.overloaded_cable": "福鲁伊克斯色ME过载线缆",
   "item.ae2lt.overloaded_cable_white": "白色ME过载线缆",
   "item.ae2lt.overloaded_cable_orange": "橙色ME过载线缆",
@@ -116,5 +116,7 @@
   "ae2lt.gui.lightning_simulation.energy.title": "FE 储量",
   "ae2lt.gui.lightning_simulation.energy.tooltip": "%s / %s FE",
   "ae2lt.gui.lightning_simulation.progress": "进度：%s%%",
-  "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE"
+  "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE",
+  "block.ae2lt.overloaded_wireless_connector": "过载无线连接器",
+  "block.ae2lt.overloaded_wireless_hub": "过载无线集线器"
 }

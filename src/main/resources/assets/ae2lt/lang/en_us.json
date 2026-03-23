@@ -70,7 +70,7 @@
   "ae2lt.gui.return_mode.eject": "Return Mode: EJECT",
   "ae2lt.gui.wireless_strategy.single": "Round Robin",
   "ae2lt.gui.wireless_strategy.even": "Balanced Distribution",
-  "item.ae2lt.overloaded_wireless_connector": "Overloaded Wireless Connector",
+  "item.ae2lt.overloaded_wireless_connect_tool": "Overloaded Wireless Connect Tool",
   "item.ae2lt.overloaded_cable": "Fluix ME Overloaded Cable",
   "item.ae2lt.overloaded_cable_white": "White ME Overloaded Cable",
   "item.ae2lt.overloaded_cable_orange": "Orange ME Overloaded Cable",
@@ -116,5 +116,7 @@
   "ae2lt.gui.lightning_simulation.energy.title": "Stored FE",
   "ae2lt.gui.lightning_simulation.energy.tooltip": "%s / %s FE",
   "ae2lt.gui.lightning_simulation.progress": "Progress: %s%%",
-  "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE"
+  "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE",
+  "block.ae2lt.overloaded_wireless_connector": "Overloaded Wireless Connector",
+  "block.ae2lt.overloaded_wireless_hub": "Overloaded Wireless Hub"
 }
