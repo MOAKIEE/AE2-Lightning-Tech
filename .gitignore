@@ -38,6 +38,9 @@ out/
 tmp/
 bin/
 tmp_extae/
+appeng/
+net/
+META-INF/
 
 #log
 DevLog/
