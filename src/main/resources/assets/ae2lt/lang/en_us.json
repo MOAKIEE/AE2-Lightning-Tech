@@ -94,7 +94,6 @@
   "item.ae2lt.overloaded_cable_black": "Black ME Overloaded Cable",
   "ae2lt.connector.selected": "Selected Overloaded Pattern Provider at [%d, %d, %d]",
   "ae2lt.connector.selected_interface": "Selected Overloaded ME Interface at [%d, %d, %d]",
-  "ae2lt.connector.no_provider": "No Overloaded Pattern Provider selected",
   "ae2lt.connector.provider_lost": "Selected Overloaded Pattern Provider is missing or unloaded",
   "ae2lt.connector.not_machine": "Target is not a machine",
   "ae2lt.connector.disconnected": "Disconnected from [%d, %d, %d]",

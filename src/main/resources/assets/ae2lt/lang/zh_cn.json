@@ -92,7 +92,6 @@
   "item.ae2lt.overloaded_cable_black": "黑色ME过载线缆",
   "ae2lt.connector.selected": "已选中过载样板供应器 [%d, %d, %d]",
   "ae2lt.connector.selected_interface": "已选中过载ME接口 [%d, %d, %d]",
-  "ae2lt.connector.no_provider": "未选中过载样板供应器",
   "ae2lt.connector.provider_lost": "选中的过载样板供应器丢失或未加载",
   "ae2lt.connector.not_machine": "目标不是机器方块",
   "ae2lt.connector.disconnected": "已断开 [%d, %d, %d]",

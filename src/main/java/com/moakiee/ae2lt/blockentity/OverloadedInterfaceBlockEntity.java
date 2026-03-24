@@ -24,6 +24,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -994,6 +995,98 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ══════════════════════════════════════════════════════════════════════
     //  NBT
     // ══════════════════════════════════════════════════════════════════════
+
+    @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeByte(interfaceMode.ordinal());
+        data.writeByte(ioSpeedMode.ordinal());
+        data.writeByte(exportMode.ordinal());
+        data.writeByte(importMode.ordinal());
+        data.writeByte(energyOutputDir != null ? energyOutputDir.get3DDataValue() : -1);
+
+        long bits = 0;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (unlimitedSlots[i]) {
+                bits |= (1L << i);
+            }
+        }
+        data.writeLong(bits);
+
+        data.writeVarInt(connections.size());
+        for (var c : connections) {
+            data.writeResourceLocation(c.dimension().location());
+            data.writeBlockPos(c.pos());
+            data.writeByte(c.boundFace().get3DDataValue());
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+
+        var newInterfaceMode = InterfaceMode.values()[data.readByte()];
+
+        int speedOrd = data.readByte();
+        var newIoSpeedMode = speedOrd >= 0 && speedOrd < IOSpeedMode.values().length
+                ? IOSpeedMode.values()[speedOrd] : IOSpeedMode.NORMAL;
+
+        int exportOrd = data.readByte();
+        var newExportMode = exportOrd >= 0 && exportOrd < ExportMode.values().length
+                ? ExportMode.values()[exportOrd] : ExportMode.OFF;
+
+        int importOrd = data.readByte();
+        var newImportMode = importOrd >= 0 && importOrd < ImportMode.values().length
+                ? ImportMode.values()[importOrd] : ImportMode.OFF;
+
+        int energyOrd = data.readByte();
+        Direction newEnergyDir = energyOrd >= 0 && energyOrd < 6
+                ? Direction.from3DDataValue(energyOrd) : null;
+
+        long newBits = data.readLong();
+        boolean[] newUnlimitedSlots = new boolean[SLOT_COUNT];
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            newUnlimitedSlots[i] = (newBits & (1L << i)) != 0;
+        }
+
+        int count = data.readVarInt();
+        var newConnections = new ArrayList<WirelessConnection>(count);
+        for (int i = 0; i < count; i++) {
+            var dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                    data.readResourceLocation());
+            var pos = data.readBlockPos();
+            var face = Direction.from3DDataValue(data.readByte());
+            newConnections.add(new WirelessConnection(dim, pos, face));
+        }
+
+        boolean unlimitedChanged = false;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (unlimitedSlots[i] != newUnlimitedSlots[i]) {
+                unlimitedChanged = true;
+                break;
+            }
+        }
+
+        if (newInterfaceMode != interfaceMode
+                || newIoSpeedMode != ioSpeedMode
+                || newExportMode != exportMode
+                || newImportMode != importMode
+                || newEnergyDir != energyOutputDir
+                || unlimitedChanged
+                || !newConnections.equals(connections)) {
+            interfaceMode = newInterfaceMode;
+            ioSpeedMode = newIoSpeedMode;
+            exportMode = newExportMode;
+            importMode = newImportMode;
+            energyOutputDir = newEnergyDir;
+            System.arraycopy(newUnlimitedSlots, 0, unlimitedSlots, 0, SLOT_COUNT);
+            connections.clear();
+            connections.addAll(newConnections);
+            changed = true;
+        }
+
+        return changed;
+    }
 
     @Override
     public void saveAdditional(CompoundTag d, HolderLookup.Provider r) {
