@@ -60,6 +60,7 @@ import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
+import com.moakiee.ae2lt.overload.pattern.OverloadPatternDetails;
 
 /**
  * Extended pattern-provider logic that adds a wireless dispatch path.
@@ -90,6 +91,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Set by readFromNBT when Level is not yet available; consumed by onReady(). */
     private boolean needsSavedDataLoad = false;
+
+    @Nullable
+    private MatchMode pendingUnlockMatchMode;
+    @Nullable
+    private ItemStack pendingUnlockTemplate;
 
     // ---- wireless dispatch state ------------------------------------------------
 
@@ -506,6 +512,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     @Override
+    public void resetCraftingLock() {
+        super.resetCraftingLock();
+        clearPendingUnlockRule();
+    }
+
+    @Override
     public void onChangeInventory(appeng.util.inv.AppEngInternalInventory inv, int slot) {
         super.onChangeInventory(inv, slot);
     }
@@ -611,6 +623,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             boolean result = super.pushPattern(patternDetails, inputHolder);
             if (result && overloadedHost.isAutoReturn()) {
                 resetBackoffAllTargets();
+            }
+            if (result) {
+                syncPendingUnlockRule(patternDetails);
             }
             if (result) {
                 alertGridTick();
@@ -874,6 +889,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        syncPendingUnlockRule(pattern);
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
@@ -930,7 +946,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 accessor.setSendDirection(defaultFace);
                 accessor.invokeSendStacksOut();
                 accessor.invokeOnPushPatternSuccess(pattern);
-        return true;
+                syncPendingUnlockRule(pattern);
+                return true;
             }
             return false;
         } finally {
@@ -985,6 +1002,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        syncPendingUnlockRule(pattern);
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
@@ -1402,6 +1420,98 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         for (var stack : outputs) {
             fullReturnInv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
         }
+    }
+
+    public boolean handleOverloadUnlockOnReturnedStack(GenericStack returnedStack) {
+        if (pendingUnlockMatchMode != MatchMode.ID_ONLY) {
+            return false;
+        }
+
+        if (getCraftingLockedReason() != LockCraftingMode.LOCK_UNTIL_RESULT) {
+            clearPendingUnlockRule();
+            return false;
+        }
+
+        var unlockStack = getUnlockStack();
+        if (unlockStack == null) {
+            resetCraftingLock();
+            return true;
+        }
+
+        Item expectedItem = null;
+        if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
+            expectedItem = pendingUnlockTemplate.getItem();
+        } else if (unlockStack.what() instanceof AEItemKey unlockItemKey) {
+            expectedItem = unlockItemKey.getItem();
+        }
+
+        if (expectedItem == null) {
+            return false;
+        }
+
+        if (returnedStack.what() instanceof AEItemKey returnedItemKey
+                && returnedItemKey.getItem() == expectedItem) {
+            long remainingAmount = unlockStack.amount() - returnedStack.amount();
+            if (remainingAmount <= 0) {
+                resetCraftingLock();
+            } else {
+                ((PatternProviderLogicAccessor) this)
+                        .setUnlockStack(new GenericStack(unlockStack.what(), remainingAmount));
+                saveChanges();
+            }
+        }
+
+        return true;
+    }
+
+    private void syncPendingUnlockRule(IPatternDetails pattern) {
+        clearPendingUnlockRule();
+        if (getCraftingLockedReason() != LockCraftingMode.LOCK_UNTIL_RESULT) {
+            return;
+        }
+        if (!(pattern instanceof OverloadedProviderOnlyPatternDetails overloadPattern)) {
+            return;
+        }
+
+        int unlockOutputIndex = resolveUnlockOutputIndex(pattern, overloadPattern.overloadPatternDetailsView());
+        var overloadOutputs = overloadPattern.overloadPatternDetailsView().outputs();
+        if (unlockOutputIndex < 0 || unlockOutputIndex >= overloadOutputs.size()) {
+            return;
+        }
+
+        var unlockOutput = overloadOutputs.get(unlockOutputIndex);
+        pendingUnlockMatchMode = unlockOutput.matchMode();
+        pendingUnlockTemplate = unlockOutput.template();
+    }
+
+    private static int resolveUnlockOutputIndex(IPatternDetails pattern, OverloadPatternDetails overloadDetails) {
+        var actualOutputs = pattern.getOutputs();
+        var overloadOutputs = overloadDetails.outputs();
+        int count = Math.min(actualOutputs.size(), overloadOutputs.size());
+        if (count <= 0) {
+            return -1;
+        }
+
+        var primaryOutput = pattern.getPrimaryOutput();
+        for (int i = 0; i < count; i++) {
+            var candidate = actualOutputs.get(i);
+            if (candidate.what().equals(primaryOutput.what()) && candidate.amount() == primaryOutput.amount()) {
+                return i;
+            }
+        }
+
+        for (int i = 0; i < count; i++) {
+            if (overloadOutputs.get(i).primaryOutput()) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private void clearPendingUnlockRule() {
+        pendingUnlockMatchMode = null;
+        pendingUnlockTemplate = null;
     }
 
     // ---- eject mode lifecycle ----------------------------------------------------
@@ -2071,6 +2181,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final String TAG_W_SEND_LIST = "WirelessSendList";
     private static final String TAG_W_SEND_CONN = "WirelessSendConn";
     private static final String TAG_W_ROUND_ROBIN = "WirelessRoundRobin";
+    private static final String TAG_UNLOCK_MATCH_MODE = "Ae2ltUnlockMatchMode";
+    private static final String TAG_UNLOCK_TEMPLATE = "Ae2ltUnlockTemplate";
 
     @Override
     public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
@@ -2085,6 +2197,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             super.writeToNBT(tag, registries);
         }
         tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
+        if (pendingUnlockMatchMode != null) {
+            tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
+        }
+        if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
+            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
+        }
         if (!wirelessSendList.isEmpty()) {
             var list = new ListTag();
             for (var stack : wirelessSendList) {
@@ -2104,6 +2222,21 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             needsSavedDataLoad = true;
         }
         wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
+        pendingUnlockMatchMode = null;
+        pendingUnlockTemplate = null;
+        if (tag.contains(TAG_UNLOCK_MATCH_MODE, Tag.TAG_STRING)) {
+            try {
+                pendingUnlockMatchMode = MatchMode.valueOf(tag.getString(TAG_UNLOCK_MATCH_MODE));
+            } catch (IllegalArgumentException ignored) {
+                pendingUnlockMatchMode = null;
+            }
+        }
+        if (tag.contains(TAG_UNLOCK_TEMPLATE, Tag.TAG_COMPOUND)) {
+            pendingUnlockTemplate = ItemStack.parseOptional(registries, tag.getCompound(TAG_UNLOCK_TEMPLATE));
+            if (pendingUnlockTemplate.isEmpty()) {
+                pendingUnlockTemplate = null;
+            }
+        }
         wirelessSendList.clear();
         wirelessSendConn = null;
         if (tag.contains(TAG_W_SEND_LIST, Tag.TAG_LIST)) {
