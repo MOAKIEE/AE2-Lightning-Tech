@@ -229,7 +229,7 @@ public class AE2LightningTech {
                     OverloadedPatternProviderBlockEntity.class,
                     beType,
                     null,
-                    OverloadedPatternProviderBlockEntity::serverTick
+                    null
             );
 
             var interfaceBlock = ModBlocks.OVERLOADED_INTERFACE.get();

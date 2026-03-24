@@ -149,13 +149,6 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super.onReady();
     }
 
-    // -- Server tick --
-
-    public static void serverTick(Level level, BlockPos pos, BlockState state,
-                                    OverloadedPatternProviderBlockEntity be) {
-        ((OverloadedPatternProviderLogic) be.getLogic()).tickAutoReturn();
-    }
-
     @Nullable
     private OverloadedPatternProviderLogic getOverloadedLogic() {
         var logic = getLogic();

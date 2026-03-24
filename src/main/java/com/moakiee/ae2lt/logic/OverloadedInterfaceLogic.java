@@ -46,7 +46,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     private static final Field F_STORAGE;
     private static final Field F_UPGRADES;
     private static final Field F_CRAFTING_TRACKER;
-    private static final Method M_IS_BUSY;
     private static final Method M_ON_CONFIG_CHANGED;
     private static final Method M_IS_ALLOWED_IN_SLOT;
     private static final Method M_ON_STORAGE_CHANGED;
@@ -62,8 +61,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             F_UPGRADES.setAccessible(true);
             F_CRAFTING_TRACKER = InterfaceLogic.class.getDeclaredField("craftingTracker");
             F_CRAFTING_TRACKER.setAccessible(true);
-            M_IS_BUSY = appeng.helpers.MultiCraftingTracker.class.getDeclaredMethod("isBusy", int.class);
-            M_IS_BUSY.setAccessible(true);
             M_ON_CONFIG_CHANGED = InterfaceLogic.class.getDeclaredMethod("onConfigRowChanged");
             M_ON_CONFIG_CHANGED.setAccessible(true);
             M_IS_ALLOWED_IN_SLOT = InterfaceLogic.class.getDeclaredMethod(
@@ -162,14 +159,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         getUpgrades().clear();
     }
 
-    private boolean isSlotBusy(int slot) {
-        try {
-            return (boolean) M_IS_BUSY.invoke(craftingTrackerRef, slot);
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
     private static final long REACTIVE_COOLDOWN_TICKS = 5;
     private long lastReactiveTick = -1;
 
@@ -207,7 +196,11 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     }
 
     private static void invokeQuietly(Method m, Object target) {
-        try { m.invoke(target); } catch (Exception ignored) {}
+        try {
+            m.invoke(target);
+        } catch (Exception e) {
+            LOG.warn("Reflection invoke failed: {}.{}", m.getDeclaringClass().getSimpleName(), m.getName(), e);
+        }
     }
 
     private static boolean invokeSlotFilter(Method m, Object target, int slot, AEKey key) {
@@ -224,26 +217,12 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             return new TickingRequest(TickRates.Interface, false);
         }
 
-        private int dbgCounter = 0;
-
         @Override
         public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-            boolean dbg = (dbgCounter++ % 100 == 0);
-            if (!mainNode.isActive()) {
-                if (dbg) LOG.info("[TICK] not active");
-                return TickRateModulation.IDLE;
-            }
-
-            if (!ourUpgrades.isInstalled(AEItems.CRAFTING_CARD)) {
-                if (dbg) LOG.info("[TICK] no crafting card, upgSize={}", ourUpgrades.size());
-                return TickRateModulation.IDLE;
-            }
-
+            if (!mainNode.isActive()) return TickRateModulation.IDLE;
+            if (!ourUpgrades.isInstalled(AEItems.CRAFTING_CARD)) return TickRateModulation.IDLE;
             var grid = mainNode.getGrid();
-            if (grid == null) {
-                if (dbg) LOG.info("[TICK] no grid");
-                return TickRateModulation.IDLE;
-            }
+            if (grid == null) return TickRateModulation.IDLE;
 
             var cache = grid.getStorageService().getCachedInventory();
             boolean didWork = false;
@@ -252,16 +231,11 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
                 if (cfgStack == null) continue;
                 long cap = owner.isSlotUnlimited(i) ? Long.MAX_VALUE : cfgStack.amount();
                 if (cap == Long.MAX_VALUE) {
-                    boolean r = invokeCrafting(i, cfgStack.what(), OVERLOADED_CAP);
-                    if (dbg) LOG.info("[TICK] slot={} unlimited what={} craft={}", i, cfgStack.what(), r);
-                    didWork |= r;
+                    didWork |= invokeCrafting(i, cfgStack.what(), OVERLOADED_CAP);
                 } else {
-                    long available = cache.get(cfgStack.what());
-                    long deficit = cap - available;
+                    long deficit = cap - cache.get(cfgStack.what());
                     if (deficit > 0) {
-                        boolean r = invokeCrafting(i, cfgStack.what(), deficit);
-                        if (dbg) LOG.info("[TICK] slot={} cap={} avail={} deficit={} craft={}", i, cap, available, deficit, r);
-                        didWork |= r;
+                        didWork |= invokeCrafting(i, cfgStack.what(), deficit);
                     }
                 }
             }
@@ -293,7 +267,10 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         public void setStack(int slot, @Nullable GenericStack stack) {
             super.setStack(slot, stack);
             if (!suppressUnlimitedCancel && owner != null && owner.isSlotUnlimited(slot)) {
-                owner.setSlotUnlimited(slot, false);
+                var level = owner.getLevel();
+                if (level != null && !level.isClientSide()) {
+                    owner.setSlotUnlimited(slot, false);
+                }
             }
         }
     }
@@ -338,7 +315,9 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         public long capForSlot(int slot) {
             if (logic.owner.isSlotUnlimited(slot)) return Long.MAX_VALUE;
             long amt = cfg().getAmount(slot);
-            return amt > 0 ? amt : Long.MAX_VALUE;
+            if (amt > 0) return amt;
+            var key = cfg().getKey(slot);
+            return key != null ? key.getType().getAmountPerUnit() : Long.MAX_VALUE;
         }
 
         private long networkAmount(AEKey key) {

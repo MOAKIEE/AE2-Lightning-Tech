@@ -59,7 +59,7 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         implements OverloadedGridNodeOwner {
 
-    private static final int SLOT_COUNT = 36;
+    public static final int SLOT_COUNT = 36;
 
     // ── NBT tags ─────────────────────────────────────────────────────────
 
@@ -596,32 +596,46 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         int budget = transferBudget;
         int moved  = 0;
 
+        // Merge available stacks across all wrappers to batch ME ops per unique key
+        scanBuffer.reset();
         for (var wrapper : wrappers.values()) {
-            if (budget <= 0) break;
-            scanBuffer.reset();
             wrapper.getAvailableStacks(scanBuffer);
+        }
 
-            for (var entry : scanBuffer) {
-                if (budget <= 0) break;
-                var key    = entry.getKey();
-                long avail = entry.getLongValue();
-                if (avail <= 0) continue;
+        for (var entry : scanBuffer) {
+            if (budget <= 0) break;
+            var key    = entry.getKey();
+            long totalAvail = entry.getLongValue();
+            if (totalAvail <= 0) continue;
 
-                if (directInsertInv != null && !directInsertInv.isAllowedIn(0, key))
-                    continue;
+            if (directInsertInv != null && !directInsertInv.isAllowedIn(0, key))
+                continue;
 
-                long toExtract = Math.min(avail, budget);
-                long canInsert = me.insert(key, toExtract, Actionable.SIMULATE, src);
-                if (canInsert <= 0) continue;
+            long toTransfer = Math.min(totalAvail, budget);
+            long meCanAccept = me.insert(key, toTransfer, Actionable.SIMULATE, src);
+            if (meCanAccept <= 0) continue;
 
-                toExtract = Math.min(toExtract, canInsert);
-                long extracted = wrapper.extract(key, toExtract, Actionable.MODULATE, src);
-                if (extracted <= 0) continue;
+            long extractBudget = Math.min(toTransfer, meCanAccept);
+            long totalExtracted = 0;
+            MEStorage lastExtractedWrapper = null;
 
-                me.insert(key, extracted, Actionable.MODULATE, src);
-                moved  += (int) extracted;
-                budget -= (int) extracted;
+            for (var wrapper : wrappers.values()) {
+                if (totalExtracted >= extractBudget) break;
+                long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
+                if (extracted > 0) {
+                    totalExtracted += extracted;
+                    lastExtractedWrapper = wrapper;
+                }
             }
+
+            if (totalExtracted <= 0) continue;
+
+            long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
+            if (totalExtracted > actualInserted && lastExtractedWrapper != null) {
+                lastExtractedWrapper.insert(key, totalExtracted - actualInserted, Actionable.MODULATE, src);
+            }
+            moved  += (int) actualInserted;
+            budget -= (int) actualInserted;
         }
         return moved;
     }
@@ -652,19 +666,36 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             }
 
             long toMove = Math.min(Math.min(maxAmount, budget), transferBudget);
-            long avail  = me.extract(key, toMove, Actionable.SIMULATE, src);
-            if (avail <= 0) continue;
+
+            // Simulate both sides to get a rough transfer estimate
+            long meAvail = me.extract(key, toMove, Actionable.SIMULATE, src);
+            if (meAvail <= 0) continue;
+            long canAccept = 0;
+            for (var wrapper : wrappers.values()) {
+                long remaining = meAvail - canAccept;
+                if (remaining <= 0) break;
+                canAccept += wrapper.insert(key, remaining, Actionable.SIMULATE, src);
+            }
+            if (canAccept <= 0) continue;
+
+            // Extract from ME first — authoritative source, prevents duplication
+            long actualExtracted = me.extract(key, Math.min(meAvail, canAccept),
+                    Actionable.MODULATE, src);
+            if (actualExtracted <= 0) continue;
 
             long totalInserted = 0;
             for (var wrapper : wrappers.values()) {
-                long remaining = avail - totalInserted;
+                long remaining = actualExtracted - totalInserted;
                 if (remaining <= 0) break;
                 long ins = wrapper.insert(key, remaining, Actionable.MODULATE, src);
                 totalInserted += ins;
             }
-            if (totalInserted <= 0) continue;
 
-            me.extract(key, totalInserted, Actionable.MODULATE, src);
+            // Return excess to ME if wrappers accepted less than extracted
+            if (actualExtracted > totalInserted) {
+                me.insert(key, actualExtracted - totalInserted, Actionable.MODULATE, src);
+            }
+
             moved  += (int) totalInserted;
             budget -= (int) totalInserted;
         }
@@ -731,109 +762,186 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (wheelDirty) rebuildEWheel(valid);
 
         if (!deferredMachines.isEmpty()) {
-            long av = simFlux(feKey,
+            long avail = simulateFluxExtract(feKey,
                     (long) AppFluxHelper.TRANSFER_RATE * deferredMachines.size());
-            if (av <= 0) return;
-            processEBatch(sl, deferredMachines, feKey, av);
+            if (avail <= 0) return;
+            processEBatch(sl, deferredMachines, feKey, avail);
             if (!deferredMachines.isEmpty()) return;
         }
         for (int s = 1; s < elapsed && energyWheel[wheelPointer].isEmpty(); s++)
             wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
 
-        var elig = pollWheel();
-        if (elig.isEmpty()) return;
-        long av = simFlux(feKey, (long) AppFluxHelper.TRANSFER_RATE * elig.size());
-        if (av <= 0) { deferredMachines.addAll(elig); elig.clear(); return; }
-        processEBatch(sl, elig, feKey, av);
+        var eligible = pollWheel();
+        if (eligible.isEmpty()) return;
+        long avail = simulateFluxExtract(feKey, (long) AppFluxHelper.TRANSFER_RATE * eligible.size());
+        if (avail <= 0) {
+            deferredMachines.addAll(eligible);
+            eligible.clear();
+            return;
+        }
+        processEBatch(sl, eligible, feKey, avail);
     }
 
-    private void processEBatch(ServerLevel sl, List<ScheduleEntry> m,
+    private final List<ScheduleEntry> tempEnergyDefer = new ArrayList<>();
+    private final List<ScheduleEntry> tempStarved     = new ArrayList<>();
+
+    private void processEBatch(ServerLevel sl, List<ScheduleEntry> batch,
                                 AEKey feKey, long avail) {
-        int cnt = m.size(); long total = 0;
-        long[] cr = new long[cnt]; int[] cap = new int[cnt]; long[] se = new long[cnt];
+        int cnt = batch.size();
+        long total = 0;
+        long[] canReceive   = new long[cnt];
+        int[]  maxCapacity  = new int[cnt];
+        long[] storedEnergy = new long[cnt];
+
         for (int i = 0; i < cnt; i++) {
-            var e = m.get(i); var tl = resolveTargetLevel(sl, e.conn);
-            var st = tl != null ? e.state.resolveEnergy(tl, e.conn) : null;
-            if (st != null) {
-                cr[i] = st.receiveEnergy(Integer.MAX_VALUE, true);
-                cap[i] = st.getMaxEnergyStored(); se[i] = st.getEnergyStored();
-                total += cr[i];
+            var entry = batch.get(i);
+            var targetLevel = resolveTargetLevel(sl, entry.conn);
+            var storage = targetLevel != null ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
+            if (storage != null) {
+                canReceive[i]   = storage.receiveEnergy(Integer.MAX_VALUE, true);
+                maxCapacity[i]  = storage.getMaxEnergyStored();
+                storedEnergy[i] = storage.getEnergyStored();
+                total += canReceive[i];
             }
         }
+
         if (total <= 0) {
-            for (int i = 0; i < cnt; i++) { adjD(m.get(i),0,se[i],cap[i]); schd(m.get(i)); }
-            m.clear(); return;
-        }
-        long ext = extFlux(feKey, Math.min(total, avail));
-        if (ext <= 0) {
-            var ed = new ArrayList<ScheduleEntry>();
             for (int i = 0; i < cnt; i++) {
-                if (cr[i]==0) { adjD(m.get(i),0,se[i],cap[i]); schd(m.get(i)); } else ed.add(m.get(i));
+                adjustScheduleDelay(batch.get(i), 0, storedEnergy[i], maxCapacity[i]);
+                scheduleEnergyEntry(batch.get(i));
             }
-            m.clear(); if (!ed.isEmpty()) deferredMachines.addAll(ed); return;
+            batch.clear();
+            return;
         }
-        long rem = ext; var sd = new ArrayList<ScheduleEntry>();
+
+        long extracted = extractFlux(feKey, Math.min(total, avail));
+        if (extracted <= 0) {
+            tempEnergyDefer.clear();
+            for (int i = 0; i < cnt; i++) {
+                if (canReceive[i] == 0) {
+                    adjustScheduleDelay(batch.get(i), 0, storedEnergy[i], maxCapacity[i]);
+                    scheduleEnergyEntry(batch.get(i));
+                } else {
+                    tempEnergyDefer.add(batch.get(i));
+                }
+            }
+            batch.clear();
+            if (!tempEnergyDefer.isEmpty()) {
+                deferredMachines.addAll(tempEnergyDefer);
+                tempEnergyDefer.clear();
+            }
+            return;
+        }
+
+        long remaining = extracted;
+        tempStarved.clear();
+
         for (int i = 0; i < cnt; i++) {
-            var e = m.get(i);
-            if (cr[i]>0 && rem>0) {
-                long sh = Math.min(cr[i], rem);
-                var tl = resolveTargetLevel(sl, e.conn);
-                var st = tl!=null ? e.state.resolveEnergy(tl, e.conn) : null;
-                long acc = st!=null ? st.receiveEnergy((int)Math.min(sh,Integer.MAX_VALUE),false) : 0;
-                rem -= acc;
-                boolean bud = (sh==cr[i]);
-                if (bud && acc>0 && cr[i]>acc*2) {
-                    e.state.scheduleDelay = Math.min(e.state.scheduleDelay*(int)(cr[i]/acc), ENERGY_DELAY_MAX);
-                    e.state.lastCanReceive = cr[i];
-                } else if (bud && acc==0) {
-                    e.state.scheduleDelay = ENERGY_DELAY_MAX; e.state.lastCanReceive = cr[i];
-                } else adjD(e, cr[i], se[i], cap[i]);
-                schd(e);
-            } else if (cr[i]==0) { adjD(e,0,se[i],cap[i]); schd(e); }
-            else sd.add(e);
+            var entry = batch.get(i);
+            if (canReceive[i] > 0 && remaining > 0) {
+                long share = Math.min(canReceive[i], remaining);
+                var targetLevel = resolveTargetLevel(sl, entry.conn);
+                var storage = targetLevel != null
+                        ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
+                long accepted = storage != null
+                        ? storage.receiveEnergy((int) Math.min(share, Integer.MAX_VALUE), false) : 0;
+                remaining -= accepted;
+
+                boolean budgetSufficient = (share == canReceive[i]);
+                if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
+                    entry.state.scheduleDelay = Math.min(
+                            entry.state.scheduleDelay * (int) (canReceive[i] / accepted),
+                            ENERGY_DELAY_MAX);
+                    entry.state.lastCanReceive = canReceive[i];
+                } else if (budgetSufficient && accepted == 0) {
+                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
+                    entry.state.lastCanReceive = canReceive[i];
+                } else {
+                    adjustScheduleDelay(entry, canReceive[i], storedEnergy[i], maxCapacity[i]);
+                }
+                scheduleEnergyEntry(entry);
+            } else if (canReceive[i] == 0) {
+                adjustScheduleDelay(entry, 0, storedEnergy[i], maxCapacity[i]);
+                scheduleEnergyEntry(entry);
+            } else {
+                tempStarved.add(entry);
+            }
         }
-        m.clear(); if (!sd.isEmpty()) deferredMachines.addAll(sd);
-        if (rem > 0) insFlux(feKey, rem);
+
+        batch.clear();
+        if (!tempStarved.isEmpty()) {
+            deferredMachines.addAll(tempStarved);
+            tempStarved.clear();
+        }
+        if (remaining > 0) {
+            insertFlux(feKey, remaining);
+        }
     }
 
-    private void adjD(ScheduleEntry e, long cr, long se, int cap) {
-        var s = e.state; int d = s.scheduleDelay;
-        if (cr > s.lastCanReceive) d = d>ENERGY_DELAY_MEAN ? d/2 : d-1;
-        else if ((s.lastCanReceive-cr)<<2 < cap) {
-            if (se*3 <= (long)cap<<1) d = d>ENERGY_DELAY_MEAN ? d/2 : d-1;
-            else { if (d>ENERGY_DELAY_MEAN) d--; else if (d<ENERGY_DELAY_MEAN) d++; }
-        } else d++;
-        s.scheduleDelay = Math.clamp(d, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
-        s.lastCanReceive = cr;
+    private void adjustScheduleDelay(ScheduleEntry entry, long canReceive,
+                                      long storedEnergy, int maxCapacity) {
+        var state = entry.state;
+        int delay = state.scheduleDelay;
+
+        if (canReceive > state.lastCanReceive) {
+            delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
+        } else if ((state.lastCanReceive - canReceive) << 2 < maxCapacity) {
+            if (storedEnergy * 3 <= (long) maxCapacity << 1) {
+                delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
+            } else {
+                if (delay > ENERGY_DELAY_MEAN) delay--;
+                else if (delay < ENERGY_DELAY_MEAN) delay++;
+            }
+        } else {
+            delay++;
+        }
+
+        state.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
+        state.lastCanReceive = canReceive;
     }
 
     private List<ScheduleEntry> pollWheel() {
-        var l = energyWheel[wheelPointer];
-        if (l.isEmpty()) return l;
-        energyWheel[wheelPointer] = spareList; spareList = l; return l;
+        var list = energyWheel[wheelPointer];
+        if (list.isEmpty()) return list;
+        energyWheel[wheelPointer] = spareList;
+        spareList = list;
+        return list;
     }
-    private void schd(ScheduleEntry e) {
-        energyWheel[(wheelPointer + e.state.scheduleDelay) % WHEEL_SLOTS].add(e);
+
+    private void scheduleEnergyEntry(ScheduleEntry entry) {
+        energyWheel[(wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS].add(entry);
     }
-    private void rebuildEWheel(List<WirelessConnection> v) {
-        for (var sl : energyWheel) sl.clear(); deferredMachines.clear();
-        for (var c : v) schd(new ScheduleEntry(c, getOrCreateState(c)));
+
+    private void rebuildEWheel(List<WirelessConnection> valid) {
+        for (var sl : energyWheel) sl.clear();
+        deferredMachines.clear();
+        for (var c : valid) {
+            scheduleEnergyEntry(new ScheduleEntry(c, getOrCreateState(c)));
+        }
         wheelDirty = false;
     }
-    private long simFlux(AEKey k, long max) {
-        var g = getMainNode().getGrid(); if (g==null) return 0;
-        return g.getStorageService().getInventory()
-                .extract(k, max, Actionable.SIMULATE, IActionSource.ofMachine(this));
+
+    private long simulateFluxExtract(AEKey key, long max) {
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
+        return grid.getStorageService().getInventory()
+                .extract(key, max, Actionable.SIMULATE, IActionSource.ofMachine(this));
     }
-    private long extFlux(AEKey k, long a) {
-        if (a<=0) return 0; var g=getMainNode().getGrid(); if(g==null) return 0;
-        return g.getStorageService().getInventory()
-                .extract(k, a, Actionable.MODULATE, IActionSource.ofMachine(this));
+
+    private long extractFlux(AEKey key, long amount) {
+        if (amount <= 0) return 0;
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
+        return grid.getStorageService().getInventory()
+                .extract(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
     }
-    private void insFlux(AEKey k, long a) {
-        if (a<=0) return; var g=getMainNode().getGrid(); if(g==null) return;
-        g.getStorageService().getInventory()
-                .insert(k, a, Actionable.MODULATE, IActionSource.ofMachine(this));
+
+    private void insertFlux(AEKey key, long amount) {
+        if (amount <= 0) return;
+        var grid = getMainNode().getGrid();
+        if (grid == null) return;
+        grid.getStorageService().getInventory()
+                .insert(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -932,11 +1040,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             for (int i = 0; i < cl.size(); i++)
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
-    }
-
-    @Override
-    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
-        super.addAdditionalDrops(level, pos, drops);
     }
 
 }

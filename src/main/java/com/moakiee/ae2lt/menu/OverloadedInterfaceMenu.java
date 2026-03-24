@@ -179,7 +179,8 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
             var dir = be.getEnergyOutputDir();
             energyDirOrdinal = dir != null ? dir.get3DDataValue() : -1;
             long bits = 0;
-            for (int i = 0; i < 36; i++) if (be.isSlotUnlimited(i)) bits |= (1L << i);
+            for (int i = 0; i < OverloadedInterfaceBlockEntity.SLOT_COUNT; i++)
+                if (be.isSlotUnlimited(i)) bits |= (1L << i);
             unlimitedBits = bits;
         }
     }
@@ -283,7 +284,8 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
                 }
             }
             long bits = 0;
-            for (int i = 0; i < 36; i++) if (be.isSlotUnlimited(i)) bits |= (1L << i);
+            for (int i = 0; i < OverloadedInterfaceBlockEntity.SLOT_COUNT; i++)
+                if (be.isSlotUnlimited(i)) bits |= (1L << i);
             unlimitedBits = bits;
         }
     }
@@ -392,25 +394,49 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         var hotbarStack = player.getInventory().getItem(button);
         var key = proxy.cfg().getKey(idx);
 
-        if (!hotbarStack.isEmpty()) {
-            var hbKey = AEItemKey.of(hotbarStack);
+        boolean wantInsert  = !hotbarStack.isEmpty();
+        boolean wantExtract = key instanceof AEItemKey;
+
+        // Simulate both sides before committing
+        long simInserted  = 0;
+        AEItemKey hbKey   = null;
+        long simExtracted = 0;
+        AEItemKey itemKey = null;
+
+        if (wantInsert) {
+            hbKey = AEItemKey.of(hotbarStack);
             if (hbKey != null) {
-                long inserted = proxy.proxyInsert(hbKey, hotbarStack.getCount(), Actionable.MODULATE);
-                if (inserted > 0) hotbarStack.shrink((int) inserted);
+                simInserted = proxy.proxyInsert(hbKey, hotbarStack.getCount(), Actionable.SIMULATE);
+            }
+        }
+        if (wantExtract) {
+            itemKey = (AEItemKey) key;
+            long cap = proxy.capForSlot(idx);
+            long maxExtract = Math.min(cap, itemKey.getMaxStackSize());
+            simExtracted = proxy.proxyExtract(key, maxExtract, Actionable.SIMULATE);
+        }
+
+        if (simInserted <= 0 && simExtracted <= 0) return;
+
+        // Modulate: extract first, then insert
+        ItemStack extractedStack = ItemStack.EMPTY;
+        if (simExtracted > 0) {
+            long extracted = proxy.proxyExtract(key, simExtracted, Actionable.MODULATE);
+            if (extracted > 0) {
+                extractedStack = itemKey.toStack((int) Math.min(extracted, Integer.MAX_VALUE));
             }
         }
 
-        if (key instanceof AEItemKey itemKey) {
-            long cap = proxy.capForSlot(idx);
-            long maxExtract = Math.min(cap, itemKey.getMaxStackSize());
-            long extracted = proxy.proxyExtract(key, maxExtract, Actionable.MODULATE);
-            if (extracted > 0) {
-                var extractedStack = itemKey.toStack((int) Math.min(extracted, Integer.MAX_VALUE));
-                if (hotbarStack.isEmpty()) {
-                    player.getInventory().setItem(button, extractedStack);
-                } else if (!player.getInventory().add(extractedStack)) {
-                    player.drop(extractedStack, false);
-                }
+        if (simInserted > 0 && hbKey != null) {
+            long inserted = proxy.proxyInsert(hbKey, hotbarStack.getCount(), Actionable.MODULATE);
+            if (inserted > 0) hotbarStack.shrink((int) inserted);
+        }
+
+        if (!extractedStack.isEmpty()) {
+            if (hotbarStack.isEmpty()) {
+                player.getInventory().setItem(button, extractedStack);
+            } else if (!player.getInventory().add(extractedStack)) {
+                player.drop(extractedStack, false);
             }
         }
     }
@@ -484,7 +510,10 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
                     f.setAccessible(true);
                     f.setInt(sam, (int) Math.min(cap, Integer.MAX_VALUE));
                     sam.broadcastChanges();
-                } catch (ReflectiveOperationException ignored) {}
+                } catch (ReflectiveOperationException e) {
+                    org.slf4j.LoggerFactory.getLogger(OverloadedInterfaceMenu.class)
+                            .warn("Failed to set maxAmount on SetStockAmountMenu", e);
+                }
             }
         }
     }
@@ -499,7 +528,8 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
             var dir = be.getEnergyOutputDir();
             energyDirOrdinal = dir != null ? dir.get3DDataValue() : -1;
             long bits = 0;
-            for (int i = 0; i < 36; i++) if (be.isSlotUnlimited(i)) bits |= (1L << i);
+            for (int i = 0; i < OverloadedInterfaceBlockEntity.SLOT_COUNT; i++)
+                if (be.isSlotUnlimited(i)) bits |= (1L << i);
             unlimitedBits = bits;
         }
         super.broadcastChanges();

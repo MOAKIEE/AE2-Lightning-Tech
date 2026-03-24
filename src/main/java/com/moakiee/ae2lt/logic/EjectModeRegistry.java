@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.logic;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +17,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 
 /**
@@ -43,7 +44,7 @@ public final class EjectModeRegistry {
     }
 
     private static final Map<ResourceKey<Level>, Long2ObjectOpenHashMap<EnumMap<Direction, List<EjectEntry>>>>
-            registrations = new HashMap<>();
+            registrations = new IdentityHashMap<>();
 
     @Nullable
     private static EjectModeSavedData savedData;
