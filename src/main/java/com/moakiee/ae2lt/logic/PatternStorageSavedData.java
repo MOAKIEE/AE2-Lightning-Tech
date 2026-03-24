@@ -1,7 +1,6 @@
 package com.moakiee.ae2lt.logic;
 
-import java.util.HashMap;
-import java.util.Map;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -24,7 +23,7 @@ public class PatternStorageSavedData extends SavedData {
     private static final String TAG_SLOT = "Slot";
     private static final String TAG_ITEM = "Item";
 
-    private final Map<Long, ItemStack[]> storage = new HashMap<>();
+    private final Long2ObjectOpenHashMap<ItemStack[]> storage = new Long2ObjectOpenHashMap<>();
 
     public static final Factory<PatternStorageSavedData> FACTORY = new Factory<>(
             PatternStorageSavedData::new,

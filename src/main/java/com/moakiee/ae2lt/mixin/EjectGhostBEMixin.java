@@ -17,7 +17,9 @@ import com.moakiee.ae2lt.logic.EjectModeRegistry;
  * at eject-mode interception positions when the original block is air (null).
  * <p>
  * This satisfies machines that check {@code getBlockEntity(adjacent) != null}
- * before querying capabilities. Only active on the server side.
+ * before querying capabilities. Returns the GhostBE regardless of whether
+ * the owning pattern provider is currently loaded, so that the capability
+ * mixin can then return a rejecting handler when the provider is offline.
  */
 @Mixin(Level.class)
 public abstract class EjectGhostBEMixin {
@@ -30,7 +32,11 @@ public abstract class EjectGhostBEMixin {
         var entry = EjectModeRegistry.lookupAny(
                 ((Level) (Object) this).dimension(), pos.asLong());
         if (entry != null) {
-            cir.setReturnValue(entry.ghostBE());
+            var ghost = entry.ghostBE();
+            if (ghost.getLevel() == null) {
+                ghost.setLevel((Level) (Object) this);
+            }
+            cir.setReturnValue(ghost);
         }
     }
 }

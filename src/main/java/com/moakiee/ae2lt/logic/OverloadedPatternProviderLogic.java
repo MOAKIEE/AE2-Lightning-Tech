@@ -1,12 +1,13 @@
 package com.moakiee.ae2lt.logic;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.PriorityQueue;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -55,7 +56,6 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
-import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessDispatchMode;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -109,11 +109,238 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Round-robin index across the *valid* connection list for SINGLE_TARGET. */
     private int wirelessRoundRobin = 0;
 
-    /** Per-connection push counts for EVEN_DISTRIBUTION load balancing. */
-    private final Map<WirelessConnection, Integer> distributionCounts = new HashMap<>();
+    // ---- unified per-connection state ---------------------------------------------
 
-    /** Weak capability cache for wireless energy targets to avoid repeated capability lookup churn. */
-    private final Map<WirelessConnection, EnergyStorageCacheEntry> energyStorageCache = new HashMap<>();
+    private static final int COOLDOWN_INIT = 5;
+    private static final int COOLDOWN_MIN  = 1;
+    private static final int COOLDOWN_MAX  = 40;
+    /** When (searchHi - searchLo) <= this, switch from binary search to +/- fine tuning. */
+    private static final int COOLDOWN_NEAR_BAND = 4;
+    /** Consecutive post-cooldown successes in fine mode before decreasing cooldownN by 1. */
+    private static final int COOLDOWN_STABLE_SUCCESSES = 2;
+    private static final float[] PROBE_LEVELS = {5f, 3f, 2f, 1f, 0.5f, 0.3f, 0.1f};
+    private static final int PROBE_LEVEL_INIT_IDX = 0;
+
+    static final class ConnectionState {
+        int pushCount;
+
+        // push cooldown — far: binary search on [searchLo, searchHi]; near: +/- with streaks
+        long cooldownUntil = -1;
+        int cooldownN = COOLDOWN_INIT;
+        int searchLo = COOLDOWN_MIN;
+        int searchHi = COOLDOWN_MAX;
+        /** Fine mode: successes after cooldown before one tick down. */
+        int cooldownStableSuccessStreak;
+        /** Fine mode: consecutive post-cooldown fails. */
+        int cooldownFailStreak;
+
+        // early-probe: fixed level table, one probe per cooldown cycle
+        int probeLevelIdx = PROBE_LEVEL_INIT_IDX;
+        int probeSkipCounter;
+        boolean probedThisCycle;
+
+        // timing-wheel dispatch state
+        boolean ready = true;
+        int readyGeneration;
+        boolean probeArmed;
+
+        // adapter cache (avoids MachineAdapterRegistry.find() scan every push)
+        @Nullable WeakReference<BlockEntity> adapterBERef;
+        @Nullable MachineAdapter cachedAdapter;
+
+        @Nullable
+        MachineAdapter resolveAdapter(ServerLevel level, BlockPos pos) {
+            BlockEntity be = level.getBlockEntity(pos);
+            if (be == null) {
+                adapterBERef = null;
+                cachedAdapter = null;
+                return null;
+            }
+            if (adapterBERef != null && adapterBERef.get() == be && cachedAdapter != null) {
+                return cachedAdapter;
+            }
+            var adapter = MachineAdapterRegistry.find(level, pos);
+            adapterBERef = new WeakReference<>(be);
+            cachedAdapter = adapter;
+            return adapter;
+        }
+
+        // energy cap cache
+        @Nullable WeakReference<BlockEntity> energyBERef;
+        @Nullable WeakReference<IEnergyStorage> energyStorageRef;
+
+        // auto-return backoff
+        long nextPollTick;
+        int backoffInterval = BACKOFF_MIN;
+
+        // energy schedule
+        int scheduleDelay = ENERGY_DELAY_MEAN;
+        long lastCanReceive;
+
+        boolean isInProbeWindow(long gameTick) {
+            if (cooldownUntil < 0 || gameTick >= cooldownUntil) return false;
+            if (probedThisCycle) return false;
+            float level = PROBE_LEVELS[probeLevelIdx];
+            if (level >= 1.0f) {
+                return gameTick == cooldownUntil - (int) level;
+            } else {
+                int interval = Math.round(1.0f / level);
+                return probeSkipCounter >= interval && gameTick == cooldownUntil - 1;
+            }
+        }
+
+        void onProbeSuccess() {
+            probeLevelIdx = 0;
+            probeSkipCounter = 0;
+            probedThisCycle = true;
+            cooldownUntil = -1;
+        }
+
+        void onProbeFail() {
+            probeLevelIdx = Math.min(probeLevelIdx + 1, PROBE_LEVELS.length - 1);
+            probeSkipCounter = 0;
+            probedThisCycle = true;
+        }
+
+        /** True when search interval is narrow — use +/- instead of binary. */
+        private boolean nearBand() {
+            return searchHi - searchLo <= COOLDOWN_NEAR_BAND;
+        }
+
+        void onPushSuccess(long gameTick) {
+            if (cooldownUntil < 0) return;
+            cooldownFailStreak = 0;
+            if (nearBand()) {
+                cooldownStableSuccessStreak++;
+                if (cooldownStableSuccessStreak >= COOLDOWN_STABLE_SUCCESSES) {
+                    cooldownN = Math.max(COOLDOWN_MIN, cooldownN - 1);
+                    cooldownStableSuccessStreak = 0;
+                }
+            } else {
+                cooldownStableSuccessStreak = 0;
+                searchHi = cooldownN;
+                cooldownN = Math.max(searchLo, (searchLo + searchHi) / 2);
+                cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+            }
+            cooldownUntil = -1;
+        }
+
+        void onPushFail(long gameTick) {
+            if (cooldownUntil < 0) {
+                cooldownUntil = gameTick + cooldownN;
+                cooldownStableSuccessStreak = 0;
+                probedThisCycle = false;
+                probeSkipCounter++;
+                return;
+            }
+            cooldownStableSuccessStreak = 0;
+            if (nearBand()) {
+                cooldownFailStreak++;
+                int step = Math.min(2, 1 + (cooldownFailStreak - 1) / 4);
+                cooldownN = Math.min(COOLDOWN_MAX, cooldownN + step);
+            } else {
+                cooldownFailStreak = 0;
+                searchLo = cooldownN + 1;
+                if (searchLo > searchHi) {
+                    searchLo = COOLDOWN_MAX;
+                    searchHi = COOLDOWN_MAX;
+                    cooldownN = COOLDOWN_MAX;
+                } else {
+                    cooldownN = (searchLo + searchHi) / 2;
+                    cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                }
+            }
+            cooldownUntil = gameTick + cooldownN;
+            probedThisCycle = false;
+            probeSkipCounter++;
+        }
+
+        void resetBackoff(long gameTick) {
+            backoffInterval = BACKOFF_MIN;
+            nextPollTick = gameTick + BACKOFF_MIN;
+        }
+
+        void updateBackoff(long gameTick, boolean foundItems) {
+            backoffInterval = foundItems ? BACKOFF_MIN
+                    : Math.min(backoffInterval * 2, BACKOFF_MAX);
+            nextPollTick = gameTick + backoffInterval;
+        }
+
+        @Nullable
+        IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
+            BlockEntity be = level.getBlockEntity(conn.pos());
+            if (be == null) {
+                energyBERef = null;
+                energyStorageRef = null;
+                return null;
+            }
+            if (energyBERef != null && energyBERef.get() == be && energyStorageRef != null) {
+                var s = energyStorageRef.get();
+                if (s != null) return s;
+            }
+            IEnergyStorage storage = level.getCapability(
+                    Capabilities.EnergyStorage.BLOCK, conn.pos(), conn.boundFace());
+            if (storage == null) {
+                energyBERef = null;
+                energyStorageRef = null;
+                return null;
+            }
+            energyBERef = new WeakReference<>(be);
+            energyStorageRef = new WeakReference<>(storage);
+            return storage;
+        }
+    }
+
+    private final Map<WirelessConnection, ConnectionState> connectionStates = new HashMap<>();
+
+    private ConnectionState getOrCreateState(WirelessConnection conn) {
+        return connectionStates.computeIfAbsent(conn, k -> new ConnectionState());
+    }
+
+    // ---- push timing wheel + ready queue ----------------------------------------
+
+    private record PushEntry(WirelessConnection conn, ConnectionState state, int generation) {}
+
+    private static final int PUSH_WHEEL_BITS = 6;
+    private static final int PUSH_WHEEL_SIZE = 1 << PUSH_WHEEL_BITS; // 64 — comfortably covers COOLDOWN_MAX (40)
+    private static final int PUSH_WHEEL_MASK = PUSH_WHEEL_SIZE - 1;
+
+    @SuppressWarnings("unchecked")
+    private final List<WirelessConnection>[] pushWheel = new List[PUSH_WHEEL_SIZE];
+    {
+        for (int i = 0; i < PUSH_WHEEL_SIZE; i++) pushWheel[i] = new ArrayList<>();
+    }
+
+    private final PriorityQueue<PushEntry> readyPQ = new PriorityQueue<>(
+            Comparator.comparingInt(e -> e.state().pushCount));
+    private final ArrayDeque<WirelessConnection> readyQueue = new ArrayDeque<>();
+    private List<WirelessConnection> pushWheelValidRef = List.of();
+    private long lastPushWheelTick = -1;
+
+    private enum PushOutcome { SUCCESS, SOFT_FAIL, HARD_FAIL }
+
+    // ---- PatternProviderTarget cache (avoids recreating strategies every push) -----
+
+    private record TargetCacheKey(ResourceKey<Level> dimension, long posLong, Direction face) {}
+
+    private static final class TargetCacheEntry {
+        final WeakReference<BlockEntity> beRef;
+        final PatternProviderTarget target;
+        final long createdTick;
+
+        TargetCacheEntry(BlockEntity be, PatternProviderTarget target, long tick) {
+            this.beRef = new WeakReference<>(be);
+            this.target = target;
+            this.createdTick = tick;
+        }
+
+        boolean isValid(BlockEntity currentBE, long currentTick) {
+            return beRef.get() == currentBE && (currentTick - createdTick) < TARGET_CACHE_TTL;
+        }
+    }
+
+    private static final int TARGET_CACHE_TTL = 20;
+    private final Map<TargetCacheKey, TargetCacheEntry> targetCache = new HashMap<>();
 
     /** Cached output filter derived from loaded patterns. */
     @Nullable
@@ -191,19 +418,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final int WHEEL_SLOTS = ENERGY_DELAY_MAX; // 20
 
     static final class ScheduleEntry {
-        final int connectionIndex;
-        int currentDelay;
-        long lastCanReceive;
+        final WirelessConnection conn;
+        final ConnectionState state;
 
-        ScheduleEntry(int connectionIndex) {
-            this.connectionIndex = connectionIndex;
-            this.currentDelay = ENERGY_DELAY_MEAN;
-            this.lastCanReceive = 0;
-        }
-
-        void update(int newDelay, long newCanReceive) {
-            this.currentDelay = newDelay;
-            this.lastCanReceive = newCanReceive;
+        ScheduleEntry(WirelessConnection conn, ConnectionState state) {
+            this.conn = conn;
+            this.state = state;
         }
     }
 
@@ -216,19 +436,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private int wheelPointer = 0;
     private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
     private boolean wheelDirty = true;
-
-    private record EnergyStorageCacheEntry(
-            WeakReference<BlockEntity> blockEntityRef,
-            WeakReference<IEnergyStorage> storageRef) {
-        boolean matches(BlockEntity blockEntity) {
-            return blockEntityRef.get() == blockEntity;
-        }
-
-        @Nullable
-        IEnergyStorage getStorage() {
-            return storageRef.get();
-        }
-    }
 
     // ---- construction -----------------------------------------------------------
 
@@ -414,12 +621,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private boolean wirelessPushPattern(IPatternDetails pattern, KeyCounter[] inputs) {
-        // 1. Cannot push if overflow still pending
-        if (!wirelessSendList.isEmpty()) {
-            return false;
-        }
-
-        // 2. Basic pre-conditions (mirrors vanilla checks)
+        if (!wirelessSendList.isEmpty()) return false;
         if (!gridNode.isActive()) return false;
         if (!getAvailablePatterns().contains(pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
@@ -427,62 +629,236 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return false;
         var server = sl.getServer();
-        var valid = new ArrayList<>(getOrRefreshValidConnections(sl, sl.getGameTime()));
+
+        var valid = getOrRefreshValidConnections(sl, sl.getGameTime());
         if (valid.isEmpty()) return false;
 
+        long gameTick = sl.getGameTime();
+        boolean fastMode = overloadedHost.getWirelessSpeedMode()
+                == OverloadedPatternProviderBlockEntity.WirelessSpeedMode.FAST;
+
+        if (valid != pushWheelValidRef) {
+            rebuildPushStructures(valid, gameTick);
+        }
+        advancePushWheel(gameTick, fastMode);
+
         return switch (overloadedHost.getWirelessDispatchMode()) {
-            case SINGLE_TARGET -> wirelessPushSingleTarget(pattern, inputs, valid, server);
-            case EVEN_DISTRIBUTION -> wirelessPushEvenDistribution(pattern, inputs, valid, server);
+            case EVEN_DISTRIBUTION -> wirelessPushEvenDistribution(pattern, inputs, valid, server, gameTick, fastMode);
+            case SINGLE_TARGET -> wirelessPushSingleTarget(pattern, inputs, valid, server, gameTick, fastMode);
         };
     }
 
-    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
-            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
-        int total = valid.size();
-        int start = Math.floorMod(wirelessRoundRobin, total);
-
-        for (int offset = 0; offset < total; offset++) {
-            int index = (start + offset) % total;
-            var conn = valid.get(index);
-            if (tryPushToConnection(pattern, inputs, conn, server)) {
-                wirelessRoundRobin = (index + 1) % total;
-                return true;
-            }
-        }
-        return false;
-    }
+    // ---- EVEN_DISTRIBUTION: PQ-based balanced push --------------------------------
 
     private boolean wirelessPushEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
-            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server) {
-        distributionCounts.keySet().retainAll(new HashSet<>(valid));
-        valid.sort(Comparator.comparingInt(c -> distributionCounts.getOrDefault(c, 0)));
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
+            long gameTick, boolean fastMode) {
 
-        for (var conn : valid) {
-            if (tryPushToConnection(pattern, inputs, conn, server)) {
-                distributionCounts.merge(conn, 1, Integer::sum);
-                return true;
+        while (!readyPQ.isEmpty()) {
+            var entry = readyPQ.poll();
+            var state = entry.state();
+
+            if (entry.generation() != state.readyGeneration) continue;
+            if (!state.ready) continue;
+
+            boolean probing = state.probeArmed
+                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
+            state.probeArmed = false;
+
+            var outcome = tryPushToConnection(pattern, inputs, entry.conn(), server);
+            switch (outcome) {
+                case SUCCESS -> {
+                    if (probing) {
+                        state.onProbeSuccess();
+                    } else {
+                        state.onPushSuccess(gameTick);
+                    }
+                    state.pushCount++;
+                    state.readyGeneration++;
+                    readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
+                    return true;
+                }
+                case HARD_FAIL -> {
+                    if (!isConnectionAlive(entry.conn(), server)) {
+                        connectionsDirty = true;
+                    } else {
+                        state.readyGeneration++;
+                        readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
+                    }
+                }
+                case SOFT_FAIL -> {
+                    if (probing) {
+                        state.onProbeFail();
+                        schedulePushWheel(entry.conn(), state, fastMode);
+                    } else {
+                        state.onPushFail(gameTick);
+                        schedulePushWheel(entry.conn(), state, fastMode);
+                    }
+                }
             }
         }
         return false;
     }
 
-    /**
-     * Try to push one pattern copy to a single wireless connection.
-     * On success, stores any overflow and triggers lock-mode transitions.
-     */
-    private boolean tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
+    // ---- SINGLE_TARGET: sticky round-robin push -----------------------------------
+
+    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
+            long gameTick, boolean fastMode) {
+
+        while (!readyQueue.isEmpty()) {
+            var conn = readyQueue.peek();
+            var state = connectionStates.get(conn);
+
+            if (state == null) {
+                readyQueue.poll();
+                continue;
+            }
+
+            boolean probing = state.probeArmed
+                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
+            state.probeArmed = false;
+
+            var outcome = tryPushToConnection(pattern, inputs, conn, server);
+            switch (outcome) {
+                case SUCCESS -> {
+                    if (probing) {
+                        state.onProbeSuccess();
+                    } else {
+                        state.onPushSuccess(gameTick);
+                    }
+                    state.pushCount++;
+                return true;
+                }
+                case SOFT_FAIL -> {
+                    readyQueue.poll();
+                    if (probing) {
+                        state.onProbeFail();
+                    } else {
+                        state.onPushFail(gameTick);
+                    }
+                    schedulePushWheel(conn, state, fastMode);
+                }
+                case HARD_FAIL -> {
+                    readyQueue.poll();
+                    if (!isConnectionAlive(conn, server)) {
+                        connectionsDirty = true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isConnectionAlive(WirelessConnection conn,
+                                             net.minecraft.server.MinecraftServer server) {
+        var level = server.getLevel(conn.dimension());
+        return level != null && level.isLoaded(conn.pos())
+                && level.getBlockEntity(conn.pos()) != null;
+    }
+
+    private void rebuildPushStructures(List<WirelessConnection> valid, long gameTick) {
+        for (var slot : pushWheel) slot.clear();
+        readyPQ.clear();
+        readyQueue.clear();
+        for (var conn : valid) {
+            var state = getOrCreateState(conn);
+            if (state.cooldownUntil >= 0 && gameTick < state.cooldownUntil) {
+                state.ready = false;
+                state.probeArmed = false;
+                int slot = (int) (state.cooldownUntil & PUSH_WHEEL_MASK);
+                pushWheel[slot].add(conn);
+            } else {
+                state.ready = true;
+                state.probeArmed = false;
+                state.readyGeneration++;
+                readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+                readyQueue.addLast(conn);
+            }
+        }
+        pushWheelValidRef = valid;
+        lastPushWheelTick = gameTick;
+    }
+
+    private void advancePushWheel(long gameTick, boolean fastMode) {
+        if (lastPushWheelTick < 0) lastPushWheelTick = gameTick - 1;
+        long delta = gameTick - lastPushWheelTick;
+        if (delta <= 0) return;
+        int steps = (int) Math.min(delta, PUSH_WHEEL_SIZE);
+        for (int i = 0; i < steps; i++) {
+            long t = lastPushWheelTick + 1 + i;
+            int slot = (int) (t & PUSH_WHEEL_MASK);
+            var list = pushWheel[slot];
+            if (list.isEmpty()) continue;
+            var iter = list.iterator();
+            while (iter.hasNext()) {
+                var conn = iter.next();
+                var state = connectionStates.get(conn);
+                if (state == null) { iter.remove(); continue; }
+                boolean fire = false;
+                boolean probe = false;
+                if (state.cooldownUntil < 0 || t >= state.cooldownUntil) {
+                    fire = true;
+                } else if (fastMode && !state.probedThisCycle && state.isInProbeWindow(t)) {
+                    fire = true;
+                    probe = true;
+                }
+                if (fire) {
+                    iter.remove();
+                    state.ready = true;
+                    state.probeArmed = probe;
+                    state.readyGeneration++;
+                    readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+                    readyQueue.addLast(conn);
+                }
+            }
+        }
+        lastPushWheelTick = gameTick;
+    }
+
+    private void schedulePushWheel(WirelessConnection conn, ConnectionState state, boolean fastMode) {
+        state.ready = false;
+        state.probeArmed = false;
+        if (state.cooldownUntil < 0) {
+            state.ready = true;
+            state.readyGeneration++;
+            readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
+            readyQueue.addLast(conn);
+            return;
+        }
+        long targetTick = state.cooldownUntil;
+        if (fastMode && !state.probedThisCycle) {
+            float level = PROBE_LEVELS[state.probeLevelIdx];
+            if (level >= 1.0f) {
+                long probeTick = state.cooldownUntil - (int) level;
+                if (probeTick > lastPushWheelTick) targetTick = probeTick;
+            } else {
+                int interval = Math.round(1.0f / level);
+                if (state.probeSkipCounter >= interval) {
+                    long probeTick = state.cooldownUntil - 1;
+                    if (probeTick > lastPushWheelTick) targetTick = probeTick;
+                }
+            }
+        }
+        targetTick = Math.max(targetTick, lastPushWheelTick + 1);
+        int slot = (int) (targetTick & PUSH_WHEEL_MASK);
+        pushWheel[slot].add(conn);
+    }
+
+    private PushOutcome tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
         if (AdvancedAECompat.isDirectional(pattern)) {
             return tryPushToConnectionDirectionally(pattern, inputs, conn, server);
         }
 
         var targetLevel = server.getLevel(conn.dimension());
-        if (targetLevel == null) return false;
+        if (targetLevel == null) return PushOutcome.HARD_FAIL;
 
         autoReturnBeforePush(targetLevel, conn);
 
-        var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
-        if (adapter == null) return false;
+        var state = getOrCreateState(conn);
+        var adapter = state.resolveAdapter(targetLevel, conn.pos());
+        if (adapter == null) return PushOutcome.HARD_FAIL;
 
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
@@ -490,25 +866,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 targetLevel, conn.pos(), conn.boundFace(),
                 pattern, inputs, 1,
                 blocking, patternInputs, wirelessSource);
-        if (result.acceptedCopies() == 0) return false;
+        if (result.acceptedCopies() == 0) return PushOutcome.SOFT_FAIL;
 
-        // Track overflow for later flushing
         if (!result.overflow().isEmpty()) {
             wirelessSendList.addAll(result.overflow());
             wirelessSendConn = conn;
         }
 
-        // Trigger lock-mode transitions (lock-until-pulse / lock-until-result)
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
         alertGridTick();
 
-        // Reset backoff so auto-return checks this machine promptly
         if (overloadedHost.isAutoReturn()) {
-            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
-            machineBackoff.put(mkey, BACKOFF_MIN);
-            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
+            getOrCreateState(conn).resetBackoff(targetLevel.getGameTime());
         }
-        return true;
+        return PushOutcome.SUCCESS;
     }
 
     // ---- AdvancedAE directional push (NORMAL mode) --------------------------------
@@ -559,7 +930,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 accessor.setSendDirection(defaultFace);
                 accessor.invokeSendStacksOut();
                 accessor.invokeOnPushPatternSuccess(pattern);
-                return true;
+        return true;
             }
             return false;
         } finally {
@@ -575,16 +946,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * Each input key is routed to the target-machine face from the directionMap;
      * keys without a mapping default to {@code conn.boundFace()}.
      */
-    private boolean tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
+    private PushOutcome tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
         var targetLevel = server.getLevel(conn.dimension());
-        if (targetLevel == null) return false;
-        if (!pattern.supportsPushInputsToExternalInventory()) return false;
+        if (targetLevel == null) return PushOutcome.HARD_FAIL;
+        if (!targetLevel.isLoaded(conn.pos())) return PushOutcome.HARD_FAIL;
+        if (!pattern.supportsPushInputsToExternalInventory()) return PushOutcome.SOFT_FAIL;
 
         autoReturnBeforePush(targetLevel, conn);
 
         var be = targetLevel.getBlockEntity(conn.pos());
-        if (be == null) return false;
+        if (be == null) return PushOutcome.HARD_FAIL;
 
         var defaultFace = conn.boundFace();
 
@@ -592,15 +964,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         try {
             var faceToTarget = buildDirectionalTargets(
                     targetLevel, conn.pos(), be, defaultFace, pattern, inputs, wirelessSource);
-            if (faceToTarget == null) return false;
+            if (faceToTarget == null) return PushOutcome.SOFT_FAIL;
 
             if (isBlocking()) {
                 var patternInputKeys = ((PatternProviderLogicAccessor) this).getPatternInputs();
                 var anyTarget = faceToTarget.values().iterator().next();
-                if (anyTarget.containsPatternInput(patternInputKeys)) return false;
+                if (anyTarget.containsPatternInput(patternInputKeys)) return PushOutcome.SOFT_FAIL;
             }
 
-            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) return false;
+            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs))
+                return PushOutcome.SOFT_FAIL;
 
             var overflow = commitDirectionalPushWithOverflow(pattern, inputs, faceToTarget, defaultFace);
             if (!overflow.isEmpty()) {
@@ -615,23 +988,39 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
-            var mkey = machineKey(targetLevel, conn.pos(), conn.boundFace());
-            machineBackoff.put(mkey, BACKOFF_MIN);
-            machineNextPoll.put(mkey, targetLevel.getGameTime() + BACKOFF_MIN);
+            getOrCreateState(conn).resetBackoff(targetLevel.getGameTime());
         }
-        return true;
+        return PushOutcome.SUCCESS;
     }
 
     // ---- directional push helpers ------------------------------------------------
 
+    @Nullable
+    private PatternProviderTarget getCachedTarget(
+            ServerLevel level, BlockPos pos, BlockEntity be, Direction face, IActionSource source) {
+        long gameTick = level.getGameTime();
+        var key = new TargetCacheKey(level.dimension(), pos.asLong(), face);
+        var entry = targetCache.get(key);
+        if (entry != null && entry.isValid(be, gameTick)) {
+            return entry.target;
+        }
+        var target = PatternProviderTarget.get(level, pos, be, face, source);
+        if (target != null) {
+            targetCache.put(key, new TargetCacheEntry(be, target, gameTick));
+        } else {
+            targetCache.remove(key);
+        }
+        return target;
+    }
+
     /**
-     * Build a map of face → PatternProviderTarget for all unique faces
+     * Build a map of face -> PatternProviderTarget for all unique faces
      * referenced by the directional pattern's inputs.
      *
      * @return the map, or {@code null} if any required target cannot be resolved
      */
     @Nullable
-    private static Map<Direction, PatternProviderTarget> buildDirectionalTargets(
+    private Map<Direction, PatternProviderTarget> buildDirectionalTargets(
             ServerLevel level, BlockPos targetPos, BlockEntity be,
             Direction defaultFace, IPatternDetails pattern,
             KeyCounter[] inputs, IActionSource source) {
@@ -640,10 +1029,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             for (var entry : inputList) {
                 var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
                 var face = dir != null ? dir : defaultFace;
-                map.computeIfAbsent(face, f -> PatternProviderTarget.get(level, targetPos, be, f, source));
+                map.computeIfAbsent(face, f -> getCachedTarget(level, targetPos, be, f, source));
             }
         }
-        if (map.containsValue(null)) return null;
+        if (map.isEmpty() || map.containsValue(null)) return null;
         return map;
     }
 
@@ -728,7 +1117,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (level instanceof ServerLevel sl) {
             var targetLevel = sl.getServer().getLevel(wirelessSendConn.dimension());
             if (targetLevel != null) {
-                var adapter = MachineAdapterRegistry.find(targetLevel, wirelessSendConn.pos());
+                var state = getOrCreateState(wirelessSendConn);
+                var adapter = state.resolveAdapter(targetLevel, wirelessSendConn.pos());
                 if (adapter != null) {
                     adapter.flushOverflow(
                             targetLevel, wirelessSendConn.pos(), wirelessSendConn.boundFace(),
@@ -841,7 +1231,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 && isInductionCardInstalled()
                 && CACHED_APPFLUX_FE_KEY != null) return true;
         if (overloadedHost.isAutoReturn()) return true;
-        if (!getReturnInv().isEmpty()) return true;
+        if (!fullReturnInv.isEmpty()) return true;
         return false;
     }
 
@@ -857,17 +1247,22 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /**
      * Collect all output AEKeys from every pattern loaded in this provider.
+     * Uses AE2-level outputs (GenericStack) to handle both items and fluids,
+     * cross-referencing with overload details for ID_ONLY match modes.
      */
     private AllowedOutputFilter collectPatternOutputFilter() {
         var filter = new AllowedOutputFilter();
         for (var pattern : getAvailablePatterns()) {
             if (pattern instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
-                for (var output : overloadDetails.overloadPatternDetailsView().outputs()) {
-                    var key = AEItemKey.of(output.template());
-                    if (output.matchMode() == MatchMode.ID_ONLY) {
-                        filter.allowIdOnly(BuiltInRegistries.ITEM.getKey(output.template().getItem()));
-                    } else if (key != null) {
-                        filter.allowStrict(key);
+                var ae2Outputs = pattern.getOutputs();
+                var overloadOutputs = overloadDetails.overloadPatternDetailsView().outputs();
+                int count = Math.min(ae2Outputs.size(), overloadOutputs.size());
+                for (int i = 0; i < count; i++) {
+                    var aeKey = ae2Outputs.get(i).what();
+                    if (overloadOutputs.get(i).matchMode() == MatchMode.ID_ONLY) {
+                        filter.allowIdOnly(aeKey);
+                    } else {
+                        filter.allowStrict(aeKey);
                     }
                 }
                 continue;
@@ -917,7 +1312,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var targetLevel = resolveTargetLevel(sl, conn);
             if (targetLevel == null) continue;
 
-            var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+            var state = getOrCreateState(conn);
+            var adapter = state.resolveAdapter(targetLevel, conn.pos());
             if (adapter == null) continue;
 
             var outputs = adapter.extractOutputs(
@@ -993,7 +1389,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var targetLevel = resolveTargetLevel(sl, conn);
         if (targetLevel == null) return;
 
-        var adapter = MachineAdapterRegistry.find(targetLevel, conn.pos());
+        var state = getOrCreateState(conn);
+        var adapter = state.resolveAdapter(targetLevel, conn.pos());
         if (adapter == null) return;
 
         var outputs = adapter.extractOutputs(
@@ -1002,9 +1399,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void insertOutputsToReturnInv(List<GenericStack> outputs) {
-        var inv = getReturnInv();
         for (var stack : outputs) {
-            inv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
+            fullReturnInv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
         }
     }
 
@@ -1016,7 +1412,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * connections, or patterns change.
      */
     public void refreshEjectRegistrations() {
-        var removed = EjectModeRegistry.unregisterAll(overloadedHost);
+        var removed = EjectModeRegistry.unregisterAll(overloadedHost, true);
         invalidateCapabilitiesAt(removed);
 
         if (overloadedHost.getReturnMode() != ReturnMode.EJECT) return;
@@ -1026,19 +1422,22 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!(level instanceof ServerLevel sl)) return;
 
         for (var conn : overloadedHost.getConnections()) {
+            var targetLevel = sl.getServer().getLevel(conn.dimension());
+            if (targetLevel == null) continue;
+
             var adjacentPos = conn.pos().relative(conn.boundFace());
             var queryFace = conn.boundFace().getOpposite();
             var ghostBE = new GhostOutputBlockEntity(adjacentPos);
-            ghostBE.setLevel(sl);
+            ghostBE.setLevel(targetLevel);
 
             var entry = new EjectModeRegistry.EjectEntry(
                     new java.lang.ref.WeakReference<>(overloadedHost),
-                    ghostBE
+                    ghostBE,
+                    sl.dimension(),
+                    overloadedHost.getBlockPos()
             );
 
-            var targetLevel = sl.getServer().getLevel(conn.dimension());
-            var dim = targetLevel != null ? targetLevel.dimension() : conn.dimension();
-            EjectModeRegistry.register(dim, adjacentPos.asLong(), queryFace, entry);
+            EjectModeRegistry.register(targetLevel.dimension(), adjacentPos.asLong(), queryFace, entry);
             invalidateCapabilitiesAt(targetLevel, adjacentPos);
         }
     }
@@ -1125,15 +1524,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void scheduleToWheel(ScheduleEntry entry) {
-        int slot = (wheelPointer + entry.currentDelay) % WHEEL_SLOTS;
+        int slot = (wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS;
         wheel[slot].add(entry);
     }
 
-    private void rebuildWheel(int connectionCount) {
+    private void rebuildWheel(List<WirelessConnection> valid) {
         for (var slot : wheel) slot.clear();
         deferredMachines.clear();
-        for (int i = 0; i < connectionCount; i++) {
-            var entry = new ScheduleEntry(i);
+        for (var conn : valid) {
+            var entry = new ScheduleEntry(conn, getOrCreateState(conn));
             scheduleToWheel(entry);
         }
         wheelDirty = false;
@@ -1147,14 +1546,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (valid.isEmpty()) return;
 
         wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-        if (wheelDirty) rebuildWheel(valid.size());
+        if (wheelDirty) rebuildWheel(valid);
 
         // Phase 1: deferred machines get priority
         if (!deferredMachines.isEmpty()) {
             long available = simulateAvailableFluxEnergy(feKey,
                     (long) CACHED_APPFLUX_TRANSFER_RATE * deferredMachines.size());
             if (available <= 0) return;
-            processBatch(sl, valid, deferredMachines, feKey, available);
+            processBatch(sl, deferredMachines, feKey, available);
             if (!deferredMachines.isEmpty()) return;
         }
 
@@ -1173,11 +1572,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             eligible.clear();
             return;
         }
-        processBatch(sl, valid, eligible, feKey, available);
+        processBatch(sl, eligible, feKey, available);
     }
 
-    private void processBatch(ServerLevel sl, List<WirelessConnection> valid,
-            List<ScheduleEntry> machines, AEKey feKey, long available) {
+    private void processBatch(ServerLevel sl, List<ScheduleEntry> machines,
+            AEKey feKey, long available) {
         int count = machines.size();
 
         // 1. Target SIM
@@ -1187,10 +1586,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         long[] storedEnergy = new long[count];
         for (int i = 0; i < count; i++) {
             var entry = machines.get(i);
-            if (entry.connectionIndex >= valid.size()) continue;
-            var conn = valid.get(entry.connectionIndex);
-            var targetLevel = resolveTargetLevel(sl, conn);
-            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, conn) : null;
+            var targetLevel = resolveTargetLevel(sl, entry.conn);
+            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
             if (storage != null) {
                 canReceive[i] = storage.receiveEnergy(Integer.MAX_VALUE, true);
                 capacity[i] = storage.getMaxEnergyStored();
@@ -1214,7 +1611,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var earlyDeferred = new ArrayList<ScheduleEntry>();
             for (int i = 0; i < count; i++) {
                 var entry = machines.get(i);
-                if (entry.connectionIndex >= valid.size()) continue;
                 if (canReceive[i] == 0) {
                     adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
                     scheduleToWheel(entry);
@@ -1234,13 +1630,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var stillDeferred = new ArrayList<ScheduleEntry>();
         for (int i = 0; i < count; i++) {
             var entry = machines.get(i);
-            if (entry.connectionIndex >= valid.size()) continue;
 
             if (canReceive[i] > 0 && remaining > 0) {
                 long share = Math.min(canReceive[i], remaining);
-                var conn = valid.get(entry.connectionIndex);
-                var targetLevel = resolveTargetLevel(sl, conn);
-                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, conn) : null;
+                var targetLevel = resolveTargetLevel(sl, entry.conn);
+                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
                 long accepted = 0;
                 if (storage != null) {
                     accepted = storage.receiveEnergy(
@@ -1251,10 +1645,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 boolean budgetSufficient = (share == canReceive[i]);
                 if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
                     int ratio = (int)(canReceive[i] / accepted);
-                    entry.update(Math.min(entry.currentDelay * ratio, ENERGY_DELAY_MAX),
-                                 canReceive[i]);
+                    var st = entry.state;
+                    st.scheduleDelay = Math.min(st.scheduleDelay * ratio, ENERGY_DELAY_MAX);
+                    st.lastCanReceive = canReceive[i];
                 } else if (budgetSufficient && accepted == 0) {
-                    entry.update(ENERGY_DELAY_MAX, canReceive[i]);
+                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
+                    entry.state.lastCanReceive = canReceive[i];
                 } else {
                     adjustDelay(entry, canReceive[i], storedEnergy[i], capacity[i]);
                 }
@@ -1289,11 +1685,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private void adjustDelay(ScheduleEntry entry, long canReceive,
                              long storedEnergy, int machineCapacity) {
-        int delay = entry.currentDelay;
+        var st = entry.state;
+        int delay = st.scheduleDelay;
 
-        if (canReceive > entry.lastCanReceive) {
+        if (canReceive > st.lastCanReceive) {
             delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-        } else if ((entry.lastCanReceive - canReceive) << 2 < machineCapacity) {
+        } else if ((st.lastCanReceive - canReceive) << 2 < machineCapacity) {
             if (storedEnergy * 3 <= (long) machineCapacity << 1) {
                 delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
             } else {
@@ -1301,15 +1698,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 else if (delay < ENERGY_DELAY_MEAN) delay++;
             }
         } else {
-            delay = delay < ENERGY_DELAY_MEAN ? delay * 2 : delay + 1;
+            delay++;
         }
 
-        entry.update(Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX), canReceive);
+        st.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
+        st.lastCanReceive = canReceive;
     }
 
     public void onHostStateChanged() {
         invalidateValidConnectionsCache();
-        invalidateEnergyStorageCache();
         inductionCardCacheDirty = true;
         refreshEjectRegistrations();
         alertGridTick();
@@ -1321,7 +1718,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     public void onNeighborChanged() {
-        invalidateEnergyStorageCache();
         alertGridTick();
     }
 
@@ -1389,8 +1785,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         for (var conn : connections) {
-            var key = machineKey(conn.dimension(), conn.pos(), conn.boundFace());
-            nextPollTick = Math.min(nextPollTick, machineNextPoll.getOrDefault(key, 0L));
+            var state = connectionStates.get(conn);
+            if (state != null) {
+                nextPollTick = Math.min(nextPollTick, state.nextPollTick);
+            } else {
+                return 0L;
+            }
         }
         return nextPollTick;
     }
@@ -1405,41 +1805,18 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         validConnectionsCacheTick = -1;
         lastConnectionValidation = -1;
         wheelDirty = true;
-    }
-
-    private void invalidateEnergyStorageCache() {
-        energyStorageCache.clear();
+        pushWheelValidRef = List.of();
+        for (var slot : pushWheel) slot.clear();
+        readyPQ.clear();
+        readyQueue.clear();
+        lastPushWheelTick = -1;
+        targetCache.clear();
+        connectionStates.clear();
     }
 
     @Nullable
     private IEnergyStorage resolveEnergyStorage(ServerLevel targetLevel, WirelessConnection conn) {
-        BlockEntity blockEntity = targetLevel.getBlockEntity(conn.pos());
-        if (blockEntity == null) {
-            energyStorageCache.remove(conn);
-            return null;
-        }
-
-        var cached = energyStorageCache.get(conn);
-        if (cached != null && cached.matches(blockEntity)) {
-            var storage = cached.getStorage();
-            if (storage != null) {
-                return storage;
-            }
-        }
-
-        IEnergyStorage storage = targetLevel.getCapability(
-                Capabilities.EnergyStorage.BLOCK,
-                conn.pos(),
-                conn.boundFace());
-        if (storage == null) {
-            energyStorageCache.remove(conn);
-            return null;
-        }
-
-        energyStorageCache.put(conn, new EnergyStorageCacheEntry(
-                new WeakReference<>(blockEntity),
-                new WeakReference<>(storage)));
-        return storage;
+        return getOrCreateState(conn).resolveEnergy(targetLevel, conn);
     }
 
     private boolean isInductionCardInstalled() {
@@ -1671,8 +2048,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
         wirelessSendList.clear();
         wirelessSendConn = null;
-        distributionCounts.clear();
-        energyStorageCache.clear();
+        connectionStates.clear();
         machineNextPoll.clear();
         machineBackoff.clear();
         cachedOutputFilter = null;
@@ -1687,7 +2063,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
-        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost));
+        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost, true));
     }
 
     // ---- NBT persistence --------------------------------------------------------
@@ -1702,7 +2078,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
-            super.writeToNBT(tag, registries);
+        super.writeToNBT(tag, registries);
             accessor.setPatternInventory(realInv);
             saveToSavedData();
         } else {

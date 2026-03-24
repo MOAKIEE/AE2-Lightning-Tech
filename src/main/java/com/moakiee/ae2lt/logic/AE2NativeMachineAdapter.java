@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.logic;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -16,18 +17,20 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
+import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.config.Actionable;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.implementations.blockentities.ICraftingMachine;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
-import appeng.api.stacks.AEItemKey;
+import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.api.storage.MEStorage;
 import appeng.helpers.patternprovider.PatternProviderTarget;
+import appeng.parts.automation.StackWorldBehaviors;
 
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.items.IItemHandler;
+import com.google.common.util.concurrent.Runnables;
 
 /**
  * Built-in fallback {@link MachineAdapter} that handles any target reachable
@@ -45,22 +48,72 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
 
     static final AE2NativeMachineAdapter INSTANCE = new AE2NativeMachineAdapter();
 
-    private final Map<TargetFaceKey, ItemHandlerCacheEntry> itemHandlerCache = new HashMap<>();
+    /**
+     * How many ticks a cached wrapper (facade) set stays valid before
+     * being rebuilt from the strategy's {@code BlockCapabilityCache}.
+     * The wrapper holds a handler reference captured at creation time;
+     * periodic refresh ensures we pick up handler replacements that
+     * don't trigger a block-entity swap (rare, but some mods do this).
+     */
+    private static final int WRAPPER_REFRESH_TICKS = 20;
+
+    private final Map<TargetFaceKey, StorageCacheEntry> storageCache = new HashMap<>();
+
+    /** Reusable scan buffer — safe because server tick is single-threaded. */
+    private final KeyCounter scanBuffer = new KeyCounter();
 
     private AE2NativeMachineAdapter() {}
 
     private record TargetFaceKey(ResourceKey<Level> dimension, long posLong, Direction face) {}
 
-    private record ItemHandlerCacheEntry(
-            WeakReference<BlockEntity> blockEntityRef,
-            WeakReference<IItemHandler> handlerRef) {
-        boolean matches(BlockEntity blockEntity) {
-            return blockEntityRef.get() == blockEntity;
+    /**
+     * Per-target cache entry.  Caches both the {@link ExternalStorageStrategy}
+     * map (stable, holds internal {@code BlockCapabilityCache}) and the
+     * MEStorage wrappers (facades) derived from them.
+     * <p>
+     * Wrappers are lazily created and kept alive until either:
+     * <ul>
+     *   <li>the block entity at the target is replaced, or</li>
+     *   <li>{@link #WRAPPER_REFRESH_TICKS} have elapsed (staleness guard).</li>
+     * </ul>
+     */
+    private static final class StorageCacheEntry {
+        private final WeakReference<BlockEntity> blockEntityRef;
+        private final Map<AEKeyType, ExternalStorageStrategy> strategies;
+        private Map<AEKeyType, MEStorage> wrappers;
+        private long wrapperCreatedTick;
+
+        StorageCacheEntry(BlockEntity be, Map<AEKeyType, ExternalStorageStrategy> strategies) {
+            this.blockEntityRef = new WeakReference<>(be);
+            this.strategies = strategies;
         }
 
+        boolean isValid(BlockEntity currentBE) {
+            return blockEntityRef.get() == currentBE;
+        }
+
+        /**
+         * Return the cached wrapper map, rebuilding if stale.
+         * The map is never empty when non-null.
+         */
         @Nullable
-        IItemHandler getHandler() {
-            return handlerRef.get();
+        Map<AEKeyType, MEStorage> getWrappers(long gameTick) {
+            if (wrappers == null || gameTick - wrapperCreatedTick >= WRAPPER_REFRESH_TICKS) {
+                rebuildWrappers(gameTick);
+            }
+            return wrappers;
+        }
+
+        private void rebuildWrappers(long gameTick) {
+            var map = new IdentityHashMap<AEKeyType, MEStorage>(strategies.size());
+            for (var entry : strategies.entrySet()) {
+                var wrapper = entry.getValue().createWrapper(false, Runnables.doNothing());
+                if (wrapper != null) {
+                    map.put(entry.getKey(), wrapper);
+                }
+            }
+            wrappers = map.isEmpty() ? null : map;
+            wrapperCreatedTick = gameTick;
         }
     }
 
@@ -68,8 +121,6 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
 
     @Override
     public boolean supports(ServerLevel level, BlockPos pos) {
-        // Accept any loaded position with a block entity.
-        // Specific adapters registered before us can shadow this for blocks they own.
         return level.isLoaded(pos) && level.getBlockEntity(pos) != null;
     }
 
@@ -92,9 +143,6 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
                                  IPatternDetails pattern, KeyCounter[] inputs, int maxCopies,
                                  boolean blocking, Set<AEKey> patternInputs,
                                  IActionSource source) {
-        // Current implementation: single-copy only (maxCopies is acknowledged but
-        // we push at most 1 copy per call; multi-copy batching is future work).
-
         // 1. ICraftingMachine path — all-or-nothing
         var machine = ICraftingMachine.of(level, pos, face);
         if (machine != null && machine.acceptsPlans()) {
@@ -115,17 +163,14 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             return PushResult.REJECTED;
         }
 
-        // Blocking mode: refuse if machine already holds inputs
         if (blocking && target.containsPatternInput(patternInputs)) {
             return PushResult.REJECTED;
         }
 
-        // Simulate: can the target accept at least *some* of every input key?
         if (!adapterAcceptsAll(target, inputs)) {
             return PushResult.REJECTED;
         }
 
-        // Commit — push items, collect overflow
         var overflow = new ArrayList<GenericStack>();
         pattern.pushInputsToExternalInventory(inputs, (what, amount) -> {
             var inserted = target.insert(what, amount, Actionable.MODULATE);
@@ -142,27 +187,27 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
     @Override
     public List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
                                              AllowedOutputFilter allowedOutputs, IActionSource source) {
-        IItemHandler handler = resolveItemHandler(level, pos, face);
-        if (handler == null) return List.of();
+        var cached = resolveCache(level, pos, face);
+        if (cached == null) return List.of();
+
+        var wrappers = cached.getWrappers(level.getGameTime());
+        if (wrappers == null) return List.of();
 
         var extracted = new ArrayList<GenericStack>();
-        for (int slot = 0; slot < handler.getSlots(); slot++) {
-            // Peek first — only extract if the item is an allowed output
-            var peek = handler.getStackInSlot(slot);
-            if (peek.isEmpty()) continue;
 
-            var key = AEItemKey.of(peek);
-            if (key == null) {
-                continue;
-            }
-            if (!allowedOutputs.matches(key)) {
-                continue;
-            }
+        for (var wrapper : wrappers.values()) {
+            scanBuffer.reset();
+            wrapper.getAvailableStacks(scanBuffer);
 
-            var stack = handler.extractItem(slot, peek.getCount(), false);
-            if (!stack.isEmpty()) {
-                var extractedKey = AEItemKey.of(stack);
-                extracted.add(new GenericStack(extractedKey, stack.getCount()));
+            for (var entry : scanBuffer) {
+                var key = entry.getKey();
+                long amount = entry.getLongValue();
+                if (amount <= 0 || !allowedOutputs.matches(key)) continue;
+
+                long taken = wrapper.extract(key, amount, Actionable.MODULATE, source);
+                if (taken > 0) {
+                    extracted.add(new GenericStack(key, taken));
+                }
             }
         }
         return extracted;
@@ -181,32 +226,32 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
         return true;
     }
 
+    /**
+     * Look up or create the cache entry for the target position.
+     * Strategy objects are created once per (pos, face) and reused
+     * until the block entity at that position is replaced.
+     */
     @Nullable
-    private IItemHandler resolveItemHandler(ServerLevel level, BlockPos pos, Direction face) {
+    private StorageCacheEntry resolveCache(ServerLevel level, BlockPos pos, Direction face) {
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity == null) {
-            itemHandlerCache.remove(new TargetFaceKey(level.dimension(), pos.asLong(), face));
+            storageCache.remove(new TargetFaceKey(level.dimension(), pos.asLong(), face));
             return null;
         }
 
-        var key = new TargetFaceKey(level.dimension(), pos.asLong(), face);
-        var cached = itemHandlerCache.get(key);
-        if (cached != null && cached.matches(blockEntity)) {
-            var handler = cached.getHandler();
-            if (handler != null) {
-                return handler;
+        var cacheKey = new TargetFaceKey(level.dimension(), pos.asLong(), face);
+        var cached = storageCache.get(cacheKey);
+
+        if (cached == null || !cached.isValid(blockEntity)) {
+            var strategies = StackWorldBehaviors.createExternalStorageStrategies(level, pos, face);
+            if (strategies.isEmpty()) {
+                storageCache.remove(cacheKey);
+                return null;
             }
+            cached = new StorageCacheEntry(blockEntity, strategies);
+            storageCache.put(cacheKey, cached);
         }
 
-        IItemHandler handler = level.getCapability(Capabilities.ItemHandler.BLOCK, pos, face);
-        if (handler == null) {
-            itemHandlerCache.remove(key);
-            return null;
-        }
-
-        itemHandlerCache.put(key, new ItemHandlerCacheEntry(
-                new WeakReference<>(blockEntity),
-                new WeakReference<>(handler)));
-        return handler;
+        return cached;
     }
 }

@@ -30,10 +30,15 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
             List.of(Component.translatable("ae2lt.gui.wireless_strategy.single"));
     private static final List<Component> STRATEGY_TIP_EVEN =
             List.of(Component.translatable("ae2lt.gui.wireless_strategy.even"));
+    private static final List<Component> SPEED_TIP_FAST =
+            List.of(Component.translatable("ae2lt.gui.wireless_speed.fast"));
+    private static final List<Component> SPEED_TIP_NORMAL =
+            List.of(Component.translatable("ae2lt.gui.wireless_speed.normal"));
 
     private final TextureToggleButton modeButton;
     private final TextureToggleButton autoReturnButton;
     private final TextureToggleButton wirelessStrategyButton;
+    private final TextureToggleButton wirelessSpeedButton;
     private final TextureToggleButton filteredImportButton;
 
     private static final int SLOTS_PER_PAGE = 36;
@@ -63,6 +68,13 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         this.wirelessStrategyButton.setTooltipOn(STRATEGY_TIP_EVEN);
         this.wirelessStrategyButton.setTooltipOff(STRATEGY_TIP_SINGLE);
         addToLeftToolbar(this.wirelessStrategyButton);
+
+        this.wirelessSpeedButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.SPEED,
+                btn -> menu.clientToggleWirelessSpeedMode());
+        this.wirelessSpeedButton.setTooltipOn(SPEED_TIP_FAST);
+        this.wirelessSpeedButton.setTooltipOff(SPEED_TIP_NORMAL);
+        addToLeftToolbar(this.wirelessSpeedButton);
 
         this.filteredImportButton = new TextureToggleButton(
                 TextureToggleButton.ButtonType.FILTERED_IMPORT,
@@ -143,6 +155,9 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
 
         this.wirelessStrategyButton.setState(this.menu.isEvenDistributionMode());
         this.wirelessStrategyButton.setVisibility(this.menu.isWirelessMode());
+
+        this.wirelessSpeedButton.setState(this.menu.isFastSpeedMode());
+        this.wirelessSpeedButton.setVisibility(this.menu.isWirelessMode());
 
         boolean multiPage = this.menu.getTotalPages() > 1;
         prevPageButton.visible = multiPage;
