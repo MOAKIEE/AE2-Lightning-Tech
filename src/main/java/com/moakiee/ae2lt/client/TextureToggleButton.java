@@ -102,7 +102,10 @@ public class TextureToggleButton extends Button implements ITooltip {
         AUTO_RETURN(texture("auto_return_on"), texture("auto_return_off")),
         WIRELESS_STRATEGY(texture("even_distribution"), texture("single_target")),
         FILTERED_IMPORT(texture("filtered_import_on"), texture("filtered_import_off")),
-        SPEED(texture("speed_fast"), texture("speed_normal"));
+        SPEED(texture("speed_fast"), texture("speed_normal")),
+        AUTO_EXPORT(texture("auto_return_on"), texture("auto_return_off")),
+        AUTO_IMPORT(texture("filtered_import_on"), texture("filtered_import_off")),
+        EJECT(texture("auto_return_on"), texture("auto_return_off"));
 
         private final ResourceLocation textureOn;
         private final ResourceLocation textureOff;

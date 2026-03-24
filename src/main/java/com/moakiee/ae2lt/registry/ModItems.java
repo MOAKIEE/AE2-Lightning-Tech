@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
+import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.world.item.Item;
@@ -62,6 +63,11 @@ public final class ModItems {
             "overload_pattern_encoder",
             OverloadPatternEncoderItem::new,
             new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOADED_FILTER_COMPONENT = ITEMS.registerItem(
+            "overloaded_filter_component",
+            OverloadedFilterComponentItem::new,
+            new Item.Properties().stacksTo(1));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);

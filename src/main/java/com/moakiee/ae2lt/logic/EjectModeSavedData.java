@@ -36,8 +36,8 @@ public class EjectModeSavedData extends SavedData {
             ResourceKey<Level> interceptDim,
             BlockPos interceptPos,
             Direction interceptFace,
-            ResourceKey<Level> providerDim,
-            BlockPos providerPos
+            ResourceKey<Level> hostDim,
+            BlockPos hostPos
     ) {}
 
     private final List<PersistentReg> entries = new ArrayList<>();
@@ -74,10 +74,10 @@ public class EjectModeSavedData extends SavedData {
         if (changed) setDirty();
     }
 
-    public void removeByProvider(ResourceKey<Level> providerDim, BlockPos providerPos) {
+    public void removeByHost(ResourceKey<Level> hostDim, BlockPos hostPos) {
         boolean changed = entries.removeIf(e ->
-                e.providerDim().equals(providerDim)
-                        && e.providerPos().equals(providerPos));
+                e.hostDim().equals(hostDim)
+                        && e.hostPos().equals(hostPos));
         if (changed) setDirty();
     }
 
@@ -91,8 +91,8 @@ public class EjectModeSavedData extends SavedData {
             ct.putString(TAG_I_DIM, e.interceptDim().location().toString());
             ct.putLong(TAG_I_POS, e.interceptPos().asLong());
             ct.putInt(TAG_I_FACE, e.interceptFace().get3DDataValue());
-            ct.putString(TAG_P_DIM, e.providerDim().location().toString());
-            ct.putLong(TAG_P_POS, e.providerPos().asLong());
+            ct.putString(TAG_P_DIM, e.hostDim().location().toString());
+            ct.putLong(TAG_P_POS, e.hostPos().asLong());
             list.add(ct);
         }
         tag.put(TAG_ENTRIES, list);

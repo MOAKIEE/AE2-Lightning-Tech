@@ -16,8 +16,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
-import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 
 /**
  * Global static registry mapping interception positions ({@code M.relative(F)})
@@ -31,14 +31,14 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 public final class EjectModeRegistry {
 
     public record EjectEntry(
-            @Nullable WeakReference<OverloadedPatternProviderBlockEntity> providerRef,
+            @Nullable WeakReference<? extends BlockEntity> hostRef,
             GhostOutputBlockEntity ghostBE,
-            ResourceKey<Level> providerDim,
-            BlockPos providerPos
+            ResourceKey<Level> hostDim,
+            BlockPos hostPos
     ) {
         @Nullable
-        public OverloadedPatternProviderBlockEntity getProvider() {
-            return providerRef != null ? providerRef.get() : null;
+        public BlockEntity getHost() {
+            return hostRef != null ? hostRef.get() : null;
         }
     }
 
@@ -76,8 +76,8 @@ public final class EjectModeRegistry {
             var entry = new EjectEntry(
                     null,
                     ghostBE,
-                    pe.providerDim(),
-                    pe.providerPos()
+                    pe.hostDim(),
+                    pe.hostPos()
             );
             addToMap(pe.interceptDim(), pe.interceptPos().asLong(), pe.interceptFace(), entry);
         }
@@ -98,8 +98,8 @@ public final class EjectModeRegistry {
                     dim,
                     BlockPos.of(posLong),
                     face,
-                    entry.providerDim(),
-                    entry.providerPos()
+                    entry.hostDim(),
+                    entry.hostPos()
             ));
         }
     }
@@ -134,7 +134,7 @@ public final class EjectModeRegistry {
         if (list == null) return null;
         EjectEntry fallback = null;
         for (var entry : list) {
-            if (entry.getProvider() != null) return entry;
+            if (entry.getHost() != null) return entry;
             if (fallback == null) fallback = entry;
         }
         return fallback;
@@ -149,7 +149,7 @@ public final class EjectModeRegistry {
         EjectEntry fallback = null;
         for (var list : faceMap.values()) {
             for (var entry : list) {
-                if (entry.getProvider() != null) return entry;
+                if (entry.getHost() != null) return entry;
                 if (fallback == null) fallback = entry;
             }
         }
@@ -159,13 +159,13 @@ public final class EjectModeRegistry {
     public record DimPos(ResourceKey<Level> dimension, BlockPos pos) {}
 
     public static List<DimPos> unregisterAll(
-            OverloadedPatternProviderBlockEntity provider,
+            BlockEntity host,
             boolean persistToSavedData) {
 
-        var providerLevel = provider.getLevel();
-        ResourceKey<Level> providerDim = providerLevel != null
-                ? providerLevel.dimension() : null;
-        BlockPos providerPos = provider.getBlockPos();
+        var hostLevel = host.getLevel();
+        ResourceKey<Level> hostDim = hostLevel != null
+                ? hostLevel.dimension() : null;
+        BlockPos hostPos = host.getBlockPos();
 
         var removed = new ArrayList<DimPos>();
         for (var dimIt = registrations.entrySet().iterator(); dimIt.hasNext(); ) {
@@ -180,7 +180,7 @@ public final class EjectModeRegistry {
                 for (var faceIt = faceMap.entrySet().iterator(); faceIt.hasNext(); ) {
                     var faceEntry = faceIt.next();
                     var list = faceEntry.getValue();
-                    boolean changed = list.removeIf(e -> matchesProvider(e, provider, providerDim, providerPos));
+                    boolean changed = list.removeIf(e -> matchesHost(e, host, hostDim, hostPos));
                     if (changed) any = true;
                     if (list.isEmpty()) faceIt.remove();
                 }
@@ -192,8 +192,8 @@ public final class EjectModeRegistry {
             if (dimMap.isEmpty()) dimIt.remove();
         }
 
-        if (persistToSavedData && savedData != null && providerDim != null) {
-            savedData.removeByProvider(providerDim, providerPos);
+        if (persistToSavedData && savedData != null && hostDim != null) {
+            savedData.removeByHost(hostDim, hostPos);
         }
 
         return removed;
@@ -209,16 +209,16 @@ public final class EjectModeRegistry {
                 .add(entry);
     }
 
-    private static boolean matchesProvider(
+    private static boolean matchesHost(
             EjectEntry e,
-            OverloadedPatternProviderBlockEntity provider,
-            @Nullable ResourceKey<Level> providerDim,
-            BlockPos providerPos) {
-        var ref = e.getProvider();
-        if (ref == provider) return true;
-        if (ref == null && providerDim != null) {
-            return e.providerDim().equals(providerDim)
-                    && e.providerPos().equals(providerPos);
+            BlockEntity host,
+            @Nullable ResourceKey<Level> hostDim,
+            BlockPos hostPos) {
+        var ref = e.getHost();
+        if (ref == host) return true;
+        if (ref == null && hostDim != null) {
+            return e.hostDim().equals(hostDim)
+                    && e.hostPos().equals(hostPos);
         }
         return false;
     }

@@ -1,11 +1,12 @@
 package com.moakiee.ae2lt.item;
 
+import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -22,24 +23,24 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.neoforged.neoforge.network.PacketDistributor;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * A tool item for establishing and managing wireless connections between an
- * Overloaded Pattern Provider and remote machines.
- * <p>
- * Workflow:
- * <ol>
- *   <li>Right-click an Overloaded Pattern Provider to select it.</li>
- *   <li>Right-click a machine block face to create, update, or remove a connection.</li>
- *   <li>Right-click air to clear the current provider selection.</li>
- * </ol>
+ * Overloaded Pattern Provider / Overloaded ME Interface and remote machines.
  */
 public class OverloadedWirelessConnectorItem extends Item {
 
     private static final String TAG_SELECTED = "SelectedProvider";
     private static final String TAG_DIM = "Dim";
     private static final String TAG_POS = "Pos";
+    private static final String TAG_HOST_TYPE = "HostType";
+
+    public static final String HOST_PROVIDER = "provider";
+    public static final String HOST_INTERFACE = "interface";
 
     public OverloadedWirelessConnectorItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -65,10 +66,11 @@ public class OverloadedWirelessConnectorItem extends Item {
         var pos = context.getClickedPos();
         var state = level.getBlockState(pos);
         var targetBe = level.getBlockEntity(pos);
-        boolean isProvider = state.getBlock() instanceof OverloadedPatternProviderBlock;
+        boolean isHost = state.getBlock() instanceof OverloadedPatternProviderBlock
+                || state.getBlock() instanceof OverloadedInterfaceBlock;
         boolean isMachine = targetBe != null;
 
-        if (!isProvider && !isMachine) {
+        if (!isHost && !isMachine) {
             return InteractionResult.PASS;
         }
 
@@ -90,7 +92,7 @@ public class OverloadedWirelessConnectorItem extends Item {
             return InteractionResultHolder.pass(stack);
         }
 
-        if (hasSelectedProvider(stack)) {
+        if (hasSelection(stack)) {
             clearSelection(stack);
             player.displayClientMessage(
                     Component.translatable("ae2lt.connector.deselected").withStyle(ChatFormatting.GREEN),
@@ -100,18 +102,41 @@ public class OverloadedWirelessConnectorItem extends Item {
         return InteractionResultHolder.pass(stack);
     }
 
-    public static void selectProvider(ItemStack stack, Level level, BlockPos pos) {
+    // ── Selection management ─────────────────────────────────────────────
+
+    public static void selectHost(ItemStack stack, Level level, BlockPos pos, String hostType) {
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
             var sel = new CompoundTag();
             sel.putString(TAG_DIM, level.dimension().location().toString());
             sel.putLong(TAG_POS, pos.asLong());
+            sel.putString(TAG_HOST_TYPE, hostType);
             tag.put(TAG_SELECTED, sel);
         });
     }
 
-    public static boolean hasSelectedProvider(ItemStack stack) {
+    /** @deprecated Use {@link #selectHost} instead. Kept for API compatibility. */
+    @Deprecated
+    public static void selectProvider(ItemStack stack, Level level, BlockPos pos) {
+        selectHost(stack, level, pos, HOST_PROVIDER);
+    }
+
+    public static boolean hasSelection(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND);
+    }
+
+    /** @deprecated Use {@link #hasSelection} instead. */
+    @Deprecated
+    public static boolean hasSelectedProvider(ItemStack stack) {
+        return hasSelection(stack) && HOST_PROVIDER.equals(getSelectedHostType(stack));
+    }
+
+    @Nullable
+    public static String getSelectedHostType(ItemStack stack) {
+        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(TAG_SELECTED)) return null;
+        var sel = tag.getCompound(TAG_SELECTED);
+        return sel.contains(TAG_HOST_TYPE) ? sel.getString(TAG_HOST_TYPE) : HOST_PROVIDER;
     }
 
     public static void clearSelection(ItemStack stack) {
@@ -124,15 +149,10 @@ public class OverloadedWirelessConnectorItem extends Item {
         }
     }
 
-    /**
-     * Resolve the selected provider from the item's custom data.
-     * Returns null if the provider is unloaded, missing, or the block entity type changed.
-     */
-    public static OverloadedPatternProviderBlockEntity getSelectedProvider(Level level, ItemStack stack) {
+    @Nullable
+    private static BlockEntity resolveSelectedHost(Level level, ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_SELECTED)) {
-            return null;
-        }
+        if (!tag.contains(TAG_SELECTED)) return null;
 
         var sel = tag.getCompound(TAG_SELECTED);
         var dimKey = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(sel.getString(TAG_DIM)));
@@ -142,11 +162,20 @@ public class OverloadedWirelessConnectorItem extends Item {
         if (!level.dimension().equals(dimKey) && level instanceof ServerLevel sl) {
             targetLevel = sl.getServer().getLevel(dimKey);
         }
-        if (targetLevel == null || !targetLevel.isLoaded(pos)) {
-            return null;
-        }
+        if (targetLevel == null || !targetLevel.isLoaded(pos)) return null;
 
-        var be = targetLevel.getBlockEntity(pos);
+        return targetLevel.getBlockEntity(pos);
+    }
+
+    @Nullable
+    public static OverloadedPatternProviderBlockEntity getSelectedProvider(Level level, ItemStack stack) {
+        var be = resolveSelectedHost(level, stack);
         return be instanceof OverloadedPatternProviderBlockEntity provider ? provider : null;
+    }
+
+    @Nullable
+    public static OverloadedInterfaceBlockEntity getSelectedInterface(Level level, ItemStack stack) {
+        var be = resolveSelectedHost(level, stack);
+        return be instanceof OverloadedInterfaceBlockEntity iface ? iface : null;
     }
 }

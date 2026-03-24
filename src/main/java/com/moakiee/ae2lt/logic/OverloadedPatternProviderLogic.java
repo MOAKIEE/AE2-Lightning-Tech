@@ -728,7 +728,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         state.onPushSuccess(gameTick);
                     }
                     state.pushCount++;
-                    return true;
+                return true;
                 }
                 case SOFT_FAIL -> {
                     readyQueue.poll();
@@ -930,7 +930,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 accessor.setSendDirection(defaultFace);
                 accessor.invokeSendStacksOut();
                 accessor.invokeOnPushPatternSuccess(pattern);
-                return true;
+        return true;
             }
             return false;
         } finally {
@@ -2078,7 +2078,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
-            super.writeToNBT(tag, registries);
+        super.writeToNBT(tag, registries);
             accessor.setPatternInventory(realInv);
             saveToSavedData();
         } else {

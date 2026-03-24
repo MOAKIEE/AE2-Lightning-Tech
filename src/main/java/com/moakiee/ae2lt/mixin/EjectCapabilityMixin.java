@@ -71,19 +71,19 @@ public abstract class EjectCapabilityMixin<T, C> {
         var entry = EjectModeRegistry.lookupByFace(level.dimension(), pos.asLong(), face);
         if (entry == null) return;
 
-        var provider = entry.getProvider();
+        var host = entry.getHost();
 
-        if (provider != null) {
-            Level providerLevel = provider.getLevel();
-            if (providerLevel == null) return;
-            BlockPos providerPos = provider.getBlockPos();
-            BlockState providerState = providerLevel.getBlockState(providerPos);
+        if (host != null) {
+            Level hostLevel = host.getLevel();
+            if (hostLevel == null) return;
+            BlockPos hostPos = host.getBlockPos();
+            BlockState hostState = hostLevel.getBlockState(hostPos);
 
             proxying = true;
             try {
                 BlockCapability<T, C> cap = (BlockCapability<T, C>) (Object) this;
-                T result = cap.getCapability(providerLevel, providerPos,
-                        providerState, provider, context);
+                T result = cap.getCapability(hostLevel, hostPos,
+                        hostState, host, context);
                 if (result != null) {
                     cir.setReturnValue(result);
                 }

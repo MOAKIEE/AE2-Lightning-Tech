@@ -5,6 +5,7 @@ import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Blocks;
@@ -46,6 +47,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedPatternProviderBlockEntity::new,
                             ModBlocks.OVERLOADED_PATTERN_PROVIDER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedInterfaceBlockEntity>>
+            OVERLOADED_INTERFACE = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_interface",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedInterfaceBlockEntity::new,
+                            ModBlocks.OVERLOADED_INTERFACE.get())
                             .build(null));
 
     @SuppressWarnings("DataFlowIssue")

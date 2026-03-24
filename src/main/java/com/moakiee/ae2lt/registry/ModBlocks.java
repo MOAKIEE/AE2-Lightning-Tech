@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
+import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
@@ -106,6 +107,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadedPatternProviderBlock> OVERLOADED_PATTERN_PROVIDER =
             registerBlock("overloaded_pattern_provider", OverloadedPatternProviderBlock::new);
+
+    public static final DeferredBlock<OverloadedInterfaceBlock> OVERLOADED_INTERFACE =
+            registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
 
     private ModBlocks() {
     }
