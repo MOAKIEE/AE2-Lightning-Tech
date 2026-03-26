@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModItems;
+import com.moakiee.ae2lt.registry.ModAEKeyTypes;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
@@ -67,6 +68,16 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_SINGULARITY);
                         output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
                         output.accept(ModItems.LIGHTNING_COLLAPSE_MATRIX);
+                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_1K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_4K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_16K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_64K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_256K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_CELL_1K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_CELL_4K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_CELL_16K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_CELL_64K);
+                        output.accept(ModItems.LIGHTNING_STORAGE_CELL_256K);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
@@ -119,6 +130,7 @@ public class AE2LightningTech {
         ModRecipeTypes.RECIPE_SERIALIZERS.register(modEventBus);
         ModRecipeTypes.RECIPE_TYPES.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
+        modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::commonSetup);
 
@@ -255,6 +267,7 @@ public class AE2LightningTech {
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
+            ModItems.registerStorageCellModels();
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
                     LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
 

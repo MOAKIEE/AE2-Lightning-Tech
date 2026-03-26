@@ -1,16 +1,19 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.LightningStorageCellItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import appeng.api.client.StorageCellModels;
 import appeng.api.util.AEColor;
 import appeng.items.parts.ColoredPartItem;
 
@@ -48,6 +51,28 @@ public final class ModItems {
 
     public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
             ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
+
+    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_1K =
+            ITEMS.registerSimpleItem("lightning_storage_component_1k", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_4K =
+            ITEMS.registerSimpleItem("lightning_storage_component_4k", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_16K =
+            ITEMS.registerSimpleItem("lightning_storage_component_16k", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_64K =
+            ITEMS.registerSimpleItem("lightning_storage_component_64k", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_256K =
+            ITEMS.registerSimpleItem("lightning_storage_component_256k", new Item.Properties());
+
+    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_1K =
+            registerLightningStorageCell("lightning_storage_cell_1k", 1);
+    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_4K =
+            registerLightningStorageCell("lightning_storage_cell_4k", 4);
+    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_16K =
+            registerLightningStorageCell("lightning_storage_cell_16k", 16);
+    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_64K =
+            registerLightningStorageCell("lightning_storage_cell_64k", 64);
+    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_256K =
+            registerLightningStorageCell("lightning_storage_cell_256k", 256);
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
@@ -105,6 +130,24 @@ public final class ModItems {
             registerOverloadedCable("overloaded_cable_black", AEColor.BLACK);
 
     private ModItems() {
+    }
+
+    public static void registerStorageCellModels() {
+        registerStorageCellModel(LIGHTNING_STORAGE_CELL_1K, "1k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_CELL_4K, "4k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_CELL_16K, "16k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_CELL_64K, "64k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_CELL_256K, "256k_item_cell");
+    }
+
+    private static DeferredItem<LightningStorageCellItem> registerLightningStorageCell(String id, int kilobytes) {
+        return ITEMS.register(id, () -> new LightningStorageCellItem(kilobytes));
+    }
+
+    private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {
+        StorageCellModels.registerModel(
+                item.get(),
+                ResourceLocation.fromNamespaceAndPath("ae2", "block/drive/cells/" + modelName));
     }
 
     private static DeferredItem<ColoredPartItem<OverloadedCablePart>> registerOverloadedCable(String id, AEColor color) {
