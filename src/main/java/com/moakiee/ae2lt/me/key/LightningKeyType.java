@@ -13,7 +13,7 @@ public final class LightningKeyType extends AEKeyType {
     public static final LightningKeyType INSTANCE = new LightningKeyType();
 
     private LightningKeyType() {
-        super(LightningKey.ID, LightningKey.class, Component.translatable("key_type.ae2lt.lightning"));
+        super(LightningKey.TYPE_ID, LightningKey.class, Component.translatable("key_type.ae2lt.lightning"));
     }
 
     @Override
@@ -38,6 +38,6 @@ public final class LightningKeyType extends AEKeyType {
 
     @Override
     public @Nullable AEKey readFromPacket(RegistryFriendlyByteBuf input) {
-        return LightningKey.INSTANCE;
+        return LightningKey.fromOrdinal(input.readByte());
     }
 }

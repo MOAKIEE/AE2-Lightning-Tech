@@ -1,5 +1,7 @@
 {
   "key.ae2lt.lightning": "闪电",
+  "key.ae2lt.high_voltage_lightning": "高压闪电",
+  "key.ae2lt.extreme_high_voltage_lightning": "极高压闪电",
   "key_type.ae2lt.lightning": "闪电",
   "item.ae2lt.lightning_storage_component_1k": "1k闪电存储组件",
   "item.ae2lt.lightning_storage_component_4k": "4k闪电存储组件",
