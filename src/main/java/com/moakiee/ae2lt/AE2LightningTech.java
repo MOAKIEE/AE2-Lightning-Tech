@@ -7,6 +7,8 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
@@ -20,7 +22,9 @@ import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModList;
+import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -75,7 +79,9 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
-                        output.accept(ModBlocks.HIGH_VOLTAGE_AGGREGATOR);
+                        output.accept(ModBlocks.LIGHTNING_COLLECTOR);
+                        output.accept(ModItems.ELECTRO_CHIME_CRYSTAL);
+                        output.accept(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -116,7 +122,7 @@ public class AE2LightningTech {
                     })
                     .build());
 
-    public AE2LightningTech(IEventBus modEventBus) {
+    public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
@@ -128,6 +134,7 @@ public class AE2LightningTech {
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::commonSetup);
+        modContainer.registerConfig(ModConfig.Type.COMMON, AE2LTCommonConfig.SPEC);
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
@@ -146,9 +153,9 @@ public class AE2LightningTech {
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
-                Capabilities.EnergyStorage.BLOCK,
-                ModBlockEntities.HIGH_VOLTAGE_AGGREGATOR.get(),
-                (blockEntity, side) -> side == Direction.UP ? null : blockEntity.getEnergyStorage());
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LIGHTNING_COLLECTOR.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
@@ -161,6 +168,11 @@ public class AE2LightningTech {
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.LIGHTNING_COLLECTOR.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_CONTROLLER.get(),
@@ -214,6 +226,14 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
+            var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
+            lightningCollectorBlock.setBlockEntity(
+                    LightningCollectorBlockEntity.class,
+                    lightningCollectorBeType,
+                    null,
+                    LightningCollectorBlockEntity::serverTick);
+
             var controllerBlock = ModBlocks.OVERLOADED_CONTROLLER.get();
             var controllerBeType = ModBlockEntities.OVERLOADED_CONTROLLER.get();
             controllerBlock.setBlockEntity(
@@ -247,6 +267,9 @@ public class AE2LightningTech {
                     null,
                     OverloadedInterfaceBlockEntity::serverTick);
 
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    lightningCollectorBeType,
+                    lightningCollectorBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.OVERLOADED_CONTROLLER.get(),
                     ModBlocks.OVERLOADED_CONTROLLER.get().asItem());

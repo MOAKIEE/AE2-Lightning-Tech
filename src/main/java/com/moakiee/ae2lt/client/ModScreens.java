@@ -10,6 +10,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
@@ -27,6 +28,7 @@ public class ModScreens {
         event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
+        event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -45,5 +47,11 @@ public class ModScreens {
             LightningSimulationChamberMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_chamber.json");
         return new LightningSimulationChamberScreen(menu, inv, title, style);
+    }
+
+    private static LightningCollectorScreen createLightningCollectorScreen(
+            LightningCollectorMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/lightning_collector.json");
+        return new LightningCollectorScreen(menu, inv, title, style);
     }
 }

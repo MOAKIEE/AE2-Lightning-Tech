@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.event;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -78,35 +78,24 @@ public final class NaturalLightningTransformationHandler {
 
         data.putBoolean(TRANSFORMATION_CHECKED_TAG, true);
         boolean naturalWeatherLightning = data.getBoolean(NATURAL_WEATHER_LIGHTNING_TAG);
-        tryActivateHighVoltageAggregator(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
+        tryCaptureLightning(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
         if (naturalWeatherLightning) {
             tryTransformFromNearbyLightningRod(serverLevel, lightningBolt.blockPosition());
         }
     }
 
-    private static void tryActivateHighVoltageAggregator(ServerLevel level, BlockPos lightningPos, boolean naturalWeatherLightning) {
-        for (int yOffset = 0; yOffset <= 3; yOffset++) {
-            BlockPos checkPos = lightningPos.below(yOffset);
-            if (level.getBlockEntity(checkPos) instanceof HighVoltageAggregatorBlockEntity aggregator) {
-                activateHighVoltageAggregatorMode(aggregator, naturalWeatherLightning);
-                return;
+    private static void tryCaptureLightning(ServerLevel level, BlockPos lightningPos, boolean naturalWeatherLightning) {
+        for (int yOffset = 0; yOffset <= 2; yOffset++) {
+            BlockPos rodPos = lightningPos.below(yOffset);
+            if (!level.getBlockState(rodPos).is(Blocks.LIGHTNING_ROD)) {
+                continue;
             }
 
-            if (level.getBlockState(checkPos).is(Blocks.LIGHTNING_ROD)
-                    && level.getBlockEntity(checkPos.below()) instanceof HighVoltageAggregatorBlockEntity aggregator) {
-                activateHighVoltageAggregatorMode(aggregator, naturalWeatherLightning);
+            if (level.getBlockEntity(rodPos.below()) instanceof LightningCollectorBlockEntity collector
+                    && collector.canCaptureLightning()) {
+                collector.captureLightning(naturalWeatherLightning);
                 return;
             }
-        }
-    }
-
-    private static void activateHighVoltageAggregatorMode(
-            HighVoltageAggregatorBlockEntity aggregator,
-            boolean naturalWeatherLightning) {
-        if (naturalWeatherLightning) {
-            aggregator.activateExtremeHighVoltageMode();
-        } else {
-            aggregator.activateHighVoltageMode();
         }
     }
 

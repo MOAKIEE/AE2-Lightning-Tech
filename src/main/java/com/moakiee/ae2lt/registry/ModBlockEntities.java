@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
-import com.moakiee.ae2lt.blockentity.HighVoltageAggregatorBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -17,12 +17,12 @@ public final class ModBlockEntities {
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITY_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, AE2LightningTech.MODID);
 
-    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<HighVoltageAggregatorBlockEntity>>
-            HIGH_VOLTAGE_AGGREGATOR = BLOCK_ENTITY_TYPES.register(
-                    "high_voltage_aggregator",
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LightningCollectorBlockEntity>>
+            LIGHTNING_COLLECTOR = BLOCK_ENTITY_TYPES.register(
+                    "lightning_collector",
                     () -> BlockEntityType.Builder.of(
-                            HighVoltageAggregatorBlockEntity::new,
-                            ModBlocks.HIGH_VOLTAGE_AGGREGATOR.get())
+                            LightningCollectorBlockEntity::new,
+                            ModBlocks.LIGHTNING_COLLECTOR.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedControllerBlockEntity>>

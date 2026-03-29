@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
-import com.moakiee.ae2lt.block.HighVoltageAggregatorBlock;
+import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
@@ -59,13 +59,8 @@ public final class ModBlocks {
     public static final DeferredBlock<OverloadTntBlock> OVERLOAD_TNT =
             registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.TNT)));
 
-    public static final DeferredBlock<HighVoltageAggregatorBlock> HIGH_VOLTAGE_AGGREGATOR =
-            registerBlock("high_voltage_aggregator", () -> new HighVoltageAggregatorBlock(BlockBehaviour.Properties.of()
-                    .mapColor(MapColor.METAL)
-                    .strength(2.2F, 11.0F)
-                    .sound(SoundType.COPPER)
-                    .forceSolidOn()
-                    .noOcclusion()));
+    public static final DeferredBlock<LightningCollectorBlock> LIGHTNING_COLLECTOR =
+            registerBlock("lightning_collector", LightningCollectorBlock::new);
 
     public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
             registerBlock("lightning_simulation_chamber", LightningSimulationChamberBlock::new);
