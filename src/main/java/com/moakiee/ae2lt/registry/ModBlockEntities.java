@@ -36,7 +36,7 @@ public final class ModBlockEntities {
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LightningSimulationChamberBlockEntity>>
             LIGHTNING_SIMULATION_CHAMBER = BLOCK_ENTITY_TYPES.register(
-                    "lightning_simulation_chamber",
+                    "lightning_simulation_room",
                     () -> BlockEntityType.Builder.of(
                             LightningSimulationChamberBlockEntity::new,
                             ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get())

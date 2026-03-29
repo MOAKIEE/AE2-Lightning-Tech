@@ -5,7 +5,7 @@
         "facing": "north"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber"
+        "model": "ae2lt:block/lightning_simulation_room"
       }
     },
     {
@@ -13,7 +13,7 @@
         "facing": "east"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber",
+        "model": "ae2lt:block/lightning_simulation_room",
         "y": 90
       }
     },
@@ -22,7 +22,7 @@
         "facing": "south"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber",
+        "model": "ae2lt:block/lightning_simulation_room",
         "y": 180
       }
     },
@@ -31,7 +31,7 @@
         "facing": "west"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber",
+        "model": "ae2lt:block/lightning_simulation_room",
         "y": 270
       }
     },
@@ -41,7 +41,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber_work"
+        "model": "ae2lt:block/lightning_simulation_room_work"
       }
     },
     {
@@ -50,7 +50,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber_work",
+        "model": "ae2lt:block/lightning_simulation_room_work",
         "y": 90
       }
     },
@@ -60,7 +60,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber_work",
+        "model": "ae2lt:block/lightning_simulation_room_work",
         "y": 180
       }
     },
@@ -70,7 +70,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_simulation_chamber_work",
+        "model": "ae2lt:block/lightning_simulation_room_work",
         "y": 270
       }
     }

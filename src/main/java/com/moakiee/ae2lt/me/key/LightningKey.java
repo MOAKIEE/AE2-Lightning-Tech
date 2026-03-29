@@ -58,6 +58,15 @@ public final class LightningKey extends AEKey {
                 default -> HIGH_VOLTAGE;
             };
         }
+
+        public static Tier fromSerializedName(String serializedName) {
+            for (var value : values()) {
+                if (value.serializedName.equals(serializedName)) {
+                    return value;
+                }
+            }
+            return HIGH_VOLTAGE;
+        }
     }
 
     private LightningKey(Tier tier) {

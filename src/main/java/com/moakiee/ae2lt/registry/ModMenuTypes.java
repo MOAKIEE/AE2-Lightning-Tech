@@ -33,7 +33,7 @@ public final class ModMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningSimulationChamberMenu>>
             LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(
-                    "lightning_simulation_chamber",
+                    "lightning_simulation_room",
                     () -> LightningSimulationChamberMenu.TYPE);
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningCollectorMenu>>

@@ -6,7 +6,6 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.Util;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
@@ -16,8 +15,8 @@ import net.minecraft.world.item.crafting.Ingredient;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
-import com.moakiee.ae2lt.registry.ModItems;
 
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
@@ -33,7 +32,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
             RecipeType.create(AE2LightningTech.MODID, "lightning_simulation", LightningSimulationRecipe.class);
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_chamber.png");
+            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
 
     private static final int BACKGROUND_U = 5;
     private static final int BACKGROUND_V = 15;
@@ -45,13 +44,13 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     private static final int SLOT_INPUT_X = 34;
     private static final int SLOT_INPUT_Y = 7;
     private static final int SLOT_INPUT_SPACING = 18;
-    private static final int SLOT_CATALYST_X = 60;
-    private static final int SLOT_CATALYST_Y = 25;
     private static final int SLOT_OUTPUT_X = 114;
     private static final int SLOT_OUTPUT_Y = 26;
     private static final int PROCESS_X = 53;
     private static final int PROCESS_Y = 10;
-    private static final int ENERGY_TEXT_Y = 67;
+    private static final int ENERGY_TEXT_Y = 58;
+    private static final int LIGHTNING_TEXT_Y = 68;
+    private static final int SUBSTITUTION_TEXT_Y = 78;
     private static final int PROCESS_WIDTH = 50;
     private static final int PROCESS_HEIGHT = 46;
     private static final int PROCESS_STAGE_COUNT = 20;
@@ -100,18 +99,6 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                     .addItemStacks(expandIngredient(input.ingredient(), input.count()));
         }
 
-        builder.addSlot(RecipeIngredientRole.INPUT, SLOT_CATALYST_X, SLOT_CATALYST_Y)
-                .addItemStacks(List.of(
-                        new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get(), LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST),
-                        new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get())))
-                .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                    var displayedStack = recipeSlotView.getDisplayedItemStack().orElse(ItemStack.EMPTY);
-                    if (displayedStack.is(ModItems.LIGHTNING_COLLAPSE_MATRIX.get())) {
-                        tooltip.add(Component.translatable("jei.ae2lt.lightning_simulation.catalyst.not_consumed")
-                                .withStyle(ChatFormatting.GRAY));
-                    }
-                });
-
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
                 .addItemStack(recipe.getResultStack());
     }
@@ -132,6 +119,23 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                 formatCompactEnergy(recipe.totalEnergy()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
         guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        var lightningText = Component.translatable(
+                "jei.ae2lt.lightning_simulation.lightning",
+                recipe.lightningCost(),
+                Component.translatable(recipe.lightningTier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
+                        ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
+                        : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
+        int lightningX = (WIDTH - font.width(lightningText)) / 2;
+        guiGraphics.drawString(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
+        if (recipe.lightningTier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
+            var substitutionText = Component.translatable(
+                    "jei.ae2lt.lightning_simulation.substitution",
+                    LightningSimulationRecipeService.getEquivalentHighVoltageCost(
+                            recipe.lightningTier(),
+                            recipe.lightningCost()));
+            int substitutionX = (WIDTH - font.width(substitutionText)) / 2;
+            guiGraphics.drawString(font, substitutionText, substitutionX, SUBSTITUTION_TEXT_Y, 0x404040, false);
+        }
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {

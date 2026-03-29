@@ -22,14 +22,16 @@ import appeng.menu.implementations.MenuTypeBuilder;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
+import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
+import com.moakiee.ae2lt.me.key.LightningKey;
 
 public class LightningSimulationChamberMenu extends AEBaseMenu {
     public static final MenuType<LightningSimulationChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningSimulationChamberMenu::new, LightningSimulationChamberBlockEntity.class)
-            .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_simulation_chamber"))
+            .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_simulation_room"))
             .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
                     AE2LightningTech.MODID,
-                    "lightning_simulation_chamber"));
+                    "lightning_simulation_room"));
 
     private static final RelativeSide[] OUTPUT_SIDES = RelativeSide.values();
 
@@ -51,18 +53,39 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
     @GuiSync(25)
     public int outputSideMask;
 
+    @GuiSync(26)
+    public long highVoltageAvailable;
+
+    @GuiSync(27)
+    public long extremeHighVoltageAvailable;
+
+    @GuiSync(28)
+    public int lightningTierOrdinal = -1;
+
+    @GuiSync(29)
+    public int lightningCost;
+
+    @GuiSync(30)
+    public boolean matrixInstalled;
+
+    @GuiSync(31)
+    public boolean matrixSubstitutionActive;
+
+    @GuiSync(32)
+    public long equivalentHighVoltageCost;
+
     private final LightningSimulationChamberBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(3);
-    private final Slot overloadDustSlot;
+    private final Slot catalystSlot;
 
     public LightningSimulationChamberMenu(int id, Inventory playerInventory, LightningSimulationChamberBlockEntity host) {
         super(TYPE, id, playerInventory, host);
         this.host = host;
 
         addMachineSlots();
-        this.overloadDustSlot = addSlot(
-                new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST),
-                Ae2ltSlotSemantics.LIGHTNING_SIMULATION_DUST);
+        this.catalystSlot = addSlot(
+                new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_CATALYST),
+                Ae2ltSlotSemantics.LIGHTNING_SIMULATION_CATALYST);
         addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);
@@ -96,6 +119,43 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
             working = host.isWorking();
             autoExport = host.isAutoExportEnabled();
             outputSideMask = toOutputSideMask(host.getAllowedOutputs());
+            highVoltageAvailable = host.getAvailableHighVoltage();
+            extremeHighVoltageAvailable = host.getAvailableExtremeHighVoltage();
+            matrixInstalled = host.hasLightningCollapseMatrix();
+
+            var lockedRecipe = host.getLockedRecipe().orElse(null);
+            var processableRecipe = lockedRecipe == null
+                    ? host.findProcessableRecipe().map(candidate -> candidate.recipe().value()).orElse(null)
+                    : null;
+            if (lockedRecipe != null) {
+                lightningTierOrdinal = lockedRecipe.lightningTier().ordinal();
+                lightningCost = lockedRecipe.lightningCost();
+            } else if (processableRecipe != null) {
+                lightningTierOrdinal = processableRecipe.lightningTier().ordinal();
+                lightningCost = processableRecipe.lightningCost();
+            } else {
+                lightningTierOrdinal = -1;
+                lightningCost = 0;
+            }
+
+            if (lightningTierOrdinal >= 0 && lightningCost > 0) {
+                var tier = LightningKey.Tier.fromOrdinal(lightningTierOrdinal);
+                var plan = LightningSimulationRecipeService.resolveLightningConsumption(
+                        host.getInventory(),
+                        tier,
+                        lightningCost,
+                        highVoltageAvailable,
+                        extremeHighVoltageAvailable);
+                matrixSubstitutionActive = plan
+                        .map(LightningSimulationRecipeService.LightningConsumptionPlan::matrixSubstitution)
+                        .orElse(false);
+                equivalentHighVoltageCost = LightningSimulationRecipeService.getEquivalentHighVoltageCost(
+                        tier,
+                        lightningCost);
+            } else {
+                matrixSubstitutionActive = false;
+                equivalentHighVoltageCost = 0L;
+            }
         }
 
         super.broadcastChanges();
@@ -184,6 +244,53 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
         return (outputSideMask & (1 << side.ordinal())) != 0;
     }
 
+    public Component getHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_simulation.stock.high_voltage", highVoltageAvailable);
+    }
+
+    public Component getExtremeHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_simulation.stock.extreme_high_voltage", extremeHighVoltageAvailable);
+    }
+
+    public Component getLightningDemandMessage() {
+        if (lightningTierOrdinal < 0 || lightningCost <= 0) {
+            return Component.translatable("ae2lt.gui.lightning_simulation.demand.none");
+        }
+
+        return Component.translatable(
+                "ae2lt.gui.lightning_simulation.demand",
+                lightningCost,
+                Component.translatable(getLightningTierTranslationKey()));
+    }
+
+    public Component getMatrixMessage() {
+        return Component.translatable(
+                "ae2lt.gui.lightning_simulation.matrix.label",
+                Component.translatable(matrixInstalled
+                        ? "ae2lt.gui.lightning_simulation.matrix.installed"
+                        : "ae2lt.gui.lightning_simulation.matrix.missing"));
+    }
+
+    public Component getSubstitutionMessage() {
+        if (lightningTierOrdinal < 0 || lightningCost <= 0) {
+            return Component.translatable("ae2lt.gui.lightning_simulation.substitution.none");
+        }
+
+        if (matrixSubstitutionActive) {
+            return Component.translatable(
+                    "ae2lt.gui.lightning_simulation.substitution.active",
+                    equivalentHighVoltageCost);
+        }
+
+        if (matrixInstalled && LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
+            return Component.translatable(
+                    "ae2lt.gui.lightning_simulation.substitution.available",
+                    equivalentHighVoltageCost);
+        }
+
+        return Component.translatable("ae2lt.gui.lightning_simulation.substitution.inactive");
+    }
+
     public double getProgress() {
         if (totalEnergy <= 0L) {
             return 0.0D;
@@ -238,8 +345,8 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        if (host.getInventory().isSimulationCatalyst(stack)) {
-            return moveIntoSlots(stack, List.of(overloadDustSlot));
+        if (host.getInventory().isCatalystItem(stack)) {
+            return moveIntoSlots(stack, List.of(catalystSlot));
         }
 
         var upgradeSlots = getUpgradeDestinationSlots(stack);
@@ -300,6 +407,12 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
             mask |= 1 << side.ordinal();
         }
         return mask;
+    }
+
+    private String getLightningTierTranslationKey() {
+        return LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
+                ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
+                : "ae2lt.gui.lightning_simulation.tier.high_voltage";
     }
 
     private boolean handleLargeMachineSlotPickup(int slotId, int button, Player player) {

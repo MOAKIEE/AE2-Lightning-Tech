@@ -30,6 +30,12 @@ import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
 
 public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimulationChamberMenu> {
     private static final float LARGE_STACK_COUNT_SCALE = 0.9F;
+    private static final int INFO_X = 8;
+    private static final int HIGH_VOLTAGE_Y = 64;
+    private static final int EXTREME_HIGH_VOLTAGE_Y = 73;
+    private static final int DEMAND_Y = 82;
+    private static final int MATRIX_Y = 91;
+    private static final int SUBSTITUTION_Y = 100;
 
     private final LightningSimulationEnergyBar energyBar;
     private final LightningSimulationProcessWidget processWidget;
@@ -99,6 +105,17 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
 
         this.autoExportButton.setState(menu.isAutoExportEnabled());
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
+    }
+
+    @Override
+    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
+        super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
+
+        guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HIGH_VOLTAGE_Y, 0x404040, false);
+        guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EXTREME_HIGH_VOLTAGE_Y, 0x404040, false);
+        guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0x404040, false);
+        guiGraphics.drawString(font, menu.getMatrixMessage(), INFO_X, MATRIX_Y, 0x404040, false);
+        guiGraphics.drawString(font, menu.getSubstitutionMessage(), INFO_X, SUBSTITUTION_Y, 0x404040, false);
     }
 
     private static String formatLargeStackCount(int count) {

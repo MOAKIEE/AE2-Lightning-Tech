@@ -18,7 +18,6 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -55,6 +54,7 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationLock
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeCandidate;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
@@ -121,11 +121,11 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     public Optional<LightningSimulationRecipeCandidate> findProcessableRecipe() {
-        return LightningSimulationRecipeService.findFirstProcessable(getLevel(), inventory);
-    }
-
-    public Optional<RecipeHolder<LightningSimulationRecipe>> getCurrentProcessableRecipe() {
-        return findProcessableRecipe().map(LightningSimulationRecipeCandidate::recipe);
+        return LightningSimulationRecipeService.findFirstProcessable(
+                getLevel(),
+                inventory,
+                getAvailableHighVoltage(),
+                getAvailableExtremeHighVoltage());
     }
 
     public long getConsumedEnergy() {
@@ -277,7 +277,21 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         return false;
     }
 
-    public boolean completeLockedRecipe(LightningSimulationRecipeCandidate candidate) {
+    public long getAvailableHighVoltage() {
+        return simulateLightningExtract(LightningKey.HIGH_VOLTAGE, Long.MAX_VALUE);
+    }
+
+    public long getAvailableExtremeHighVoltage() {
+        return simulateLightningExtract(LightningKey.EXTREME_HIGH_VOLTAGE, Long.MAX_VALUE);
+    }
+
+    public boolean hasLightningCollapseMatrix() {
+        return inventory.hasLightningCollapseMatrix();
+    }
+
+    public boolean completeLockedRecipe(
+            LightningSimulationLockedRecipe lockedRecipe,
+            LightningSimulationRecipeCandidate candidate) {
         if (!inventory.canAcceptRecipeOutput(candidate.recipe().value().getResultStack())) {
             return false;
         }
@@ -295,18 +309,21 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             }
         }
 
-        ItemStack catalyst = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST);
-        if (catalyst.isEmpty()) {
+        var lightningPlan = LightningSimulationRecipeService.resolveLightningConsumption(
+                inventory,
+                lockedRecipe.lightningTier(),
+                lockedRecipe.lightningCost(),
+                getAvailableHighVoltage(),
+                getAvailableExtremeHighVoltage());
+        if (lightningPlan.isEmpty()) {
             return false;
         }
-        boolean consumesDust = inventory.isOverloadCrystalDust(catalyst);
-        if (consumesDust && catalyst.getCount() < LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
-            return false;
-        }
-        if (!consumesDust && !inventory.isLightningCollapseMatrix(catalyst)) {
+        var plan = lightningPlan.get();
+        if (simulateLightningExtract(plan.key(), plan.amount()) < plan.amount()) {
             return false;
         }
 
+        ItemStack[] extractedInputs = new ItemStack[3];
         for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
              slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
              slot++) {
@@ -317,21 +334,24 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
 
             ItemStack extracted = inventory.extractItem(slot, toConsume, false);
             if (extracted.getCount() != toConsume) {
+                rollbackInputs(extractedInputs);
                 return false;
             }
+            extractedInputs[slot] = extracted;
         }
 
-        if (consumesDust) {
-            ItemStack dustExtracted = inventory.extractItem(
-                    LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST,
-                    LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST,
-                    false);
-            if (dustExtracted.getCount() != LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST) {
-                return false;
+        long extractedLightning = extractLightning(plan.key(), plan.amount());
+        if (extractedLightning < plan.amount()) {
+            rollbackInputs(extractedInputs);
+            if (extractedLightning > 0L) {
+                insertLightning(plan.key(), extractedLightning);
             }
+            return false;
         }
 
         if (!inventory.insertRecipeOutput(candidate.recipe().value().getResultStack(), false).isEmpty()) {
+            insertLightning(plan.key(), extractedLightning);
+            rollbackInputs(extractedInputs);
             return false;
         }
 
@@ -529,6 +549,53 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.allOf(Direction.class);
+    }
+
+    private void rollbackInputs(ItemStack[] extractedInputs) {
+        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
+             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
+             slot++) {
+            ItemStack extracted = extractedInputs[slot];
+            if (extracted != null && !extracted.isEmpty()) {
+                inventory.insertItem(slot, extracted, false);
+            }
+        }
+    }
+
+    private long simulateLightningExtract(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .extract(key, amount, Actionable.SIMULATE, IActionSource.ofMachine(this));
+    }
+
+    private long extractLightning(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .extract(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
+    }
+
+    private long insertLightning(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .insert(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
     }
 }
 

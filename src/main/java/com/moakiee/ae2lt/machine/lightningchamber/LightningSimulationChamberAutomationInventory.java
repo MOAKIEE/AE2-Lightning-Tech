@@ -9,7 +9,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
  * Capability-facing inventory wrapper.
  *
  * <p>Important behavior:
- * reaction catalysts are always routed to slot 3 first, even when an
+ * catalyst matrices are always routed to slot 3 first, even when an
  * automation helper starts probing slots from 0 upward.</p>
  */
 public class LightningSimulationChamberAutomationInventory implements IItemHandlerModifiable {
@@ -43,8 +43,8 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isSimulationCatalyst(stack)) {
-            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST, stack, simulate);
+        if (inventory.isCatalystItem(stack)) {
+            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_CATALYST, stack, simulate);
         }
 
         if (inventory.isInputSlot(slot)) {
@@ -64,8 +64,8 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isSimulationCatalyst(stack)) {
-            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST, stack, simulate);
+        if (inventory.isCatalystItem(stack)) {
+            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_CATALYST, stack, simulate);
         }
 
         ItemStack remainder = stack;
@@ -97,7 +97,7 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
             return false;
         }
 
-        if (inventory.isSimulationCatalyst(stack)) {
+        if (inventory.isCatalystItem(stack)) {
             return slot != LightningSimulationChamberInventory.SLOT_OUTPUT;
         }
 

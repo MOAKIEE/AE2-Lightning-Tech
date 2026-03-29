@@ -13,39 +13,45 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
 
 public final class LightningSimulationLockedRecipe {
     private static final String TAG_RECIPE_ID = "RecipeId";
     private static final String TAG_RESULT = "Result";
     private static final String TAG_TOTAL_ENERGY = "TotalEnergy";
-    private static final String TAG_DUST_COST = "DustCost";
+    private static final String TAG_LIGHTNING_COST = "LightningCost";
+    private static final String TAG_LIGHTNING_TIER = "LightningTier";
+    private static final String TAG_LEGACY_DUST_COST = "DustCost";
     private static final String TAG_INPUTS = "InputConsumptions";
 
     private final ResourceLocation recipeId;
     private final ItemStack result;
     private final long totalEnergy;
-    private final int overloadDustCost;
+    private final int lightningCost;
+    private final LightningKey.Tier lightningTier;
     private final int[] inputConsumptions;
 
     public LightningSimulationLockedRecipe(
             ResourceLocation recipeId,
             ItemStack result,
             long totalEnergy,
-            int overloadDustCost,
+            int lightningCost,
+            LightningKey.Tier lightningTier,
             int[] inputConsumptions) {
         this.recipeId = Objects.requireNonNull(recipeId, "recipeId");
         this.result = Objects.requireNonNull(result, "result").copy();
         this.totalEnergy = totalEnergy;
-        this.overloadDustCost = overloadDustCost;
+        this.lightningCost = lightningCost;
+        this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
         if (result.isEmpty()) {
             throw new IllegalArgumentException("result cannot be empty");
         }
         if (totalEnergy <= 0) {
             throw new IllegalArgumentException("totalEnergy must be positive");
         }
-        if (overloadDustCost <= 0) {
-            throw new IllegalArgumentException("overloadDustCost must be positive");
+        if (lightningCost <= 0) {
+            throw new IllegalArgumentException("lightningCost must be positive");
         }
         if (inputConsumptions.length != 3) {
             throw new IllegalArgumentException("inputConsumptions must have length 3");
@@ -59,7 +65,8 @@ public final class LightningSimulationLockedRecipe {
                 holder.id(),
                 holder.value().getResultStack(),
                 holder.value().totalEnergy(),
-                LightningSimulationRecipeService.REQUIRED_OVERLOAD_DUST,
+                holder.value().lightningCost(),
+                holder.value().lightningTier(),
                 candidate.match().inputConsumptions());
     }
 
@@ -75,8 +82,12 @@ public final class LightningSimulationLockedRecipe {
         return totalEnergy;
     }
 
-    public int overloadDustCost() {
-        return overloadDustCost;
+    public int lightningCost() {
+        return lightningCost;
+    }
+
+    public LightningKey.Tier lightningTier() {
+        return lightningTier;
     }
 
     public int[] inputConsumptions() {
@@ -96,7 +107,8 @@ public final class LightningSimulationLockedRecipe {
         tag.putString(TAG_RECIPE_ID, recipeId.toString());
         tag.put(TAG_RESULT, result.save(registries, new CompoundTag()));
         tag.putLong(TAG_TOTAL_ENERGY, totalEnergy);
-        tag.putInt(TAG_DUST_COST, overloadDustCost);
+        tag.putInt(TAG_LIGHTNING_COST, lightningCost);
+        tag.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
         tag.put(TAG_INPUTS, new IntArrayTag(Arrays.copyOf(inputConsumptions, inputConsumptions.length)));
         return tag;
     }
@@ -118,8 +130,13 @@ public final class LightningSimulationLockedRecipe {
         }
 
         long totalEnergy = tag.getLong(TAG_TOTAL_ENERGY);
-        int dustCost = tag.getInt(TAG_DUST_COST);
-        if (totalEnergy <= 0 || dustCost <= 0) {
+        int lightningCost = tag.contains(TAG_LIGHTNING_COST, Tag.TAG_ANY_NUMERIC)
+                ? tag.getInt(TAG_LIGHTNING_COST)
+                : (tag.getInt(TAG_LEGACY_DUST_COST) > 0 ? LightningSimulationRecipe.DEFAULT_LIGHTNING_COST : 0);
+        LightningKey.Tier lightningTier = tag.contains(TAG_LIGHTNING_TIER, Tag.TAG_STRING)
+                ? LightningKey.Tier.fromSerializedName(tag.getString(TAG_LIGHTNING_TIER))
+                : LightningSimulationRecipe.DEFAULT_LIGHTNING_TIER;
+        if (totalEnergy <= 0 || lightningCost <= 0) {
             return null;
         }
 
@@ -127,7 +144,8 @@ public final class LightningSimulationLockedRecipe {
                 ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
                 result,
                 totalEnergy,
-                dustCost,
+                lightningCost,
+                lightningTier,
                 inputConsumptions);
     }
 }

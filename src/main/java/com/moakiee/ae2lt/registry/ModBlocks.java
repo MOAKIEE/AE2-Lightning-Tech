@@ -64,7 +64,7 @@ public final class ModBlocks {
             registerBlock("lightning_collector", LightningCollectorBlock::new);
 
     public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
-            registerBlock("lightning_simulation_chamber", LightningSimulationChamberBlock::new);
+            registerBlock("lightning_simulation_room", LightningSimulationChamberBlock::new);
 
     public static final DeferredBlock<TeslaCoilBlock> TESLA_COIL =
             registerBlock("tesla_coil", TeslaCoilBlock::new);

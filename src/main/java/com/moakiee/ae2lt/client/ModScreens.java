@@ -48,7 +48,7 @@ public class ModScreens {
 
     private static LightningSimulationChamberScreen createLightningSimulationChamberScreen(
             LightningSimulationChamberMenu menu, Inventory inv, Component title) {
-        var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_chamber.json");
+        var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_room.json");
         return new LightningSimulationChamberScreen(menu, inv, title, style);
     }
 

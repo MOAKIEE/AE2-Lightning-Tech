@@ -32,7 +32,7 @@
       "srcRect": [176, 0, 6, 18]
     },
     "processOverlay": {
-      "texture": "ae2lt:textures/guis/lightning_simulation_chamber.png",
+      "texture": "ae2lt:textures/guis/lightning_simulation_room.png",
       "srcRect": [177, 48, 50, 46]
     }
   },
