@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -64,6 +65,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
             registerBlock("lightning_simulation_chamber", LightningSimulationChamberBlock::new);
+
+    public static final DeferredBlock<TeslaCoilBlock> TESLA_COIL =
+            registerBlock("tesla_coil", TeslaCoilBlock::new);
 
     public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
             registerBlock("overloaded_controller", OverloadedControllerBlock::new);

@@ -13,6 +13,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -82,6 +83,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.LIGHTNING_COLLECTOR);
                         output.accept(ModItems.ELECTRO_CHIME_CRYSTAL);
                         output.accept(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL);
+                        output.accept(ModBlocks.TESLA_COIL);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -163,8 +165,18 @@ public class AE2LightningTech {
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
 
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.TESLA_COIL.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
@@ -181,6 +193,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.TESLA_COIL.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -250,6 +267,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var teslaCoilBlock = ModBlocks.TESLA_COIL.get();
+            var teslaCoilBeType = ModBlockEntities.TESLA_COIL.get();
+            teslaCoilBlock.setBlockEntity(
+                    TeslaCoilBlockEntity.class,
+                    teslaCoilBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(
@@ -282,6 +307,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    teslaCoilBeType,
+                    teslaCoilBlock.asItem());
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);

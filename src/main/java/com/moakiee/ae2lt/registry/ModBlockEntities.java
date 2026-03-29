@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -39,6 +40,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             LightningSimulationChamberBlockEntity::new,
                             ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TeslaCoilBlockEntity>>
+            TESLA_COIL = BLOCK_ENTITY_TYPES.register(
+                    "tesla_coil",
+                    () -> BlockEntityType.Builder.of(
+                            TeslaCoilBlockEntity::new,
+                            ModBlocks.TESLA_COIL.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPatternProviderBlockEntity>>

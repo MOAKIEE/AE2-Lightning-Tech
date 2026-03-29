@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.item;
 
+import com.glodblock.github.extendedae.common.blocks.BlockWirelessConnector;
+import com.glodblock.github.extendedae.common.blocks.BlockWirelessHub;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -66,6 +68,9 @@ public class OverloadedWirelessConnectorItem extends Item {
         var pos = context.getClickedPos();
         var state = level.getBlockState(pos);
         var targetBe = level.getBlockEntity(pos);
+        if (state.getBlock() instanceof BlockWirelessConnector || state.getBlock() instanceof BlockWirelessHub) {
+            return InteractionResult.PASS;
+        }
         boolean isHost = state.getBlock() instanceof OverloadedPatternProviderBlock
                 || state.getBlock() instanceof OverloadedInterfaceBlock;
         boolean isMachine = targetBe != null;

@@ -75,6 +75,30 @@ public final class AE2LTCommonConfig {
         };
     }
 
+    public static int teslaCoilEnergyCapacity() {
+        return VALUES.teslaCoilEnergyCapacity.get();
+    }
+
+    public static int teslaCoilMaxReceive() {
+        return VALUES.teslaCoilMaxReceive.get();
+    }
+
+    public static int teslaCoilHighVoltageDustCost() {
+        return VALUES.teslaCoilHighVoltageDustCost.get();
+    }
+
+    public static int teslaCoilHighVoltageEnergy() {
+        return VALUES.teslaCoilHighVoltageEnergy.get();
+    }
+
+    public static int teslaCoilExtremeHighVoltageInput() {
+        return VALUES.teslaCoilExtremeHighVoltageInput.get();
+    }
+
+    public static int teslaCoilExtremeHighVoltageEnergy() {
+        return VALUES.teslaCoilExtremeHighVoltageEnergy.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.DoubleValue lightningCollectorCrystalFeedRatio;
@@ -93,6 +117,12 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue electroChimeStage1Threshold;
         private final ModConfigSpec.IntValue electroChimeStage2Threshold;
         private final ModConfigSpec.IntValue electroChimeStage3Threshold;
+        private final ModConfigSpec.IntValue teslaCoilEnergyCapacity;
+        private final ModConfigSpec.IntValue teslaCoilMaxReceive;
+        private final ModConfigSpec.IntValue teslaCoilHighVoltageDustCost;
+        private final ModConfigSpec.IntValue teslaCoilHighVoltageEnergy;
+        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
+        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageEnergy;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
@@ -124,6 +154,27 @@ public final class AE2LTCommonConfig {
             electroChimeStage1Threshold = builder.defineInRange("stage1Threshold", 4, 0, Integer.MAX_VALUE);
             electroChimeStage2Threshold = builder.defineInRange("stage2Threshold", 16, 0, Integer.MAX_VALUE);
             electroChimeStage3Threshold = builder.defineInRange("stage3Threshold", 64, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("teslaCoil");
+            teslaCoilEnergyCapacity = builder
+                    .comment("Tesla Coil internal FE buffer.")
+                    .defineInRange("energyCapacity", 1_000_000, 1, Integer.MAX_VALUE);
+            teslaCoilMaxReceive = builder
+                    .comment("Tesla Coil max FE receive per transfer operation.")
+                    .defineInRange("maxReceive", 200_000, 1, Integer.MAX_VALUE);
+            teslaCoilHighVoltageDustCost = builder
+                    .comment("Overload crystal dust required to synthesize one high voltage lightning.")
+                    .defineInRange("highVoltage.dustCost", 4, 1, Integer.MAX_VALUE);
+            teslaCoilHighVoltageEnergy = builder
+                    .comment("FE required to synthesize one high voltage lightning.")
+                    .defineInRange("highVoltage.energy", 50_000, 1, Integer.MAX_VALUE);
+            teslaCoilExtremeHighVoltageInput = builder
+                    .comment("High voltage lightning required to refine one extreme high voltage lightning.")
+                    .defineInRange("extremeHighVoltage.highVoltageInput", 4, 1, Integer.MAX_VALUE);
+            teslaCoilExtremeHighVoltageEnergy = builder
+                    .comment("FE required to refine one extreme high voltage lightning.")
+                    .defineInRange("extremeHighVoltage.energy", 500_000, 1, Integer.MAX_VALUE);
             builder.pop();
         }
     }

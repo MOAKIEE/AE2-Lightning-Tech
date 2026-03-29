@@ -7,7 +7,6 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -18,6 +17,7 @@ import appeng.client.gui.Icon;
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.IconButton;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
 import appeng.core.definitions.AEItems;
@@ -39,11 +39,11 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
     private final TextureToggleButton exportModeButton;
     private final TextureToggleButton importModeButton;
     private final TextureToggleButton speedButton;
+    private final PageButton prevPageButton;
+    private final PageButton nextPageButton;
     private final List<SetAmountButton> amountButtons = new ArrayList<>();
     private final List<Slot> configSlots;
 
-    private Button prevPageBtn;
-    private Button nextPageBtn;
     private int lastKnownPage = -1;
 
     public OverloadedInterfaceScreen(OverloadedInterfaceMenu menu, Inventory playerInventory,
@@ -52,6 +52,14 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
 
         this.fuzzyMode = new ServerSettingToggleButton<>(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
         addToLeftToolbar(this.fuzzyMode);
+
+        this.nextPageButton = new PageButton(Icon.ARROW_RIGHT, btn -> menu.nextPage());
+        this.nextPageButton.setMessage(Component.translatable("ae2lt.gui.overloaded_interface.next_page"));
+        addToLeftToolbar(this.nextPageButton);
+
+        this.prevPageButton = new PageButton(Icon.ARROW_LEFT, btn -> menu.prevPage());
+        this.prevPageButton.setMessage(Component.translatable("ae2lt.gui.overloaded_interface.prev_page"));
+        addToLeftToolbar(this.prevPageButton);
 
         this.modeButton = new TextureToggleButton(
                 TextureToggleButton.ButtonType.MODE, btn -> menu.cycleInterfaceMode());
@@ -102,17 +110,6 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
         for (var btn : amountButtons) {
             addRenderableWidget(btn);
         }
-
-        prevPageBtn = Button.builder(Component.literal("<"), b -> menu.prevPage())
-                .pos(this.leftPos + 60, this.topPos + 4)
-                .size(12, 12)
-                .build();
-        nextPageBtn = Button.builder(Component.literal(">"), b -> menu.nextPage())
-                .pos(this.leftPos + 104, this.topPos + 4)
-                .size(12, 12)
-                .build();
-        addRenderableWidget(prevPageBtn);
-        addRenderableWidget(nextPageBtn);
     }
 
     @Override
@@ -171,8 +168,9 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
             }
         }
 
-        if (prevPageBtn != null) prevPageBtn.active = page > 0;
-        if (nextPageBtn != null) nextPageBtn.active = page < menu.totalPages - 1;
+        boolean hasMultiplePages = menu.totalPages > 1;
+        prevPageButton.setVisibility(hasMultiplePages && page > 0);
+        nextPageButton.setVisibility(hasMultiplePages && page < menu.totalPages - 1);
     }
 
     @Override
@@ -212,6 +210,20 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
         @Override
         protected Icon getIcon() {
             return isHoveredOrFocused() ? Icon.COG : Icon.COG_DISABLED;
+        }
+    }
+
+    static class PageButton extends IconButton {
+        private final Icon icon;
+
+        public PageButton(Icon icon, OnPress onPress) {
+            super(onPress);
+            this.icon = icon;
+        }
+
+        @Override
+        protected Icon getIcon() {
+            return this.icon;
         }
     }
 }

@@ -6,6 +6,7 @@ import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -39,6 +40,11 @@ public final class ModMenuTypes {
             LIGHTNING_COLLECTOR = MENU_TYPES.register(
                     "lightning_collector",
                     () -> LightningCollectorMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<TeslaCoilMenu>>
+            TESLA_COIL = MENU_TYPES.register(
+                    "tesla_coil",
+                    () -> TeslaCoilMenu.TYPE);
 
     private ModMenuTypes() {
     }

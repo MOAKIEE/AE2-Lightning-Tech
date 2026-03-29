@@ -8,6 +8,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.bus.api.IEventBus;
@@ -37,6 +38,8 @@ public final class ExtendedAECompat {
             DeferredRegister.createItems(AE2LightningTech.MODID);
     private static final DeferredRegister<BlockEntityType<?>> BE_TYPES =
             DeferredRegister.create(Registries.BLOCK_ENTITY_TYPE, AE2LightningTech.MODID);
+    private static final DeferredRegister<MenuType<?>> MENU_TYPES =
+            DeferredRegister.create(Registries.MENU, AE2LightningTech.MODID);
 
     // ── Blocks ──────────────────────────────────────────────────────────
 
@@ -82,6 +85,16 @@ public final class ExtendedAECompat {
                             OVERLOADED_WIRELESS_HUB.get()
                     ).build(null));
 
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadedWirelessConnectorMenu>>
+            OVERLOADED_WIRELESS_CONNECTOR_MENU =
+            MENU_TYPES.register("overloaded_wireless_connector",
+                    () -> OverloadedWirelessConnectorMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadedWirelessHubMenu>>
+            OVERLOADED_WIRELESS_HUB_MENU =
+            MENU_TYPES.register("overloaded_wireless_hub",
+                    () -> OverloadedWirelessHubMenu.TYPE);
+
     private ExtendedAECompat() {}
 
     private static OverloadedWirelessConnectorBlockEntity createConnectorBE(BlockPos pos, BlockState state) {
@@ -109,6 +122,7 @@ public final class ExtendedAECompat {
         BLOCKS.register(modEventBus);
         ITEMS.register(modEventBus);
         BE_TYPES.register(modEventBus);
+        MENU_TYPES.register(modEventBus);
 
         modEventBus.addListener(ExtendedAECompat::registerCapabilities);
     }
