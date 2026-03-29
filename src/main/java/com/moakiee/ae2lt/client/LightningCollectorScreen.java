@@ -46,7 +46,7 @@ public class LightningCollectorScreen extends AEBaseScreen<LightningCollectorMen
                         "gui.ae2lt.lightning_collector.high_output",
                         formatRange(menu.previewHighMin, menu.previewHighMax)),
                 textX,
-                Math.round(30 / textScale),
+                Math.round(36 / textScale),
                 textColor,
                 false);
         guiGraphics.drawString(
@@ -55,13 +55,13 @@ public class LightningCollectorScreen extends AEBaseScreen<LightningCollectorMen
                         "gui.ae2lt.lightning_collector.extreme_output.simple",
                         formatRange(menu.previewExtremeMin, menu.previewExtremeMax)),
                 textX,
-                Math.round(42 / textScale),
+                Math.round(48 / textScale),
                 textColor,
                 false);
         guiGraphics.pose().popPose();
     }
 
     private static String formatRange(int min, int max) {
-        return min == max ? Integer.toString(min) : min + "-" + max;
+        return min == max ? Integer.toString(min) : min + "~" + max;
     }
 }

@@ -63,10 +63,6 @@
   "jade.ae2lt.high_voltage_aggregator.mode.extreme": "Extreme High Voltage",
   "jade.ae2lt.high_voltage_aggregator.duration": "Remaining: %ss",
   "jade.ae2lt.lightning_collector.cooldown": "Cooldown: %ss",
-  "jade.ae2lt.lightning_collector.crystal.normal": "Crystal: %s/%s (%s%%)",
-  "jade.ae2lt.lightning_collector.crystal.perfect": "Crystal: Perfect",
-  "jade.ae2lt.lightning_collector.stored_high": "Stored HV: %s",
-  "jade.ae2lt.lightning_collector.stored_extreme": "Stored EHV: %s",
   "ae2lt.ponder.flawless_budding_overload_crystal.header": "Transformation of Flawless Budding Overload Crystal",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_1": "Use a Flawless Budding Quartz block as the core.",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_2": "Place 4 Fluix Blocks on the four sides.",
@@ -138,14 +134,8 @@
   "ae2lt.gui.lightning_simulation.energy.tooltip": "%s / %s FE",
   "ae2lt.gui.lightning_simulation.progress": "Progress: %s%%",
   "ae2lt.gui.lightning_simulation.progress.energy": "%s / %s FE",
-  "gui.ae2lt.lightning_collector.cooldown": "Cooldown: %s",
-  "gui.ae2lt.lightning_collector.catalysis": "Catalysis: %s/%s (%s%%)",
   "gui.ae2lt.lightning_collector.high_output": "High Voltage Yield: %s",
-  "gui.ae2lt.lightning_collector.extreme_output": "Extreme Yield: %s, Feed: %s",
   "gui.ae2lt.lightning_collector.extreme_output.simple": "Extreme Yield: %s",
-  "gui.ae2lt.lightning_collector.stored_high": "ME High Voltage: %s",
-  "gui.ae2lt.lightning_collector.stored_extreme": "ME Extreme Voltage: %s",
-  "gui.ae2lt.lightning_collector.last_capture": "Last Capture: %s | Inserted %s | Fed %s",
   "item.ae2lt.overloaded_filter_component": "Overloaded Filter Component",
   "ae2lt.gui.interface_mode.normal": "Normal Mode",
   "ae2lt.gui.interface_mode.wireless": "Wireless Mode",
@@ -168,6 +158,5 @@
   "item.ae2lt.electro_chime_crystal.stage.1": "Stirring",
   "item.ae2lt.electro_chime_crystal.stage.2": "Resonant",
   "item.ae2lt.electro_chime_crystal.stage.3": "Overcharged",
-  "item.ae2lt.perfect_electro_chime_crystal.complete": "Cultivation Complete",
-  "item.ae2lt.perfect_electro_chime_crystal.output": "Stable Output: 32 EHV / 16 HV"
+  "item.ae2lt.perfect_electro_chime_crystal.complete": "Cultivation Complete"
 }

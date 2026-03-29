@@ -26,7 +26,5 @@ public class PerfectElectroChimeCrystalItem extends Item {
             TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.perfect_electro_chime_crystal.complete").withStyle(ChatFormatting.AQUA));
-        tooltipComponents.add(Component.translatable(
-                "item.ae2lt.perfect_electro_chime_crystal.output").withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 }

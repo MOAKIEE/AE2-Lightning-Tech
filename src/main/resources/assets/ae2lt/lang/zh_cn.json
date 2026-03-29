@@ -149,18 +149,8 @@
   "item.ae2lt.perfect_electro_chime_crystal": "完美电鸣水晶",
   "block.ae2lt.lightning_collector": "闪电收集器",
   "jade.ae2lt.lightning_collector.cooldown": "冷却：%s秒",
-  "jade.ae2lt.lightning_collector.crystal.normal": "水晶：%s/%s（%s%%）",
-  "jade.ae2lt.lightning_collector.crystal.perfect": "水晶：完美",
-  "jade.ae2lt.lightning_collector.stored_high": "高压库存：%s",
-  "jade.ae2lt.lightning_collector.stored_extreme": "极高压库存：%s",
-  "gui.ae2lt.lightning_collector.cooldown": "冷却：%s",
-  "gui.ae2lt.lightning_collector.catalysis": "催化：%s/%s（%s%%）",
   "gui.ae2lt.lightning_collector.high_output": "高压产量：%s",
-  "gui.ae2lt.lightning_collector.extreme_output": "极高压产量：%s，喂养：%s",
   "gui.ae2lt.lightning_collector.extreme_output.simple": "极高压产量：%s",
-  "gui.ae2lt.lightning_collector.stored_high": "ME 高压：%s",
-  "gui.ae2lt.lightning_collector.stored_extreme": "ME 极高压：%s",
-  "gui.ae2lt.lightning_collector.last_capture": "上次捕获：%s | 写入 %s | 喂养 %s",
   "item.ae2lt.electro_chime_crystal.catalysis": "催化：%s/%s",
   "item.ae2lt.electro_chime_crystal.percent": "进度：%s%%",
   "item.ae2lt.electro_chime_crystal.stage": "阶段：%s",
@@ -168,6 +158,5 @@
   "item.ae2lt.electro_chime_crystal.stage.1": "初鸣",
   "item.ae2lt.electro_chime_crystal.stage.2": "共振",
   "item.ae2lt.electro_chime_crystal.stage.3": "过载",
-  "item.ae2lt.perfect_electro_chime_crystal.complete": "培养完成",
-  "item.ae2lt.perfect_electro_chime_crystal.output": "稳定产出：32 极高压 / 16 高压"
+  "item.ae2lt.perfect_electro_chime_crystal.complete": "培养完成"
 }

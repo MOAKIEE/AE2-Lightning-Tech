@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.machine.lightningcollector.LightningCollectorInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
+import com.moakiee.ae2lt.registry.ModItems;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -117,6 +118,10 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
 
     @Override
     public int getCurrentProgress() {
+        ItemStack crystal = host.getInstalledCrystal();
+        if (crystal.is(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get())) {
+            return getMaxProgress();
+        }
         return catalysisValue;
     }
 
