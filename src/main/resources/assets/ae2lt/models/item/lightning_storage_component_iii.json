@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "ae2:item/cell_component_1k"
+    "layer0": "ae2:item/item_storage_cell_16k"
   }
 }

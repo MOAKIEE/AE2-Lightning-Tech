@@ -23,7 +23,7 @@ public final class LightningKeyType extends AEKeyType {
 
     @Override
     public int getAmountPerByte() {
-        return 64;
+        return 1;
     }
 
     @Override

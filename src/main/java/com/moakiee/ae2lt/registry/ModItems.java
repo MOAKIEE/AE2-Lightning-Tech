@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.item.LightningStorageCellItem;
+import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
@@ -52,27 +52,16 @@ public final class ModItems {
     public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
             ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
 
-    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_1K =
-            ITEMS.registerSimpleItem("lightning_storage_component_1k", new Item.Properties());
-    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_4K =
-            ITEMS.registerSimpleItem("lightning_storage_component_4k", new Item.Properties());
-    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_16K =
-            ITEMS.registerSimpleItem("lightning_storage_component_16k", new Item.Properties());
-    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_64K =
-            ITEMS.registerSimpleItem("lightning_storage_component_64k", new Item.Properties());
-    public static final DeferredItem<Item> LIGHTNING_STORAGE_COMPONENT_256K =
-            ITEMS.registerSimpleItem("lightning_storage_component_256k", new Item.Properties());
-
-    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_1K =
-            registerLightningStorageCell("lightning_storage_cell_1k", 1);
-    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_4K =
-            registerLightningStorageCell("lightning_storage_cell_4k", 4);
-    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_16K =
-            registerLightningStorageCell("lightning_storage_cell_16k", 16);
-    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_64K =
-            registerLightningStorageCell("lightning_storage_cell_64k", 64);
-    public static final DeferredItem<LightningStorageCellItem> LIGHTNING_STORAGE_CELL_256K =
-            registerLightningStorageCell("lightning_storage_cell_256k", 256);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
+            registerLightningStorageComponent("lightning_storage_component_i", 64, 32);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
+            registerLightningStorageComponent("lightning_storage_component_ii", 256, 128);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
+            registerLightningStorageComponent("lightning_storage_component_iii", 1024, 512);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
+            registerLightningStorageComponent("lightning_storage_component_iv", 4096, 2048);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
+            registerLightningStorageComponent("lightning_storage_component_v", 16384, 8192);
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
@@ -133,15 +122,18 @@ public final class ModItems {
     }
 
     public static void registerStorageCellModels() {
-        registerStorageCellModel(LIGHTNING_STORAGE_CELL_1K, "1k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_CELL_4K, "4k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_CELL_16K, "16k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_CELL_64K, "64k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_CELL_256K, "256k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_I, "1k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_II, "4k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III, "16k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
     }
 
-    private static DeferredItem<LightningStorageCellItem> registerLightningStorageCell(String id, int kilobytes) {
-        return ITEMS.register(id, () -> new LightningStorageCellItem(kilobytes));
+    private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(
+            String id,
+            int totalBytes,
+            double idleDrain) {
+        return ITEMS.register(id, () -> new LightningStorageComponentItem(totalBytes, idleDrain));
     }
 
     private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {

@@ -30,10 +30,10 @@ public final class LightningKeyClientInit {
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
         event.register(
                 (stack, tintIndex) -> FastColor.ARGB32.opaque(BasicStorageCell.getColor(stack, tintIndex)),
-                ModItems.LIGHTNING_STORAGE_CELL_1K.get(),
-                ModItems.LIGHTNING_STORAGE_CELL_4K.get(),
-                ModItems.LIGHTNING_STORAGE_CELL_16K.get(),
-                ModItems.LIGHTNING_STORAGE_CELL_64K.get(),
-                ModItems.LIGHTNING_STORAGE_CELL_256K.get());
+                ModItems.LIGHTNING_STORAGE_COMPONENT_I.get(),
+                ModItems.LIGHTNING_STORAGE_COMPONENT_II.get(),
+                ModItems.LIGHTNING_STORAGE_COMPONENT_III.get(),
+                ModItems.LIGHTNING_STORAGE_COMPONENT_IV.get(),
+                ModItems.LIGHTNING_STORAGE_COMPONENT_V.get());
     }
 }
