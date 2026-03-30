@@ -14,6 +14,28 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_TESLA_COIL_MATRIX", false);
     public static final SlotSemantic ATMOSPHERIC_IONIZER_CONDENSATE =
             SlotSemantics.register("AE2LT_ATMOSPHERIC_IONIZER_CONDENSATE", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_0 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_0", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_1 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_1", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_2 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_2", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_3 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_3", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_4 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_4", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_5 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_5", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_6 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_6", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_7 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_7", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_INPUT_8 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_INPUT_8", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_MATRIX =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_MATRIX", false);
+    public static final SlotSemantic OVERLOAD_FACTORY_OUTPUT_0 =
+            SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_OUTPUT_0", false);
 
     private Ae2ltSlotSemantics() {
     }

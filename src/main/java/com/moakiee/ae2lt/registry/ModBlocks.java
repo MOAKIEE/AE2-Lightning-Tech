@@ -5,6 +5,7 @@ import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
@@ -66,6 +67,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
             registerBlock("lightning_simulation_room", LightningSimulationChamberBlock::new);
+
+    public static final DeferredBlock<OverloadProcessingFactoryBlock> OVERLOAD_PROCESSING_FACTORY =
+            registerBlock("overload_processing_factory", OverloadProcessingFactoryBlock::new);
 
     public static final DeferredBlock<TeslaCoilBlock> TESLA_COIL =
             registerBlock("tesla_coil", TeslaCoilBlock::new);

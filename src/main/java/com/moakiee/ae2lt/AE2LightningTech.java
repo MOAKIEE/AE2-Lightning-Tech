@@ -13,6 +13,7 @@ import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import net.minecraft.core.Direction;
@@ -33,6 +34,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
@@ -90,6 +92,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.RAIN_CONDENSATE);
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
+                        output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
                         output.accept(ModItems.OVERLOADED_CABLE_WHITE);
@@ -176,12 +179,27 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
 
         event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
+                (blockEntity, side) -> blockEntity.getFluidHandlerCapability(side));
+
+        event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         event.registerBlockEntity(
@@ -213,6 +231,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -287,6 +310,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var overloadProcessingFactoryBlock = ModBlocks.OVERLOAD_PROCESSING_FACTORY.get();
+            var overloadProcessingFactoryBeType = ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get();
+            overloadProcessingFactoryBlock.setBlockEntity(
+                    OverloadProcessingFactoryBlockEntity.class,
+                    overloadProcessingFactoryBeType,
+                    null,
+                    null);
+
             var teslaCoilBlock = ModBlocks.TESLA_COIL.get();
             var teslaCoilBeType = ModBlockEntities.TESLA_COIL.get();
             teslaCoilBlock.setBlockEntity(
@@ -336,6 +367,9 @@ public class AE2LightningTech {
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    overloadProcessingFactoryBeType,
+                    overloadProcessingFactoryBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     teslaCoilBeType,
                     teslaCoilBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
@@ -347,6 +381,8 @@ public class AE2LightningTech {
             ModItems.registerStorageCellModels();
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
                     LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
+            Upgrades.add(AEItems.SPEED_CARD, ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(),
+                    OverloadProcessingFactoryBlockEntity.SPEED_CARD_SLOTS);
 
             Upgrades.add(AEItems.FUZZY_CARD, ModItems.OVERLOADED_FILTER_COMPONENT.get(), 1);
             Upgrades.add(AEItems.CRAFTING_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);

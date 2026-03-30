@@ -5,6 +5,7 @@ import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
@@ -41,6 +42,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             LightningSimulationChamberBlockEntity::new,
                             ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadProcessingFactoryBlockEntity>>
+            OVERLOAD_PROCESSING_FACTORY = BLOCK_ENTITY_TYPES.register(
+                    "overload_processing_factory",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadProcessingFactoryBlockEntity::new,
+                            ModBlocks.OVERLOAD_PROCESSING_FACTORY.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TeslaCoilBlockEntity>>

@@ -4,6 +4,7 @@
     "ae2lt:silicon_block",
     "ae2lt:overload_crystal_block",
     "ae2lt:lightning_collector",
+    "ae2lt:overload_processing_factory",
     "ae2lt:flawless_budding_overload_crystal",
     "ae2lt:flawed_budding_overload_crystal",
     "ae2lt:cracked_budding_overload_crystal",

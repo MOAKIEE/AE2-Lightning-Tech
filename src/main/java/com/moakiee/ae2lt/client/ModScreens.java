@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
+import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
@@ -31,6 +32,7 @@ public class ModScreens {
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
         event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
+        event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
         registerExtendedAEScreens(event);
@@ -58,6 +60,12 @@ public class ModScreens {
             LightningCollectorMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/lightning_collector.json");
         return new LightningCollectorScreen(menu, inv, title, style);
+    }
+
+    private static OverloadProcessingFactoryScreen createOverloadProcessingFactoryScreen(
+            OverloadProcessingFactoryMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/overload_processing_factory.json");
+        return new OverloadProcessingFactoryScreen(menu, inv, title, style);
     }
 
     private static TeslaCoilScreen createTeslaCoilScreen(
