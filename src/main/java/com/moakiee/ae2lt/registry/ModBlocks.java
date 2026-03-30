@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
@@ -68,6 +69,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<TeslaCoilBlock> TESLA_COIL =
             registerBlock("tesla_coil", TeslaCoilBlock::new);
+
+    public static final DeferredBlock<AtmosphericIonizerBlock> ATMOSPHERIC_IONIZER =
+            registerBlock("atmospheric_ionizer", AtmosphericIonizerBlock::new);
 
     public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
             registerBlock("overloaded_controller", OverloadedControllerBlock::new);

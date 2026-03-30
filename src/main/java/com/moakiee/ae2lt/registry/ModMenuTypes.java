@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
@@ -45,6 +46,11 @@ public final class ModMenuTypes {
             TESLA_COIL = MENU_TYPES.register(
                     "tesla_coil",
                     () -> TeslaCoilMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<AtmosphericIonizerMenu>>
+            ATMOSPHERIC_IONIZER = MENU_TYPES.register(
+                    "atmospheric_ionizer",
+                    () -> AtmosphericIonizerMenu.TYPE);
 
     private ModMenuTypes() {
     }

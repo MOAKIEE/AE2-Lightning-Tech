@@ -12,6 +12,8 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_TESLA_COIL_DUST", false);
     public static final SlotSemantic TESLA_COIL_MATRIX =
             SlotSemantics.register("AE2LT_TESLA_COIL_MATRIX", false);
+    public static final SlotSemantic ATMOSPHERIC_IONIZER_CONDENSATE =
+            SlotSemantics.register("AE2LT_ATMOSPHERIC_IONIZER_CONDENSATE", false);
 
     private Ae2ltSlotSemantics() {
     }

@@ -99,6 +99,50 @@ public final class AE2LTCommonConfig {
         return VALUES.teslaCoilExtremeHighVoltageEnergy.get();
     }
 
+    public static int atmosphericIonizerEnergyCapacity() {
+        return VALUES.atmosphericIonizerEnergyCapacity.get();
+    }
+
+    public static int atmosphericIonizerMaxReceive() {
+        return VALUES.atmosphericIonizerMaxReceive.get();
+    }
+
+    public static int atmosphericIonizerClearEnergy() {
+        return VALUES.atmosphericIonizerClearEnergy.get();
+    }
+
+    public static int atmosphericIonizerRainEnergy() {
+        return VALUES.atmosphericIonizerRainEnergy.get();
+    }
+
+    public static int atmosphericIonizerThunderstormEnergy() {
+        return VALUES.atmosphericIonizerThunderstormEnergy.get();
+    }
+
+    public static int atmosphericIonizerClearDurationMin() {
+        return VALUES.atmosphericIonizerClearDurationMin.get();
+    }
+
+    public static int atmosphericIonizerClearDurationMax() {
+        return VALUES.atmosphericIonizerClearDurationMax.get();
+    }
+
+    public static int atmosphericIonizerRainDurationMin() {
+        return VALUES.atmosphericIonizerRainDurationMin.get();
+    }
+
+    public static int atmosphericIonizerRainDurationMax() {
+        return VALUES.atmosphericIonizerRainDurationMax.get();
+    }
+
+    public static int atmosphericIonizerThunderstormDurationMin() {
+        return VALUES.atmosphericIonizerThunderstormDurationMin.get();
+    }
+
+    public static int atmosphericIonizerThunderstormDurationMax() {
+        return VALUES.atmosphericIonizerThunderstormDurationMax.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.DoubleValue lightningCollectorCrystalFeedRatio;
@@ -123,6 +167,17 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilHighVoltageEnergy;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageEnergy;
+        private final ModConfigSpec.IntValue atmosphericIonizerEnergyCapacity;
+        private final ModConfigSpec.IntValue atmosphericIonizerMaxReceive;
+        private final ModConfigSpec.IntValue atmosphericIonizerClearEnergy;
+        private final ModConfigSpec.IntValue atmosphericIonizerRainEnergy;
+        private final ModConfigSpec.IntValue atmosphericIonizerThunderstormEnergy;
+        private final ModConfigSpec.IntValue atmosphericIonizerClearDurationMin;
+        private final ModConfigSpec.IntValue atmosphericIonizerClearDurationMax;
+        private final ModConfigSpec.IntValue atmosphericIonizerRainDurationMin;
+        private final ModConfigSpec.IntValue atmosphericIonizerRainDurationMax;
+        private final ModConfigSpec.IntValue atmosphericIonizerThunderstormDurationMin;
+        private final ModConfigSpec.IntValue atmosphericIonizerThunderstormDurationMax;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
@@ -175,6 +230,42 @@ public final class AE2LTCommonConfig {
             teslaCoilExtremeHighVoltageEnergy = builder
                     .comment("FE required to refine one extreme high voltage lightning.")
                     .defineInRange("extremeHighVoltage.energy", 500_000, 1, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("atmosphericIonizer");
+            atmosphericIonizerEnergyCapacity = builder
+                    .comment("Atmospheric Ionizer internal FE buffer.")
+                    .defineInRange("energyCapacity", 8_000_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerMaxReceive = builder
+                    .comment("Atmospheric Ionizer max FE receive per transfer operation.")
+                    .defineInRange("maxReceive", 200_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerClearEnergy = builder
+                    .comment("FE required for the clear condensate.")
+                    .defineInRange("clear.energy", 500_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerRainEnergy = builder
+                    .comment("FE required for the rain condensate.")
+                    .defineInRange("rain.energy", 1_000_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerThunderstormEnergy = builder
+                    .comment("FE required for the thunderstorm condensate.")
+                    .defineInRange("thunderstorm.energy", 8_000_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerClearDurationMin = builder
+                    .comment("Minimum clear-weather duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("clear.durationMin", 12_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerClearDurationMax = builder
+                    .comment("Maximum clear-weather duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("clear.durationMax", 180_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerRainDurationMin = builder
+                    .comment("Minimum rain duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("rain.durationMin", 12_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerRainDurationMax = builder
+                    .comment("Maximum rain duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("rain.durationMax", 24_000, 1, Integer.MAX_VALUE);
+            atmosphericIonizerThunderstormDurationMin = builder
+                    .comment("Minimum thunderstorm duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("thunderstorm.durationMin", 3_600, 1, Integer.MAX_VALUE);
+            atmosphericIonizerThunderstormDurationMax = builder
+                    .comment("Maximum thunderstorm duration applied by the Atmospheric Ionizer.")
+                    .defineInRange("thunderstorm.durationMax", 15_600, 1, Integer.MAX_VALUE);
             builder.pop();
         }
     }

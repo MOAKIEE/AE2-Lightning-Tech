@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -63,6 +64,18 @@ public final class ModItems {
             "perfect_electro_chime_crystal",
             PerfectElectroChimeCrystalItem::new,
             new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<WeatherCondensateItem> CLEAR_CONDENSATE = ITEMS.register(
+            "clear_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.CLEAR, new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<WeatherCondensateItem> RAIN_CONDENSATE = ITEMS.register(
+            "rain_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.RAIN, new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<WeatherCondensateItem> THUNDERSTORM_CONDENSATE = ITEMS.register(
+            "thunderstorm_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
             registerLightningStorageComponent("lightning_storage_component_i", 64, 32);

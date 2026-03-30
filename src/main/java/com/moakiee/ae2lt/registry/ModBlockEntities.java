@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
@@ -48,6 +49,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             TeslaCoilBlockEntity::new,
                             ModBlocks.TESLA_COIL.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AtmosphericIonizerBlockEntity>>
+            ATMOSPHERIC_IONIZER = BLOCK_ENTITY_TYPES.register(
+                    "atmospheric_ionizer",
+                    () -> BlockEntityType.Builder.of(
+                            AtmosphericIonizerBlockEntity::new,
+                            ModBlocks.ATMOSPHERIC_IONIZER.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPatternProviderBlockEntity>>

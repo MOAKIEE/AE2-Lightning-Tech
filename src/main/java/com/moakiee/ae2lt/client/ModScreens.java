@@ -10,6 +10,7 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
@@ -31,6 +32,7 @@ public class ModScreens {
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
         event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
+        event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
         registerExtendedAEScreens(event);
     }
 
@@ -62,6 +64,12 @@ public class ModScreens {
             TeslaCoilMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/tesla_coil.json");
         return new TeslaCoilScreen(menu, inv, title, style);
+    }
+
+    private static AtmosphericIonizerScreen createAtmosphericIonizerScreen(
+            AtmosphericIonizerMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/atmospheric_ionizer.json");
+        return new AtmosphericIonizerScreen(menu, inv, title, style);
     }
 
     private static void registerExtendedAEScreens(RegisterMenuScreensEvent event) {

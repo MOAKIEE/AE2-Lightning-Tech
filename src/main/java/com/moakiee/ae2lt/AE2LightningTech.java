@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.registry.ModAEKeyTypes;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -84,6 +85,10 @@ public class AE2LightningTech {
                         output.accept(ModItems.ELECTRO_CHIME_CRYSTAL);
                         output.accept(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL);
                         output.accept(ModBlocks.TESLA_COIL);
+                        output.accept(ModBlocks.ATMOSPHERIC_IONIZER);
+                        output.accept(ModItems.CLEAR_CONDENSATE);
+                        output.accept(ModItems.RAIN_CONDENSATE);
+                        output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -170,6 +175,11 @@ public class AE2LightningTech {
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
 
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
@@ -177,6 +187,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
@@ -198,6 +213,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -275,6 +295,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var atmosphericIonizerBlock = ModBlocks.ATMOSPHERIC_IONIZER.get();
+            var atmosphericIonizerBeType = ModBlockEntities.ATMOSPHERIC_IONIZER.get();
+            atmosphericIonizerBlock.setBlockEntity(
+                    AtmosphericIonizerBlockEntity.class,
+                    atmosphericIonizerBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(
@@ -310,6 +338,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     teslaCoilBeType,
                     teslaCoilBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    atmosphericIonizerBeType,
+                    atmosphericIonizerBlock.asItem());
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);

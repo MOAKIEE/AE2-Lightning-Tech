@@ -272,11 +272,11 @@ public class LightningBlastTask {
     }
 
     private void tryStartShortThunderstorm() {
-        if (!supportsWeather(this.level)) {
+        if (!WeatherControlHelper.supportsWeather(this.level)) {
             return;
         }
 
-        this.level.setWeatherParameters(0, DEFAULT_SHORT_THUNDERSTORM_TICKS, true, true);
+        WeatherControlHelper.setThunderstorm(this.level, DEFAULT_SHORT_THUNDERSTORM_TICKS);
     }
 
     private static boolean shouldDestroy(BlockState state, ServerLevel level, BlockPos pos) {
@@ -303,10 +303,6 @@ public class LightningBlastTask {
             }
         }
         return false;
-    }
-
-    private static boolean supportsWeather(ServerLevel level) {
-        return level.dimensionType().hasSkyLight() && !level.dimensionType().hasCeiling();
     }
 
     private List<BlockPos> buildShell(int shellRadius) {
