@@ -19,10 +19,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.common.SoundActions;
 import net.neoforged.neoforge.fluids.FluidType;
+import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import appeng.api.orientation.IOrientationStrategy;
@@ -34,13 +35,12 @@ import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 
 public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadProcessingFactoryBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
 
     public OverloadProcessingFactoryBlock() {
         super(metalProps().noOcclusion());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
-                .setValue(FACING, Direction.NORTH));
+                .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
     }
 
     @Override
@@ -135,14 +135,14 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
         return true;
     }
 
-    private void playBucketSound(Player player, Level level, BlockPos pos, net.neoforged.neoforge.fluids.FluidStack fluid, boolean fillBucket) {
+    private void playBucketSound(Player player, Level level, BlockPos pos, FluidStack fluid, boolean fillBucket) {
         SoundEvent sound = fluid.getFluidType().getSound(
                 player,
                 level,
                 pos,
                 fillBucket
-                        ? net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY
-                        : net.neoforged.neoforge.common.SoundActions.BUCKET_EMPTY);
+                        ? SoundActions.BUCKET_FILL
+                        : SoundActions.BUCKET_EMPTY);
         if (sound == null) {
             sound = fillBucket
                     ? (fluid.is(FluidTags.LAVA) ? SoundEvents.BUCKET_FILL_LAVA : SoundEvents.BUCKET_FILL)
