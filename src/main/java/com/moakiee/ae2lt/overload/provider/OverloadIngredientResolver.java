@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.overload.provider;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Objects;
 
 import appeng.api.networking.security.IActionSource;

@@ -3,6 +3,10 @@ package com.moakiee.ae2lt.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
+
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -95,9 +99,10 @@ public class WirelessConnectorRenderer {
         poseStack.translate(-cam.x, -cam.y, -cam.z);
 
         // Resolve selected host for special coloring and preview rendering.
-        var selectedPos = getSelectedHostPos(stack);
-        var selectedDim = getSelectedHostDim(stack);
-        var selectedHostType = getSelectedHostType(stack);
+        var selectedHost = getSelectedHost(stack);
+        var selectedPos = selectedHost != null ? selectedHost.pos() : null;
+        var selectedDim = selectedHost != null ? selectedHost.dimension() : null;
+        var selectedHostType = selectedHost != null ? selectedHost.hostType() : null;
         boolean hasSelection = selectedPos != null
                 && selectedDim != null
                 && selectedHostType != null
@@ -173,13 +178,15 @@ public class WirelessConnectorRenderer {
                         bhr.getBlockPos(),
                         net.minecraft.client.gui.screens.Screen.hasControlDown());
                 Direction lookFace = bhr.getDirection();
+                var existingConnections = collectConnectionsForFace(
+                        selectedProvider.getConnections(),
+                        mc.level,
+                        lookFace,
+                        c -> c.dimension(),
+                        c -> c.pos(),
+                        c -> c.boundFace());
                 for (var lookPos : previewTargets) {
-                    boolean alreadyConnected = selectedProvider.getConnections().stream()
-                            .anyMatch(c -> c.dimension().equals(mc.level.dimension())
-                                    && c.pos().equals(lookPos)
-                                    && c.boundFace() == lookFace);
-
-                    if (!alreadyConnected) {
+                    if (!existingConnections.contains(lookPos)) {
                         renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
                         renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
                     }
@@ -196,13 +203,15 @@ public class WirelessConnectorRenderer {
                         bhr.getBlockPos(),
                         net.minecraft.client.gui.screens.Screen.hasControlDown());
                 Direction lookFace = bhr.getDirection();
+                var existingConnections = collectConnectionsForFace(
+                        selectedInterface.getConnections(),
+                        mc.level,
+                        lookFace,
+                        c -> c.dimension(),
+                        c -> c.pos(),
+                        c -> c.boundFace());
                 for (var lookPos : previewTargets) {
-                    boolean alreadyConnected = selectedInterface.getConnections().stream()
-                            .anyMatch(c -> c.dimension().equals(mc.level.dimension())
-                                    && c.pos().equals(lookPos)
-                                    && c.boundFace() == lookFace);
-
-                    if (!alreadyConnected) {
+                    if (!existingConnections.contains(lookPos)) {
                         renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
                         renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
                     }
@@ -285,16 +294,6 @@ public class WirelessConnectorRenderer {
         vc.addVertex(mat, x4, y4, z4).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
     }
 
-    private static void line(VertexConsumer vc, Matrix4f mat, int[] c,
-            float x1, float y1, float z1, float x2, float y2, float z2) {
-        // Compute direction for normal
-        float dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
-        float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (len < 1e-6f) return;
-        float nx = dx / len, ny = dy / len, nz = dz / len;
-        vc.addVertex(mat, x1, y1, z1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x2, y2, z2).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-    }
 
     /**
      * Render a single face overlay (quad) on the given block face.
@@ -393,16 +392,21 @@ public class WirelessConnectorRenderer {
     private static final String TAG_POS = "Pos";
     private static final String TAG_HOST_TYPE = "HostType";
 
-    private static BlockPos getSelectedHostPos(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
-            return null;
+    private static <T> Set<BlockPos> collectConnectionsForFace(Iterable<T> connections,
+            Level level, Direction face,
+            Function<T, ResourceKey<Level>> dimensionGetter,
+            Function<T, BlockPos> posGetter,
+            Function<T, Direction> faceGetter) {
+        Set<BlockPos> result = new HashSet<>();
+        for (var conn : connections) {
+            if (dimensionGetter.apply(conn).equals(level.dimension()) && faceGetter.apply(conn) == face) {
+                result.add(posGetter.apply(conn));
+            }
         }
-        var sel = tag.getCompound(TAG_SELECTED);
-        return BlockPos.of(sel.getLong(TAG_POS));
+        return result;
     }
 
-    private static ResourceKey<Level> getSelectedHostDim(ItemStack stack) {
+    private static SelectedHost getSelectedHost(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
             return null;
@@ -412,17 +416,14 @@ public class WirelessConnectorRenderer {
         if (dimStr.isEmpty()) {
             return null;
         }
-        return ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr));
+        return new SelectedHost(
+                BlockPos.of(sel.getLong(TAG_POS)),
+                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr)),
+                sel.contains(TAG_HOST_TYPE, CompoundTag.TAG_STRING)
+                        ? sel.getString(TAG_HOST_TYPE)
+                        : OverloadedWirelessConnectorItem.HOST_PROVIDER);
     }
 
-    private static String getSelectedHostType(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
-            return null;
-        }
-        var sel = tag.getCompound(TAG_SELECTED);
-        return sel.contains(TAG_HOST_TYPE, CompoundTag.TAG_STRING)
-                ? sel.getString(TAG_HOST_TYPE)
-                : OverloadedWirelessConnectorItem.HOST_PROVIDER;
+    private record SelectedHost(BlockPos pos, ResourceKey<Level> dimension, String hostType) {
     }
 }

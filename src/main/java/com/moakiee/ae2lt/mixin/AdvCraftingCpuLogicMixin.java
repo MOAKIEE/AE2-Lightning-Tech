@@ -38,6 +38,12 @@ import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 @Pseudo
 @Mixin(targets = "net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic", remap = false)
 public abstract class AdvCraftingCpuLogicMixin {
+    @Unique
+    private static final org.slf4j.Logger AE2LT_LOGGER = com.mojang.logging.LogUtils.getLogger();
+
+    @Unique
+    private static final java.util.Set<String> AE2LT_LOGGED_REFLECTION_FAILURES =
+            java.util.Collections.synchronizedSet(new java.util.HashSet<>());
 
     // --- Safe reflection lookups: return null on failure instead of crashing ---
 
@@ -367,7 +373,8 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD == null) return;
         try {
             AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD.setLong(job, remainingAmount);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException e) {
+            ae2lt$logReflectionFailure("set job remaining amount", e);
         }
     }
 
@@ -385,7 +392,8 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (timeTracker == null) return;
         try {
             AE2LT_ADV_DECREMENT_ITEMS_METHOD.invoke(timeTracker, amount, keyType);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException e) {
+            ae2lt$logReflectionFailure("decrement job items", e);
         }
     }
 
@@ -394,7 +402,8 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_FINISH_JOB_METHOD == null) return;
         try {
             AE2LT_ADV_FINISH_JOB_METHOD.invoke(this, success);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException e) {
+            ae2lt$logReflectionFailure("finish job", e);
         }
     }
 
@@ -403,7 +412,15 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (AE2LT_ADV_POST_CHANGE_METHOD == null) return;
         try {
             AE2LT_ADV_POST_CHANGE_METHOD.invoke(this, what);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException e) {
+            ae2lt$logReflectionFailure("post change", e);
+        }
+    }
+
+    @Unique
+    private static void ae2lt$logReflectionFailure(String action, ReflectiveOperationException exception) {
+        if (AE2LT_LOGGED_REFLECTION_FAILURES.add(action)) {
+            AE2LT_LOGGER.warn("AE2LT AdvancedAE reflection failed while trying to {}.", action, exception);
         }
     }
 
@@ -415,7 +432,8 @@ public abstract class AdvCraftingCpuLogicMixin {
         if (field == null) return null;
         try {
             return field.get(target);
-        } catch (ReflectiveOperationException ignored) {
+        } catch (ReflectiveOperationException e) {
+            ae2lt$logReflectionFailure("read reflective field", e);
             return null;
         }
     }

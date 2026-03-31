@@ -16,7 +16,6 @@ import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
-import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -34,7 +33,6 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;

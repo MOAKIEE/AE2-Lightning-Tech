@@ -144,10 +144,15 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
                         IActionSource.ofMachine(this))
                 : 0L;
 
+        boolean captured = inserted > 0 || fedAmount > 0;
+        if (!captured) {
+            return false;
+        }
+
         this.cooldownTicks = AE2LTCommonConfig.lightningCollectorCooldownTicks();
         saveChanges();
         markForClientUpdate();
-        return inserted > 0 || fedAmount > 0;
+        return true;
     }
 
     public void openMenu(Player player, MenuHostLocator locator) {

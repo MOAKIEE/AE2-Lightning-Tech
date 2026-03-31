@@ -15,6 +15,8 @@ import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.Vec3;
 
 public class LightningBlastTask {
+    public record TickResult(int consumedBlocks, int consumedLightning) {}
+
     public static final int DEFAULT_RADIUS = 48;
     public static final int DEFAULT_BLOCKS_PER_TICK = 1800;
     public static final int DEFAULT_INITIAL_LIGHTNING_COUNT = 16;
@@ -99,19 +101,19 @@ public class LightningBlastTask {
         return this.completed;
     }
 
-    public int tick(int blockBudget, int lightningBudget) {
+    public TickResult tick(int blockBudget, int lightningBudget) {
         if (this.completed) {
-            return 0;
+            return new TickResult(0, 0);
         }
 
         int consumedLightning = processLightning(lightningBudget);
-        processShells(blockBudget);
+        int consumedBlocks = processShells(blockBudget);
 
         if (this.scanFinished && this.remainingAftershockTicks <= 0 && this.pendingLightningStrikes <= 0) {
             this.completed = true;
         }
 
-        return consumedLightning;
+        return new TickResult(consumedBlocks, consumedLightning);
     }
 
     private int processLightning(int lightningBudget) {
@@ -147,9 +149,9 @@ public class LightningBlastTask {
         return spawned;
     }
 
-    private void processShells(int blockBudget) {
+    private int processShells(int blockBudget) {
         if (this.scanFinished || blockBudget <= 0) {
-            return;
+            return 0;
         }
 
         int destroyLimit = Math.min(this.blocksPerTick, blockBudget);
@@ -186,6 +188,8 @@ public class LightningBlastTask {
             destroyedThisTick++;
             this.destroyedBlocks++;
         }
+
+        return destroyedThisTick;
     }
 
     private void advanceShell() {

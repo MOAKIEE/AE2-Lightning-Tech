@@ -123,8 +123,9 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
         this.exportModeButton.setState(menu.exportMode == OverloadedInterfaceBlockEntity.ExportMode.AUTO.ordinal());
         this.speedButton.setState(menu.ioSpeedMode == 1);
 
-        var impMode = OverloadedInterfaceBlockEntity.ImportMode.values()[
-                Math.min(menu.importMode, OverloadedInterfaceBlockEntity.ImportMode.values().length - 1)];
+        int importModeIndex = Math.max(0,
+                Math.min(menu.importMode, OverloadedInterfaceBlockEntity.ImportMode.values().length - 1));
+        var impMode = OverloadedInterfaceBlockEntity.ImportMode.values()[importModeIndex];
         switch (impMode) {
             case OFF -> {
                 importModeButton.setState(false);
@@ -197,10 +198,6 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
         }
     }
 
-    @Override
-    public void render(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        super.render(guiGraphics, mouseX, mouseY, partialTick);
-    }
 
     static class SetAmountButton extends appeng.client.gui.widgets.IconButton {
         public SetAmountButton(OnPress onPress) {

@@ -51,7 +51,6 @@ import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInve
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberLogic;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationLockedRecipe;
-import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeCandidate;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -149,7 +148,11 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             return;
         }
 
-        this.consumedEnergy = Math.min(Long.MAX_VALUE, this.consumedEnergy + amount);
+        if (amount > Long.MAX_VALUE - this.consumedEnergy) {
+            this.consumedEnergy = Long.MAX_VALUE;
+        } else {
+            this.consumedEnergy += amount;
+        }
         saveChanges();
         markForClientUpdate();
     }

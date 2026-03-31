@@ -2,8 +2,6 @@ package com.moakiee.ae2lt.block;
 
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;

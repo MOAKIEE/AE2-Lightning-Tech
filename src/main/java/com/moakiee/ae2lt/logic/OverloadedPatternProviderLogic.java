@@ -14,12 +14,10 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -1617,10 +1615,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             valid.add(conn);
         }
         validConnectionsCache = List.copyOf(valid);
+        pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
         lastConnectionValidation = gameTick;
         connectionsDirty = false;
         return validConnectionsCache;
+    }
+
+    private void pruneMachineBackoffState(List<WirelessConnection> validConnections) {
+        var activeMachineIds = new java.util.HashSet<MachineId>();
+        for (var conn : validConnections) {
+            activeMachineIds.add(new MachineId(conn.dimension(), conn.pos().asLong(), conn.boundFace()));
+        }
+        machineNextPoll.keySet().retainAll(activeMachineIds);
+        machineBackoff.keySet().retainAll(activeMachineIds);
     }
 
     // ---- Timing Wheel scheduling operations ----------------------------------------
@@ -1970,53 +1978,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         .insert(feKey, amount, Actionable.MODULATE, wirelessSource));
     }
 
-    private static final ResourceLocation APPFLUX_INDUCTION_CARD_ID =
-            ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
     private static final Item APPFLUX_INDUCTION_CARD =
-            BuiltInRegistries.ITEM.get(APPFLUX_INDUCTION_CARD_ID);
+            AppFluxHelper.getInductionCard();
 
     // ---- Cached reflection results (resolved once at class-load, never per-tick) ----
 
     /** Cached AEKey for Applied Flux FE energy type. Null if Applied Flux is not loaded. */
     @Nullable
-    private static final AEKey CACHED_APPFLUX_FE_KEY;
+    private static final AEKey CACHED_APPFLUX_FE_KEY = AppFluxHelper.FE_KEY;
 
     /** Cached transfer rate from Applied Flux config. 0 if not available. */
-    private static final int CACHED_APPFLUX_TRANSFER_RATE;
-
-    static {
-        AEKey resolvedKey = null;
-        try {
-            var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
-            @SuppressWarnings("unchecked")
-            Class<? extends Enum> enumClass = (Class<? extends Enum>) energyTypeClass.asSubclass(Enum.class);
-            Object feType = Enum.valueOf(enumClass, "FE");
-
-            var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
-            var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
-            Object key = ofMethod.invoke(null, feType);
-            resolvedKey = key instanceof AEKey aeKey ? aeKey : null;
-        } catch (ReflectiveOperationException ignored) {
-            // Applied Flux not loaded or API changed
-        }
-        CACHED_APPFLUX_FE_KEY = resolvedKey;
-
-        int resolvedRate = 0;
-        try {
-            var configClass = Class.forName("com.glodblock.github.appflux.config.AFConfig");
-            var method = configClass.getMethod("getFluxAccessorIO");
-            Object result = method.invoke(null);
-            if (result instanceof Number num) {
-                long value = num.longValue();
-                if (value > 0) {
-                    resolvedRate = (int) Math.min(Integer.MAX_VALUE, value);
-                }
-            }
-        } catch (ReflectiveOperationException ignored) {
-            // Applied Flux not loaded or API changed
-        }
-        CACHED_APPFLUX_TRANSFER_RATE = resolvedRate;
-    }
+    private static final int CACHED_APPFLUX_TRANSFER_RATE = AppFluxHelper.TRANSFER_RATE;
 
 
     // ---- SavedData persistence helpers ------------------------------------------
@@ -2080,9 +2052,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     @Nullable
     private static Item getAppliedFluxInductionCard() {
-        if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
-            return null;
-        }
         return APPFLUX_INDUCTION_CARD;
     }
 
@@ -2190,8 +2159,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
-        super.writeToNBT(tag, registries);
-            accessor.setPatternInventory(realInv);
+            try {
+                super.writeToNBT(tag, registries);
+            } finally {
+                accessor.setPatternInventory(realInv);
+            }
             saveToSavedData();
         } else {
             super.writeToNBT(tag, registries);

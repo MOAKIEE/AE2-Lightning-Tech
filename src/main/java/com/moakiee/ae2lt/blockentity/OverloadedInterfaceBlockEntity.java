@@ -300,6 +300,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         ScheduleEntry(WirelessConnection c, ConnectionState s) { conn = c; state = s; }
     }
 
+    private record ExtractedShare(MEStorage storage, long amount) {}
+
     @SuppressWarnings("unchecked")
     private final List<ScheduleEntry>[] energyWheel = new ArrayList[WHEEL_SLOTS];
     { for (int i = 0; i < WHEEL_SLOTS; i++) energyWheel[i] = new ArrayList<>(); }
@@ -332,6 +334,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private final List<WirelessConnection> connections = new ArrayList<>();
     private @Nullable DirectMEInsertInventory directInsertInv;
     private boolean ejectRegistered = false;
+    private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
     public int getLastViewedPage() { return lastViewedPage; }
@@ -346,6 +349,15 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     public OverloadedInterfaceBlockEntity(BlockPos pos, BlockState state) {
         this(ModBlockEntities.OVERLOADED_INTERFACE.get(), pos, state);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        unloadingChunk = false;
+        if (level != null && !level.isClientSide() && importMode == ImportMode.EJECT) {
+            refreshEjectRegistrations();
+        }
     }
 
     @Override
@@ -618,22 +630,26 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
             long extractBudget = Math.min(toTransfer, meCanAccept);
             long totalExtracted = 0;
-            MEStorage lastExtractedWrapper = null;
+            var extractedShares = new ArrayList<ExtractedShare>();
 
             for (var wrapper : wrappers.values()) {
                 if (totalExtracted >= extractBudget) break;
                 long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
                 if (extracted > 0) {
                     totalExtracted += extracted;
-                    lastExtractedWrapper = wrapper;
+                    extractedShares.add(new ExtractedShare(wrapper, extracted));
                 }
             }
 
             if (totalExtracted <= 0) continue;
 
             long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
-            if (totalExtracted > actualInserted && lastExtractedWrapper != null) {
-                lastExtractedWrapper.insert(key, totalExtracted - actualInserted, Actionable.MODULATE, src);
+            long rollback = totalExtracted - actualInserted;
+            for (int i = extractedShares.size() - 1; i >= 0 && rollback > 0; i--) {
+                var share = extractedShares.get(i);
+                long toReturn = Math.min(rollback, share.amount());
+                long restored = share.storage().insert(key, toReturn, Actionable.MODULATE, src);
+                rollback -= restored;
             }
             moved  += (int) actualInserted;
             budget -= (int) actualInserted;
@@ -977,7 +993,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private void unregisterEject() {
-        if (!ejectRegistered || level==null) return;
+        if (level==null) return;
         var removed = EjectModeRegistry.unregisterAll(this, true);
         if (level instanceof ServerLevel sl) {
             var srv = sl.getServer();
@@ -989,8 +1005,19 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         ejectRegistered = false;
     }
 
-    @Override public void setRemoved()      { unregisterEject(); super.setRemoved(); }
-    @Override public void onChunkUnloaded() { super.onChunkUnloaded(); unregisterEject(); }
+    @Override
+    public void setRemoved() {
+        if (!unloadingChunk) {
+            unregisterEject();
+        }
+        super.setRemoved();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        unloadingChunk = true;
+        super.onChunkUnloaded();
+    }
 
     // ══════════════════════════════════════════════════════════════════════
     //  NBT
@@ -1025,7 +1052,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
 
-        var newInterfaceMode = InterfaceMode.values()[data.readByte()];
+        int interfaceOrd = data.readByte();
+        var newInterfaceMode = interfaceOrd >= 0 && interfaceOrd < InterfaceMode.values().length
+                ? InterfaceMode.values()[interfaceOrd] : InterfaceMode.NORMAL;
 
         int speedOrd = data.readByte();
         var newIoSpeedMode = speedOrd >= 0 && speedOrd < IOSpeedMode.values().length

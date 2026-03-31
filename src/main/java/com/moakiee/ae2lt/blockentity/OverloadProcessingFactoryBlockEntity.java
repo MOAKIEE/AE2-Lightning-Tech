@@ -161,7 +161,11 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (amount <= 0L) {
             return;
         }
-        this.consumedEnergy = Math.min(Long.MAX_VALUE, this.consumedEnergy + amount);
+        if (amount > Long.MAX_VALUE - this.consumedEnergy) {
+            this.consumedEnergy = Long.MAX_VALUE;
+        } else {
+            this.consumedEnergy += amount;
+        }
         saveChanges();
         markForClientUpdate();
     }
@@ -410,6 +414,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             processingTicksSpent = 0;
         } else {
             consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
+            processingTicksSpent = Math.min(processingTicksSpent, OverloadProcessingFactoryLogic.MIN_PROCESS_TICKS);
         }
         working = lockedRecipe != null;
     }
@@ -481,8 +486,9 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         for (ItemStack output : outputs) {
             int remaining = output.getCount();
             for (int slot = OverloadProcessingFactoryInventory.SLOT_OUTPUT_0;
-                 slot >= OverloadProcessingFactoryInventory.SLOT_OUTPUT_0 && remaining > 0;
-                 slot--) {
+                 slot < OverloadProcessingFactoryInventory.SLOT_OUTPUT_0
+                         + OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT && remaining > 0;
+                 slot++) {
                 ItemStack current = inventory.getStackInSlot(slot);
                 if (current.isEmpty() || !ItemStack.isSameItemSameComponents(current, output)) {
                     continue;

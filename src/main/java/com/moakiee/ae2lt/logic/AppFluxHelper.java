@@ -58,9 +58,15 @@ public final class AppFluxHelper {
         return FE_KEY != null && TRANSFER_RATE > 0;
     }
 
-    public static boolean isInductionCard(Item item) {
+    @Nullable
+    public static Item getInductionCard() {
         Item card = BuiltInRegistries.ITEM.get(INDUCTION_CARD_ID);
-        return card != null && card != Items.AIR && card == item;
+        return card != null && card != Items.AIR ? card : null;
+    }
+
+    public static boolean isInductionCard(Item item) {
+        Item card = getInductionCard();
+        return card != null && card == item;
     }
 
     private AppFluxHelper() {}
