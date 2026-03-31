@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.machine.atmosphericionizer;
 public enum AtmosphericIonizerStatus {
     IDLE("ae2lt.gui.atmospheric_ionizer.status.idle"),
     CHARGING("ae2lt.gui.atmospheric_ionizer.status.charging"),
-    WAITING_FE("ae2lt.gui.atmospheric_ionizer.status.waiting_fe"),
+    WAITING_AE("ae2lt.gui.atmospheric_ionizer.status.waiting_ae"),
     WAITING_INPUT("ae2lt.gui.atmospheric_ionizer.status.waiting_input"),
     INVALID_DIMENSION("ae2lt.gui.atmospheric_ionizer.status.invalid_dimension"),
     TARGET_ALREADY_ACTIVE("ae2lt.gui.atmospheric_ionizer.status.target_active"),

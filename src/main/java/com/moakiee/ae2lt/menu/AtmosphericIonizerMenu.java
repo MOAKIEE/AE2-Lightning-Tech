@@ -10,7 +10,6 @@ import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
@@ -30,14 +29,12 @@ public class AtmosphericIonizerMenu extends AEBaseMenu {
             .buildUnregistered(ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "atmospheric_ionizer"));
 
     @GuiSync(50)
-    public long storedEnergy;
-    @GuiSync(51)
     public long consumedEnergy;
-    @GuiSync(52)
+    @GuiSync(51)
     public long totalEnergy;
-    @GuiSync(53)
+    @GuiSync(52)
     public int statusOrdinal;
-    @GuiSync(54)
+    @GuiSync(53)
     public int typeOrdinal;
 
     private final AtmosphericIonizerBlockEntity host;
@@ -55,7 +52,6 @@ public class AtmosphericIonizerMenu extends AEBaseMenu {
     @Override
     public void broadcastChanges() {
         if (isServerSide()) {
-            storedEnergy = host.getEnergyStorage().getStoredEnergyLong();
             consumedEnergy = host.getConsumedEnergy();
             totalEnergy = host.getTotalEnergy();
             statusOrdinal = host.getStatus().ordinal();
@@ -110,12 +106,12 @@ public class AtmosphericIonizerMenu extends AEBaseMenu {
                         host.getBlockPos().getZ() + 0.5D) <= 64.0D;
     }
 
-    public long getStoredEnergy() {
-        return storedEnergy;
+    public long getConsumedEnergy() {
+        return consumedEnergy;
     }
 
-    public long getEnergyCapacity() {
-        return AE2LTCommonConfig.atmosphericIonizerEnergyCapacity();
+    public long getTotalEnergyRequired() {
+        return totalEnergy;
     }
 
     public double getProgress() {

@@ -27,9 +27,9 @@ public class AtmosphericIonizerEnergyBar extends AbstractWidget implements ITool
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
         fill.copy().opacity(0.2f).dest(getX(), getY(), width, height).blit(guiGraphics);
 
-        long capacity = Math.max(1L, menu.getEnergyCapacity());
-        long stored = Math.min(menu.getStoredEnergy(), capacity);
-        int filled = (int) Math.round(height * (double) stored / (double) capacity);
+        long totalEnergy = Math.max(1L, menu.getTotalEnergyRequired());
+        long consumedEnergy = Math.min(menu.getConsumedEnergy(), totalEnergy);
+        int filled = (int) Math.round(height * (double) consumedEnergy / (double) totalEnergy);
         if (filled <= 0) {
             return;
         }
@@ -46,8 +46,8 @@ public class AtmosphericIonizerEnergyBar extends AbstractWidget implements ITool
     public List<Component> getTooltipMessage() {
         return List.of(Component.translatable(
                 "ae2lt.gui.atmospheric_ionizer.energy.tooltip",
-                menu.getStoredEnergy(),
-                menu.getEnergyCapacity()));
+                menu.getConsumedEnergy(),
+                menu.getTotalEnergyRequired()));
     }
 
     @Override

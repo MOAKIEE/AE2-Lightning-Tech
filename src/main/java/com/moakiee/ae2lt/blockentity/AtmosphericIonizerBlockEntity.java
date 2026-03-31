@@ -4,6 +4,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.orientation.BlockOrientation;
@@ -12,10 +14,8 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.logic.WeatherControlHelper;
-import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerEnergyStorage;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerLogic;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
@@ -32,23 +32,18 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost {
     public static final int PROCESS_TICKS = 5;
+    private static final double POWER_EPSILON = 0.01D;
 
     private static final String TAG_INVENTORY = "Inventory";
-    private static final String TAG_ENERGY = "Energy";
     private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
     private static final String TAG_PROCESSING_TICKS = "ProcessingTicks";
     private static final String TAG_LOCKED_TYPE = "LockedType";
 
     private final AtmosphericIonizerInventory inventory = new AtmosphericIonizerInventory(this::onInventoryChanged);
-    private final AtmosphericIonizerEnergyStorage energyStorage = new AtmosphericIonizerEnergyStorage(
-            AE2LTCommonConfig.atmosphericIonizerEnergyCapacity(),
-            AE2LTCommonConfig.atmosphericIonizerMaxReceive(),
-            this::onEnergyChanged);
     private final AtmosphericIonizerLogic logic;
 
     private WeatherCondensateItem.Type lockedType;
@@ -70,14 +65,6 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
 
     public IItemHandlerModifiable getAutomationInventory() {
         return inventory;
-    }
-
-    public IEnergyStorage getEnergyStorageCapability(Direction side) {
-        return energyStorage;
-    }
-
-    public AtmosphericIonizerEnergyStorage getEnergyStorage() {
-        return energyStorage;
     }
 
     public WeatherCondensateItem.Type getSelectedType() {
@@ -114,7 +101,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     }
 
     public boolean hasEnoughEnergyForSelectedStart() {
-        return energyStorage.getStoredEnergyLong() >= requiredEnergyForTick(getSelectedType(), 0, 0L);
+        return canExtractAEPower(requiredEnergyForTick(getSelectedType(), 0, 0L));
     }
 
     public long getConsumedEnergy() {
@@ -128,6 +115,14 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
 
     public long getRequiredEnergyForNextTick() {
         return requiredEnergyForTick(lockedType, processingTicksSpent, consumedEnergy);
+    }
+
+    public boolean canExtractAEPower(long amount) {
+        return extractAEPower(amount, Actionable.SIMULATE);
+    }
+
+    public boolean tryExtractAEPower(long amount) {
+        return extractAEPower(amount, Actionable.MODULATE);
     }
 
     public boolean isReadyToCommit() {
@@ -178,7 +173,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         if (lockedType == null) {
             return hasEnoughEnergyForSelectedStart()
                     ? AtmosphericIonizerStatus.READY
-                    : AtmosphericIonizerStatus.WAITING_FE;
+                    : AtmosphericIonizerStatus.WAITING_AE;
         }
 
         if (!hasLockedCondensateInput()) {
@@ -189,9 +184,9 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
             return AtmosphericIonizerStatus.READY;
         }
 
-        return energyStorage.getStoredEnergyLong() >= getRequiredEnergyForNextTick()
+        return canExtractAEPower(getRequiredEnergyForNextTick())
                 ? AtmosphericIonizerStatus.CHARGING
-                : AtmosphericIonizerStatus.WAITING_FE;
+                : AtmosphericIonizerStatus.WAITING_AE;
     }
 
     public boolean commitLockedCondensate() {
@@ -242,7 +237,6 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         super.saveAdditional(data, registries);
         inventory.saveToTag(data, TAG_INVENTORY, registries);
-        data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         if (lockedType != null) {
@@ -256,7 +250,6 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
         super.loadTag(data, registries);
         inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         lockedType = data.contains(TAG_LOCKED_TYPE)
                 ? WeatherCondensateItem.Type.fromName(data.getString(TAG_LOCKED_TYPE))
                 : null;
@@ -323,10 +316,18 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         logic.onStateChanged();
     }
 
-    private void onEnergyChanged() {
-        saveChanges();
-        markForClientUpdate();
-        logic.onStateChanged();
+    private boolean extractAEPower(long amount, Actionable mode) {
+        if (amount <= 0L) {
+            return true;
+        }
+
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return false;
+        }
+
+        double extracted = grid.getEnergyService().extractAEPower(amount, mode, PowerMultiplier.CONFIG);
+        return extracted >= amount - POWER_EPSILON;
     }
 }
 
