@@ -26,7 +26,20 @@ public final class OverloadProcessingRecipeService {
                     (RecipeHolder<OverloadProcessingRecipe> holder) -> holder.value().totalInputCount()).reversed())
             .thenComparing(holder -> holder.id().toString());
 
+    private static Object cachedRawRecipeList;
+    private static List<RecipeHolder<OverloadProcessingRecipe>> sortedRecipeCache;
+
     private OverloadProcessingRecipeService() {
+    }
+
+    private static List<RecipeHolder<OverloadProcessingRecipe>> getSortedRecipes(Level level) {
+        var raw = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
+        if (raw != cachedRawRecipeList) {
+            sortedRecipeCache = new ArrayList<>(raw);
+            sortedRecipeCache.sort(RECIPE_ORDER);
+            cachedRawRecipeList = raw;
+        }
+        return sortedRecipeCache;
     }
 
     public static Optional<OverloadProcessingRecipeCandidate> findFirstProcessable(
@@ -45,9 +58,7 @@ public final class OverloadProcessingRecipeService {
             return Optional.empty();
         }
 
-        List<RecipeHolder<OverloadProcessingRecipe>> recipes =
-                new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get()));
-        recipes.sort(RECIPE_ORDER);
+        List<RecipeHolder<OverloadProcessingRecipe>> recipes = getSortedRecipes(level);
 
         for (RecipeHolder<OverloadProcessingRecipe> recipe : recipes) {
             int parallel = findMaxParallel(
@@ -147,8 +158,13 @@ public final class OverloadProcessingRecipeService {
             return 0L;
         }
 
-        long linearEnergy = singleOperationEnergy * parallel;
-        return divideCeil(linearEnergy * (parallel + 253L), 254L);
+        try {
+            long linearEnergy = Math.multiplyExact(singleOperationEnergy, parallel);
+            long scaled = Math.multiplyExact(linearEnergy, (long) (parallel + 253));
+            return divideCeil(scaled, 254L);
+        } catch (ArithmeticException e) {
+            return Long.MAX_VALUE;
+        }
     }
 
     public static Optional<LightningConsumptionPlan> resolveLightningConsumption(
@@ -174,10 +190,24 @@ public final class OverloadProcessingRecipeService {
                     false));
         }
 
-        long highVoltageEquivalent = lightningCost * EXTREME_TO_HIGH_RATIO;
-        return inventory.hasLightningCollapseMatrix() && availableHighVoltage >= highVoltageEquivalent
-                ? Optional.of(new LightningConsumptionPlan(LightningKey.HIGH_VOLTAGE, highVoltageEquivalent, true))
-                : Optional.empty();
+        if (!inventory.hasLightningCollapseMatrix()) {
+            return Optional.empty();
+        }
+
+        long extremeUsed = availableExtremeHighVoltage;
+        long remaining = lightningCost - extremeUsed;
+        long highVoltageNeeded = remaining * EXTREME_TO_HIGH_RATIO;
+        if (highVoltageNeeded < 0L || availableHighVoltage < highVoltageNeeded) {
+            return Optional.empty();
+        }
+        if (extremeUsed > 0L) {
+            return Optional.of(new LightningConsumptionPlan(
+                    LightningKey.EXTREME_HIGH_VOLTAGE, extremeUsed,
+                    LightningKey.HIGH_VOLTAGE, highVoltageNeeded,
+                    true));
+        }
+        return Optional.of(new LightningConsumptionPlan(
+                LightningKey.HIGH_VOLTAGE, highVoltageNeeded, true));
     }
 
     public static long getEquivalentHighVoltageCost(LightningKey.Tier lightningTier, long lightningCost) {
@@ -249,7 +279,9 @@ public final class OverloadProcessingRecipeService {
         }
 
         long substitutedParallel = availableHighVoltage / ((long) recipe.lightningCost() * EXTREME_TO_HIGH_RATIO);
-        return (int) Math.min(Integer.MAX_VALUE, Math.max(exactParallel, substitutedParallel));
+        long totalParallel = exactParallel + substitutedParallel;
+        if (totalParallel < 0L) totalParallel = Long.MAX_VALUE;
+        return (int) Math.min(Integer.MAX_VALUE, totalParallel);
     }
 
     private static boolean canAcceptOutputs(
@@ -286,6 +318,17 @@ public final class OverloadProcessingRecipeService {
         return (dividend + divisor - 1L) / divisor;
     }
 
-    public record LightningConsumptionPlan(LightningKey key, long amount, boolean matrixSubstitution) {
+    public record LightningConsumptionPlan(
+            LightningKey primaryKey, long primaryAmount,
+            LightningKey secondaryKey, long secondaryAmount,
+            boolean matrixSubstitution) {
+
+        public LightningConsumptionPlan(LightningKey key, long amount, boolean matrixSubstitution) {
+            this(key, amount, null, 0L, matrixSubstitution);
+        }
+
+        public boolean hasSecondary() {
+            return secondaryKey != null && secondaryAmount > 0L;
+        }
     }
 }

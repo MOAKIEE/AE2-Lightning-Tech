@@ -278,7 +278,11 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             return false;
         }
         var plan = lightningPlan.get();
-        if (simulateLightningExtract(plan.key(), plan.amount()) < plan.amount()) {
+        if (simulateLightningExtract(plan.primaryKey(), plan.primaryAmount()) < plan.primaryAmount()) {
+            return false;
+        }
+        if (plan.hasSecondary()
+                && simulateLightningExtract(plan.secondaryKey(), plan.secondaryAmount()) < plan.secondaryAmount()) {
             return false;
         }
 
@@ -310,20 +314,39 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             return false;
         }
 
-        long extractedLightning = extractLightning(plan.key(), plan.amount());
-        if (extractedLightning < plan.amount()) {
+        long extractedPrimary = extractLightning(plan.primaryKey(), plan.primaryAmount());
+        if (extractedPrimary < plan.primaryAmount()) {
             rollbackInputs(extractedInputs);
             if (!drainedInput.isEmpty()) {
                 inputTank.fill(drainedInput, FluidAction.EXECUTE);
             }
-            if (extractedLightning > 0L) {
-                insertLightning(plan.key(), extractedLightning);
+            if (extractedPrimary > 0L) {
+                insertLightning(plan.primaryKey(), extractedPrimary);
             }
             return false;
         }
 
+        long extractedSecondary = 0L;
+        if (plan.hasSecondary()) {
+            extractedSecondary = extractLightning(plan.secondaryKey(), plan.secondaryAmount());
+            if (extractedSecondary < plan.secondaryAmount()) {
+                insertLightning(plan.primaryKey(), extractedPrimary);
+                rollbackInputs(extractedInputs);
+                if (!drainedInput.isEmpty()) {
+                    inputTank.fill(drainedInput, FluidAction.EXECUTE);
+                }
+                if (extractedSecondary > 0L) {
+                    insertLightning(plan.secondaryKey(), extractedSecondary);
+                }
+                return false;
+            }
+        }
+
         if (!inventory.insertRecipeOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()))) {
-            insertLightning(plan.key(), extractedLightning);
+            insertLightning(plan.primaryKey(), extractedPrimary);
+            if (extractedSecondary > 0L) {
+                insertLightning(plan.secondaryKey(), extractedSecondary);
+            }
             if (!drainedInput.isEmpty()) {
                 inputTank.fill(drainedInput, FluidAction.EXECUTE);
             }
@@ -333,7 +356,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
         int filledFluid = scaledOutputFluid.isEmpty() ? 0 : outputTank.fill(scaledOutputFluid, FluidAction.EXECUTE);
         if (!scaledOutputFluid.isEmpty() && filledFluid != scaledOutputFluid.getAmount()) {
-            insertLightning(plan.key(), extractedLightning);
+            if (filledFluid > 0) {
+                outputTank.drain(filledFluid, FluidAction.EXECUTE);
+            }
+            insertLightning(plan.primaryKey(), extractedPrimary);
+            if (extractedSecondary > 0L) {
+                insertLightning(plan.secondaryKey(), extractedSecondary);
+            }
             if (!drainedInput.isEmpty()) {
                 inputTank.fill(drainedInput, FluidAction.EXECUTE);
             }
@@ -414,7 +443,6 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             processingTicksSpent = 0;
         } else {
             consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
-            processingTicksSpent = Math.min(processingTicksSpent, OverloadProcessingFactoryLogic.MIN_PROCESS_TICKS);
         }
         working = lockedRecipe != null;
     }

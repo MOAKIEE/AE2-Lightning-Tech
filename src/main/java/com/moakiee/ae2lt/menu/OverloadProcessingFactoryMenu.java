@@ -88,6 +88,8 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     private final OverloadProcessingFactoryBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(OverloadProcessingFactoryInventory.INPUT_SLOT_COUNT);
     private final Slot matrixSlot;
+    private int recipePreviewCooldown;
+    private OverloadProcessingRecipeCandidate cachedProcessable;
 
     public OverloadProcessingFactoryMenu(int id, Inventory playerInventory, OverloadProcessingFactoryBlockEntity host) {
         super(TYPE, id, playerInventory, host);
@@ -134,9 +136,20 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
             outputFluidAmount = outputFluid.getAmount();
 
             var lockedRecipe = host.getLockedRecipe().orElse(null);
-            OverloadProcessingRecipeCandidate processable = lockedRecipe == null
-                    ? host.findProcessableRecipe().orElse(null)
-                    : null;
+            OverloadProcessingRecipeCandidate processable;
+            if (lockedRecipe == null) {
+                if (recipePreviewCooldown <= 0) {
+                    cachedProcessable = host.findProcessableRecipe().orElse(null);
+                    recipePreviewCooldown = 10;
+                } else {
+                    recipePreviewCooldown--;
+                }
+                processable = cachedProcessable;
+            } else {
+                processable = null;
+                cachedProcessable = null;
+                recipePreviewCooldown = 0;
+            }
             if (lockedRecipe != null) {
                 currentParallel = lockedRecipe.parallel();
                 lightningTierOrdinal = lockedRecipe.lightningTier().ordinal();

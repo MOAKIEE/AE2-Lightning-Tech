@@ -66,18 +66,13 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
             tryStartProcessing();
         }
 
-        if (!host.hasLockedRecipe()) {
-            host.setWorking(false);
-            return TickRateModulation.SLEEP;
-        }
-
-        host.setWorking(true);
-
         Optional<OverloadProcessingLockedRecipe> lockedRecipe = host.getLockedRecipe();
         if (lockedRecipe.isEmpty()) {
             host.setWorking(false);
             return TickRateModulation.SLEEP;
         }
+
+        host.setWorking(true);
 
         Optional<OverloadProcessingRecipeCandidate> lockedCandidate = validateLockedRecipe(lockedRecipe.get());
         if (lockedCandidate.isEmpty()) {
@@ -93,7 +88,13 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
     }
 
     public boolean hasGridTickWork() {
-        return host.hasLockedRecipe() || host.findProcessableRecipe().isPresent();
+        if (host.hasLockedRecipe()) {
+            return true;
+        }
+        if (host.getInstalledMatrixCount() <= 0) {
+            return false;
+        }
+        return host.findProcessableRecipe().isPresent();
     }
 
     public long getCurrentMaxEnergyPerTick() {
@@ -213,7 +214,7 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
                 return;
             }
 
-            int inserted = host.getEnergyStorage().receiveEnergy((int) extracted, false);
+            int inserted = host.getEnergyStorage().receiveEnergy((int) Math.min(extracted, Integer.MAX_VALUE), false);
             long remainder = extracted - inserted;
             if (remainder > 0L) {
                 grid.getStorageService().getInventory()
