@@ -6,11 +6,6 @@
     "srcRect": [0, 0, 176, 253]
   },
   "slots": {
-    "AE2LT_OVERLOADED_FILTER": {
-      "left": 8,
-      "top": 20,
-      "grid": "HORIZONTAL"
-    },
     "OL_1": {
       "left": 8,
       "top": 53,
@@ -69,6 +64,10 @@
       "top": -5,
       "width": 20,
       "height": 20
+    },
+    "overloadedFilter": {
+      "right": 2,
+      "top": 82
     }
   }
 }

@@ -94,6 +94,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
     private final Set<Slot> storageSlotSet;
     private final Set<Slot> containerSlotSet;
     private final List<Slot> allConfigSlots;
+    private Slot filterSlot;
     private int lastShownPage = -1;
 
     public OverloadedInterfaceMenu(int id, Inventory playerInventory, InterfaceLogicHost host) {
@@ -105,7 +106,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             var filterSlot = new OverloadedFilterSlot(be.getFilterInv(), 0);
             filterSlot.setNotDraggable();
-            this.addSlot(filterSlot, Ae2ltSlotSemantics.OVERLOADED_FILTER);
+            this.filterSlot = this.addSlot(filterSlot, SlotSemantics.UPGRADE);
         }
 
         var logic = host.getInterfaceLogic();
@@ -124,7 +125,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         var cSlots = new HashSet<Slot>(storageSlotSet);
         cSlots.addAll(allConfigSlots);
         cSlots.addAll(getSlots(SlotSemantics.UPGRADE));
-        cSlots.addAll(getSlots(Ae2ltSlotSemantics.OVERLOADED_FILTER));
         this.containerSlotSet = cSlots;
 
         registerClientAction("nextPage", this::nextPage);
@@ -178,6 +178,10 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
 
     public List<Slot> getAllConfigSlots() {
         return allConfigSlots;
+    }
+
+    public Slot getFilterSlot() {
+        return filterSlot;
     }
 
     private void syncFromBE() {
