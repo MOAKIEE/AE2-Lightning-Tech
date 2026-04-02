@@ -1,16 +1,22 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
+import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
+import appeng.api.client.StorageCellModels;
 import appeng.api.util.AEColor;
 import appeng.items.parts.ColoredPartItem;
 
@@ -48,6 +54,39 @@ public final class ModItems {
 
     public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
             ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
+
+    public static final DeferredItem<ElectroChimeCrystalItem> ELECTRO_CHIME_CRYSTAL = ITEMS.registerItem(
+            "electro_chime_crystal",
+            ElectroChimeCrystalItem::new,
+            new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<PerfectElectroChimeCrystalItem> PERFECT_ELECTRO_CHIME_CRYSTAL = ITEMS.registerItem(
+            "perfect_electro_chime_crystal",
+            PerfectElectroChimeCrystalItem::new,
+            new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<WeatherCondensateItem> CLEAR_CONDENSATE = ITEMS.register(
+            "clear_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.CLEAR, new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<WeatherCondensateItem> RAIN_CONDENSATE = ITEMS.register(
+            "rain_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.RAIN, new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<WeatherCondensateItem> THUNDERSTORM_CONDENSATE = ITEMS.register(
+            "thunderstorm_condensate",
+            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, new Item.Properties().stacksTo(1)));
+
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
+            registerLightningStorageComponent("lightning_storage_component_i", 64, 32);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
+            registerLightningStorageComponent("lightning_storage_component_ii", 256, 128);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
+            registerLightningStorageComponent("lightning_storage_component_iii", 1024, 512);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
+            registerLightningStorageComponent("lightning_storage_component_iv", 4096, 2048);
+    public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
+            registerLightningStorageComponent("lightning_storage_component_v", 16384, 8192);
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
@@ -105,6 +144,27 @@ public final class ModItems {
             registerOverloadedCable("overloaded_cable_black", AEColor.BLACK);
 
     private ModItems() {
+    }
+
+    public static void registerStorageCellModels() {
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_I, "1k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_II, "4k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III, "16k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
+    }
+
+    private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(
+            String id,
+            int totalBytes,
+            double idleDrain) {
+        return ITEMS.register(id, () -> new LightningStorageComponentItem(totalBytes, idleDrain));
+    }
+
+    private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {
+        StorageCellModels.registerModel(
+                item.get(),
+                ResourceLocation.fromNamespaceAndPath("ae2", "block/drive/cells/" + modelName));
     }
 
     private static DeferredItem<ColoredPartItem<OverloadedCablePart>> registerOverloadedCable(String id, AEColor color) {

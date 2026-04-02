@@ -29,7 +29,7 @@ public class LightningSimulationOutputConfigScreen
     public LightningSimulationOutputConfigScreen(LightningSimulationChamberScreen parent) {
         super(parent, "/screens/lightning_simulation_output_config.json");
 
-        var label = Component.translatable("block.ae2lt.lightning_simulation_chamber");
+        var label = Component.translatable("block.ae2lt.lightning_simulation_room");
         widgets.add("return", new TabButton(Icon.BACK, label, btn -> returnToParent()));
 
         var clear = new ActionButton(appeng.api.config.ActionItems.S_CLOSE, button -> menu.clientClearOutputSides());

@@ -49,14 +49,24 @@ public final class EjectModeRegistry {
     @Nullable
     private static EjectModeSavedData savedData;
 
-    private static boolean bypass = false;
+    private static final ThreadLocal<Integer> bypassDepth = ThreadLocal.withInitial(() -> 0);
 
     public static void setBypass(boolean value) {
-        bypass = value;
+        if (value) {
+            bypassDepth.set(bypassDepth.get() + 1);
+            return;
+        }
+
+        int current = bypassDepth.get();
+        if (current <= 1) {
+            bypassDepth.remove();
+        } else {
+            bypassDepth.set(current - 1);
+        }
     }
 
     public static boolean isBypassed() {
-        return bypass;
+        return bypassDepth.get() > 0;
     }
 
     private EjectModeRegistry() {}
@@ -66,6 +76,7 @@ public final class EjectModeRegistry {
     public static void onServerStart(MinecraftServer server) {
         savedData = EjectModeSavedData.get(server);
         registrations.clear();
+        bypassDepth.remove();
 
         for (var pe : savedData.getAll()) {
             var ghostBE = new GhostOutputBlockEntity(pe.interceptPos());
@@ -87,6 +98,7 @@ public final class EjectModeRegistry {
     public static void onServerStop() {
         savedData = null;
         registrations.clear();
+        bypassDepth.remove();
     }
 
     // ---- Registration ------------------------------------------------------

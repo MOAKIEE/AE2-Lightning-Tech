@@ -24,6 +24,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -299,6 +300,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         ScheduleEntry(WirelessConnection c, ConnectionState s) { conn = c; state = s; }
     }
 
+    private record ExtractedShare(MEStorage storage, long amount) {}
+
     @SuppressWarnings("unchecked")
     private final List<ScheduleEntry>[] energyWheel = new ArrayList[WHEEL_SLOTS];
     { for (int i = 0; i < WHEEL_SLOTS; i++) energyWheel[i] = new ArrayList<>(); }
@@ -331,6 +334,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private final List<WirelessConnection> connections = new ArrayList<>();
     private @Nullable DirectMEInsertInventory directInsertInv;
     private boolean ejectRegistered = false;
+    private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
     public int getLastViewedPage() { return lastViewedPage; }
@@ -345,6 +349,15 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     public OverloadedInterfaceBlockEntity(BlockPos pos, BlockState state) {
         this(ModBlockEntities.OVERLOADED_INTERFACE.get(), pos, state);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        unloadingChunk = false;
+        if (level != null && !level.isClientSide() && importMode == ImportMode.EJECT) {
+            refreshEjectRegistrations();
+        }
     }
 
     @Override
@@ -617,22 +630,26 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
             long extractBudget = Math.min(toTransfer, meCanAccept);
             long totalExtracted = 0;
-            MEStorage lastExtractedWrapper = null;
+            var extractedShares = new ArrayList<ExtractedShare>();
 
             for (var wrapper : wrappers.values()) {
                 if (totalExtracted >= extractBudget) break;
                 long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
                 if (extracted > 0) {
                     totalExtracted += extracted;
-                    lastExtractedWrapper = wrapper;
+                    extractedShares.add(new ExtractedShare(wrapper, extracted));
                 }
             }
 
             if (totalExtracted <= 0) continue;
 
             long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
-            if (totalExtracted > actualInserted && lastExtractedWrapper != null) {
-                lastExtractedWrapper.insert(key, totalExtracted - actualInserted, Actionable.MODULATE, src);
+            long rollback = totalExtracted - actualInserted;
+            for (int i = extractedShares.size() - 1; i >= 0 && rollback > 0; i--) {
+                var share = extractedShares.get(i);
+                long toReturn = Math.min(rollback, share.amount());
+                long restored = share.storage().insert(key, toReturn, Actionable.MODULATE, src);
+                rollback -= restored;
             }
             moved  += (int) actualInserted;
             budget -= (int) actualInserted;
@@ -976,7 +993,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private void unregisterEject() {
-        if (!ejectRegistered || level==null) return;
+        if (level==null) return;
         var removed = EjectModeRegistry.unregisterAll(this, true);
         if (level instanceof ServerLevel sl) {
             var srv = sl.getServer();
@@ -988,12 +1005,117 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         ejectRegistered = false;
     }
 
-    @Override public void setRemoved()      { unregisterEject(); super.setRemoved(); }
-    @Override public void onChunkUnloaded() { super.onChunkUnloaded(); unregisterEject(); }
+    @Override
+    public void setRemoved() {
+        if (!unloadingChunk) {
+            unregisterEject();
+        }
+        super.setRemoved();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        unloadingChunk = true;
+        super.onChunkUnloaded();
+    }
 
     // ══════════════════════════════════════════════════════════════════════
     //  NBT
     // ══════════════════════════════════════════════════════════════════════
+
+    @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeByte(interfaceMode.ordinal());
+        data.writeByte(ioSpeedMode.ordinal());
+        data.writeByte(exportMode.ordinal());
+        data.writeByte(importMode.ordinal());
+        data.writeByte(energyOutputDir != null ? energyOutputDir.get3DDataValue() : -1);
+
+        long bits = 0;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (unlimitedSlots[i]) {
+                bits |= (1L << i);
+            }
+        }
+        data.writeLong(bits);
+
+        data.writeVarInt(connections.size());
+        for (var c : connections) {
+            data.writeResourceLocation(c.dimension().location());
+            data.writeBlockPos(c.pos());
+            data.writeByte(c.boundFace().get3DDataValue());
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+
+        int interfaceOrd = data.readByte();
+        var newInterfaceMode = interfaceOrd >= 0 && interfaceOrd < InterfaceMode.values().length
+                ? InterfaceMode.values()[interfaceOrd] : InterfaceMode.NORMAL;
+
+        int speedOrd = data.readByte();
+        var newIoSpeedMode = speedOrd >= 0 && speedOrd < IOSpeedMode.values().length
+                ? IOSpeedMode.values()[speedOrd] : IOSpeedMode.NORMAL;
+
+        int exportOrd = data.readByte();
+        var newExportMode = exportOrd >= 0 && exportOrd < ExportMode.values().length
+                ? ExportMode.values()[exportOrd] : ExportMode.OFF;
+
+        int importOrd = data.readByte();
+        var newImportMode = importOrd >= 0 && importOrd < ImportMode.values().length
+                ? ImportMode.values()[importOrd] : ImportMode.OFF;
+
+        int energyOrd = data.readByte();
+        Direction newEnergyDir = energyOrd >= 0 && energyOrd < 6
+                ? Direction.from3DDataValue(energyOrd) : null;
+
+        long newBits = data.readLong();
+        boolean[] newUnlimitedSlots = new boolean[SLOT_COUNT];
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            newUnlimitedSlots[i] = (newBits & (1L << i)) != 0;
+        }
+
+        int count = data.readVarInt();
+        var newConnections = new ArrayList<WirelessConnection>(count);
+        for (int i = 0; i < count; i++) {
+            var dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
+                    data.readResourceLocation());
+            var pos = data.readBlockPos();
+            var face = Direction.from3DDataValue(data.readByte());
+            newConnections.add(new WirelessConnection(dim, pos, face));
+        }
+
+        boolean unlimitedChanged = false;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (unlimitedSlots[i] != newUnlimitedSlots[i]) {
+                unlimitedChanged = true;
+                break;
+            }
+        }
+
+        if (newInterfaceMode != interfaceMode
+                || newIoSpeedMode != ioSpeedMode
+                || newExportMode != exportMode
+                || newImportMode != importMode
+                || newEnergyDir != energyOutputDir
+                || unlimitedChanged
+                || !newConnections.equals(connections)) {
+            interfaceMode = newInterfaceMode;
+            ioSpeedMode = newIoSpeedMode;
+            exportMode = newExportMode;
+            importMode = newImportMode;
+            energyOutputDir = newEnergyDir;
+            System.arraycopy(newUnlimitedSlots, 0, unlimitedSlots, 0, SLOT_COUNT);
+            connections.clear();
+            connections.addAll(newConnections);
+            changed = true;
+        }
+
+        return changed;
+    }
 
     @Override
     public void saveAdditional(CompoundTag d, HolderLookup.Provider r) {

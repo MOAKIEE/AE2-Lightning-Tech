@@ -64,6 +64,9 @@ public interface PatternProviderLogicAccessor {
     @Accessor("sendDirection")
     void setSendDirection(Direction direction);
 
+    @Accessor("unlockStack")
+    void setUnlockStack(GenericStack unlockStack);
+
     @Invoker("addToSendList")
     void invokeAddToSendList(AEKey what, long amount);
 

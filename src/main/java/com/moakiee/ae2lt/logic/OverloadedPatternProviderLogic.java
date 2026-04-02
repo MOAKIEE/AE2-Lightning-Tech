@@ -14,12 +14,10 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -60,6 +58,7 @@ import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
+import com.moakiee.ae2lt.overload.pattern.OverloadPatternDetails;
 
 /**
  * Extended pattern-provider logic that adds a wireless dispatch path.
@@ -90,6 +89,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Set by readFromNBT when Level is not yet available; consumed by onReady(). */
     private boolean needsSavedDataLoad = false;
+
+    @Nullable
+    private MatchMode pendingUnlockMatchMode;
+    @Nullable
+    private ItemStack pendingUnlockTemplate;
 
     // ---- wireless dispatch state ------------------------------------------------
 
@@ -506,6 +510,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     @Override
+    public void resetCraftingLock() {
+        super.resetCraftingLock();
+        clearPendingUnlockRule();
+    }
+
+    @Override
     public void onChangeInventory(appeng.util.inv.AppEngInternalInventory inv, int slot) {
         super.onChangeInventory(inv, slot);
     }
@@ -611,6 +621,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             boolean result = super.pushPattern(patternDetails, inputHolder);
             if (result && overloadedHost.isAutoReturn()) {
                 resetBackoffAllTargets();
+            }
+            if (result) {
+                syncPendingUnlockRule(patternDetails);
             }
             if (result) {
                 alertGridTick();
@@ -874,6 +887,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        syncPendingUnlockRule(pattern);
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
@@ -930,7 +944,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 accessor.setSendDirection(defaultFace);
                 accessor.invokeSendStacksOut();
                 accessor.invokeOnPushPatternSuccess(pattern);
-        return true;
+                syncPendingUnlockRule(pattern);
+                return true;
             }
             return false;
         } finally {
@@ -985,6 +1000,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
+        syncPendingUnlockRule(pattern);
         alertGridTick();
 
         if (overloadedHost.isAutoReturn()) {
@@ -1404,6 +1420,98 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
+    public boolean handleOverloadUnlockOnReturnedStack(GenericStack returnedStack) {
+        if (pendingUnlockMatchMode != MatchMode.ID_ONLY) {
+            return false;
+        }
+
+        if (getCraftingLockedReason() != LockCraftingMode.LOCK_UNTIL_RESULT) {
+            clearPendingUnlockRule();
+            return false;
+        }
+
+        var unlockStack = getUnlockStack();
+        if (unlockStack == null) {
+            resetCraftingLock();
+            return true;
+        }
+
+        Item expectedItem = null;
+        if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
+            expectedItem = pendingUnlockTemplate.getItem();
+        } else if (unlockStack.what() instanceof AEItemKey unlockItemKey) {
+            expectedItem = unlockItemKey.getItem();
+        }
+
+        if (expectedItem == null) {
+            return false;
+        }
+
+        if (returnedStack.what() instanceof AEItemKey returnedItemKey
+                && returnedItemKey.getItem() == expectedItem) {
+            long remainingAmount = unlockStack.amount() - returnedStack.amount();
+            if (remainingAmount <= 0) {
+                resetCraftingLock();
+            } else {
+                ((PatternProviderLogicAccessor) this)
+                        .setUnlockStack(new GenericStack(unlockStack.what(), remainingAmount));
+                saveChanges();
+            }
+        }
+
+        return true;
+    }
+
+    private void syncPendingUnlockRule(IPatternDetails pattern) {
+        clearPendingUnlockRule();
+        if (getCraftingLockedReason() != LockCraftingMode.LOCK_UNTIL_RESULT) {
+            return;
+        }
+        if (!(pattern instanceof OverloadedProviderOnlyPatternDetails overloadPattern)) {
+            return;
+        }
+
+        int unlockOutputIndex = resolveUnlockOutputIndex(pattern, overloadPattern.overloadPatternDetailsView());
+        var overloadOutputs = overloadPattern.overloadPatternDetailsView().outputs();
+        if (unlockOutputIndex < 0 || unlockOutputIndex >= overloadOutputs.size()) {
+            return;
+        }
+
+        var unlockOutput = overloadOutputs.get(unlockOutputIndex);
+        pendingUnlockMatchMode = unlockOutput.matchMode();
+        pendingUnlockTemplate = unlockOutput.template();
+    }
+
+    private static int resolveUnlockOutputIndex(IPatternDetails pattern, OverloadPatternDetails overloadDetails) {
+        var actualOutputs = pattern.getOutputs();
+        var overloadOutputs = overloadDetails.outputs();
+        int count = Math.min(actualOutputs.size(), overloadOutputs.size());
+        if (count <= 0) {
+            return -1;
+        }
+
+        var primaryOutput = pattern.getPrimaryOutput();
+        for (int i = 0; i < count; i++) {
+            var candidate = actualOutputs.get(i);
+            if (candidate.what().equals(primaryOutput.what()) && candidate.amount() == primaryOutput.amount()) {
+                return i;
+            }
+        }
+
+        for (int i = 0; i < count; i++) {
+            if (overloadOutputs.get(i).primaryOutput()) {
+                return i;
+            }
+        }
+
+        return 0;
+    }
+
+    private void clearPendingUnlockRule() {
+        pendingUnlockMatchMode = null;
+        pendingUnlockTemplate = null;
+    }
+
     // ---- eject mode lifecycle ----------------------------------------------------
 
     /**
@@ -1507,10 +1615,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             valid.add(conn);
         }
         validConnectionsCache = List.copyOf(valid);
+        pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
         lastConnectionValidation = gameTick;
         connectionsDirty = false;
         return validConnectionsCache;
+    }
+
+    private void pruneMachineBackoffState(List<WirelessConnection> validConnections) {
+        var activeMachineIds = new java.util.HashSet<MachineId>();
+        for (var conn : validConnections) {
+            activeMachineIds.add(new MachineId(conn.dimension(), conn.pos().asLong(), conn.boundFace()));
+        }
+        machineNextPoll.keySet().retainAll(activeMachineIds);
+        machineBackoff.keySet().retainAll(activeMachineIds);
     }
 
     // ---- Timing Wheel scheduling operations ----------------------------------------
@@ -1860,53 +1978,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         .insert(feKey, amount, Actionable.MODULATE, wirelessSource));
     }
 
-    private static final ResourceLocation APPFLUX_INDUCTION_CARD_ID =
-            ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
     private static final Item APPFLUX_INDUCTION_CARD =
-            BuiltInRegistries.ITEM.get(APPFLUX_INDUCTION_CARD_ID);
+            AppFluxHelper.getInductionCard();
 
     // ---- Cached reflection results (resolved once at class-load, never per-tick) ----
 
     /** Cached AEKey for Applied Flux FE energy type. Null if Applied Flux is not loaded. */
     @Nullable
-    private static final AEKey CACHED_APPFLUX_FE_KEY;
+    private static final AEKey CACHED_APPFLUX_FE_KEY = AppFluxHelper.FE_KEY;
 
     /** Cached transfer rate from Applied Flux config. 0 if not available. */
-    private static final int CACHED_APPFLUX_TRANSFER_RATE;
-
-    static {
-        AEKey resolvedKey = null;
-        try {
-            var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
-            @SuppressWarnings("unchecked")
-            Class<? extends Enum> enumClass = (Class<? extends Enum>) energyTypeClass.asSubclass(Enum.class);
-            Object feType = Enum.valueOf(enumClass, "FE");
-
-            var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
-            var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
-            Object key = ofMethod.invoke(null, feType);
-            resolvedKey = key instanceof AEKey aeKey ? aeKey : null;
-        } catch (ReflectiveOperationException ignored) {
-            // Applied Flux not loaded or API changed
-        }
-        CACHED_APPFLUX_FE_KEY = resolvedKey;
-
-        int resolvedRate = 0;
-        try {
-            var configClass = Class.forName("com.glodblock.github.appflux.config.AFConfig");
-            var method = configClass.getMethod("getFluxAccessorIO");
-            Object result = method.invoke(null);
-            if (result instanceof Number num) {
-                long value = num.longValue();
-                if (value > 0) {
-                    resolvedRate = (int) Math.min(Integer.MAX_VALUE, value);
-                }
-            }
-        } catch (ReflectiveOperationException ignored) {
-            // Applied Flux not loaded or API changed
-        }
-        CACHED_APPFLUX_TRANSFER_RATE = resolvedRate;
-    }
+    private static final int CACHED_APPFLUX_TRANSFER_RATE = AppFluxHelper.TRANSFER_RATE;
 
 
     // ---- SavedData persistence helpers ------------------------------------------
@@ -1970,9 +2052,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     @Nullable
     private static Item getAppliedFluxInductionCard() {
-        if (APPFLUX_INDUCTION_CARD == net.minecraft.world.item.Items.AIR) {
-            return null;
-        }
         return APPFLUX_INDUCTION_CARD;
     }
 
@@ -2071,6 +2150,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final String TAG_W_SEND_LIST = "WirelessSendList";
     private static final String TAG_W_SEND_CONN = "WirelessSendConn";
     private static final String TAG_W_ROUND_ROBIN = "WirelessRoundRobin";
+    private static final String TAG_UNLOCK_MATCH_MODE = "Ae2ltUnlockMatchMode";
+    private static final String TAG_UNLOCK_TEMPLATE = "Ae2ltUnlockTemplate";
 
     @Override
     public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
@@ -2078,13 +2159,22 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
-        super.writeToNBT(tag, registries);
-            accessor.setPatternInventory(realInv);
+            try {
+                super.writeToNBT(tag, registries);
+            } finally {
+                accessor.setPatternInventory(realInv);
+            }
             saveToSavedData();
         } else {
             super.writeToNBT(tag, registries);
         }
         tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
+        if (pendingUnlockMatchMode != null) {
+            tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
+        }
+        if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
+            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
+        }
         if (!wirelessSendList.isEmpty()) {
             var list = new ListTag();
             for (var stack : wirelessSendList) {
@@ -2104,6 +2194,21 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             needsSavedDataLoad = true;
         }
         wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
+        pendingUnlockMatchMode = null;
+        pendingUnlockTemplate = null;
+        if (tag.contains(TAG_UNLOCK_MATCH_MODE, Tag.TAG_STRING)) {
+            try {
+                pendingUnlockMatchMode = MatchMode.valueOf(tag.getString(TAG_UNLOCK_MATCH_MODE));
+            } catch (IllegalArgumentException ignored) {
+                pendingUnlockMatchMode = null;
+            }
+        }
+        if (tag.contains(TAG_UNLOCK_TEMPLATE, Tag.TAG_COMPOUND)) {
+            pendingUnlockTemplate = ItemStack.parseOptional(registries, tag.getCompound(TAG_UNLOCK_TEMPLATE));
+            if (pendingUnlockTemplate.isEmpty()) {
+                pendingUnlockTemplate = null;
+            }
+        }
         wirelessSendList.clear();
         wirelessSendConn = null;
         if (tag.contains(TAG_W_SEND_LIST, Tag.TAG_LIST)) {

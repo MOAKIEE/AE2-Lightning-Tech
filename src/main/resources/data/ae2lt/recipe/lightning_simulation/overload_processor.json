@@ -25,5 +25,7 @@
     "id": "ae2lt:overload_processor",
     "count": 1
   },
-  "totalEnergy": 20000
+  "totalEnergy": 20000,
+  "lightningCost": 4,
+  "lightningTier": "high_voltage"
 }

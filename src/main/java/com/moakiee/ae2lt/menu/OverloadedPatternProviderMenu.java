@@ -67,6 +67,7 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
         registerClientAction("prevPage", this::prevPage);
 
         showPage(0);
+        lastShownPage = -1;
     }
 
     public void showPage(int page) {

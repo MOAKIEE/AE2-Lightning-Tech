@@ -1,10 +1,14 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
+import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -31,8 +35,28 @@ public final class ModMenuTypes {
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningSimulationChamberMenu>>
             LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(
-                    "lightning_simulation_chamber",
+                    "lightning_simulation_room",
                     () -> LightningSimulationChamberMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<LightningCollectorMenu>>
+            LIGHTNING_COLLECTOR = MENU_TYPES.register(
+                    "lightning_collector",
+                    () -> LightningCollectorMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadProcessingFactoryMenu>>
+            OVERLOAD_PROCESSING_FACTORY = MENU_TYPES.register(
+                    "overload_processing_factory",
+                    () -> OverloadProcessingFactoryMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<TeslaCoilMenu>>
+            TESLA_COIL = MENU_TYPES.register(
+                    "tesla_coil",
+                    () -> TeslaCoilMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<AtmosphericIonizerMenu>>
+            ATMOSPHERIC_IONIZER = MENU_TYPES.register(
+                    "atmospheric_ionizer",
+                    () -> AtmosphericIonizerMenu.TYPE);
 
     private ModMenuTypes() {
     }

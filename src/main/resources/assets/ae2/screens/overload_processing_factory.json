@@ -1,0 +1,48 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "slots": {
+    "AE2LT_OVERLOAD_FACTORY_INPUT_0": { "left": 8, "top": 18 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_1": { "left": 26, "top": 18 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_2": { "left": 44, "top": 18 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_3": { "left": 8, "top": 36 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_4": { "left": 26, "top": 36 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_5": { "left": 44, "top": 36 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_6": { "left": 8, "top": 54 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_7": { "left": 26, "top": 54 },
+    "AE2LT_OVERLOAD_FACTORY_INPUT_8": { "left": 44, "top": 54 },
+    "AE2LT_OVERLOAD_FACTORY_MATRIX": { "left": 79, "top": 36 },
+    "AE2LT_OVERLOAD_FACTORY_OUTPUT_0": { "left": 130, "top": 36 }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.ae2lt.overload_processing_factory"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "images": {
+    "energyBar": {
+      "texture": "ae2:textures/guis/inscriber.png",
+      "srcRect": [176, 0, 6, 18]
+    }
+  },
+  "widgets": {
+    "energyBar": {
+      "left": 165,
+      "top": 24
+    },
+    "inputFluidBar": {
+      "left": 9,
+      "top": 21
+    },
+    "outputFluidBar": {
+      "left": 151,
+      "top": 21
+    }
+  }
+}

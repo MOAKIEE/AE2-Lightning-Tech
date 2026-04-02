@@ -54,7 +54,7 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
 
     @Override
     public IInput[] getInputs() {
-        return inputs;
+        return inputs.clone();
     }
 
     @Override
@@ -110,14 +110,6 @@ public final class Ae2OverloadPatternDetails implements IPatternDetails, Overloa
         return definition.hashCode();
     }
 
-    private static boolean hasItemInputs(GenericStack[] possibleInputs) {
-        for (var possible : possibleInputs) {
-            if (possible.what() instanceof AEItemKey) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     private static final class OverloadInput implements IInput {
         private final IInput sourceInput;

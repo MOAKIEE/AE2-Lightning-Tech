@@ -5,14 +5,12 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -27,18 +25,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
-import appeng.api.orientation.BlockOrientation;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.stacks.AEItemKey;
-import appeng.block.crafting.PatternProviderBlock;
-import appeng.block.crafting.PushDirection;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
-import appeng.util.SettingsFrom;
-
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -381,7 +374,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     @Override
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
-        var newMode = ProviderMode.values()[data.readByte()];
+        var modeOrd = data.readByte();
+        var newMode = modeOrd >= 0 && modeOrd < ProviderMode.values().length
+                ? ProviderMode.values()[modeOrd] : ProviderMode.NORMAL;
         var rmOrd = data.readByte();
         var newReturnMode = rmOrd >= 0 && rmOrd < ReturnMode.values().length
                 ? ReturnMode.values()[rmOrd] : ReturnMode.OFF;

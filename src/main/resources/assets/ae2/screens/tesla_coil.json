@@ -1,0 +1,49 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "ae2lt:textures/guis/tesla_coil.png",
+    "srcRect": [0, 0, 176, 178]
+  },
+  "slots": {
+    "AE2LT_TESLA_COIL_DUST": {
+      "left": 39,
+      "top": 30
+    },
+    "AE2LT_TESLA_COIL_MATRIX": {
+      "left": 39,
+      "top": 52
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.ae2lt.tesla_coil"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  },
+  "images": {
+    "energyBar": {
+      "texture": "ae2:textures/guis/inscriber.png",
+      "srcRect": [176, 0, 6, 18]
+    },
+    "processOverlay": {
+      "texture": "ae2lt:textures/guis/lightning_simulation_room.png",
+      "srcRect": [177, 48, 50, 46]
+    }
+  },
+  "widgets": {
+    "processArea": {
+      "left": 58,
+      "top": 25
+    },
+    "energyBar": {
+      "left": 141,
+      "top": 40
+    }
+  }
+}

@@ -132,9 +132,10 @@ public abstract class CraftingCpuLogicMixin {
         boolean pushed = original.call(provider, details, inputHolder);
         if (pushed && details instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
             var job = ((CraftingCpuLogicAccessor) logic).getJob();
-            var finalOutputKey = job != null
-                    ? ((ExecutingCraftingJobAccessor) job).getFinalOutput().what()
+            var finalOutput = job != null
+                    ? ((ExecutingCraftingJobAccessor) job).getFinalOutput()
                     : null;
+            var finalOutputKey = finalOutput != null ? finalOutput.what() : null;
             OverloadCpuStateManager.INSTANCE.registerExpectedOutputs(
                     logic,
                     patternReference != null
@@ -215,7 +216,8 @@ public abstract class CraftingCpuLogicMixin {
         ((ElapsedTimeTrackerAccessor) jobAccessor.getTimeTracker()).invokeDecrementItems(
                 claimed,
                 incoming.getType());
-        long inserted = jobAccessor.getLink().insert(incoming, claimed, Actionable.MODULATE);
+        var link = jobAccessor.getLink();
+        long inserted = link != null ? link.insert(incoming, claimed, Actionable.MODULATE) : 0;
         logicAccessor.invokePostChange(incoming);
 
         long remaining = Math.max(0L, jobAccessor.getRemainingAmount() - claimed);
@@ -226,7 +228,9 @@ public abstract class CraftingCpuLogicMixin {
             cluster.updateOutput(null);
         } else {
             GenericStack finalOutput = jobAccessor.getFinalOutput();
-            cluster.updateOutput(new GenericStack(finalOutput.what(), remaining));
+            if (finalOutput != null) {
+                cluster.updateOutput(new GenericStack(finalOutput.what(), remaining));
+            }
         }
 
         return inserted;

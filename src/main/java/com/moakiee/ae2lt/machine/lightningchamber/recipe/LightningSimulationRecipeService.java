@@ -11,10 +11,11 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 public final class LightningSimulationRecipeService {
-    public static final int REQUIRED_OVERLOAD_DUST = 16;
+    public static final int EXTREME_TO_HIGH_RATIO = 4;
 
     private static final Comparator<RecipeHolder<LightningSimulationRecipe>> RECIPE_ORDER = Comparator
             .<RecipeHolder<LightningSimulationRecipe>>comparingInt(holder -> holder.value().priority())
@@ -30,11 +31,10 @@ public final class LightningSimulationRecipeService {
 
     public static Optional<LightningSimulationRecipeCandidate> findFirstProcessable(
             Level level,
-            LightningSimulationChamberInventory inventory) {
+            LightningSimulationChamberInventory inventory,
+            long availableHighVoltage,
+            long availableExtremeHighVoltage) {
         if (level == null) {
-            return Optional.empty();
-        }
-        if (!hasRequiredOverloadDust(inventory)) {
             return Optional.empty();
         }
 
@@ -50,6 +50,14 @@ public final class LightningSimulationRecipeService {
         for (RecipeHolder<LightningSimulationRecipe> recipe : recipes) {
             Optional<LightningSimulationRecipeMatch> match = recipe.value().planMatch(input);
             if (match.isEmpty()) {
+                continue;
+            }
+            if (resolveLightningConsumption(
+                    inventory,
+                    recipe.value().lightningTier(),
+                    recipe.value().lightningCost(),
+                    availableHighVoltage,
+                    availableExtremeHighVoltage).isEmpty()) {
                 continue;
             }
 
@@ -81,8 +89,10 @@ public final class LightningSimulationRecipeService {
     public static Optional<LightningSimulationRecipeCandidate> findLockedRecipeMatch(
             Level level,
             LightningSimulationChamberInventory inventory,
-            LightningSimulationLockedRecipe lockedRecipe) {
-        if (level == null || lockedRecipe == null || !hasRequiredOverloadDust(inventory)) {
+            LightningSimulationLockedRecipe lockedRecipe,
+            long availableHighVoltage,
+            long availableExtremeHighVoltage) {
+        if (level == null || lockedRecipe == null) {
             return Optional.empty();
         }
 
@@ -100,22 +110,58 @@ public final class LightningSimulationRecipeService {
         if (match.isEmpty()) {
             return Optional.empty();
         }
+        if (resolveLightningConsumption(
+                inventory,
+                lockedRecipe.lightningTier(),
+                lockedRecipe.lightningCost(),
+                availableHighVoltage,
+                availableExtremeHighVoltage).isEmpty()) {
+            return Optional.empty();
+        }
 
         return Optional.of(new LightningSimulationRecipeCandidate(recipe.get(), match.get()));
     }
 
-    public static boolean hasRequiredOverloadDust(LightningSimulationChamberInventory inventory) {
-        ItemStack catalyst = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OVERLOAD_DUST);
-        if (catalyst.isEmpty()) {
-            return false;
+    public static Optional<LightningConsumptionPlan> resolveLightningConsumption(
+            LightningSimulationChamberInventory inventory,
+            LightningKey.Tier lightningTier,
+            int lightningCost,
+            long availableHighVoltage,
+            long availableExtremeHighVoltage) {
+        if (lightningCost <= 0) {
+            return Optional.empty();
         }
-        if (inventory.isLightningCollapseMatrix(catalyst)) {
-            return catalyst.getCount() >= 1;
+
+        if (lightningTier == LightningKey.Tier.HIGH_VOLTAGE) {
+            return availableHighVoltage >= lightningCost
+                    ? Optional.of(new LightningConsumptionPlan(LightningKey.HIGH_VOLTAGE, lightningCost, false))
+                    : Optional.empty();
         }
-        return inventory.isOverloadCrystalDust(catalyst) && catalyst.getCount() >= REQUIRED_OVERLOAD_DUST;
+
+        if (availableExtremeHighVoltage >= lightningCost) {
+            return Optional.of(new LightningConsumptionPlan(
+                    LightningKey.EXTREME_HIGH_VOLTAGE,
+                    lightningCost,
+                    false));
+        }
+
+        long highVoltageEquivalent = (long) lightningCost * EXTREME_TO_HIGH_RATIO;
+        return inventory.hasLightningCollapseMatrix()
+                && availableHighVoltage >= highVoltageEquivalent
+                ? Optional.of(new LightningConsumptionPlan(LightningKey.HIGH_VOLTAGE, highVoltageEquivalent, true))
+                : Optional.empty();
+    }
+
+    public static long getEquivalentHighVoltageCost(LightningKey.Tier lightningTier, int lightningCost) {
+        return lightningTier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
+                ? (long) lightningCost * EXTREME_TO_HIGH_RATIO
+                : lightningCost;
     }
 
     public static boolean canAcceptOutput(LightningSimulationChamberInventory inventory, ItemStack result) {
         return inventory.canAcceptRecipeOutput(result);
+    }
+
+    public record LightningConsumptionPlan(LightningKey key, long amount, boolean matrixSubstitution) {
     }
 }

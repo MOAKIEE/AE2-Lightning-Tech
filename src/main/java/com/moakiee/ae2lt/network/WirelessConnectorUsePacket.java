@@ -109,8 +109,6 @@ public record WirelessConnectorUsePacket(
 
         // ── Clicking a machine: connect to the selected host ─────────────
         if (!OverloadedWirelessConnectorItem.hasSelection(stack)) {
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.no_provider").withStyle(ChatFormatting.GREEN), true);
             return;
         }
 

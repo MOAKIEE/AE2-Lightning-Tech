@@ -11,14 +11,14 @@ import com.moakiee.ae2lt.registry.ModItems;
  *
  * <p>Slot layout:
  * 0-2 = unordered recipe inputs
- * 3   = reaction catalyst
+ * 3   = optional lightning collapse matrix
  * 4   = output only
  */
 public class LightningSimulationChamberInventory extends LargeStackItemHandler {
     public static final int SLOT_INPUT_0 = 0;
     public static final int SLOT_INPUT_1 = 1;
     public static final int SLOT_INPUT_2 = 2;
-    public static final int SLOT_OVERLOAD_DUST = 3;
+    public static final int SLOT_CATALYST = 3;
     public static final int SLOT_OUTPUT = 4;
 
     public static final int SLOT_COUNT = 5;
@@ -44,8 +44,8 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
             return false;
         }
 
-        boolean catalyst = isSimulationCatalyst(stack);
-        if (slot == SLOT_OVERLOAD_DUST) {
+        boolean catalyst = isCatalystItem(stack);
+        if (slot == SLOT_CATALYST) {
             return catalyst;
         }
 
@@ -56,24 +56,16 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
         return slot >= SLOT_INPUT_0 && slot <= SLOT_INPUT_2;
     }
 
-    public boolean isOverloadDustSlot(int slot) {
-        return slot == SLOT_OVERLOAD_DUST;
-    }
-
-    public boolean isOutputSlot(int slot) {
-        return slot == SLOT_OUTPUT;
-    }
-
-    public boolean isOverloadCrystalDust(ItemStack stack) {
-        return stack.is(ModItems.OVERLOAD_CRYSTAL_DUST.get());
-    }
-
     public boolean isLightningCollapseMatrix(ItemStack stack) {
         return stack.is(ModItems.LIGHTNING_COLLAPSE_MATRIX.get());
     }
 
-    public boolean isSimulationCatalyst(ItemStack stack) {
-        return isOverloadCrystalDust(stack) || isLightningCollapseMatrix(stack);
+    public boolean isCatalystItem(ItemStack stack) {
+        return isLightningCollapseMatrix(stack);
+    }
+
+    public boolean hasLightningCollapseMatrix() {
+        return isLightningCollapseMatrix(getStackInSlot(SLOT_CATALYST));
     }
 
     /**

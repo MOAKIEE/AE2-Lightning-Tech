@@ -6,7 +6,7 @@ package com.moakiee.ae2lt.overload.model;
  * This enum is intentionally pattern-local. It does not alter AE2's global key
  * semantics and must only be consulted by overload-aware code paths.
  */
-public enum                                       MatchMode {
+public enum MatchMode {
     /**
      * Compare item id and all attached data/components.
      */

@@ -3,6 +3,10 @@ package com.moakiee.ae2lt.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
+
 import org.joml.Matrix4f;
 import org.joml.Quaternionf;
 
@@ -29,6 +33,7 @@ import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 import appeng.client.render.overlay.OverlayRenderType;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
@@ -36,8 +41,8 @@ import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 /**
  * Client-side renderer for the Overloaded Wireless Connector.
  * <p>
- * When the player holds the connector, all Overloaded Pattern Providers within range
- * are highlighted with their connections. A preview overlay is shown for the selected provider.
+ * When the player holds the connector, all wireless-capable hosts within range
+ * are highlighted with their connections. A preview overlay is shown for the selected host.
  */
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public class WirelessConnectorRenderer {
@@ -48,10 +53,10 @@ public class WirelessConnectorRenderer {
     private static final int COLOR_CONNECTED = 0x600080FF;
     // Preview line color: bright yellow
     private static final int COLOR_PREVIEW_LINE = 0xC0FFFF00;
-    // Provider inner cube color (unselected): semi-transparent blue (ARGB)
-    private static final int COLOR_PROVIDER = 0x800080FF;
-    // Provider inner cube color (selected): semi-transparent yellow (ARGB)
-    private static final int COLOR_PROVIDER_SELECTED = 0x80FFFF00;
+    // Host inner cube color (unselected): semi-transparent blue (ARGB)
+    private static final int COLOR_HOST = 0x800080FF;
+    // Host inner cube color (selected): semi-transparent yellow (ARGB)
+    private static final int COLOR_HOST_SELECTED = 0x80FFFF00;
     // Line color: blue (ARGB)
     private static final int COLOR_LINE = 0xC00080FF;
 
@@ -93,13 +98,18 @@ public class WirelessConnectorRenderer {
         poseStack.mulPose(rotation);
         poseStack.translate(-cam.x, -cam.y, -cam.z);
 
-        // Resolve selected provider position for special coloring
-        var selectedPos = getSelectedProviderPos(stack);
-        var selectedDim = getSelectedProviderDim(stack);
-        boolean hasSelection = selectedPos != null && selectedDim != null
+        // Resolve selected host for special coloring and preview rendering.
+        var selectedHost = getSelectedHost(stack);
+        var selectedPos = selectedHost != null ? selectedHost.pos() : null;
+        var selectedDim = selectedHost != null ? selectedHost.dimension() : null;
+        var selectedHostType = selectedHost != null ? selectedHost.hostType() : null;
+        boolean hasSelection = selectedPos != null
+                && selectedDim != null
+                && selectedHostType != null
                 && mc.level.dimension().equals(selectedDim);
+        boolean selectedRendered = false;
 
-        // Scan all providers in loaded chunks within range
+        // Scan all wireless hosts in loaded chunks within range.
         BlockPos playerPos = player.blockPosition();
         int minCX = (playerPos.getX() - SCAN_RANGE) >> 4;
         int maxCX = (playerPos.getX() + SCAN_RANGE) >> 4;
@@ -112,29 +122,52 @@ public class WirelessConnectorRenderer {
                 var chunk = mc.level.getChunk(cx, cz);
                 for (var bePos : chunk.getBlockEntitiesPos()) {
                     var be = chunk.getBlockEntity(bePos);
-                    if (!(be instanceof OverloadedPatternProviderBlockEntity provider)) continue;
-                    // Skip providers in NORMAL mode
-                    if (provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) continue;
+                    if (be instanceof OverloadedPatternProviderBlockEntity provider) {
+                        if (provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
+                            continue;
+                        }
 
-                    // Use blue for selected provider, yellow for others
-                    boolean isSelected = hasSelection && bePos.equals(selectedPos);
-                    renderInnerCube(poseStack, buffer, bePos,
-                            isSelected ? COLOR_PROVIDER_SELECTED : COLOR_PROVIDER);
+                        boolean isSelected = hasSelection
+                                && OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(selectedHostType)
+                                && bePos.equals(selectedPos);
+                        renderProviderHost(poseStack, buffer, mc.level, bePos, provider, isSelected);
+                        selectedRendered |= isSelected;
+                        continue;
+                    }
 
-                    // Render connected face overlays + lines
-                    for (var conn : provider.getConnections()) {
-                        if (!conn.dimension().equals(mc.level.dimension())) continue;
-                        renderFaceOverlay(poseStack, buffer, conn.pos(), conn.boundFace(), COLOR_CONNECTED);
-                        renderLine(poseStack, buffer, bePos, conn.pos(), conn.boundFace(), COLOR_LINE);
+                    if (be instanceof OverloadedInterfaceBlockEntity iface) {
+                        if (iface.getInterfaceMode() != OverloadedInterfaceBlockEntity.InterfaceMode.WIRELESS) {
+                            continue;
+                        }
+
+                        boolean isSelected = hasSelection
+                                && OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(selectedHostType)
+                                && bePos.equals(selectedPos);
+                        renderInterfaceHost(poseStack, buffer, mc.level, bePos, iface, isSelected);
+                        selectedRendered |= isSelected;
                     }
                 }
             }
         }
 
-        // Preview face overlay (only for selected provider)
+        if (hasSelection && !selectedRendered && mc.level.isLoaded(selectedPos)) {
+            var selectedBe = mc.level.getBlockEntity(selectedPos);
+            if (OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedPatternProviderBlockEntity provider
+                    && provider.getProviderMode() != OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
+                renderProviderHost(poseStack, buffer, mc.level, selectedPos, provider, true);
+            } else if (OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedInterfaceBlockEntity iface
+                    && iface.getInterfaceMode() == OverloadedInterfaceBlockEntity.InterfaceMode.WIRELESS) {
+                renderInterfaceHost(poseStack, buffer, mc.level, selectedPos, iface, true);
+            }
+        }
+
+        // Preview face overlay (only for the selected wireless host).
         if (hasSelection) {
             var selectedBe = mc.level.getBlockEntity(selectedPos);
-            if (selectedBe instanceof OverloadedPatternProviderBlockEntity selectedProvider
+            if (OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedPatternProviderBlockEntity selectedProvider
                     && mc.hitResult instanceof BlockHitResult bhr
                     && bhr.getType() == HitResult.Type.BLOCK
                     && !bhr.getBlockPos().equals(selectedPos)
@@ -145,13 +178,40 @@ public class WirelessConnectorRenderer {
                         bhr.getBlockPos(),
                         net.minecraft.client.gui.screens.Screen.hasControlDown());
                 Direction lookFace = bhr.getDirection();
+                var existingConnections = collectConnectionsForFace(
+                        selectedProvider.getConnections(),
+                        mc.level,
+                        lookFace,
+                        c -> c.dimension(),
+                        c -> c.pos(),
+                        c -> c.boundFace());
                 for (var lookPos : previewTargets) {
-                    boolean alreadyConnected = selectedProvider.getConnections().stream()
-                            .anyMatch(c -> c.dimension().equals(mc.level.dimension())
-                                    && c.pos().equals(lookPos)
-                                    && c.boundFace() == lookFace);
+                    if (!existingConnections.contains(lookPos)) {
+                        renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
+                        renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
+                    }
+                }
+            } else if (OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedInterfaceBlockEntity selectedInterface
+                    && mc.hitResult instanceof BlockHitResult bhr
+                    && bhr.getType() == HitResult.Type.BLOCK
+                    && !bhr.getBlockPos().equals(selectedPos)
+                    && mc.level.getBlockEntity(bhr.getBlockPos()) != null) {
 
-                    if (!alreadyConnected) {
+                var previewTargets = WirelessConnectorTargetHelper.collectTargets(
+                        mc.level,
+                        bhr.getBlockPos(),
+                        net.minecraft.client.gui.screens.Screen.hasControlDown());
+                Direction lookFace = bhr.getDirection();
+                var existingConnections = collectConnectionsForFace(
+                        selectedInterface.getConnections(),
+                        mc.level,
+                        lookFace,
+                        c -> c.dimension(),
+                        c -> c.pos(),
+                        c -> c.boundFace());
+                for (var lookPos : previewTargets) {
+                    if (!existingConnections.contains(lookPos)) {
                         renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
                         renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
                     }
@@ -200,6 +260,28 @@ public class WirelessConnectorRenderer {
         poseStack.popPose();
     }
 
+    private static void renderProviderHost(PoseStack poseStack, MultiBufferSource buffer,
+            Level level, BlockPos hostPos, OverloadedPatternProviderBlockEntity provider, boolean selected) {
+        renderInnerCube(poseStack, buffer, hostPos, selected ? COLOR_HOST_SELECTED : COLOR_HOST);
+
+        for (var conn : provider.getConnections()) {
+            if (!conn.dimension().equals(level.dimension())) continue;
+            renderFaceOverlay(poseStack, buffer, conn.pos(), conn.boundFace(), COLOR_CONNECTED);
+            renderLine(poseStack, buffer, hostPos, conn.pos(), conn.boundFace(), COLOR_LINE);
+        }
+    }
+
+    private static void renderInterfaceHost(PoseStack poseStack, MultiBufferSource buffer,
+            Level level, BlockPos hostPos, OverloadedInterfaceBlockEntity iface, boolean selected) {
+        renderInnerCube(poseStack, buffer, hostPos, selected ? COLOR_HOST_SELECTED : COLOR_HOST);
+
+        for (var conn : iface.getConnections()) {
+            if (!conn.dimension().equals(level.dimension())) continue;
+            renderFaceOverlay(poseStack, buffer, conn.pos(), conn.boundFace(), COLOR_CONNECTED);
+            renderLine(poseStack, buffer, hostPos, conn.pos(), conn.boundFace(), COLOR_LINE);
+        }
+    }
+
     private static void quad(VertexConsumer vc, Matrix4f mat, int[] c,
             float x1, float y1, float z1,
             float x2, float y2, float z2,
@@ -212,16 +294,6 @@ public class WirelessConnectorRenderer {
         vc.addVertex(mat, x4, y4, z4).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
     }
 
-    private static void line(VertexConsumer vc, Matrix4f mat, int[] c,
-            float x1, float y1, float z1, float x2, float y2, float z2) {
-        // Compute direction for normal
-        float dx = x2 - x1, dy = y2 - y1, dz = z2 - z1;
-        float len = (float) Math.sqrt(dx * dx + dy * dy + dz * dz);
-        if (len < 1e-6f) return;
-        float nx = dx / len, ny = dy / len, nz = dz / len;
-        vc.addVertex(mat, x1, y1, z1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x2, y2, z2).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-    }
 
     /**
      * Render a single face overlay (quad) on the given block face.
@@ -318,17 +390,23 @@ public class WirelessConnectorRenderer {
     private static final String TAG_SELECTED = "SelectedProvider";
     private static final String TAG_DIM = "Dim";
     private static final String TAG_POS = "Pos";
+    private static final String TAG_HOST_TYPE = "HostType";
 
-    private static BlockPos getSelectedProviderPos(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
-            return null;
+    private static <T> Set<BlockPos> collectConnectionsForFace(Iterable<T> connections,
+            Level level, Direction face,
+            Function<T, ResourceKey<Level>> dimensionGetter,
+            Function<T, BlockPos> posGetter,
+            Function<T, Direction> faceGetter) {
+        Set<BlockPos> result = new HashSet<>();
+        for (var conn : connections) {
+            if (dimensionGetter.apply(conn).equals(level.dimension()) && faceGetter.apply(conn) == face) {
+                result.add(posGetter.apply(conn));
+            }
         }
-        var sel = tag.getCompound(TAG_SELECTED);
-        return BlockPos.of(sel.getLong(TAG_POS));
+        return result;
     }
 
-    private static ResourceKey<Level> getSelectedProviderDim(ItemStack stack) {
+    private static SelectedHost getSelectedHost(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
             return null;
@@ -338,6 +416,14 @@ public class WirelessConnectorRenderer {
         if (dimStr.isEmpty()) {
             return null;
         }
-        return ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr));
+        return new SelectedHost(
+                BlockPos.of(sel.getLong(TAG_POS)),
+                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr)),
+                sel.contains(TAG_HOST_TYPE, CompoundTag.TAG_STRING)
+                        ? sel.getString(TAG_HOST_TYPE)
+                        : OverloadedWirelessConnectorItem.HOST_PROVIDER);
+    }
+
+    private record SelectedHost(BlockPos pos, ResourceKey<Level> dimension, String hostType) {
     }
 }

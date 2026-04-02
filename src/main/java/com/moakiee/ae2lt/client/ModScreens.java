@@ -10,10 +10,14 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
+import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 
 /**
  * Client event: binds MenuType to Screen.
@@ -27,6 +31,11 @@ public class ModScreens {
         event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
+        event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
+        event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
+        event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
+        event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
+        registerExtendedAEScreens(event);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -43,7 +52,44 @@ public class ModScreens {
 
     private static LightningSimulationChamberScreen createLightningSimulationChamberScreen(
             LightningSimulationChamberMenu menu, Inventory inv, Component title) {
-        var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_chamber.json");
+        var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_room.json");
         return new LightningSimulationChamberScreen(menu, inv, title, style);
+    }
+
+    private static LightningCollectorScreen createLightningCollectorScreen(
+            LightningCollectorMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/lightning_collector.json");
+        return new LightningCollectorScreen(menu, inv, title, style);
+    }
+
+    private static OverloadProcessingFactoryScreen createOverloadProcessingFactoryScreen(
+            OverloadProcessingFactoryMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/overload_processing_factory.json");
+        return new OverloadProcessingFactoryScreen(menu, inv, title, style);
+    }
+
+    private static TeslaCoilScreen createTeslaCoilScreen(
+            TeslaCoilMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/tesla_coil.json");
+        return new TeslaCoilScreen(menu, inv, title, style);
+    }
+
+    private static AtmosphericIonizerScreen createAtmosphericIonizerScreen(
+            AtmosphericIonizerMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/atmospheric_ionizer.json");
+        return new AtmosphericIonizerScreen(menu, inv, title, style);
+    }
+
+    private static void registerExtendedAEScreens(RegisterMenuScreensEvent event) {
+        if (!AE2LightningTech.isExtendedAELoaded()) {
+            return;
+        }
+
+        try {
+            Class.forName("com.moakiee.ae2lt.compat.extae.client.ExtendedAEClientCompat")
+                    .getMethod("registerScreens", RegisterMenuScreensEvent.class)
+                    .invoke(null, event);
+        } catch (ReflectiveOperationException ignored) {
+        }
     }
 }

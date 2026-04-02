@@ -6,6 +6,7 @@ import java.util.Iterator;
 import java.util.List;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
@@ -22,6 +23,11 @@ public final class LightningBlastTaskManager {
             return;
         }
         ACTIVE_TASKS.add(task);
+    }
+
+    @SubscribeEvent
+    public static void onServerStopped(ServerStoppedEvent event) {
+        ACTIVE_TASKS.clear();
     }
 
     @SubscribeEvent
@@ -43,9 +49,9 @@ public final class LightningBlastTaskManager {
                     ? Math.max(0, remainingLightningBudget / remainingTasks)
                     : remainingLightningBudget;
 
-            int consumedLightning = task.tick(blockShare, lightningShare);
-            remainingBlockBudget = Math.max(0, remainingBlockBudget - blockShare);
-            remainingLightningBudget = Math.max(0, remainingLightningBudget - consumedLightning);
+            var tickResult = task.tick(blockShare, lightningShare);
+            remainingBlockBudget = Math.max(0, remainingBlockBudget - tickResult.consumedBlocks());
+            remainingLightningBudget = Math.max(0, remainingLightningBudget - tickResult.consumedLightning());
             remainingTasks--;
 
             if (task.isCompleted()) {
