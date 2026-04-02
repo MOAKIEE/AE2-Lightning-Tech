@@ -77,7 +77,9 @@ public final class WirelessHighlightRenderer {
         if (highlightPos == null || highlightDim == null) {
             return;
         }
-        if (System.currentTimeMillis() > highlightEndTime) {
+
+        long now = System.currentTimeMillis();
+        if (now > highlightEndTime) {
             clear();
             return;
         }
@@ -87,8 +89,7 @@ public final class WirelessHighlightRenderer {
             return;
         }
 
-        // Calculate alpha based on remaining time
-        long remaining = highlightEndTime - System.currentTimeMillis();
+        long remaining = highlightEndTime - now;
         float alpha = Math.min(1.0F, remaining / 1000.0F);
         alpha = Math.max(0.3F, alpha);
 

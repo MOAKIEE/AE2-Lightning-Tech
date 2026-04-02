@@ -34,4 +34,8 @@ public final class FreqGenerator {
             used.add(freq);
         }
     }
+
+    public synchronized void reset() {
+        used.clear();
+    }
 }

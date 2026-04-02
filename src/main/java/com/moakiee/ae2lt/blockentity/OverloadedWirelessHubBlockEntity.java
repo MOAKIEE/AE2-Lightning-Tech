@@ -33,7 +33,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -184,18 +183,34 @@ public class OverloadedWirelessHubBlockEntity extends AENetworkedBlockEntity
 
     // ── Tick ───────────────────────────────────────────────────────────
 
+    private static final int RETRY_INTERVAL = 20;
+    private int retryCounter;
+
     public void serverTick() {
         boolean changed = false;
+        boolean anyNeedsRetry = false;
         for (int i = 0; i < MAX_PORT; i++) {
-            // Retry if frequency set but not connected.
             if (!needsUpdate[i] && frequencies[i] != 0 && !connects[i].isConnected()) {
-                needsUpdate[i] = true;
+                anyNeedsRetry = true;
             }
             if (needsUpdate[i]) {
                 needsUpdate[i] = false;
                 connects[i].updateStatus();
                 changed = true;
             }
+        }
+        if (anyNeedsRetry && !changed) {
+            if (++retryCounter >= RETRY_INTERVAL) {
+                retryCounter = 0;
+                for (int i = 0; i < MAX_PORT; i++) {
+                    if (frequencies[i] != 0 && !connects[i].isConnected()) {
+                        connects[i].updateStatus();
+                        changed = true;
+                    }
+                }
+            }
+        } else {
+            retryCounter = 0;
         }
         if (changed) {
             updatePowerUsage();
@@ -218,8 +233,8 @@ public class OverloadedWirelessHubBlockEntity extends AENetworkedBlockEntity
         boolean anyRunning = false;
         for (int i = 0; i < MAX_PORT; i++) {
             if (connects[i].isConnected()) {
-                double dis = Math.max(connects[i].getDistance(), Math.E);
-                this.powerUse += Math.max(1.0, dis * Math.log(dis) * discount) * multiplier;
+                this.powerUse += WirelessConnect.calculatePowerForConnection(
+                        connects[i].getDistance(), discount, multiplier);
                 anyRunning = true;
             }
         }
@@ -291,42 +306,6 @@ public class OverloadedWirelessHubBlockEntity extends AENetworkedBlockEntity
         }
         upgrades.readFromNBT(data, TAG_UPGRADES, registries);
         requestUpdateAll();
-    }
-
-    // ── Network sync ───────────────────────────────────────────────────
-
-    @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
-        super.writeToStream(data);
-        data.writeDouble(powerUse);
-        data.writeVarInt(getUsedChannels());
-        data.writeVarInt(getMaxChannels());
-        for (int i = 0; i < MAX_PORT; i++) {
-            data.writeByte(connects[i].getStatus().ordinal());
-            var remotePos = getRemotePosition(i);
-            data.writeBoolean(remotePos != null);
-            if (remotePos != null) {
-                data.writeLong(remotePos.asLong());
-            }
-            data.writeVarInt(getRemoteChannels(i));
-        }
-    }
-
-    @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
-        boolean changed = super.readFromStream(data);
-        data.readDouble(); // powerUse
-        data.readVarInt(); // usedChannels
-        data.readVarInt(); // maxChannels
-        for (int i = 0; i < MAX_PORT; i++) {
-            data.readByte();
-            boolean hasRemote = data.readBoolean();
-            if (hasRemote) {
-                data.readLong();
-            }
-            data.readVarInt();
-        }
-        return changed;
     }
 
     // ── Drops ──────────────────────────────────────────────────────────

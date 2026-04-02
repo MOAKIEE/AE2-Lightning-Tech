@@ -98,20 +98,4 @@ public class OverloadedWirelessConnectorScreen extends UpgradeableScreen<Overloa
                     22, 62, textColor, false);
         }
     }
-
-    @Override
-    public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
-        if (this.remote.mouseDragged(pMouseX, pMouseY, pButton, pDragX, pDragY)) {
-            return true;
-        }
-        return super.mouseDragged(pMouseX, pMouseY, pButton, pDragX, pDragY);
-    }
-
-    @Override
-    public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
-        if (this.remote.mouseScrolled(pMouseX, pMouseY, pScrollX, pScrollY)) {
-            return true;
-        }
-        return super.mouseScrolled(pMouseX, pMouseY, pScrollX, pScrollY);
-    }
 }

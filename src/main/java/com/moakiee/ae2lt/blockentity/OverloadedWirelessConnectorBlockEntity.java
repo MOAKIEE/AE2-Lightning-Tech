@@ -33,7 +33,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -174,13 +173,19 @@ public class OverloadedWirelessConnectorBlockEntity extends AENetworkedBlockEnti
 
     // ── Tick ───────────────────────────────────────────────────────────
 
+    private static final int RETRY_INTERVAL = 20;
+    private int retryCounter;
+
     public void serverTick() {
-        // Retry if frequency set but not connected.
         if (!needsUpdate && frequency != 0 && !connect.isConnected()) {
-            needsUpdate = true;
+            if (++retryCounter >= RETRY_INTERVAL) {
+                retryCounter = 0;
+                needsUpdate = true;
+            }
         }
         if (needsUpdate) {
             needsUpdate = false;
+            retryCounter = 0;
             connect.updateStatus();
             updatePowerUsage();
             markForClientUpdate();
@@ -197,8 +202,8 @@ public class OverloadedWirelessConnectorBlockEntity extends AENetworkedBlockEnti
         double discount = calculateDiscount();
         double multiplier = AE2LTCommonConfig.wirelessConnectorPowerMultiplier();
         if (connect.isConnected()) {
-            double dis = Math.max(connect.getDistance(), Math.E);
-            this.powerUse = Math.max(1.0, dis * Math.log(dis) * discount) * multiplier;
+            this.powerUse = WirelessConnect.calculatePowerForConnection(
+                    connect.getDistance(), discount, multiplier);
         } else {
             this.powerUse = multiplier;
         }
@@ -259,38 +264,6 @@ public class OverloadedWirelessConnectorBlockEntity extends AENetworkedBlockEnti
         }
         upgrades.readFromNBT(data, TAG_UPGRADES, registries);
         needsUpdate = true;
-    }
-
-    // ── Network sync ───────────────────────────────────────────────────
-
-    @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
-        super.writeToStream(data);
-        data.writeByte(connect.getStatus().ordinal());
-        data.writeDouble(powerUse);
-        data.writeVarInt(getUsedChannels());
-        data.writeVarInt(getMaxChannels());
-        var remotePos = getRemotePosition();
-        data.writeBoolean(remotePos != null);
-        if (remotePos != null) {
-            data.writeLong(remotePos.asLong());
-        }
-    }
-
-    @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
-        boolean changed = super.readFromStream(data);
-
-        int statusOrd = data.readByte();
-        double newPower = data.readDouble();
-        int newUsed = data.readVarInt();
-        int newMax = data.readVarInt();
-        boolean hasRemote = data.readBoolean();
-        long remoteAsLong = hasRemote ? data.readLong() : 0;
-
-        // We store client-side sync data for the menu/screen.
-        // Changes are detected by the screen itself.
-        return changed;
     }
 
     // ── Drops ──────────────────────────────────────────────────────────

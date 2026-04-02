@@ -20,34 +20,23 @@ import net.neoforged.neoforge.event.level.LevelEvent;
 
 /**
  * Manages a single wireless connection between two {@link WirelessNode}s.
- * <p>
- * Each connector registers itself under a <em>positive</em> frequency key;
- * its partner is looked up under the <em>negated</em> frequency.
- * This prevents a node from connecting to itself.
+ * Uses positive/negative frequency pairing to prevent self-connection.
  */
 public class WirelessConnect implements IActionHost {
-
-    // ── Static registry ────────────────────────────────────────────────
 
     private static final Map<Long, WirelessConnect> REGISTRY = new HashMap<>();
 
     @Nullable
-    public static WirelessConnect lookup(Level level, long key) {
+    static WirelessConnect lookup(Level level, long key) {
         if (level.isClientSide()) {
             return null;
         }
         return REGISTRY.get(key);
     }
 
-    private static void register(long key, WirelessConnect connect) {
-        REGISTRY.put(key, connect);
+    public static void clearRegistry() {
+        REGISTRY.clear();
     }
-
-    private static void unregister(long key) {
-        REGISTRY.remove(key);
-    }
-
-    // ── Instance state ─────────────────────────────────────────────────
 
     private WirelessNode host;
     private long thisSide;
@@ -63,14 +52,8 @@ public class WirelessConnect implements IActionHost {
         this.host = host;
     }
 
-    // ── Public API ─────────────────────────────────────────────────────
-
     public boolean isConnected() {
         return !shutdown && connection != null;
-    }
-
-    public boolean isShutdown() {
-        return shutdown;
     }
 
     public double getDistance() {
@@ -100,9 +83,6 @@ public class WirelessConnect implements IActionHost {
         return WirelessStatus.WORKING;
     }
 
-    /**
-     * Called every server tick to maintain the wireless connection.
-     */
     public void updateStatus() {
         if (destroyed) {
             return;
@@ -110,11 +90,10 @@ public class WirelessConnect implements IActionHost {
 
         long freq = host.getFrequency();
 
-        // Re-register if frequency changed.
         if (freq != Math.abs(thisSide)) {
             destroyConnection();
             if (thisSide != 0) {
-                unregister(thisSide);
+                REGISTRY.remove(thisSide);
             }
             if (freq == 0) {
                 thisSide = 0;
@@ -122,7 +101,6 @@ public class WirelessConnect implements IActionHost {
                 shutdown = true;
                 return;
             }
-            // Decide polarity: if -freq slot is free, we take +freq; otherwise -freq.
             if (canClaimSlot(freq)) {
                 thisSide = freq;
                 otherSide = -freq;
@@ -130,7 +108,7 @@ public class WirelessConnect implements IActionHost {
                 thisSide = -freq;
                 otherSide = freq;
             }
-            register(thisSide, this);
+            REGISTRY.put(thisSide, this);
         }
 
         if (!registered) {
@@ -143,7 +121,6 @@ public class WirelessConnect implements IActionHost {
             return;
         }
 
-        // Look up partner.
         WirelessConnect remote = lookup(host.getLevel(), otherSide);
         if (remote == null || remote.destroyed || remote.host == null) {
             destroyConnection();
@@ -151,7 +128,6 @@ public class WirelessConnect implements IActionHost {
             return;
         }
 
-        // Same block entity? Ignore.
         if (remote.host.getBlockEntity() == host.getBlockEntity()
                 && remote.host.getBlockPos().equals(host.getBlockPos())) {
             destroyConnection();
@@ -159,7 +135,6 @@ public class WirelessConnect implements IActionHost {
             return;
         }
 
-        // Range check.
         Level remoteLevel = remote.host.getLevel();
         if (remoteLevel == null || remoteLevel != host.getLevel()) {
             destroyConnection();
@@ -175,7 +150,6 @@ public class WirelessConnect implements IActionHost {
             return;
         }
 
-        // Ensure grid connection exists and points at the correct nodes.
         IGridNode nodeA = host.getGridNode();
         IGridNode nodeB = remote.host.getGridNode();
         if (nodeA == null || nodeB == null) {
@@ -184,48 +158,37 @@ public class WirelessConnect implements IActionHost {
             return;
         }
 
-        // Check if we already own a valid connection.
         if (connection != null) {
             if ((connection.a() == nodeA && connection.b() == nodeB)
                     || (connection.a() == nodeB && connection.b() == nodeA)) {
                 shutdown = false;
                 return;
             }
-            // Nodes changed — rebuild.
             destroyConnection();
         }
 
-        // Check if the partner already created a connection between our nodes
-        // (e.g. partner ran updateStatus first and connected to us).
-        for (var existing : nodeA.getConnections()) {
-            if (existing.getOtherSide(nodeA) == nodeB) {
-                connection = existing;
-                shutdown = false;
-                return;
-            }
+        // Adopt existing connection created by partner.
+        IGridConnection found = findExistingConnection(nodeA, nodeB);
+        if (found != null) {
+            connection = found;
+            shutdown = false;
+            return;
         }
 
-        // Create a new grid connection.
         try {
             connection = GridHelper.createConnection(nodeA, nodeB);
             shutdown = false;
         } catch (Exception e) {
-            // Already connected (race) — try to find the existing connection.
-            for (var existing : nodeA.getConnections()) {
-                if (existing.getOtherSide(nodeA) == nodeB) {
-                    connection = existing;
-                    shutdown = false;
-                    return;
-                }
+            found = findExistingConnection(nodeA, nodeB);
+            if (found != null) {
+                connection = found;
+                shutdown = false;
+            } else {
+                shutdown = true;
             }
-            shutdown = true;
         }
     }
 
-    /**
-     * Permanently tears down this wireless link. Call when the block is
-     * removed or the chunk unloads.
-     */
     public void destroy() {
         if (destroyed) {
             return;
@@ -233,7 +196,7 @@ public class WirelessConnect implements IActionHost {
         destroyed = true;
         destroyConnection();
         if (thisSide != 0) {
-            unregister(thisSide);
+            REGISTRY.remove(thisSide);
             thisSide = 0;
         }
         if (registered) {
@@ -243,15 +206,11 @@ public class WirelessConnect implements IActionHost {
         host = null;
     }
 
-    // ── IActionHost ────────────────────────────────────────────────────
-
     @Override
     @Nullable
     public IGridNode getActionableNode() {
         return host != null ? host.getGridNode() : null;
     }
-
-    // ── Event handling ─────────────────────────────────────────────────
 
     @SubscribeEvent
     public void onLevelUnload(LevelEvent.Unload event) {
@@ -260,7 +219,10 @@ public class WirelessConnect implements IActionHost {
         }
     }
 
-    // ── Internal ───────────────────────────────────────────────────────
+    public static double calculatePowerForConnection(double distance, double discount, double multiplier) {
+        double dis = Math.max(distance, Math.E);
+        return Math.max(1.0, dis * Math.log(dis) * discount) * multiplier;
+    }
 
     private void destroyConnection() {
         if (connection != null) {
@@ -272,12 +234,18 @@ public class WirelessConnect implements IActionHost {
         }
     }
 
+    @Nullable
+    private static IGridConnection findExistingConnection(IGridNode a, IGridNode b) {
+        for (var conn : a.getConnections()) {
+            if (conn.getOtherSide(a) == b) {
+                return conn;
+            }
+        }
+        return null;
+    }
+
     private boolean canClaimSlot(long freq) {
         WirelessConnect existing = REGISTRY.get(freq);
-        if (existing == null || existing.destroyed) {
-            return true;
-        }
-        // Slot taken by a different node.
-        return false;
+        return existing == null || existing.destroyed;
     }
 }

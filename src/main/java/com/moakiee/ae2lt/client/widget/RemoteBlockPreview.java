@@ -74,18 +74,6 @@ public class RemoteBlockPreview extends AbstractWidget {
     }
 
     @Override
-    public boolean mouseDragged(double pMouseX, double pMouseY, int pButton, double pDragX, double pDragY) {
-        // Placeholder for future world display rotation
-        return false;
-    }
-
-    @Override
-    public boolean mouseScrolled(double pMouseX, double pMouseY, double pScrollX, double pScrollY) {
-        // Placeholder for future world display zoom
-        return false;
-    }
-
-    @Override
     protected void updateWidgetNarration(@NotNull NarrationElementOutput narration) {
     }
 }

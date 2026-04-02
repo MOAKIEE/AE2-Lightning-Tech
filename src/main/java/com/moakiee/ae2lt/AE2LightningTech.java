@@ -42,6 +42,8 @@ import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
 
+import com.moakiee.ae2lt.machine.wireless.FreqGenerator;
+import com.moakiee.ae2lt.machine.wireless.WirelessConnect;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -428,6 +430,8 @@ public class AE2LightningTech {
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
+        WirelessConnect.clearRegistry();
+        FreqGenerator.INSTANCE.reset();
     }
 
     private static void registerOptionalClientIntegrations() {
