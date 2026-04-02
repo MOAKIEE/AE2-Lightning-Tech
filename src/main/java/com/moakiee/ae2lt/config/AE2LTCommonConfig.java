@@ -143,6 +143,14 @@ public final class AE2LTCommonConfig {
         return VALUES.atmosphericIonizerThunderstormDurationMax.get();
     }
 
+    public static int wirelessConnectorMaxRange() {
+        return VALUES.wirelessConnectorMaxRange.get();
+    }
+
+    public static double wirelessConnectorPowerMultiplier() {
+        return VALUES.wirelessConnectorPowerMultiplier.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.DoubleValue lightningCollectorCrystalFeedRatio;
@@ -178,6 +186,8 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue atmosphericIonizerRainDurationMax;
         private final ModConfigSpec.IntValue atmosphericIonizerThunderstormDurationMin;
         private final ModConfigSpec.IntValue atmosphericIonizerThunderstormDurationMax;
+        private final ModConfigSpec.IntValue wirelessConnectorMaxRange;
+        private final ModConfigSpec.DoubleValue wirelessConnectorPowerMultiplier;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
@@ -266,6 +276,15 @@ public final class AE2LTCommonConfig {
             atmosphericIonizerThunderstormDurationMax = builder
                     .comment("Maximum thunderstorm duration applied by the Atmospheric Ionizer.")
                     .defineInRange("thunderstorm.durationMax", 15_600, 1, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("wirelessConnector");
+            wirelessConnectorMaxRange = builder
+                    .comment("Maximum range (in blocks) for the overloaded wireless connector.")
+                    .defineInRange("maxRange", 256, 1, Integer.MAX_VALUE);
+            wirelessConnectorPowerMultiplier = builder
+                    .comment("Power consumption multiplier for the overloaded wireless connector.")
+                    .defineInRange("powerMultiplier", 1.0D, 0.01D, 100.0D);
             builder.pop();
         }
     }

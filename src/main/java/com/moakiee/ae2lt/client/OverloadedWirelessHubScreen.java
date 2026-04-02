@@ -1,30 +1,25 @@
-package com.moakiee.ae2lt.compat.extae.client;
+package com.moakiee.ae2lt.client;
 
 import java.util.function.Supplier;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import appeng.client.gui.AEBaseScreen;
-import appeng.client.gui.Icon;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessHubBlockEntity;
+import com.moakiee.ae2lt.client.widget.HighlightButton;
+import com.moakiee.ae2lt.machine.wireless.WirelessStatus;
+import com.moakiee.ae2lt.menu.OverloadedWirelessHubMenu;
+
 import appeng.client.gui.implementations.UpgradeableScreen;
 import appeng.client.gui.style.Blitter;
 import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.core.AppEng;
 
-import com.glodblock.github.extendedae.client.button.ActionEPPButton;
-import com.glodblock.github.extendedae.client.button.HighlightButton;
-import com.glodblock.github.extendedae.common.me.wireless.WirelessStatus;
-import com.glodblock.github.extendedae.common.tileentities.TileWirelessHub;
-import com.glodblock.github.extendedae.network.EAENetworkHandler;
-import com.glodblock.github.extendedae.network.packet.CEAEGenericPacket;
-import com.glodblock.github.extendedae.util.MessageUtil;
-import com.moakiee.ae2lt.compat.extae.OverloadedWirelessHubMenu;
-
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.core.BlockPos;
@@ -34,6 +29,7 @@ import net.minecraft.world.item.ItemStack;
 
 public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWirelessHubMenu> {
 
+    private static final int MAX_PORT = OverloadedWirelessHubBlockEntity.MAX_PORT;
     private static final Blitter PORT =
             Blitter.texture(AppEng.makeId("textures/guis/wireless_hub.png")).src(176, 0, 16, 16);
     private static final int COL1_X = 37;
@@ -42,32 +38,34 @@ public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWir
     private static final int Y_OFFSET = 28;
     private static final int PADDING_X = 8;
     private static final int PADDING_Y = 6;
-    private final RemoteBlock[] remotes = new RemoteBlock[TileWirelessHub.MAX_PORT];
-    private final HighlightButton[] highlightBtn = new HighlightButton[TileWirelessHub.MAX_PORT];
-    private final ActionEPPButton[] disconnectBtn = new ActionEPPButton[TileWirelessHub.MAX_PORT];
 
-    public OverloadedWirelessHubScreen(OverloadedWirelessHubMenu menu, Inventory playerInventory, Component title,
-            ScreenStyle style) {
+    private final RemoteBlock[] remotes = new RemoteBlock[MAX_PORT];
+    private final HighlightButton[] highlightBtn = new HighlightButton[MAX_PORT];
+    private final Button[] disconnectBtn = new Button[MAX_PORT];
+
+    public OverloadedWirelessHubScreen(
+            OverloadedWirelessHubMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        setTextContent(AEBaseScreen.TEXT_ID_DIALOG_TITLE, title);
-        for (int i = 0; i < TileWirelessHub.MAX_PORT; i++) {
+        for (int i = 0; i < MAX_PORT; i++) {
             final int port = i;
             this.remotes[i] = new RemoteBlock(() -> menu.getRemotePosition(port), 0, 0, 16, 16);
-            this.highlightBtn[i] = new HighlightButton();
-            this.highlightBtn[i]
-                    .setTooltip(Tooltip.create(Component.translatable("gui.wireless_connect.highlight.tooltip")));
-            this.disconnectBtn[i] = new ActionEPPButton(
-                    b -> EAENetworkHandler.INSTANCE.sendToServer(new CEAEGenericPacket("disconnect", port)),
-                    Icon.CLEAR);
-            this.disconnectBtn[i]
-                    .setTooltip(Tooltip.create(Component.translatable("gui.wireless_hub.disconnect.tooltip")));
+            this.highlightBtn[i] = new HighlightButton(0, 0);
+            this.highlightBtn[i].setTooltip(Tooltip.create(
+                    Component.translatable("gui.ae2lt.wireless.highlight.tooltip")));
+            this.disconnectBtn[i] = Button.builder(
+                    Component.literal("X"),
+                    b -> menu.clientDisconnect(port))
+                    .bounds(0, 0, 16, 16)
+                    .build();
+            this.disconnectBtn[i].setTooltip(Tooltip.create(
+                    Component.translatable("gui.ae2lt.wireless.hub.disconnect.tooltip")));
         }
     }
 
     @Override
     public void init() {
         super.init();
-        for (int i = 0; i < TileWirelessHub.MAX_PORT; i++) {
+        for (int i = 0; i < MAX_PORT; i++) {
             int x = i < 4 ? COL1_X : COL2_X;
             int y = i % 4;
             this.remotes[i].setPosition(this.leftPos + x, this.topPos + COL_Y + y * Y_OFFSET);
@@ -83,27 +81,31 @@ public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWir
     protected void updateBeforeRender() {
         super.updateBeforeRender();
         var dim = this.getPlayer().clientLevel.dimension();
-        for (int i = 0; i < TileWirelessHub.MAX_PORT; i++) {
+        for (int i = 0; i < MAX_PORT; i++) {
             var status = this.menu.getStatus(i);
             if (status == WirelessStatus.WORKING || status == WirelessStatus.NO_POWER) {
                 var remotePos = this.menu.getRemotePosition(i);
                 this.highlightBtn[i].active = true;
+                this.highlightBtn[i].visible = true;
                 this.highlightBtn[i].setTarget(remotePos, dim);
                 this.highlightBtn[i].setMultiplier(this.playerToBlockDis(remotePos));
-                this.highlightBtn[i].setSuccessJob(() -> {
-                    if (this.getPlayer() != null) {
-                        Component message = MessageUtil.createEnhancedHighlightMessage(this.getPlayer(), remotePos,
-                                this.getPlayer().clientLevel.dimension(), "chat.wireless.highlight");
-                        this.getPlayer().displayClientMessage(message, false);
-                    }
-                });
-                this.remotes[i].setTooltip(Tooltip.create(Component.translatable("gui.wireless_connect.remote_channel",
-                        remotePos.getX(), remotePos.getY(), remotePos.getZ(), this.menu.getRemoteChannel(i))));
+                this.remotes[i].setTooltip(Tooltip.create(
+                        Component.translatable("gui.ae2lt.wireless.remote_channel",
+                                remotePos.getX(), remotePos.getY(), remotePos.getZ(),
+                                this.menu.getRemoteChannel(i))));
                 this.remotes[i].setConnected(true);
+                this.disconnectBtn[i].active = true;
+                this.disconnectBtn[i].visible = true;
             } else {
                 this.highlightBtn[i].active = false;
-                this.remotes[i].setTooltip(Tooltip.create(Component.translatable("gui.wireless_hub.empty_port.tooltip")));
+                this.highlightBtn[i].visible = false;
+                this.remotes[i].setTooltip(Tooltip.create(
+                        Component.translatable("gui.ae2lt.wireless.hub.empty_port.tooltip")));
                 this.remotes[i].setConnected(false);
+                // Show disconnect only if frequency set but not connected
+                boolean hasFreq = status != WirelessStatus.UNCONNECTED;
+                this.disconnectBtn[i].active = hasFreq;
+                this.disconnectBtn[i].visible = hasFreq;
             }
         }
     }
@@ -112,22 +114,14 @@ public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWir
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         int textColor = style.getColor(PaletteColor.DEFAULT_TEXT_COLOR).toARGB();
         int len = 12;
-        guiGraphics.drawString(
-                this.font,
-                Component.translatable("gui.wireless_connect.power", String.format("%.2f", this.menu.powerUse)),
-                PADDING_X,
-                PADDING_Y + len,
-                textColor,
-                false
-        );
-        guiGraphics.drawString(
-                this.font,
-                Component.translatable("gui.wireless_connect.channel", this.menu.usedChannel, this.menu.maxChannel),
-                PADDING_X,
-                PADDING_Y + len * 2,
-                textColor,
-                false
-        );
+        guiGraphics.drawString(this.font,
+                Component.translatable("gui.ae2lt.wireless.power",
+                        String.format("%.2f", this.menu.powerUse)),
+                PADDING_X, PADDING_Y + len, textColor, false);
+        guiGraphics.drawString(this.font,
+                Component.translatable("gui.ae2lt.wireless.channel",
+                        this.menu.usedChannel, this.menu.maxChannel),
+                PADDING_X, PADDING_Y + len * 2, textColor, false);
     }
 
     private double playerToBlockDis(BlockPos pos) {
@@ -137,6 +131,8 @@ public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWir
         var ps = this.getPlayer().getOnPos();
         return pos.distSqr(ps);
     }
+
+    // ── Inner RemoteBlock widget (matches EAE's) ───────────────────────
 
     private static class RemoteBlock extends AbstractWidget {
 
@@ -159,9 +155,12 @@ public class OverloadedWirelessHubScreen extends UpgradeableScreen<OverloadedWir
         protected void renderWidget(@NotNull GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
             if (this.localPos != this.locator.get() && Minecraft.getInstance().level != null) {
                 this.localPos = this.locator.get();
-                this.localBlock = new ItemStack(Minecraft.getInstance().level.getBlockState(this.localPos).getBlock());
+                if (this.localPos != null) {
+                    this.localBlock = new ItemStack(
+                            Minecraft.getInstance().level.getBlockState(this.localPos).getBlock());
+                }
             }
-            if (this.isConnected) {
+            if (this.isConnected && !this.localBlock.isEmpty()) {
                 graphics.renderItem(this.localBlock, this.getX(), this.getY(), 0, 3);
             } else {
                 PORT.dest(this.getX(), this.getY()).blit(graphics);

@@ -15,6 +15,8 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessConnectorBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessHubBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -23,8 +25,8 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModContainer;
+import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -51,8 +53,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
-
-    private static boolean extendedAELoaded;
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
@@ -115,6 +115,8 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        output.accept(ModBlocks.OVERLOADED_WIRELESS_CONNECTOR);
+                        output.accept(ModBlocks.OVERLOADED_WIRELESS_HUB);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
@@ -123,10 +125,6 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
-                        if (extendedAELoaded) {
-                            com.moakiee.ae2lt.compat.extae.ExtendedAECompat
-                                    .addCreativeTabItems(output);
-                        }
                     })
                     .build());
 
@@ -147,16 +145,7 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
 
-        extendedAELoaded = ModList.get().isLoaded("extendedae");
-        if (extendedAELoaded) {
-            com.moakiee.ae2lt.compat.extae.ExtendedAECompat.init(modEventBus);
-        }
-
         registerOptionalClientIntegrations();
-    }
-
-    public static boolean isExtendedAELoaded() {
-        return extendedAELoaded;
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -244,6 +233,16 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_INTERFACE.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_WIRELESS_CONNECTOR.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_WIRELESS_HUB.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlock(
@@ -344,6 +343,22 @@ public class AE2LightningTech {
                     null,
                     OverloadedInterfaceBlockEntity::serverTick);
 
+            var wirelessConnectorBlock = ModBlocks.OVERLOADED_WIRELESS_CONNECTOR.get();
+            var wirelessConnectorBeType = ModBlockEntities.OVERLOADED_WIRELESS_CONNECTOR.get();
+            wirelessConnectorBlock.setBlockEntity(
+                    OverloadedWirelessConnectorBlockEntity.class,
+                    wirelessConnectorBeType,
+                    null,
+                    (level, pos, state, be) -> ((OverloadedWirelessConnectorBlockEntity) be).serverTick());
+
+            var wirelessHubBlock = ModBlocks.OVERLOADED_WIRELESS_HUB.get();
+            var wirelessHubBeType = ModBlockEntities.OVERLOADED_WIRELESS_HUB.get();
+            wirelessHubBlock.setBlockEntity(
+                    OverloadedWirelessHubBlockEntity.class,
+                    wirelessHubBeType,
+                    null,
+                    (level, pos, state, be) -> ((OverloadedWirelessHubBlockEntity) be).serverTick());
+
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     lightningCollectorBeType,
                     lightningCollectorBlock.asItem());
@@ -356,6 +371,12 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    wirelessConnectorBeType,
+                    wirelessConnectorBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    wirelessHubBeType,
+                    wirelessHubBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
@@ -381,11 +402,12 @@ public class AE2LightningTech {
             Upgrades.add(AEItems.CRAFTING_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
             Upgrades.add(AEItems.FUZZY_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
 
-            registerAppliedFluxInductionCardCompat();
+            Upgrades.add(AEItems.ENERGY_CARD, ModBlocks.OVERLOADED_WIRELESS_CONNECTOR.get(),
+                    OverloadedWirelessConnectorBlockEntity.UPGRADE_SLOTS);
+            Upgrades.add(AEItems.ENERGY_CARD, ModBlocks.OVERLOADED_WIRELESS_HUB.get(),
+                    OverloadedWirelessHubBlockEntity.UPGRADE_SLOTS);
 
-            if (extendedAELoaded) {
-                com.moakiee.ae2lt.compat.extae.ExtendedAECompat.setupBlockEntities();
-            }
+            registerAppliedFluxInductionCardCompat();
         });
     }
 

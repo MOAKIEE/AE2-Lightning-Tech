@@ -1,11 +1,14 @@
 package com.moakiee.ae2lt.item;
 
-import com.glodblock.github.extendedae.common.blocks.BlockWirelessConnector;
-import com.glodblock.github.extendedae.common.blocks.BlockWirelessHub;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.OverloadedWirelessConnectorBlock;
+import com.moakiee.ae2lt.block.OverloadedWirelessHubBlock;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessConnectorBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessHubBlockEntity;
+import com.moakiee.ae2lt.machine.wireless.FreqGenerator;
 import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -68,9 +71,16 @@ public class OverloadedWirelessConnectorItem extends Item {
         var pos = context.getClickedPos();
         var state = level.getBlockState(pos);
         var targetBe = level.getBlockEntity(pos);
-        if (state.getBlock() instanceof BlockWirelessConnector || state.getBlock() instanceof BlockWirelessHub) {
-            return InteractionResult.PASS;
+
+        // ── Wireless Connector / Hub frequency binding (server-side) ────
+        if (state.getBlock() instanceof OverloadedWirelessConnectorBlock
+                || state.getBlock() instanceof OverloadedWirelessHubBlock) {
+            if (level.isClientSide()) {
+                return InteractionResult.SUCCESS;
+            }
+            return handleFrequencyBinding(context.getItemInHand(), level, pos, targetBe, player);
         }
+
         boolean isHost = state.getBlock() instanceof OverloadedPatternProviderBlock
                 || state.getBlock() instanceof OverloadedInterfaceBlock;
         boolean isMachine = targetBe != null;
@@ -88,6 +98,119 @@ public class OverloadedWirelessConnectorItem extends Item {
             return InteractionResult.SUCCESS_NO_ITEM_USED;
         }
         return InteractionResult.SUCCESS;
+    }
+
+    // ── Frequency binding for wireless connector / hub ──────────────────
+
+    private static final String TAG_FREQUENCY = "Frequency";
+
+    private InteractionResult handleFrequencyBinding(ItemStack tool, Level level, BlockPos pos,
+            @Nullable BlockEntity be, Player player) {
+        // Sneak-click: clear frequency
+        if (player.isShiftKeyDown()) {
+            if (hasStoredFrequency(tool)) {
+                clearStoredFrequency(tool);
+                player.displayClientMessage(
+                        Component.translatable("item.ae2lt.wireless_frequency_tool.cleared")
+                                .withStyle(ChatFormatting.YELLOW),
+                        true);
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        if (be instanceof OverloadedWirelessConnectorBlockEntity connector) {
+            if (hasStoredFrequency(tool)) {
+                long freq = getStoredFrequency(tool);
+                connector.setFrequency(freq);
+                connector.requestUpdate();
+                clearStoredFrequency(tool);
+                player.displayClientMessage(
+                        Component.translatable("item.ae2lt.wireless_frequency_tool.paired",
+                                formatPos(pos)).withStyle(ChatFormatting.GREEN),
+                        true);
+            } else {
+                long freq = FreqGenerator.INSTANCE.genFreq();
+                connector.setFrequency(freq);
+                connector.requestUpdate();
+                setStoredFrequency(tool, freq);
+                player.displayClientMessage(
+                        Component.translatable("item.ae2lt.wireless_frequency_tool.selected",
+                                formatPos(pos)).withStyle(ChatFormatting.AQUA),
+                        true);
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        if (be instanceof OverloadedWirelessHubBlockEntity hub) {
+            if (hasStoredFrequency(tool)) {
+                int port = hub.allocatePort();
+                if (port < 0) {
+                    player.displayClientMessage(
+                            Component.translatable("item.ae2lt.wireless_frequency_tool.hub_full")
+                                    .withStyle(ChatFormatting.RED),
+                            true);
+                    return InteractionResult.SUCCESS;
+                }
+                long freq = getStoredFrequency(tool);
+                hub.setFrequency(freq, port);
+                hub.requestUpdateAll();
+                clearStoredFrequency(tool);
+                player.displayClientMessage(
+                        Component.translatable("item.ae2lt.wireless_frequency_tool.hub_paired",
+                                port + 1, formatPos(pos)).withStyle(ChatFormatting.GREEN),
+                        true);
+            } else {
+                int port = hub.allocatePort();
+                if (port < 0) {
+                    player.displayClientMessage(
+                            Component.translatable("item.ae2lt.wireless_frequency_tool.hub_full")
+                                    .withStyle(ChatFormatting.RED),
+                            true);
+                    return InteractionResult.SUCCESS;
+                }
+                long freq = FreqGenerator.INSTANCE.genFreq();
+                hub.setFrequency(freq, port);
+                hub.requestUpdateAll();
+                setStoredFrequency(tool, freq);
+                player.displayClientMessage(
+                        Component.translatable("item.ae2lt.wireless_frequency_tool.selected",
+                                formatPos(pos)).withStyle(ChatFormatting.AQUA),
+                        true);
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        return InteractionResult.PASS;
+    }
+
+    private static boolean hasStoredFrequency(ItemStack stack) {
+        var data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null && data.copyTag().contains(TAG_FREQUENCY);
+    }
+
+    private static long getStoredFrequency(ItemStack stack) {
+        var data = stack.get(DataComponents.CUSTOM_DATA);
+        return data != null ? data.copyTag().getLong(TAG_FREQUENCY) : 0;
+    }
+
+    private static void setStoredFrequency(ItemStack stack, long freq) {
+        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, cd -> {
+            CompoundTag tag = cd.copyTag();
+            tag.putLong(TAG_FREQUENCY, freq);
+            return CustomData.of(tag);
+        });
+    }
+
+    private static void clearStoredFrequency(ItemStack stack) {
+        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, cd -> {
+            CompoundTag tag = cd.copyTag();
+            tag.remove(TAG_FREQUENCY);
+            return CustomData.of(tag);
+        });
+    }
+
+    private static String formatPos(BlockPos pos) {
+        return String.format("[%d, %d, %d]", pos.getX(), pos.getY(), pos.getZ());
     }
 
     @Override

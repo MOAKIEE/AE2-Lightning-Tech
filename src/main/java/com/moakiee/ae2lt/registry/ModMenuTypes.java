@@ -8,6 +8,8 @@ import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.OverloadedWirelessConnectorMenu;
+import com.moakiee.ae2lt.menu.OverloadedWirelessHubMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
@@ -57,6 +59,16 @@ public final class ModMenuTypes {
             ATMOSPHERIC_IONIZER = MENU_TYPES.register(
                     "atmospheric_ionizer",
                     () -> AtmosphericIonizerMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadedWirelessConnectorMenu>>
+            OVERLOADED_WIRELESS_CONNECTOR = MENU_TYPES.register(
+                    "overloaded_wireless_connector",
+                    () -> OverloadedWirelessConnectorMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<OverloadedWirelessHubMenu>>
+            OVERLOADED_WIRELESS_HUB = MENU_TYPES.register(
+                    "overloaded_wireless_hub",
+                    () -> OverloadedWirelessHubMenu.TYPE);
 
     private ModMenuTypes() {
     }

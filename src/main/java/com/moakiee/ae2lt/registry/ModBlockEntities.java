@@ -9,6 +9,8 @@ import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessConnectorBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedWirelessHubBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Blocks;
@@ -82,6 +84,22 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedInterfaceBlockEntity::new,
                             ModBlocks.OVERLOADED_INTERFACE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedWirelessConnectorBlockEntity>>
+            OVERLOADED_WIRELESS_CONNECTOR = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_wireless_connector",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedWirelessConnectorBlockEntity::new,
+                            ModBlocks.OVERLOADED_WIRELESS_CONNECTOR.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedWirelessHubBlockEntity>>
+            OVERLOADED_WIRELESS_HUB = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_wireless_hub",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedWirelessHubBlockEntity::new,
+                            ModBlocks.OVERLOADED_WIRELESS_HUB.get())
                             .build(null));
 
     @SuppressWarnings("DataFlowIssue")

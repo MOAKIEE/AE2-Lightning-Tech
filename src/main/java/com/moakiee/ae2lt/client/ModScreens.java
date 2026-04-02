@@ -17,6 +17,8 @@ import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.OverloadedWirelessConnectorMenu;
+import com.moakiee.ae2lt.menu.OverloadedWirelessHubMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 
 /**
@@ -35,7 +37,10 @@ public class ModScreens {
         event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
-        registerExtendedAEScreens(event);
+        event.register(OverloadedWirelessConnectorMenu.TYPE,
+                ModScreens::createOverloadedWirelessConnectorScreen);
+        event.register(OverloadedWirelessHubMenu.TYPE,
+                ModScreens::createOverloadedWirelessHubScreen);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -80,16 +85,15 @@ public class ModScreens {
         return new AtmosphericIonizerScreen(menu, inv, title, style);
     }
 
-    private static void registerExtendedAEScreens(RegisterMenuScreensEvent event) {
-        if (!AE2LightningTech.isExtendedAELoaded()) {
-            return;
-        }
+    private static OverloadedWirelessConnectorScreen createOverloadedWirelessConnectorScreen(
+            OverloadedWirelessConnectorMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/overloaded_wireless_connector.json");
+        return new OverloadedWirelessConnectorScreen(menu, inv, title, style);
+    }
 
-        try {
-            Class.forName("com.moakiee.ae2lt.compat.extae.client.ExtendedAEClientCompat")
-                    .getMethod("registerScreens", RegisterMenuScreensEvent.class)
-                    .invoke(null, event);
-        } catch (ReflectiveOperationException ignored) {
-        }
+    private static OverloadedWirelessHubScreen createOverloadedWirelessHubScreen(
+            OverloadedWirelessHubMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/overloaded_wireless_hub.json");
+        return new OverloadedWirelessHubScreen(menu, inv, title, style);
     }
 }
