@@ -36,6 +36,8 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_MATRIX", false);
     public static final SlotSemantic OVERLOAD_FACTORY_OUTPUT_0 =
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_OUTPUT_0", false);
+    public static final SlotSemantic OVERLOADED_FILTER =
+            SlotSemantics.register("AE2LT_OVERLOADED_FILTER", false);
 
     private Ae2ltSlotSemantics() {
     }

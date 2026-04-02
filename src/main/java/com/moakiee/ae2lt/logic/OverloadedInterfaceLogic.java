@@ -152,11 +152,14 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         for (var is : getUpgrades()) {
             if (!is.isEmpty()) drops.add(is);
         }
+        var filterStack = owner.getFilterInv().getStackInSlot(0);
+        if (!filterStack.isEmpty()) drops.add(filterStack);
     }
 
     @Override
     public void clearContent() {
         getUpgrades().clear();
+        owner.getFilterInv().setItemDirect(0, ItemStack.EMPTY);
     }
 
     private static final long REACTIVE_COOLDOWN_TICKS = 5;

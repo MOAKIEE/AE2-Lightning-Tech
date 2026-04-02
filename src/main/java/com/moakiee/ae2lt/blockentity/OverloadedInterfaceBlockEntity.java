@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
+import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
@@ -49,6 +50,8 @@ import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.InternalInventoryHost;
 
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -71,6 +74,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final String TAG_CONNECTIONS    = "WirelessConnections";
     private static final String TAG_ENERGY_DIR     = "EnergyDir";
     private static final String TAG_UNLIMITED_SLOTS = "UnlimitedSlots";
+    private static final String TAG_FILTER_INV     = "FilterInv";
 
     public enum InterfaceMode { NORMAL, WIRELESS }
     public enum IOSpeedMode   { NORMAL, FAST }
@@ -332,6 +336,28 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
+        @Override
+        public void saveChangedInventory(AppEngInternalInventory inv) {
+            saveChanges(); markForUpdate();
+        }
+
+        @Override
+        public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+            rebuildFilter();
+        }
+
+        @Override
+        public boolean isClientSide() {
+            return level != null && level.isClientSide();
+        }
+    };
+    private final AppEngInternalInventory filterInv = new AppEngInternalInventory(filterInvHost, 1) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return !stack.isEmpty() && stack.getItem() instanceof OverloadedFilterComponentItem;
+        }
+    };
     private @Nullable DirectMEInsertInventory directInsertInv;
     private boolean ejectRegistered = false;
     private boolean unloadingChunk = false;
@@ -393,14 +419,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         return directInsertInv;
     }
 
+    public AppEngInternalInventory getFilterInv() {
+        return filterInv;
+    }
+
     public void rebuildFilter() {
         if (directInsertInv == null) return;
-        var upgrades = getInterfaceLogic().getUpgrades();
-        ItemStack filterStack = ItemStack.EMPTY;
-        for (int i = 0; i < upgrades.size(); i++) {
-            var s = upgrades.getStackInSlot(i);
-            if (s.getItem() instanceof ICellWorkbenchItem) { filterStack = s; break; }
-        }
+        ItemStack filterStack = filterInv.getStackInSlot(0);
         if (filterStack.isEmpty()
                 || !(filterStack.getItem() instanceof ICellWorkbenchItem cwi)) {
             directInsertInv.setFilter(null); return;
@@ -1131,6 +1156,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var cl = new ListTag();
         for (var c : connections) cl.add(c.toTag());
         d.put(TAG_CONNECTIONS, cl);
+        filterInv.writeToNBT(d, TAG_FILTER_INV, r);
     }
 
     @Override
@@ -1162,6 +1188,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             for (int i = 0; i < cl.size(); i++)
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
+        filterInv.readFromNBT(d, TAG_FILTER_INV, r);
     }
 
 }
