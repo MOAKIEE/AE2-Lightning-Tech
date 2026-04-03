@@ -1,4 +1,4 @@
-﻿{
+{
   "key.ae2lt.lightning": "闪电",
   "key.ae2lt.high_voltage_lightning": "高压闪电",
   "key.ae2lt.extreme_high_voltage_lightning": "极高压闪电",
@@ -232,5 +232,9 @@
   "item.ae2lt.perfect_electro_chime_crystal.complete": "培养完成",
   "item.ae2lt.weather_condensate.target": "目标天气：%s",
   "item.ae2lt.weather_condensate.energy": "电离消耗：%s AE",
-  "item.ae2lt.weather_condensate.duration": "持续时间：%s~%s tick"
+  "item.ae2lt.weather_condensate.duration": "持续时间：%s~%s tick",
+  "block.ae2lt.update_suppressor": "更新抑制器",
+  "item.ae2lt.infinite_storage_cell": "无限存储元件",
+  "tooltip.ae2lt.infinite_cell.types": "已存储类型: %s",
+  "tooltip.ae2lt.infinite_cell.bytes": "已使用字节: %s"
 }

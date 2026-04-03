@@ -37,8 +37,11 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
+import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.definitions.AEItems;
+
+import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
@@ -79,6 +82,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
+                        output.accept(ModItems.INFINITE_STORAGE_CELL);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.LIGHTNING_COLLECTOR);
@@ -115,6 +119,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        output.accept(ModBlocks.UPDATE_SUPPRESSOR);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
@@ -371,6 +376,7 @@ public class AE2LightningTech {
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
+            StorageCells.addCellHandler(InfiniteCellHandler.INSTANCE);
             ModItems.registerStorageCellModels();
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
                     LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);

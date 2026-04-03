@@ -1,0 +1,32 @@
+package com.moakiee.ae2lt.me.cell;
+
+import org.jetbrains.annotations.Nullable;
+
+import appeng.api.storage.cells.ICellHandler;
+import appeng.api.storage.cells.ISaveProvider;
+import appeng.api.storage.cells.StorageCell;
+import net.minecraft.world.item.ItemStack;
+
+import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
+
+public final class InfiniteCellHandler implements ICellHandler {
+
+    public static final InfiniteCellHandler INSTANCE = new InfiniteCellHandler();
+
+    private InfiniteCellHandler() {}
+
+    @Override
+    public boolean isCell(ItemStack is) {
+        return is.getItem() instanceof InfiniteStorageCellItem;
+    }
+
+    @Override
+    public @Nullable StorageCell getCellInventory(ItemStack is, @Nullable ISaveProvider host) {
+        if (!(is.getItem() instanceof InfiniteStorageCellItem cell)) return null;
+        return InfiniteCellInventory.create(
+                is, null,
+                cell.getBytesPerType(), cell.getMaxTypes(),
+                cell.getCapacityLo(), cell.getCapacityHi(),
+                cell.getIdleDrain());
+    }
+}

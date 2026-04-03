@@ -232,5 +232,9 @@
   "item.ae2lt.perfect_electro_chime_crystal.complete": "Cultivation Complete",
   "item.ae2lt.weather_condensate.target": "Target Weather: %s",
   "item.ae2lt.weather_condensate.energy": "Ionization Cost: %s AE",
-  "item.ae2lt.weather_condensate.duration": "Duration: %s~%s ticks"
+  "item.ae2lt.weather_condensate.duration": "Duration: %s~%s ticks",
+  "block.ae2lt.update_suppressor": "Update Suppressor",
+  "item.ae2lt.infinite_storage_cell": "Infinite Storage Cell",
+  "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
+  "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s"
 }
