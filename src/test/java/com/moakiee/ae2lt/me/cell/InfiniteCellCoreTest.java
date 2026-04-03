@@ -510,6 +510,97 @@ class InfiniteCellCoreTest {
         }
 
         @Test
+        void compactTriggersWhenHolesExceedThreshold() {
+            var s = newStorage();
+            int total = 300;
+            StubKey[] keys = new StubKey[total];
+            for (int i = 0; i < total; i++) {
+                keys[i] = itemKey(i);
+                s.insert(keys[i], (i + 1) * 100L, Actionable.MODULATE);
+            }
+            assertEquals(total, s.getTotalTypes());
+
+            // remove 290 of 300 → freeCount=290, totalTypes=10
+            // threshold=2 → need freeCount > 10*2=20, so 290>20 triggers compact
+            for (int i = 10; i < total; i++) {
+                s.extract(keys[i], (i + 1) * 100L, Actionable.MODULATE);
+            }
+            assertEquals(10, s.getTotalTypes());
+            assertTrue(s.needsPersist());
+
+            // persist triggers deferred compact + full rewrite
+            CompoundTag persisted = s.persist(null, StubKey::stubToTag, null);
+            assertNotNull(persisted);
+
+            // verify surviving keys have correct amounts
+            for (int i = 0; i < 10; i++) {
+                assertTrue(s.containsKey(keys[i]), "key " + i + " should survive");
+                assertEquals((i + 1) * 100L, s.getAmount(keys[i]),
+                        "amount key " + i + " after compact");
+            }
+            for (int i = 10; i < total; i++) {
+                assertFalse(s.containsKey(keys[i]), "key " + i + " should be gone");
+            }
+
+            // verify getAvailableStacks is consistent
+            var kc = new KeyCounter();
+            s.getAvailableStacks(kc);
+            assertEquals(10, kc.size(), "availableStacks count after compact");
+
+            // verify new inserts work after compaction
+            for (int i = 0; i < 50; i++) {
+                var nk = itemKey(1000 + i);
+                s.insert(nk, 42, Actionable.MODULATE);
+                assertEquals(42, s.getAmount(nk));
+            }
+            assertEquals(60, s.getTotalTypes());
+
+            // verify persist after compact + new inserts produces valid NBT
+            CompoundTag persisted2 = s.persist(persisted, StubKey::stubToTag, null);
+            assertNotNull(persisted2);
+            assertEquals(60, persisted2.getInt("totalTypes"));
+        }
+
+        @Test
+        void compactPreservesTypeAggregates() {
+            var s = newStorage();
+            // insert mixed types
+            for (int i = 0; i < 100; i++)
+                s.insert(itemKey(i), 1000, Actionable.MODULATE);
+            for (int i = 0; i < 100; i++)
+                s.insert(fluidKey(i), 5000, Actionable.MODULATE);
+
+            // remove most items, keep all fluids
+            for (int i = 5; i < 100; i++)
+                s.extract(itemKey(i), 1000, Actionable.MODULATE);
+
+            // 5 items + 100 fluids = 105 alive, 95 free → 95 > 105*2? no (210)
+            // remove more fluids to trigger
+            for (int i = 10; i < 100; i++)
+                s.extract(fluidKey(i), 5000, Actionable.MODULATE);
+
+            // 5 items + 10 fluids = 15 alive, 185 free → 185 > 15*2=30 ✓
+            assertEquals(15, s.getTotalTypes());
+
+            // persist triggers compact
+            CompoundTag tag = s.persist(null, StubKey::stubToTag, null);
+
+            // verify per-type aggregates via ByteTracker rebuild
+            var bt = new ByteTracker(s::getTotalTypes);
+            bt.configure(8, Integer.MAX_VALUE, Long.MAX_VALUE, 0);
+            bt.rebuild(s.getTypeAmountLo(), s.getTypeAmountHi(),
+                    s.getTypeCounts(), s.getTotalTypes());
+
+            long expectedItemAmount = 5 * 1000L;
+            long expectedFluidAmount = 10 * 5000L;
+            long expectedBytes = 15 * 8L
+                    + ceilDiv(expectedItemAmount, StubKeyType.ITEMS.getAmountPerByte())
+                    + ceilDiv(expectedFluidAmount, StubKeyType.FLUIDS.getAmountPerByte());
+            assertEquals(expectedBytes, bt.getUsedBytes(),
+                    "byte tracker consistent after compact");
+        }
+
+        @Test
         void maxTypesLimitsNewKeys() {
             var s = newStorage();
             var bt = new ByteTracker(s::getTotalTypes);

@@ -27,10 +27,15 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
  * last persist, giving O(changed) persist with no bitset scanning.
  * A per-id boolean {@code isStructDirty} distinguishes key add/remove
  * (needs key-tag write) from amount-only changes (just long[] writes).
+ * <p>
+ * When the number of free (hole) slots exceeds {@code totalTypes * COMPACT_THRESHOLD},
+ * a deferred compaction is scheduled and executed at the next {@link #persist},
+ * reassigning contiguous ids and forcing a full rewrite.
  */
 final class IndexedStorage {
 
     private static final int INITIAL_CAPACITY = 256;
+    private static final int COMPACT_THRESHOLD = 2;
 
     // Key registry — id is stable and doubles as ListTag position
     private final Object2IntOpenHashMap<AEKey> keyToId = new Object2IntOpenHashMap<>();
@@ -54,6 +59,7 @@ final class IndexedStorage {
 
     private int totalTypes;
     private boolean needsPersist;
+    private boolean needsCompact;
     private long modCount;
 
     // Per-AEKeyType aggregates — maintained incrementally
@@ -142,6 +148,9 @@ final class IndexedStorage {
         if (keyRemoved) {
             recycleId(id, key);
             totalTypes--;
+            if (freeCount > Math.max(totalTypes, 1) * COMPACT_THRESHOLD) {
+                needsCompact = true;
+            }
         } else {
             lo[id] = newLo;
             enqueueDirty(id);
@@ -203,6 +212,10 @@ final class IndexedStorage {
     }
 
     CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, HolderLookup.Provider registries) {
+        if (needsCompact) {
+            compact();
+            lastRoot = null;
+        }
         if (lastRoot == null) {
             return persistFull(keySerializer, registries);
         }
@@ -288,6 +301,39 @@ final class IndexedStorage {
         return root;
     }
 
+    private void compact() {
+        int newCap = alignPow2(Math.max(totalTypes, 1));
+        int newNext = 0;
+
+        AEKey[] nKey = new AEKey[newCap];
+        long[] nLo = new long[newCap];
+        long[] nHi = new long[newCap];
+        CompoundTag[] nSer = new CompoundTag[newCap];
+
+        for (int old = 0; old < nextId; old++) {
+            if (idToKey[old] == null) continue;
+            int nid = newNext++;
+            nKey[nid] = idToKey[old];
+            nLo[nid] = lo[old];
+            nHi[nid] = hi[old];
+            nSer[nid] = serializedKey[old];
+            keyToId.put(idToKey[old], nid);
+        }
+
+        idToKey = nKey;
+        lo = nLo;
+        hi = nHi;
+        serializedKey = nSer;
+        inQueue = new boolean[newCap];
+        isStructDirty = new boolean[newCap];
+        dirtyQueue = new int[Math.max(64, newNext)];
+        dirtyCount = 0;
+        nextId = newNext;
+        freeIds = new int[64];
+        freeCount = 0;
+        needsCompact = false;
+    }
+
     private static int alignPow2(int n) {
         if (n <= INITIAL_CAPACITY) return INITIAL_CAPACITY;
         return Integer.highestOneBit(n - 1) << 1;
@@ -348,6 +394,10 @@ final class IndexedStorage {
             if (sumLo < 0) { sumLo &= Long.MAX_VALUE; sumHi++; }
             typeAmountLo.put(kt, sumLo);
             typeAmountHi.put(kt, sumHi);
+        }
+
+        if (freeCount > Math.max(totalTypes, 1) * COMPACT_THRESHOLD) {
+            needsCompact = true;
         }
     }
 
