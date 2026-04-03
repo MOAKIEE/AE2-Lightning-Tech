@@ -4,13 +4,11 @@ import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import net.minecraft.world.entity.player.Player;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IManagedGridNode;
-import appeng.api.networking.pathing.ChannelMode;
 import appeng.api.util.AEColor;
 import appeng.api.util.AECableType;
 import appeng.items.parts.ColoredPartItem;
 import appeng.parts.networking.CoveredDenseCablePart;
 import appeng.parts.networking.IUsedChannelProvider;
-import appeng.me.GridNode;
 
 /**
  * Minimal AE2LT-owned cable part shell.
@@ -56,17 +54,10 @@ public class OverloadedCablePart extends CoveredDenseCablePart
 
     @Override
     public int getMaxChannelsInfo() {
-        // Reuse AE2's real node capacity. For our overloaded cable this will naturally
-        // reflect the owner-scoped 128-channel mixin, while vanilla cables remain vanilla.
-        // This is intentionally not a separate cached tooltip state.
-        var node = this.getGridNode();
-        if (node instanceof GridNode gridNode) {
-            if (gridNode.getGrid().getPathingService().getChannelMode() == ChannelMode.INFINITE) {
-                return -1;
-            }
-            return gridNode.getMaxChannels();
+        if (this.getGridNode() == null) {
+            return 0;
         }
-        return 0;
+        return -1;
     }
 
     @Override
