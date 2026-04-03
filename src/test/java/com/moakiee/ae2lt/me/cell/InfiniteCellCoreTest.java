@@ -647,6 +647,61 @@ class InfiniteCellCoreTest {
         }
 
         @Test
+        void profileLongRunning() {
+            StubKeyType[] types = {
+                    StubKeyType.ITEMS, StubKeyType.FLUIDS, StubKeyType.GAS,
+                    StubKeyType.ESSENCE, StubKeyType.ENERGY
+            };
+            int keysPerType = 50_000;
+            int totalKeys = keysPerType * types.length;
+            int persistInterval = 1024;
+
+            StubKey[][] keys = new StubKey[types.length][keysPerType];
+            for (int t = 0; t < types.length; t++)
+                for (int i = 0; i < keysPerType; i++)
+                    keys[t][i] = new StubKey(i, types[t]);
+
+            var warmup = newUnlimitedStorage();
+            for (int t = 0; t < types.length; t++)
+                for (int i = 0; i < keysPerType; i++)
+                    warmup.insert(keys[t][i], 100, Actionable.MODULATE);
+            warmup.persist(null, StubKey::stubToTag, null);
+            warmup = null;
+
+            long targetNs = 15_000_000_000L;
+            var rng = new SplittableRandom(42);
+            var s = newUnlimitedStorage();
+            CompoundTag lastPersisted = null;
+            int opCounter = 0;
+            long totalOps = 0;
+
+            long t0 = System.nanoTime();
+            while (System.nanoTime() - t0 < targetNs) {
+                for (int t = 0; t < types.length; t++) {
+                    for (int i = 0; i < keysPerType; i++) {
+                        long amount = rng.nextLong(1, 10_000);
+                        if (rng.nextBoolean() && s.containsKey(keys[t][i])) {
+                            s.extract(keys[t][i], amount, Actionable.MODULATE);
+                        } else {
+                            s.insert(keys[t][i], amount, Actionable.MODULATE);
+                        }
+                        totalOps++;
+                        if (++opCounter % persistInterval == 0) {
+                            lastPersisted = s.persist(lastPersisted, StubKey::stubToTag, null);
+                        }
+                    }
+                }
+            }
+            long elapsed = System.nanoTime() - t0;
+
+            System.out.printf("[PROFILE] %,d ops in %,d ms — %.1f ns/op — %.1f M ops/s%n",
+                    totalOps, elapsed / 1_000_000,
+                    (double) elapsed / totalOps,
+                    totalOps / (elapsed / 1e9) / 1e6);
+            System.out.printf("  %,d types, persist every %,d ops%n", totalKeys, persistInterval);
+        }
+
+        @Test
         void benchmarkStructuredInsert10M() {
             StubKeyType[] types = {
                     StubKeyType.ITEMS, StubKeyType.FLUIDS, StubKeyType.GAS,

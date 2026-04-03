@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.LongArrayTag;
 import net.minecraft.nbt.Tag;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
@@ -18,23 +19,20 @@ import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 /**
  * Array-indexed storage engine for the infinite cell.
  * <p>
- * Pure data store — no capacity checks. Capacity enforcement lives in
- * {@link InfiniteCellInventory} via {@link ByteTracker}.
+ * Each {@link AEKey} is assigned a stable integer id. The id doubles as
+ * the position in the persisted {@link ListTag} / {@link LongArrayTag},
+ * so incremental persist only touches changed positions.
  * <p>
- * Each {@link AEKey} is assigned a dense integer id on first insert.
- * Amounts are stored in parallel {@code long[]} arrays ({@code lo[id]},
- * {@code hi[id]}) for cache-friendly access. A per-key dirty bitset
- * ensures that {@link #persist} only re-serializes modified entries.
- * <p>
- * Per-{@link AEKeyType} aggregates (total amount hi/lo, key count) are
- * maintained incrementally so that {@link ByteTracker} can rebuild in
- * O(keyTypes) instead of O(totalKeys).
+ * A dirty queue ({@code dirtyQueue}) records which ids changed since the
+ * last persist, giving O(changed) persist with no bitset scanning.
+ * A per-id boolean {@code isStructDirty} distinguishes key add/remove
+ * (needs key-tag write) from amount-only changes (just long[] writes).
  */
 final class IndexedStorage {
 
     private static final int INITIAL_CAPACITY = 256;
 
-    // Key registry
+    // Key registry — id is stable and doubles as ListTag position
     private final Object2IntOpenHashMap<AEKey> keyToId = new Object2IntOpenHashMap<>();
     private AEKey[] idToKey;
     private int nextId;
@@ -45,15 +43,14 @@ final class IndexedStorage {
     private long[] lo;
     private long[] hi;
 
-    // Per-key dirty bitset + serialization cache
-    private long[] dirtyBits;
-    private CompoundTag[] tagCache;
+    // Cached key serialization — set once per key lifetime, avoids repeated toTagGeneric
+    private CompoundTag[] serializedKey;
 
-    // Dense entry index for O(active) persist instead of O(nextId)
-    private int[] idToEntryIndex;
-    private int[] entryIndexToId;
-    private int entryCount;
-    private boolean structureDirty;
+    // Dirty tracking: queue + per-id flags (replaces bitset scanning)
+    private int[] dirtyQueue;
+    private int dirtyCount;
+    private boolean[] inQueue;
+    private boolean[] isStructDirty;
 
     private int totalTypes;
     private boolean needsPersist;
@@ -63,8 +60,6 @@ final class IndexedStorage {
     private final Object2IntOpenHashMap<AEKeyType> typeCounts = new Object2IntOpenHashMap<>();
     private final Object2LongOpenHashMap<AEKeyType> typeAmountLo = new Object2LongOpenHashMap<>();
     private final Object2LongOpenHashMap<AEKeyType> typeAmountHi = new Object2LongOpenHashMap<>();
-
-    record TypeTotal(long hi, long lo) {}
 
     IndexedStorage() {
         keyToId.defaultReturnValue(-1);
@@ -77,21 +72,22 @@ final class IndexedStorage {
 
     long getModCount() { return modCount; }
 
-    /**
-     * Per-{@link AEKeyType} total amounts (126-bit hi/lo).
-     * Maintained incrementally — O(keyTypes) to iterate.
-     */
     Object2LongOpenHashMap<AEKeyType> getTypeAmountLo() { return typeAmountLo; }
     Object2LongOpenHashMap<AEKeyType> getTypeAmountHi() { return typeAmountHi; }
-
-    /**
-     * Per-{@link AEKeyType} unique key counts.
-     * Maintained incrementally — O(keyTypes) to iterate.
-     */
     Object2IntOpenHashMap<AEKeyType> getTypeCounts() { return typeCounts; }
 
+    private void enqueueDirty(int id) {
+        if (!inQueue[id]) {
+            inQueue[id] = true;
+            if (dirtyCount == dirtyQueue.length) {
+                dirtyQueue = Arrays.copyOf(dirtyQueue, dirtyQueue.length * 2);
+            }
+            dirtyQueue[dirtyCount++] = id;
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════════════
-    //  insert — raw, no capacity check
+    //  insert
     // ══════════════════════════════════════════════════════════════════════
 
     long insert(AEKey key, long amount, Actionable mode) {
@@ -103,14 +99,14 @@ final class IndexedStorage {
         if (isNewKey) {
             id = allocateId(key);
             totalTypes++;
+        } else {
+            enqueueDirty(id);
         }
 
         long newLo = lo[id] + amount;
         if (newLo < 0) { newLo &= Long.MAX_VALUE; hi[id]++; }
         lo[id] = newLo;
-        dirtyBits[id >> 6] |= 1L << (id & 63);
 
-        // update per-type aggregates
         AEKeyType kt = key.getType();
         if (isNewKey) typeCounts.addTo(kt, 1);
         long sumLo = typeAmountLo.getLong(kt) + amount;
@@ -148,11 +144,9 @@ final class IndexedStorage {
             totalTypes--;
         } else {
             lo[id] = newLo;
+            enqueueDirty(id);
         }
 
-        dirtyBits[id >> 6] |= 1L << (id & 63);
-
-        // update per-type aggregates
         AEKeyType kt = key.getType();
         long sumLo = typeAmountLo.getLong(kt) - taken;
         long sumHi = typeAmountHi.getLong(kt);
@@ -200,7 +194,8 @@ final class IndexedStorage {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Persist — dirty keys only, incremental on lastRoot when possible
+    //  Persist — queue-driven, O(changed). Split layout:
+    //  ListTag<CompoundTag> for keys, LongArrayTag for lo/hi.
     // ══════════════════════════════════════════════════════════════════════
 
     CompoundTag persist(@Nullable CompoundTag lastRoot, HolderLookup.Provider registries) {
@@ -208,52 +203,94 @@ final class IndexedStorage {
     }
 
     CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, HolderLookup.Provider registries) {
-        boolean canUpdateInPlace = lastRoot != null && !structureDirty;
-        ListTag entries = canUpdateInPlace
-                ? lastRoot.getList("entries", Tag.TAG_COMPOUND)
-                : null;
+        if (lastRoot == null) {
+            return persistFull(keySerializer, registries);
+        }
 
-        int words = (nextId + 63) >> 6;
-        for (int w = 0; w < words; w++) {
-            long bits = dirtyBits[w];
-            if (bits == 0) continue;
-            dirtyBits[w] = 0;
-            while (bits != 0) {
-                int bit = Long.numberOfTrailingZeros(bits);
-                int id = (w << 6) | bit;
-                bits &= bits - 1;
+        ListTag keys = lastRoot.getList("keys", Tag.TAG_COMPOUND);
+        long[] pLo = lastRoot.getLongArray("lo");
+        long[] pHi = lastRoot.getLongArray("hi");
 
-                if (id < nextId && idToKey[id] != null) {
-                    CompoundTag tag = new CompoundTag();
-                    tag.put("key", keySerializer.toTag(idToKey[id], registries));
-                    tag.putLong("lo", lo[id]);
-                    if (hi[id] != 0) tag.putLong("hi", hi[id]);
-                    tagCache[id] = tag;
-                    if (canUpdateInPlace) {
-                        entries.set(idToEntryIndex[id], tag);
+        int tagLen = alignPow2(nextId);
+        if (pLo.length < nextId) {
+            pLo = Arrays.copyOf(pLo, tagLen);
+            pHi = Arrays.copyOf(pHi, tagLen);
+            lastRoot.put("lo", new LongArrayTag(pLo));
+            lastRoot.put("hi", new LongArrayTag(pHi));
+        }
+        while (keys.size() < nextId) {
+            keys.add(new CompoundTag());
+        }
+
+        for (int i = 0; i < dirtyCount; i++) {
+            int id = dirtyQueue[i];
+            inQueue[id] = false;
+
+            if (isStructDirty[id]) {
+                isStructDirty[id] = false;
+                if (idToKey[id] != null) {
+                    if (serializedKey[id] == null) {
+                        serializedKey[id] = keySerializer.toTag(idToKey[id], registries);
                     }
+                    CompoundTag tag = new CompoundTag();
+                    tag.put("key", serializedKey[id]);
+                    keys.set(id, tag);
                 } else {
-                    if (id < tagCache.length) tagCache[id] = null;
+                    keys.set(id, new CompoundTag());
                 }
             }
-        }
 
-        CompoundTag root;
-        if (canUpdateInPlace) {
-            root = lastRoot;
-        } else {
-            entries = new ListTag();
-            for (int i = 0; i < entryCount; i++) {
-                entries.add(tagCache[entryIndexToId[i]]);
+            pLo[id] = lo[id];
+            pHi[id] = hi[id];
+        }
+        dirtyCount = 0;
+
+        lastRoot.putInt("totalTypes", totalTypes);
+        needsPersist = false;
+        return lastRoot;
+    }
+
+    private CompoundTag persistFull(KeySerializer keySerializer, HolderLookup.Provider registries) {
+        // Clear dirty state — everything is being written
+        for (int i = 0; i < dirtyCount; i++) {
+            int id = dirtyQueue[i];
+            inQueue[id] = false;
+            isStructDirty[id] = false;
+        }
+        dirtyCount = 0;
+
+        int tagLen = alignPow2(nextId);
+        ListTag keys = new ListTag();
+        long[] pLo = new long[tagLen];
+        long[] pHi = new long[tagLen];
+
+        for (int id = 0; id < nextId; id++) {
+            if (idToKey[id] != null) {
+                if (serializedKey[id] == null) {
+                    serializedKey[id] = keySerializer.toTag(idToKey[id], registries);
+                }
+                CompoundTag tag = new CompoundTag();
+                tag.put("key", serializedKey[id]);
+                keys.add(tag);
+                pLo[id] = lo[id];
+                pHi[id] = hi[id];
+            } else {
+                keys.add(new CompoundTag());
             }
-            structureDirty = false;
-            root = new CompoundTag();
-            root.put("entries", entries);
         }
 
+        CompoundTag root = new CompoundTag();
+        root.put("keys", keys);
+        root.put("lo", new LongArrayTag(pLo));
+        root.put("hi", new LongArrayTag(pHi));
         root.putInt("totalTypes", totalTypes);
         needsPersist = false;
         return root;
+    }
+
+    private static int alignPow2(int n) {
+        if (n <= INITIAL_CAPACITY) return INITIAL_CAPACITY;
+        return Integer.highestOneBit(n - 1) << 1;
     }
 
     @FunctionalInterface
@@ -262,35 +299,48 @@ final class IndexedStorage {
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Load — rebuild from flat NBT
+    //  Load
     // ══════════════════════════════════════════════════════════════════════
 
     void load(CompoundTag root, HolderLookup.Provider registries) {
         keyToId.clear();
         nextId = 0;
         freeCount = 0;
-        entryCount = 0;
         totalTypes = 0;
-        structureDirty = false;
+        dirtyCount = 0;
         typeCounts.clear();
         typeAmountLo.clear();
         typeAmountHi.clear();
 
-        ListTag entries = root.getList("entries", Tag.TAG_COMPOUND);
-        ensureCapacity(entries.size());
+        ListTag keys = root.getList("keys", Tag.TAG_COMPOUND);
+        long[] pLo = root.getLongArray("lo");
+        long[] pHi = root.getLongArray("hi");
+        int size = keys.size();
+        ensureCapacity(size);
+        nextId = size;
 
-        for (int i = 0; i < entries.size(); i++) {
-            CompoundTag entry = entries.getCompound(i);
+        for (int id = 0; id < size; id++) {
+            inQueue[id] = false;
+            isStructDirty[id] = false;
+
+            CompoundTag entry = keys.getCompound(id);
+            if (!entry.contains("key")) {
+                addFree(id);
+                continue;
+            }
             AEKey key = AEKey.fromTagGeneric(registries, entry.getCompound("key"));
-            if (key == null) continue;
+            if (key == null) {
+                addFree(id);
+                continue;
+            }
 
-            int id = allocateId(key);
-            lo[id] = entry.getLong("lo");
-            hi[id] = entry.contains("hi") ? entry.getLong("hi") : 0L;
-            tagCache[id] = entry;
+            keyToId.put(key, id);
+            idToKey[id] = key;
+            lo[id] = id < pLo.length ? pLo[id] : 0L;
+            hi[id] = id < pHi.length ? pHi[id] : 0L;
+            serializedKey[id] = entry.getCompound("key");
             totalTypes++;
 
-            // rebuild per-type aggregates
             AEKeyType kt = key.getType();
             typeCounts.addTo(kt, 1);
             long sumLo = typeAmountLo.getLong(kt) + lo[id];
@@ -299,13 +349,10 @@ final class IndexedStorage {
             typeAmountLo.put(kt, sumLo);
             typeAmountHi.put(kt, sumHi);
         }
-
-        Arrays.fill(dirtyBits, 0, (nextId + 63) >> 6, 0L);
-        structureDirty = false;
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  ID lifecycle
+    //  ID lifecycle — stable: id = ListTag position
     // ══════════════════════════════════════════════════════════════════════
 
     private int allocateId(AEKey key) {
@@ -320,15 +367,9 @@ final class IndexedStorage {
         idToKey[id] = key;
         lo[id] = 0;
         hi[id] = 0;
-        tagCache[id] = null;
-
-        idToEntryIndex[id] = entryCount;
-        if (entryCount >= entryIndexToId.length) {
-            entryIndexToId = Arrays.copyOf(entryIndexToId, entryIndexToId.length * 2);
-        }
-        entryIndexToId[entryCount] = id;
-        entryCount++;
-        structureDirty = true;
+        serializedKey[id] = null;
+        isStructDirty[id] = true;
+        enqueueDirty(id);
         return id;
     }
 
@@ -337,52 +378,42 @@ final class IndexedStorage {
         idToKey[id] = null;
         lo[id] = 0;
         hi[id] = 0;
-        tagCache[id] = null;
+        serializedKey[id] = null;
+        isStructDirty[id] = true;
+        enqueueDirty(id);
+        addFree(id);
+    }
 
-        int ei = idToEntryIndex[id];
-        int lastEi = --entryCount;
-        if (ei != lastEi) {
-            int movedId = entryIndexToId[lastEi];
-            entryIndexToId[ei] = movedId;
-            idToEntryIndex[movedId] = ei;
-        }
-        idToEntryIndex[id] = -1;
-        structureDirty = true;
-
+    private void addFree(int id) {
         if (freeCount == freeIds.length) {
             freeIds = Arrays.copyOf(freeIds, freeIds.length * 2);
         }
         freeIds[freeCount++] = id;
     }
 
+    // ══════════════════════════════════════════════════════════════════════
+    //  Capacity
+    // ══════════════════════════════════════════════════════════════════════
+
     private void ensureCapacity(int required) {
         if (required < lo.length) return;
-        int oldLen = lo.length;
         int newCap = Math.max(INITIAL_CAPACITY, Integer.highestOneBit(required) << 1);
         lo = Arrays.copyOf(lo, newCap);
         hi = Arrays.copyOf(hi, newCap);
         idToKey = Arrays.copyOf(idToKey, newCap);
-        tagCache = Arrays.copyOf(tagCache, newCap);
-        idToEntryIndex = Arrays.copyOf(idToEntryIndex, newCap);
-        Arrays.fill(idToEntryIndex, oldLen, newCap, -1);
-        long[] newDirty = new long[(newCap + 63) >> 6];
-        System.arraycopy(dirtyBits, 0, newDirty, 0, dirtyBits.length);
-        dirtyBits = newDirty;
+        serializedKey = Arrays.copyOf(serializedKey, newCap);
+        inQueue = Arrays.copyOf(inQueue, newCap);
+        isStructDirty = Arrays.copyOf(isStructDirty, newCap);
     }
-
-    // ══════════════════════════════════════════════════════════════════════
-    //  Internal helpers
-    // ══════════════════════════════════════════════════════════════════════
 
     private void initArrays(int capacity) {
         lo = new long[capacity];
         hi = new long[capacity];
         idToKey = new AEKey[capacity];
-        tagCache = new CompoundTag[capacity];
-        dirtyBits = new long[(capacity + 63) >> 6];
-        idToEntryIndex = new int[capacity];
-        Arrays.fill(idToEntryIndex, -1);
-        entryIndexToId = new int[capacity];
+        serializedKey = new CompoundTag[capacity];
+        inQueue = new boolean[capacity];
+        isStructDirty = new boolean[capacity];
+        dirtyQueue = new int[64];
         freeIds = new int[64];
     }
 }

@@ -100,6 +100,14 @@ public final class InfiniteCellSavedData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        for (var entry : storageCache.entrySet()) {
+            if (entry.getValue().needsPersist()) {
+                CompoundTag lastRoot = cells.get(entry.getKey());
+                CompoundTag data = entry.getValue().persist(lastRoot, registries);
+                cells.put(entry.getKey(), data);
+            }
+        }
+
         CompoundTag cellsTag = new CompoundTag();
         for (var entry : cells.entrySet()) {
             cellsTag.put(entry.getKey().toString(), entry.getValue());

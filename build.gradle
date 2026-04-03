@@ -116,7 +116,11 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 test {
     useJUnitPlatform()
     maxHeapSize = '4g'
+    if (project.hasProperty('profile')) {
+        jvmArgs "-XX:StartFlightRecording=duration=300s,filename=${project.projectDir}/benchmark.jfr,settings=profile"
+    }
 }
+
 
 dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
