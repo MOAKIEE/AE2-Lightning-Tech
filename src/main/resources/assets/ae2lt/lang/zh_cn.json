@@ -197,8 +197,6 @@
   "ae2lt.gui.io_speed.normal": "I/O 速度：普通 (5-80t)",
   "ae2lt.gui.io_speed.fast": "I/O 速度：快速 (1-40t, 探针)",
   "ae2lt.gui.set_amount.tooltip": "点击：设置数量\nShift+点击：切换无限模式",
-  "block.ae2lt.overloaded_wireless_connector": "过载无线连接器",
-  "block.ae2lt.overloaded_wireless_hub": "过载无线集线器",
   "item.ae2lt.electro_chime_crystal": "电鸣水晶",
   "item.ae2lt.perfect_electro_chime_crystal": "完美电鸣水晶",
   "block.ae2lt.lightning_collector": "闪电收集器",

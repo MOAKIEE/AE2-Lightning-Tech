@@ -52,8 +52,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
 
-    private static boolean extendedAELoaded;
-
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -123,10 +121,6 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
-                        if (extendedAELoaded) {
-                            com.moakiee.ae2lt.compat.extae.ExtendedAECompat
-                                    .addCreativeTabItems(output);
-                        }
                     })
                     .build());
 
@@ -147,16 +141,7 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
 
-        extendedAELoaded = ModList.get().isLoaded("extendedae");
-        if (extendedAELoaded) {
-            com.moakiee.ae2lt.compat.extae.ExtendedAECompat.init(modEventBus);
-        }
-
         registerOptionalClientIntegrations();
-    }
-
-    public static boolean isExtendedAELoaded() {
-        return extendedAELoaded;
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -383,9 +368,6 @@ public class AE2LightningTech {
 
             registerAppliedFluxInductionCardCompat();
 
-            if (extendedAELoaded) {
-                com.moakiee.ae2lt.compat.extae.ExtendedAECompat.setupBlockEntities();
-            }
         });
     }
 
