@@ -86,6 +86,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private long consumedEnergy;
     private int processingTicksSpent;
     private boolean working;
+    private long lastClientUpdateTick = Long.MIN_VALUE;
 
     public OverloadProcessingFactoryBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(), pos, blockState);
@@ -167,7 +168,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             this.consumedEnergy += amount;
         }
         saveChanges();
-        markForClientUpdate();
+        requestClientUpdate();
     }
 
     public void incrementProcessingTicksSpent() {
@@ -181,7 +182,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         this.processingTicksSpent = 0;
         if (changed) {
             saveChanges();
-            markForClientUpdate();
+            requestClientUpdate();
         }
     }
 
@@ -394,7 +395,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                     && state.getValue(OverloadProcessingFactoryBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(OverloadProcessingFactoryBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                requestClientUpdate();
             }
         }
     }
@@ -567,13 +568,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        requestClientUpdate();
         logic.onStateChanged();
     }
 
     private void onTankChanged() {
         saveChanges();
-        markForClientUpdate();
+        requestClientUpdate();
         logic.onStateChanged();
     }
 
@@ -585,6 +586,21 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private void onUpgradesChanged() {
         saveChanges();
         logic.onStateChanged();
+    }
+
+    private void requestClientUpdate() {
+        if (level == null) {
+            markForClientUpdate();
+            return;
+        }
+
+        long gameTime = level.getGameTime();
+        if (lastClientUpdateTick == gameTime) {
+            return;
+        }
+
+        lastClientUpdateTick = gameTime;
+        markForClientUpdate();
     }
 }
 

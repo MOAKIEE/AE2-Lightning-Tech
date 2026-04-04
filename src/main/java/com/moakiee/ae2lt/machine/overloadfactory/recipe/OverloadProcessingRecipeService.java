@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -27,16 +28,19 @@ public final class OverloadProcessingRecipeService {
             .thenComparing(holder -> holder.id().toString());
 
     private static Object cachedRawRecipeList;
+    private static RecipeManager cachedRecipeManager;
     private static List<RecipeHolder<OverloadProcessingRecipe>> sortedRecipeCache;
 
     private OverloadProcessingRecipeService() {
     }
 
     private static List<RecipeHolder<OverloadProcessingRecipe>> getSortedRecipes(Level level) {
-        var raw = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
-        if (raw != cachedRawRecipeList) {
+        RecipeManager recipeManager = level.getRecipeManager();
+        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
+        if (recipeManager != cachedRecipeManager || raw != cachedRawRecipeList || sortedRecipeCache == null) {
             sortedRecipeCache = new ArrayList<>(raw);
             sortedRecipeCache.sort(RECIPE_ORDER);
+            cachedRecipeManager = recipeManager;
             cachedRawRecipeList = raw;
         }
         return sortedRecipeCache;
