@@ -42,6 +42,15 @@ public class LightningSimulationChamberBlock extends AEBaseEntityBlock<Lightning
     }
 
     @Override
+    public void neighborChanged(BlockState state, Level level, net.minecraft.core.BlockPos pos,
+                                Block block, net.minecraft.core.BlockPos fromPos, boolean isMoving) {
+        var be = getBlockEntity(level, pos);
+        if (be != null) {
+            be.onNeighborChanged(fromPos);
+        }
+    }
+
+    @Override
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, net.minecraft.core.BlockPos pos, Player player, BlockHitResult hitResult) {
         var be = getBlockEntity(level, pos);

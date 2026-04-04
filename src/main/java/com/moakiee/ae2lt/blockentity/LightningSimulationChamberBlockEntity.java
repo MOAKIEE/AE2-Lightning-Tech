@@ -3,9 +3,7 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.List;
 import java.util.Optional;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
@@ -25,7 +23,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
@@ -81,9 +78,6 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final LightningSimulationChamberLogic logic;
-    @SuppressWarnings("UnstableApiUsage")
-    private final HashMap<Direction, Map<AEKeyType, ExternalStorageStrategy>> exportStrategies = new HashMap<>();
-
     private LightningSimulationLockedRecipe lockedRecipe;
     private long consumedEnergy;
     private int processingTicksSpent;
@@ -280,6 +274,12 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         return false;
     }
 
+    public void onNeighborChanged(BlockPos changedPos) {
+        if (changedPos != null && worldPosition.distManhattan(changedPos) == 1) {
+            invalidateExportTargets();
+        }
+    }
+
     public long getAvailableHighVoltage() {
         return simulateLightningExtract(LightningKey.HIGH_VOLTAGE, Long.MAX_VALUE);
     }
@@ -414,19 +414,13 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         logic.onStateChanged();
     }
 
-    @SuppressWarnings("UnstableApiUsage")
     private CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
-        if (exportStrategies.get(direction) == null) {
-            exportStrategies.put(
-                    direction,
-                    StackWorldBehaviors.createExternalStorageStrategies(
-                            level,
-                            worldPosition.relative(direction),
-                            direction.getOpposite()));
-        }
-
         var externalStorages = new IdentityHashMap<AEKeyType, appeng.api.storage.MEStorage>(2);
-        for (var entry : exportStrategies.get(direction).entrySet()) {
+        var strategies = StackWorldBehaviors.createExternalStorageStrategies(
+                level,
+                worldPosition.relative(direction),
+                direction.getOpposite());
+        for (var entry : strategies.entrySet()) {
             var wrapper = entry.getValue().createWrapper(false, () -> {});
             if (wrapper != null) {
                 externalStorages.put(entry.getKey(), wrapper);
@@ -438,6 +432,12 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         }
 
         return null;
+    }
+
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        invalidateExportTargets();
     }
 
     @Override
@@ -473,7 +473,10 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         allowedOutputs.clear();
         ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
         for (int i = 0; i < outputTags.size(); i++) {
-            allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            try {
+                allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            } catch (IllegalArgumentException ignored) {
+            }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
             lockedRecipe = LightningSimulationLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
@@ -563,6 +566,10 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
                 inventory.insertItem(slot, extracted, false);
             }
         }
+    }
+
+    private void invalidateExportTargets() {
+        // Targets are resolved fresh during export, so there is no persistent cache to clear.
     }
 
     private long simulateLightningExtract(LightningKey key, long amount) {

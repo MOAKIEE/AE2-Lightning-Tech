@@ -31,6 +31,7 @@ import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
 public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimulationChamberMenu> {
     private static final float LARGE_STACK_COUNT_SCALE = 0.9F;
     private static final int INFO_X = 8;
+    private static final int STATUS_Y = 55;
     private static final int HIGH_VOLTAGE_Y = 64;
     private static final int EXTREME_HIGH_VOLTAGE_Y = 73;
     private static final int DEMAND_Y = 82;
@@ -111,6 +112,7 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
 
+        guiGraphics.drawString(font, menu.getStatusMessage(), INFO_X, STATUS_Y, menu.isLightningInsufficient() ? 0xC84B4B : 0x404040, false);
         guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HIGH_VOLTAGE_Y, 0x404040, false);
         guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EXTREME_HIGH_VOLTAGE_Y, 0x404040, false);
         guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0x404040, false);

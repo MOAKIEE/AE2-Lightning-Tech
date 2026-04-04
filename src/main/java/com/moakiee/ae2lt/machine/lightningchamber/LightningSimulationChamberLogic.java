@@ -193,12 +193,10 @@ public final class LightningSimulationChamberLogic implements IGridTickable {
     }
 
     private Optional<LightningSimulationRecipeCandidate> validateLockedRecipe(LightningSimulationLockedRecipe lockedRecipe) {
-        return LightningSimulationRecipeService.findLockedRecipeMatch(
+        return LightningSimulationRecipeService.findLockedRecipeMatchIgnoringLightning(
                 host.getLevel(),
                 host.getInventory(),
-                lockedRecipe,
-                host.getAvailableHighVoltage(),
-                host.getAvailableExtremeHighVoltage());
+                lockedRecipe);
     }
 
     private void completeRecipe(LightningSimulationRecipeCandidate lockedCandidate) {
