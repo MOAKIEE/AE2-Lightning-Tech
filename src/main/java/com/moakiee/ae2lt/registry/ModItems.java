@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
@@ -88,6 +89,14 @@ public final class ModItems {
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
             registerLightningStorageComponent("lightning_storage_component_v", 16384, 8192);
 
+    public static final DeferredItem<InfiniteStorageCellItem> INFINITE_STORAGE_CELL =
+            ITEMS.register("infinite_storage_cell",
+                    () -> new InfiniteStorageCellItem(
+                            new Item.Properties(),
+                            Long.MAX_VALUE, Long.MAX_VALUE,
+                            8, Integer.MAX_VALUE,
+                            32));
+
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
             OverloadedWirelessConnectorItem::new,
@@ -152,6 +161,7 @@ public final class ModItems {
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III, "16k_item_cell");
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
+        registerStorageCellModel(INFINITE_STORAGE_CELL, "256k_item_cell");
     }
 
     private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(

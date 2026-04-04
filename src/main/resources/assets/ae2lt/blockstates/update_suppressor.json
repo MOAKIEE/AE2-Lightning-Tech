@@ -1,0 +1,10 @@
+{
+  "variants": {
+    "enabled=false": {
+      "model": "ae2lt:block/update_suppressor"
+    },
+    "enabled=true": {
+      "model": "ae2lt:block/update_suppressor_enabled"
+    }
+  }
+}

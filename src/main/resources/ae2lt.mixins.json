@@ -16,6 +16,7 @@
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",
     "GridGetMachineNodesMixin",
+    "PathingCalculationCapMixin",
     "EjectCapabilityMixin",
     "EjectGhostBEMixin"
   ],

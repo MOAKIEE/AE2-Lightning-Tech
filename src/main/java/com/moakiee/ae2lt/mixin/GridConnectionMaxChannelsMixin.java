@@ -34,8 +34,6 @@ public abstract class GridConnectionMaxChannelsMixin {
             return;
         }
 
-        // In AE2 1.21.1 this method is GridConnection#getMaxChannels().
-        // If mappings or method names differ in another version, verify this target first.
-        cir.setReturnValue(128 * channelMode.getCableCapacityFactor());
+        cir.setReturnValue(Integer.MAX_VALUE / 2);
     }
 }
