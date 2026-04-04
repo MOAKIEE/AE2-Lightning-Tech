@@ -369,7 +369,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             return false;
         }
 
-        long inserted = insert(modeOutputKey(), 1L);
+        long inserted = insert(lockedMode.outputKey(), 1L);
         if (inserted < 1L) {
             inventory.insertItem(TeslaCoilInventory.SLOT_DUST, extractedDust, false);
             return false;
@@ -388,17 +388,13 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             return false;
         }
 
-        long inserted = insert(modeOutputKey(), 1L);
+        long inserted = insert(lockedMode.outputKey(), 1L);
         if (inserted < 1L) {
             insert(LightningKey.HIGH_VOLTAGE, extracted);
             return false;
         }
 
         return true;
-    }
-
-    private LightningKey modeOutputKey() {
-        return lockedMode == null ? selectedMode.outputKey() : lockedMode.outputKey();
     }
 
     private long simulateInsert(LightningKey key, long amount) {

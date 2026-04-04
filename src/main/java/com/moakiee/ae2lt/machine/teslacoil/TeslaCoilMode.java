@@ -62,10 +62,6 @@ public enum TeslaCoilMode implements StringRepresentable {
         return this == EXTREME_HIGH_VOLTAGE ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageInput() : 0L;
     }
 
-    public boolean requiresMatrix() {
-        return this == EXTREME_HIGH_VOLTAGE;
-    }
-
     public LightningKey outputKey() {
         return this == EXTREME_HIGH_VOLTAGE
                 ? LightningKey.EXTREME_HIGH_VOLTAGE

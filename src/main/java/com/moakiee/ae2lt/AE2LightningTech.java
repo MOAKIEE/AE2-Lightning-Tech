@@ -117,7 +117,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
-                        output.accept(ModBlocks.UPDATE_SUPPRESSOR);
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
