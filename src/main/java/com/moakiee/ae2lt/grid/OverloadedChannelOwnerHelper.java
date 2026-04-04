@@ -14,7 +14,7 @@ import appeng.blockentity.networking.ControllerBlockEntity;
  * automatically granted elevated channel capacity by the AE2LT mixins.
  */
 public final class OverloadedChannelOwnerHelper {
-    public static final int CHANNELS_PER_CONTROLLER = 8;
+    public static final int CHANNELS_PER_CONTROLLER = 128;
 
     private OverloadedChannelOwnerHelper() {
     }
