@@ -99,14 +99,6 @@ public final class AE2LTCommonConfig {
         return VALUES.teslaCoilExtremeHighVoltageEnergy.get();
     }
 
-    public static int atmosphericIonizerEnergyCapacity() {
-        return VALUES.atmosphericIonizerEnergyCapacity.get();
-    }
-
-    public static int atmosphericIonizerMaxReceive() {
-        return VALUES.atmosphericIonizerMaxReceive.get();
-    }
-
     public static int atmosphericIonizerClearEnergy() {
         return VALUES.atmosphericIonizerClearEnergy.get();
     }
@@ -167,8 +159,6 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilHighVoltageEnergy;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageEnergy;
-        private final ModConfigSpec.IntValue atmosphericIonizerEnergyCapacity;
-        private final ModConfigSpec.IntValue atmosphericIonizerMaxReceive;
         private final ModConfigSpec.IntValue atmosphericIonizerClearEnergy;
         private final ModConfigSpec.IntValue atmosphericIonizerRainEnergy;
         private final ModConfigSpec.IntValue atmosphericIonizerThunderstormEnergy;
@@ -233,20 +223,14 @@ public final class AE2LTCommonConfig {
             builder.pop();
 
             builder.push("atmosphericIonizer");
-            atmosphericIonizerEnergyCapacity = builder
-                    .comment("Atmospheric Ionizer internal FE buffer.")
-                    .defineInRange("energyCapacity", 8_000_000, 1, Integer.MAX_VALUE);
-            atmosphericIonizerMaxReceive = builder
-                    .comment("Atmospheric Ionizer max FE receive per transfer operation.")
-                    .defineInRange("maxReceive", 200_000, 1, Integer.MAX_VALUE);
             atmosphericIonizerClearEnergy = builder
-                    .comment("FE required for the clear condensate.")
+                    .comment("AE required for the clear condensate.")
                     .defineInRange("clear.energy", 500_000, 1, Integer.MAX_VALUE);
             atmosphericIonizerRainEnergy = builder
-                    .comment("FE required for the rain condensate.")
+                    .comment("AE required for the rain condensate.")
                     .defineInRange("rain.energy", 1_000_000, 1, Integer.MAX_VALUE);
             atmosphericIonizerThunderstormEnergy = builder
-                    .comment("FE required for the thunderstorm condensate.")
+                    .comment("AE required for the thunderstorm condensate.")
                     .defineInRange("thunderstorm.energy", 8_000_000, 1, Integer.MAX_VALUE);
             atmosphericIonizerClearDurationMin = builder
                     .comment("Minimum clear-weather duration applied by the Atmospheric Ionizer.")

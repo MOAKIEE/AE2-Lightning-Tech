@@ -130,13 +130,14 @@ public class WeatherCondensateItem extends Item {
             return values[ordinal];
         }
 
+        @Nullable
         public static Type fromName(String name) {
             for (Type value : values()) {
                 if (value.serializedName.equals(name)) {
                     return value;
                 }
             }
-            return CLEAR;
+            return null;
         }
     }
 }

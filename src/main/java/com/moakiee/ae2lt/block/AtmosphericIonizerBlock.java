@@ -35,6 +35,12 @@ import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonizerBlockEntity>
         implements SimpleWaterloggedBlock {
     private static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
+    private static final VoxelShape SHAPE_DOWN = Shapes.create(new AABB(3.0 / 16.0, 5.0 / 16.0, 3.0 / 16.0, 13.0 / 16.0, 1.0, 13.0 / 16.0));
+    private static final VoxelShape SHAPE_EAST = Shapes.create(new AABB(0.0, 3.0 / 16.0, 3.0 / 16.0, 11.0 / 16.0, 13.0 / 16.0, 13.0 / 16.0));
+    private static final VoxelShape SHAPE_NORTH = Shapes.create(new AABB(3.0 / 16.0, 3.0 / 16.0, 5.0 / 16.0, 13.0 / 16.0, 13.0 / 16.0, 1.0));
+    private static final VoxelShape SHAPE_SOUTH = Shapes.create(new AABB(3.0 / 16.0, 3.0 / 16.0, 0.0, 13.0 / 16.0, 13.0 / 16.0, 11.0 / 16.0));
+    private static final VoxelShape SHAPE_UP = Shapes.create(new AABB(3.0 / 16.0, 0.0, 3.0 / 16.0, 13.0 / 16.0, 11.0 / 16.0, 13.0 / 16.0));
+    private static final VoxelShape SHAPE_WEST = Shapes.create(new AABB(5.0 / 16.0, 3.0 / 16.0, 3.0 / 16.0, 1.0, 13.0 / 16.0, 13.0 / 16.0));
 
     public AtmosphericIonizerBlock() {
         super(metalProps().noOcclusion().forceSolidOn());
@@ -122,50 +128,13 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
     private VoxelShape getVoxelShape(BlockState state) {
         var orientation = getOrientation(state);
-        var forward = orientation.getSide(RelativeSide.FRONT);
-
-        double minX = 0;
-        double minY = 0;
-        double minZ = 0;
-        double maxX = 1;
-        double maxY = 1;
-        double maxZ = 1;
-
-        switch (forward) {
-            case DOWN -> {
-                minZ = minX = 3.0 / 16.0;
-                maxZ = maxX = 13.0 / 16.0;
-                minY = 5.0 / 16.0;
-            }
-            case EAST -> {
-                minZ = minY = 3.0 / 16.0;
-                maxZ = maxY = 13.0 / 16.0;
-                maxX = 11.0 / 16.0;
-            }
-            case NORTH -> {
-                minY = minX = 3.0 / 16.0;
-                maxY = maxX = 13.0 / 16.0;
-                minZ = 5.0 / 16.0;
-            }
-            case SOUTH -> {
-                minY = minX = 3.0 / 16.0;
-                maxY = maxX = 13.0 / 16.0;
-                maxZ = 11.0 / 16.0;
-            }
-            case UP -> {
-                minZ = minX = 3.0 / 16.0;
-                maxZ = maxX = 13.0 / 16.0;
-                maxY = 11.0 / 16.0;
-            }
-            case WEST -> {
-                minZ = minY = 3.0 / 16.0;
-                maxZ = maxY = 13.0 / 16.0;
-                minX = 5.0 / 16.0;
-            }
-            default -> {
-            }
-        }
-
-        return Shapes.create(new AABB(minX, minY, minZ, maxX, maxY, maxZ));
+        return switch (orientation.getSide(RelativeSide.FRONT)) {
+            case DOWN -> SHAPE_DOWN;
+            case EAST -> SHAPE_EAST;
+            case NORTH -> SHAPE_NORTH;
+            case SOUTH -> SHAPE_SOUTH;
+            case UP -> SHAPE_UP;
+            case WEST -> SHAPE_WEST;
+        };
     }
 }
