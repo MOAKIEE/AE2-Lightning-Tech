@@ -89,6 +89,17 @@ public final class ModItems {
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
             registerLightningStorageComponent("lightning_storage_component_v", 16384, 8192);
 
+    public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_I =
+            ITEMS.registerSimpleItem("lightning_cell_component_i", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_II =
+            ITEMS.registerSimpleItem("lightning_cell_component_ii", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_III =
+            ITEMS.registerSimpleItem("lightning_cell_component_iii", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_IV =
+            ITEMS.registerSimpleItem("lightning_cell_component_iv", new Item.Properties());
+    public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_V =
+            ITEMS.registerSimpleItem("lightning_cell_component_v", new Item.Properties());
+
     public static final DeferredItem<InfiniteStorageCellItem> INFINITE_STORAGE_CELL =
             ITEMS.register("infinite_storage_cell",
                     () -> new InfiniteStorageCellItem(
