@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.blockentity;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -496,7 +497,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     // ── Wireless connections ─────────────────────────────────────────────
 
-    public List<WirelessConnection> getConnections() { return connections; }
+    public List<WirelessConnection> getConnections() { return Collections.unmodifiableList(connections); }
 
     public void addOrUpdateConnection(WirelessConnection conn) {
         connections.removeIf(c ->
@@ -1189,6 +1190,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
         filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        invalidateConnectionCache();
+        refreshEjectRegistrations();
     }
 
 }
