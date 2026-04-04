@@ -54,6 +54,9 @@ public final class ArtificialLightningHandler {
 
         lightningBolt.moveTo(position);
         lightningBolt.setVisualOnly(false);
+        // Intentionally do not mark this bolt as natural weather lightning.
+        // It may be captured by lightning collectors, but only real weather lightning
+        // is allowed to trigger the nearby lightning-rod structure transformation.
         if (cause != null) {
             lightningBolt.setCause(cause);
         }

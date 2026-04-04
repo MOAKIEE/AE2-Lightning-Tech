@@ -102,6 +102,8 @@ public class OverloadTntBlock extends TntBlock {
         LivingEntity owner = explosion.getIndirectSourceEntity() instanceof LivingEntity livingEntity ? livingEntity : null;
         OverloadTntEntity tnt = new OverloadTntEntity(level, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, owner);
         int fuse = tnt.getFuse();
+        // Keep vanilla-style shortened chain-explosion timing. The current fuse values are small,
+        // so the historical short cast is harmless for now.
         tnt.setFuse((short) (level.random.nextInt(fuse / 4) + fuse / 8));
         level.addFreshEntity(tnt);
     }
