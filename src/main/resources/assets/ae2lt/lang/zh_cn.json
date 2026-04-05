@@ -47,6 +47,7 @@
   "jei.ae2lt.overload_growth.acceleration": "水晶生长加速器会影响过载水晶生长。",
   "block.ae2lt.overload_crystal_block": "过载水晶块",
   "block.ae2lt.silicon_block": "硅块",
+  "block.ae2lt.overload_machine_frame": "过载机器框架",
   "block.ae2lt.overload_tnt": "过载TNT",
   "block.ae2lt.high_voltage_aggregator": "高压聚合器",
   "block.ae2lt.tesla_coil": "特斯拉线圈",

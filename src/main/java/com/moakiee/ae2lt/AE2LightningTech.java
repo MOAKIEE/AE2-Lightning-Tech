@@ -65,6 +65,7 @@ public class AE2LightningTech {
                     .icon(() -> ModItems.OVERLOAD_CRYSTAL.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(ModBlocks.SILICON_BLOCK);
+                        output.accept(ModBlocks.OVERLOAD_MACHINE_FRAME);
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);

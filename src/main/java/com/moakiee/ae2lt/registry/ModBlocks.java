@@ -52,11 +52,21 @@ public final class ModBlocks {
             .sound(SoundType.METAL)
             .forceSolidOn();
 
+    private static final BlockBehaviour.Properties OVERLOAD_MACHINE_FRAME_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(5.0F, 6.0F)
+            .sound(SoundType.METAL)
+            .forceSolidOn()
+            .requiresCorrectToolForDrops();
+
     public static final DeferredBlock<Block> OVERLOAD_CRYSTAL_BLOCK =
             registerBlock("overload_crystal_block", () -> new Block(OVERLOAD_CRYSTAL_BLOCK_PROPERTIES));
 
     public static final DeferredBlock<Block> SILICON_BLOCK =
             registerBlock("silicon_block", () -> new Block(SILICON_BLOCK_PROPERTIES));
+
+    public static final DeferredBlock<Block> OVERLOAD_MACHINE_FRAME =
+            registerBlock("overload_machine_frame", () -> new Block(OVERLOAD_MACHINE_FRAME_PROPERTIES));
 
     public static final DeferredBlock<OverloadTntBlock> OVERLOAD_TNT =
             registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.TNT)));
