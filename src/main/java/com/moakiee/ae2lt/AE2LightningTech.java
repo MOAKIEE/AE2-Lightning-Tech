@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -98,6 +99,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.RAIN_CONDENSATE);
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
+                        output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
                         output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -167,6 +169,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.TESLA_COIL.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
 
@@ -188,6 +195,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         event.registerBlockEntity(
@@ -214,6 +226,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -298,6 +315,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var assemblyBlock = ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get();
+            var assemblyBeType = ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get();
+            assemblyBlock.setBlockEntity(
+                    LightningAssemblyChamberBlockEntity.class,
+                    assemblyBeType,
+                    null,
+                    null);
+
             var overloadProcessingFactoryBlock = ModBlocks.OVERLOAD_PROCESSING_FACTORY.get();
             var overloadProcessingFactoryBeType = ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get();
             overloadProcessingFactoryBlock.setBlockEntity(
@@ -355,6 +380,9 @@ public class AE2LightningTech {
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    assemblyBeType,
+                    assemblyBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     overloadProcessingFactoryBeType,
                     overloadProcessingFactoryBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
@@ -370,6 +398,8 @@ public class AE2LightningTech {
             ModItems.registerStorageCellModels();
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
                     LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
+            Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                    LightningAssemblyChamberBlockEntity.SPEED_CARD_SLOTS);
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(),
                     OverloadProcessingFactoryBlockEntity.SPEED_CARD_SLOTS);
 

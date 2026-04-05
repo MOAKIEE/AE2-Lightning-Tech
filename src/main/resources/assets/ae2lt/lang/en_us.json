@@ -1,4 +1,4 @@
-{
+﻿{
   "itemGroup.ae2lt": "AE2 Lightning Tech",
   "key.ae2lt.lightning": "Lightning",
   "key.ae2lt.high_voltage_lightning": "High Voltage Lightning",
@@ -58,6 +58,8 @@
   "block.ae2lt.tesla_coil.working": "Tesla Coil (Working)",
   "block.ae2lt.lightning_simulation_room": "Lightning Simulation Room",
   "block.ae2lt.lightning_simulation_room.working": "Lightning Simulation Room (Working)",
+  "block.ae2lt.lightning_assembly_chamber": "Lightning Assembly Chamber",
+  "block.ae2lt.lightning_assembly_chamber.working": "Lightning Assembly Chamber (Working)",
   "block.ae2lt.overload_processing_factory": "Overload Processing Factory",
   "block.ae2lt.overload_processing_factory.working": "Overload Processing Factory (Working)",
   "block.ae2lt.flawless_budding_overload_crystal": "Flawless Budding Overload Crystal",
@@ -165,6 +167,15 @@
   "ae2lt.gui.lightning_simulation.substitution.available": "Substitution: %s HV available",
   "ae2lt.gui.lightning_simulation.substitution.inactive": "Substitution: Inactive",
   "ae2lt.gui.lightning_simulation.substitution.none": "Substitution: None",
+  "ae2lt.gui.lightning_assembly.auto_export.title": "Auto Export",
+  "ae2lt.gui.lightning_assembly.auto_export.on": "Auto export is enabled",
+  "ae2lt.gui.lightning_assembly.auto_export.off": "Auto export is disabled",
+  "ae2lt.gui.lightning_assembly.configure_output": "Configure Output Sides",
+  "ae2lt.gui.lightning_assembly.output_config": "Output Side Configuration",
+  "ae2lt.gui.lightning_assembly.output_side.clear": "Clear Output Sides",
+  "ae2lt.gui.lightning_assembly.output_side.enabled": "Output enabled on this side",
+  "ae2lt.gui.lightning_assembly.output_side.disabled": "Output disabled on this side",
+  "ae2lt.gui.lightning_assembly.energy.tooltip": "%s / %s FE",
   "ae2lt.gui.overload_factory.energy.tooltip": "%s / %s FE",
   "ae2lt.gui.overload_factory.parallel": "Parallel: %s / %s",
   "ae2lt.gui.overload_factory.stock.high_voltage": "HV Stock: %s",
@@ -244,3 +255,4 @@
   "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s"
 }
+

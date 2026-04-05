@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
@@ -42,6 +43,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             LightningSimulationChamberBlockEntity::new,
                             ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<LightningAssemblyChamberBlockEntity>>
+            LIGHTNING_ASSEMBLY_CHAMBER = BLOCK_ENTITY_TYPES.register(
+                    "lightning_assembly_chamber",
+                    () -> BlockEntityType.Builder.of(
+                            LightningAssemblyChamberBlockEntity::new,
+                            ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadProcessingFactoryBlockEntity>>
