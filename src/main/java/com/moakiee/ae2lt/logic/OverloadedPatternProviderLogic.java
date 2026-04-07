@@ -72,8 +72,7 @@ import com.moakiee.ae2lt.overload.pattern.OverloadPatternDetails;
  */
 public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
-    private final UnlimitedReturnInventory unlimitedReturnInv;
-    /** Full return inventory with totalPages * 9 slots; same as unlimitedReturnInv when pages == 1. */
+    /** Full return inventory with totalPages * 9 slots. */
     private final UnlimitedReturnInventory fullReturnInv;
     /** 9-slot return page view exposed via getReturnInv() for the GUI. */
     private final UnlimitedReturnInventory returnPageView;
@@ -373,19 +372,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Wireless round-robin return: spread all machines across this many ticks. */
     private static final int RETURN_SPREAD_TICKS = 20;
 
-    /** Buffer flush interval: aggregate extracted items, insert every N ticks. */
-    private static final int RETURN_FLUSH_INTERVAL = 5;
-
     /** AE2 grid tick range for the overloaded provider's custom scheduler. */
     private static final int GRID_TICK_MIN = 1;
     private static final int GRID_TICK_MAX = 20;
 
     /** Refresh the validated wireless-connection view at most once per second. */
     private static final int VALIDATE_INTERVAL = 20;
-
-
-    /** Last game tick when wireless connections were validated / collected. */
-    private long lastConnectionValidation = -1;
 
     /** Cached list of valid wireless connections (shared by energy + auto-return). */
     private List<WirelessConnection> validConnectionsCache = List.of();
@@ -488,7 +480,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         } else {
             this.fullReturnInv = UnlimitedReturnInventory.create(returnListener, returnFilter);
         }
-        this.unlimitedReturnInv = this.fullReturnInv;
 
         this.returnPageView = UnlimitedReturnInventory.create(() -> {
             if (!returnSyncing) {
@@ -1617,7 +1608,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         validConnectionsCache = List.copyOf(valid);
         pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
-        lastConnectionValidation = gameTick;
         connectionsDirty = false;
         return validConnectionsCache;
     }
@@ -1921,7 +1911,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         connectionsDirty = true;
         validConnectionsCache = List.of();
         validConnectionsCacheTick = -1;
-        lastConnectionValidation = -1;
         wheelDirty = true;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();

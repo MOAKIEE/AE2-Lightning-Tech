@@ -24,7 +24,6 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.RelativeSide;
 import appeng.api.networking.ticking.IGridTickable;
@@ -51,7 +50,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
-        implements IUpgradeableObject, IActionHost {
+    implements IUpgradeableObject {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
     private static final String TAG_UPGRADES = "Upgrades";

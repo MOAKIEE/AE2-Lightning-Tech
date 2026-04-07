@@ -360,7 +360,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     };
     private @Nullable DirectMEInsertInventory directInsertInv;
-    private boolean ejectRegistered = false;
     private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
@@ -1004,7 +1003,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 registerEjectAt(srv, level.dimension(),
                         getBlockPos().relative(d), d.getOpposite());
         }
-        ejectRegistered = true;
     }
 
     private void registerEjectAt(net.minecraft.server.MinecraftServer srv,
@@ -1028,7 +1026,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 if (t!=null) t.invalidateCapabilities(dp.pos());
             }
         }
-        ejectRegistered = false;
     }
 
     @Override

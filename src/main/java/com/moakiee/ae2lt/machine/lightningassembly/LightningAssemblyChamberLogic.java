@@ -35,9 +35,21 @@ public final class LightningAssemblyChamberLogic implements IGridTickable {
         AEKey resolvedKey = null;
         try {
             var energyTypeClass = Class.forName("com.glodblock.github.appflux.common.me.key.type.EnergyType");
-            @SuppressWarnings("unchecked")
-            Class<? extends Enum> enumClass = (Class<? extends Enum>) energyTypeClass.asSubclass(Enum.class);
-            Object feType = Enum.valueOf(enumClass, "FE");
+            var enumConstants = energyTypeClass.getEnumConstants();
+            if (enumConstants == null) {
+                throw new ReflectiveOperationException("EnergyType is not an enum");
+            }
+
+            Object feType = null;
+            for (var constant : enumConstants) {
+                if (constant instanceof Enum<?> enumConstant && "FE".equals(enumConstant.name())) {
+                    feType = enumConstant;
+                    break;
+                }
+            }
+            if (feType == null) {
+                throw new ReflectiveOperationException("EnergyType enum constant FE was not found");
+            }
 
             var fluxKeyClass = Class.forName("com.glodblock.github.appflux.common.me.key.FluxKey");
             var ofMethod = fluxKeyClass.getMethod("of", energyTypeClass);
