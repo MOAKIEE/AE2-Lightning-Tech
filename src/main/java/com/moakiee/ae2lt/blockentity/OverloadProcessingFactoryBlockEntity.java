@@ -39,6 +39,8 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
+import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryAutomationInventory;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryEnergyStorage;
@@ -54,7 +56,8 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
-    implements IUpgradeableObject {
+    implements IUpgradeableObject,
+        GridRecipeMachineHost<OverloadProcessingLockedRecipe, OverloadProcessingRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_UPGRADES = "Upgrades";
     private static final String TAG_ENERGY = "Energy";
@@ -589,6 +592,37 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     private void invalidateExportTargets() {
         exportTargetCache.invalidate();
+    }
+
+    @Override
+    public boolean hasProcessableRecipe() {
+        return findProcessableRecipe().isPresent();
+    }
+
+    @Override
+    public long getMachineStoredEnergy() {
+        return energyStorage.getStoredEnergyLong();
+    }
+
+    @Override
+    public long getMachineEnergyCapacity() {
+        return energyStorage.getCapacityLong();
+    }
+
+    @Override
+    public int extractMachineEnergy(long amount) {
+        return energyStorage.extractInternal(amount, false);
+    }
+
+    @Override
+    public int receiveMachineEnergy(int amount) {
+        return energyStorage.receiveEnergy(amount, false);
+    }
+
+    @Override
+    public void onEnergyConsumed(int consumed) {
+        addConsumedEnergy(consumed);
+        incrementProcessingTicksSpent();
     }
 
     private boolean canAcceptFluidOutput(FluidStack stack) {

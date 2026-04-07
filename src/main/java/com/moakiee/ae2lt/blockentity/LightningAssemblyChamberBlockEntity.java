@@ -37,6 +37,9 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
+import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
+import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberEnergyStorage;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
@@ -50,7 +53,8 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
-    implements IUpgradeableObject {
+    implements IUpgradeableObject,
+        GridRecipeMachineHost<LightningAssemblyLockedRecipe, LightningAssemblyRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
     private static final String TAG_UPGRADES = "Upgrades";
@@ -273,66 +277,61 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     public boolean completeLockedRecipe(
             LightningAssemblyLockedRecipe lockedRecipe,
             LightningAssemblyRecipeCandidate candidate) {
-        if (!inventory.canAcceptRecipeOutput(candidate.recipe().value().getResultStack())) {
-            return false;
-        }
+        boolean completed = SingleOutputLightningRecipeExecutor.complete(
+                LightningAssemblyChamberInventory.SLOT_INPUT_0,
+                LightningAssemblyChamberInventory.SLOT_INPUT_8,
+                candidate.match()::getConsumptionForSlot,
+                candidate.recipe().value().getResultStack(),
+                () -> LightningAssemblyRecipeService.resolveLightningConsumption(
+                                inventory,
+                                lockedRecipe.lightningTier(),
+                                lockedRecipe.lightningCost(),
+                                getAvailableHighVoltage(),
+                                getAvailableExtremeHighVoltage())
+                        .map(plan -> new SingleOutputLightningRecipeExecutor.LightningPlan(plan.key(), plan.amount())),
+                new SingleOutputLightningRecipeExecutor.InventoryAdapter() {
+                    @Override
+                    public boolean canAcceptOutput(ItemStack result) {
+                        return inventory.canAcceptRecipeOutput(result);
+                    }
 
-        for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
-             slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
-             slot++) {
-            int toConsume = candidate.match().getConsumptionForSlot(slot);
-            if (toConsume <= 0) {
-                continue;
-            }
+                    @Override
+                    public ItemStack getStackInSlot(int slot) {
+                        return inventory.getStackInSlot(slot);
+                    }
 
-            if (inventory.getStackInSlot(slot).getCount() < toConsume) {
-                return false;
-            }
-        }
+                    @Override
+                    public ItemStack extractItem(int slot, int amount) {
+                        return inventory.extractItem(slot, amount, false);
+                    }
 
-        var lightningPlan = LightningAssemblyRecipeService.resolveLightningConsumption(
-                inventory,
-                lockedRecipe.lightningTier(),
-                lockedRecipe.lightningCost(),
-                getAvailableHighVoltage(),
-                getAvailableExtremeHighVoltage());
-        if (lightningPlan.isEmpty()) {
-            return false;
-        }
-        var plan = lightningPlan.get();
-        if (simulateLightningExtract(plan.key(), plan.amount()) < plan.amount()) {
-            return false;
-        }
+                    @Override
+                    public ItemStack insertOutput(ItemStack stack) {
+                        return inventory.insertRecipeOutput(stack, false);
+                    }
 
-        ItemStack[] extractedInputs = new ItemStack[9];
-        for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
-             slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
-             slot++) {
-            int toConsume = candidate.match().getConsumptionForSlot(slot);
-            if (toConsume <= 0) {
-                continue;
-            }
+                    @Override
+                    public void insertInput(int slot, ItemStack stack) {
+                        inventory.insertItem(slot, stack, false);
+                    }
+                },
+                new SingleOutputLightningRecipeExecutor.LightningAdapter() {
+                    @Override
+                    public long simulateExtract(LightningKey key, long amount) {
+                        return simulateLightningExtract(key, amount);
+                    }
 
-            ItemStack extracted = inventory.extractItem(slot, toConsume, false);
-            if (extracted.getCount() != toConsume) {
-                rollbackInputs(extractedInputs);
-                return false;
-            }
-            extractedInputs[slot] = extracted;
-        }
+                    @Override
+                    public long extract(LightningKey key, long amount) {
+                        return extractLightning(key, amount);
+                    }
 
-        long extractedLightning = extractLightning(plan.key(), plan.amount());
-        if (extractedLightning < plan.amount()) {
-            rollbackInputs(extractedInputs);
-            if (extractedLightning > 0L) {
-                insertLightning(plan.key(), extractedLightning);
-            }
-            return false;
-        }
-
-        if (!inventory.insertRecipeOutput(candidate.recipe().value().getResultStack(), false).isEmpty()) {
-            insertLightning(plan.key(), extractedLightning);
-            rollbackInputs(extractedInputs);
+                    @Override
+                    public long insert(LightningKey key, long amount) {
+                        return insertLightning(key, amount);
+                    }
+                });
+        if (!completed) {
             return false;
         }
 
@@ -520,19 +519,39 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
         return EnumSet.allOf(Direction.class);
     }
 
-    private void rollbackInputs(ItemStack[] extractedInputs) {
-        for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
-             slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
-             slot++) {
-            ItemStack extracted = extractedInputs[slot];
-            if (extracted != null && !extracted.isEmpty()) {
-                inventory.insertItem(slot, extracted, false);
-            }
-        }
-    }
-
     private void invalidateExportTargets() {
         exportTargetCache.invalidate();
+    }
+
+    @Override
+    public boolean hasProcessableRecipe() {
+        return findProcessableRecipe().isPresent();
+    }
+
+    @Override
+    public long getMachineStoredEnergy() {
+        return energyStorage.getStoredEnergyLong();
+    }
+
+    @Override
+    public long getMachineEnergyCapacity() {
+        return energyStorage.getCapacityLong();
+    }
+
+    @Override
+    public int extractMachineEnergy(long amount) {
+        return energyStorage.extractInternal(amount, false);
+    }
+
+    @Override
+    public int receiveMachineEnergy(int amount) {
+        return energyStorage.receiveEnergy(amount, false);
+    }
+
+    @Override
+    public void onEnergyConsumed(int consumed) {
+        addConsumedEnergy(consumed);
+        incrementProcessingTicksSpent();
     }
 
     private long simulateLightningExtract(LightningKey key, long amount) {
