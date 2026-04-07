@@ -8,6 +8,7 @@ import java.util.Optional;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
@@ -26,7 +27,48 @@ public final class LightningAssemblyRecipeService {
                     (RecipeHolder<LightningAssemblyRecipe> holder) -> holder.value().totalInputCount()).reversed())
             .thenComparing(holder -> holder.id().toString());
 
+    private static List<RecipeHolder<LightningAssemblyRecipe>> cachedRawRecipeList;
+    private static RecipeManager cachedRecipeManager;
+    private static List<RecipeHolder<LightningAssemblyRecipe>> sortedRecipeCache;
+    private static int cachedRecipeOrderFingerprint;
+
     private LightningAssemblyRecipeService() {
+    }
+
+    private static synchronized List<RecipeHolder<LightningAssemblyRecipe>> getSortedRecipes(Level level) {
+        RecipeManager recipeManager = level.getRecipeManager();
+        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
+        int orderFingerprint = computeRecipeOrderFingerprint(raw);
+        if (recipeManager != cachedRecipeManager
+                || raw != cachedRawRecipeList
+                || orderFingerprint != cachedRecipeOrderFingerprint
+                || sortedRecipeCache == null) {
+            sortedRecipeCache = new ArrayList<>(raw);
+            sortedRecipeCache.sort(RECIPE_ORDER);
+            cachedRecipeManager = recipeManager;
+            cachedRawRecipeList = raw;
+            cachedRecipeOrderFingerprint = orderFingerprint;
+        }
+        return sortedRecipeCache;
+    }
+
+    private static int computeRecipeOrderFingerprint(List<RecipeHolder<LightningAssemblyRecipe>> recipes) {
+        int hash = 1;
+        for (var holder : recipes) {
+            var recipe = holder.value();
+            hash = 31 * hash + holder.id().hashCode();
+            hash = 31 * hash + recipe.priority();
+            hash = 31 * hash + recipe.inputs().size();
+            hash = 31 * hash + recipe.totalInputCount();
+        }
+        return hash;
+    }
+
+    public static synchronized void invalidateSortedRecipeCache() {
+        cachedRawRecipeList = null;
+        cachedRecipeManager = null;
+        sortedRecipeCache = null;
+        cachedRecipeOrderFingerprint = 0;
     }
 
     public static Optional<LightningAssemblyRecipeCandidate> findFirstProcessable(
@@ -43,9 +85,7 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        List<RecipeHolder<LightningAssemblyRecipe>> recipes =
-                new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get()));
-        recipes.sort(RECIPE_ORDER);
+        List<RecipeHolder<LightningAssemblyRecipe>> recipes = getSortedRecipes(level);
 
         for (RecipeHolder<LightningAssemblyRecipe> recipe : recipes) {
             Optional<LightningAssemblyRecipeMatch> match = recipe.value().planMatch(input);

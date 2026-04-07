@@ -3,7 +3,6 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.List;
 import java.util.Optional;
 import java.util.EnumSet;
-import java.util.IdentityHashMap;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
@@ -28,20 +27,17 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.RelativeSide;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKeyType;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
-import appeng.me.storage.CompositeStorage;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
-import appeng.parts.automation.StackWorldBehaviors;
 
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberEnergyStorage;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
@@ -84,6 +80,8 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private boolean working;
     private boolean autoExport;
     private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
+    private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
+            new AdjacentItemAutoExportHelper.DirectionalTargetCache();
 
     public LightningSimulationChamberBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(), pos, blockState);
@@ -230,7 +228,11 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     public boolean hasAutoExportWork() {
-        return autoExport && !inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OUTPUT).isEmpty();
+        return AdjacentItemAutoExportHelper.hasAnyOutput(
+                autoExport,
+                LightningSimulationChamberInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot);
     }
 
     public boolean pushOutResult() {
@@ -238,40 +240,16 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             return false;
         }
 
-        var orientation = getOrientation();
-        for (var side : allowedOutputs) {
-            var target = getExportTarget(serverLevel, orientation.getSide(side));
-            if (target == null) {
-                continue;
-            }
-
-            ItemStack output = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OUTPUT);
-            if (output.isEmpty()) {
-                return false;
-            }
-
-            var key = AEItemKey.of(output);
-            if (key == null) {
-                continue;
-            }
-
-            ItemStack extracted = inventory.extractItem(
-                    LightningSimulationChamberInventory.SLOT_OUTPUT,
-                    output.getCount(),
-                    false);
-            long inserted = target.insert(key, extracted.getCount(), Actionable.MODULATE, IActionSource.ofMachine(this));
-
-            if (inserted < extracted.getCount()) {
-                ItemStack remainder = extracted.copyWithCount((int) (extracted.getCount() - inserted));
-                inventory.insertRecipeOutput(remainder, false);
-            }
-
-            if (inserted > 0) {
-                return true;
-            }
-        }
-
-        return false;
+        return AdjacentItemAutoExportHelper.pushOutResult(
+                this,
+                getOrientation(),
+                allowedOutputs,
+                LightningSimulationChamberInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot,
+                (slot, amount) -> inventory.extractItem(slot, amount, false),
+                remainder -> inventory.insertRecipeOutput(remainder, false),
+                direction -> getExportTarget(serverLevel, direction));
     }
 
     public void onNeighborChanged(BlockPos changedPos) {
@@ -414,24 +392,8 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         logic.onStateChanged();
     }
 
-    private CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
-        var externalStorages = new IdentityHashMap<AEKeyType, appeng.api.storage.MEStorage>(2);
-        var strategies = StackWorldBehaviors.createExternalStorageStrategies(
-                level,
-                worldPosition.relative(direction),
-                direction.getOpposite());
-        for (var entry : strategies.entrySet()) {
-            var wrapper = entry.getValue().createWrapper(false, () -> {});
-            if (wrapper != null) {
-                externalStorages.put(entry.getKey(), wrapper);
-            }
-        }
-
-        if (!externalStorages.isEmpty()) {
-            return new CompositeStorage(externalStorages);
-        }
-
-        return null;
+    private appeng.me.storage.CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
+        return exportTargetCache.resolve(level, worldPosition, direction);
     }
 
     @Override
@@ -569,7 +531,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     private void invalidateExportTargets() {
-        // Targets are resolved fresh during export, so there is no persistent cache to clear.
+        exportTargetCache.invalidate();
     }
 
     private long simulateLightningExtract(LightningKey key, long amount) {

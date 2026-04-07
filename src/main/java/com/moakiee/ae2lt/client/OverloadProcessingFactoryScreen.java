@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.client;
 
+import java.util.List;
+
 import com.mojang.blaze3d.systems.RenderSystem;
 
 import org.joml.Matrix4f;
@@ -11,8 +13,12 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 
+import appeng.api.config.ActionItems;
 import appeng.client.gui.AEBaseScreen;
+import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
+import appeng.client.gui.widgets.ActionButton;
+import appeng.client.gui.widgets.ToggleButton;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.menu.SlotSemantics;
 
@@ -27,6 +33,9 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     private static final int EHV_Y = 108;
     private static final int DEMAND_Y = 118;
     private static final int SUBSTITUTION_Y = 128;
+
+    private final ToggleButton autoExportButton;
+    private final ActionButton configureOutputButton;
 
     public OverloadProcessingFactoryScreen(
             OverloadProcessingFactoryMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
@@ -48,6 +57,33 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
                 menu::getOutputTankCapacity,
                 Component.translatable("ae2lt.gui.overload_factory.fluid.output.empty"),
                 0xCC3AB36A));
+
+        this.autoExportButton = new ToggleButton(
+                Icon.AUTO_EXPORT_ON,
+                Icon.AUTO_EXPORT_OFF,
+                state -> menu.clientToggleAutoExport());
+        this.autoExportButton.setTooltipOn(List.of(
+                Component.translatable("ae2lt.gui.overload_factory.auto_export.title"),
+                Component.translatable("ae2lt.gui.overload_factory.auto_export.on")));
+        this.autoExportButton.setTooltipOff(List.of(
+                Component.translatable("ae2lt.gui.overload_factory.auto_export.title"),
+                Component.translatable("ae2lt.gui.overload_factory.auto_export.off")));
+        addToLeftToolbar(this.autoExportButton);
+
+        this.configureOutputButton = new ActionButton(
+                ActionItems.COG,
+                () -> switchToScreen(new OverloadProcessingFactoryOutputConfigScreen(this)));
+        this.configureOutputButton.setMessage(
+                Component.translatable("ae2lt.gui.overload_factory.configure_output"));
+        addToLeftToolbar(this.configureOutputButton);
+    }
+
+    @Override
+    protected void updateBeforeRender() {
+        super.updateBeforeRender();
+
+        this.autoExportButton.setState(menu.isAutoExportEnabled());
+        this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
     }
 
     @Override

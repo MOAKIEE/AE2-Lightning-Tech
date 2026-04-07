@@ -69,7 +69,10 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
         Optional<OverloadProcessingLockedRecipe> lockedRecipe = host.getLockedRecipe();
         if (lockedRecipe.isEmpty()) {
             host.setWorking(false);
-            return TickRateModulation.SLEEP;
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return host.hasAutoExportWork() ? TickRateModulation.SLOWER : TickRateModulation.SLEEP;
         }
 
         host.setWorking(true);
@@ -77,7 +80,10 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
         Optional<OverloadProcessingRecipeCandidate> lockedCandidate = validateLockedRecipe(lockedRecipe.get());
         if (lockedCandidate.isEmpty()) {
             host.abortProcessing();
-            return TickRateModulation.SLEEP;
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return host.hasAutoExportWork() ? TickRateModulation.SLOWER : TickRateModulation.SLEEP;
         }
 
         return tickActiveRecipe(lockedRecipe.get(), lockedCandidate.get());
@@ -89,6 +95,9 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
 
     public boolean hasGridTickWork() {
         if (host.hasLockedRecipe()) {
+            return true;
+        }
+        if (host.hasAutoExportWork()) {
             return true;
         }
         if (host.getInstalledMatrixCount() <= 0) {
@@ -144,11 +153,13 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
 
         long toConsume = computeEnergyToConsumeThisTick(lockedRecipe);
         if (toConsume <= 0L) {
+            host.pushOutResult();
             return TickRateModulation.SLEEP;
         }
 
         int consumed = host.getEnergyStorage().extractInternal(toConsume, false);
         if (consumed <= 0) {
+            host.pushOutResult();
             return TickRateModulation.SLEEP;
         }
 
@@ -159,6 +170,8 @@ public final class OverloadProcessingFactoryLogic implements IGridTickable {
             completeRecipe(lockedCandidate);
             return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
         }
+
+        host.pushOutResult();
 
         return TickRateModulation.URGENT;
     }

@@ -9,7 +9,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -27,6 +30,7 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
+import appeng.api.orientation.RelativeSide;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
@@ -35,6 +39,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
+import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryAutomationInventory;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryEnergyStorage;
@@ -59,6 +64,8 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
     private static final String TAG_PROCESSING_TICKS = "ProcessingTicks";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
+    private static final String TAG_AUTO_EXPORT = "AutoExport";
+    private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
 
     public static final int ENERGY_CAPACITY = 64_000_000;
     public static final int ENERGY_RECEIVE_PER_OPERATION = 6_400_000;
@@ -86,6 +93,10 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private long consumedEnergy;
     private int processingTicksSpent;
     private boolean working;
+    private boolean autoExport;
+    private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
+    private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
+            new AdjacentItemAutoExportHelper.DirectionalTargetCache();
     private long lastClientUpdateTick = Long.MIN_VALUE;
 
     public OverloadProcessingFactoryBlockEntity(BlockPos pos, BlockState blockState) {
@@ -221,6 +232,68 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         clearLockedRecipe();
         resetProgressState();
         setWorking(false);
+    }
+
+    public boolean isAutoExportEnabled() {
+        return autoExport;
+    }
+
+    public void setAutoExportEnabled(boolean autoExport) {
+        if (this.autoExport == autoExport) {
+            return;
+        }
+
+        this.autoExport = autoExport;
+        saveChanges();
+        logic.onStateChanged();
+    }
+
+    public EnumSet<RelativeSide> getAllowedOutputs() {
+        return allowedOutputs.isEmpty() ? EnumSet.noneOf(RelativeSide.class) : EnumSet.copyOf(allowedOutputs);
+    }
+
+    public void updateOutputSides(EnumSet<RelativeSide> allowedOutputs) {
+        this.allowedOutputs = allowedOutputs.isEmpty()
+                ? EnumSet.noneOf(RelativeSide.class)
+                : EnumSet.copyOf(allowedOutputs);
+        invalidateExportTargets();
+        saveChanges();
+        logic.onStateChanged();
+    }
+
+    public boolean hasAutoExportWork() {
+        return AdjacentItemAutoExportHelper.hasAnyOutput(
+                autoExport,
+                OverloadProcessingFactoryInventory.SLOT_OUTPUT_0,
+                OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT,
+                inventory::getStackInSlot);
+    }
+
+    public boolean pushOutResult() {
+        if (allowedOutputs.isEmpty() || !hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+
+        return AdjacentItemAutoExportHelper.pushOutResult(
+                this,
+                getOrientation(),
+                allowedOutputs,
+                OverloadProcessingFactoryInventory.SLOT_OUTPUT_0,
+                OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT,
+                inventory::getStackInSlot,
+                (slot, amount) -> inventory.extractItem(slot, amount, false),
+                remainder -> {
+                    if (!inventory.insertRecipeOutputs(List.of(remainder)) && !remainder.isEmpty() && level != null) {
+                        Block.popResource(level, worldPosition, remainder);
+                    }
+                },
+                direction -> getExportTarget(serverLevel, direction));
+    }
+
+    public void onNeighborChanged(BlockPos changedPos) {
+        if (changedPos != null && worldPosition.distManhattan(changedPos) == 1) {
+            invalidateExportTargets();
+        }
     }
 
     public long getAvailableHighVoltage() {
@@ -375,6 +448,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         clearLockedRecipe();
         resetProgressState();
         setWorking(false);
+        pushOutResult();
         return true;
     }
 
@@ -416,6 +490,12 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         data.put(TAG_OUTPUT_TANK, outputTank.writeToNBT(registries, new CompoundTag()));
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
+        data.putBoolean(TAG_AUTO_EXPORT, autoExport);
+        ListTag outputTags = new ListTag();
+        for (var side : allowedOutputs) {
+            outputTags.add(StringTag.valueOf(side.name()));
+        }
+        data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         if (lockedRecipe != null) {
             data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
         } else {
@@ -433,6 +513,15 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         outputTank.readFromNBT(registries, data.getCompound(TAG_OUTPUT_TANK));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        autoExport = data.getBoolean(TAG_AUTO_EXPORT);
+        allowedOutputs.clear();
+        ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
+        for (int i = 0; i < outputTags.size(); i++) {
+            try {
+                allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
             lockedRecipe = OverloadProcessingLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
         } else {
@@ -446,6 +535,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
         }
         working = lockedRecipe != null;
+        invalidateExportTargets();
     }
 
     @Override
@@ -486,6 +576,20 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.allOf(Direction.class);
+    }
+
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        invalidateExportTargets();
+    }
+
+    private appeng.me.storage.CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
+        return exportTargetCache.resolve(level, worldPosition, direction);
+    }
+
+    private void invalidateExportTargets() {
+        exportTargetCache.invalidate();
     }
 
     private boolean canAcceptFluidOutput(FluidStack stack) {
