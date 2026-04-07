@@ -252,7 +252,11 @@
   "item.ae2lt.weather_condensate.energy": "Ionization Cost: %s AE",
   "item.ae2lt.weather_condensate.duration": "Duration: %s~%s ticks",
   "item.ae2lt.infinite_storage_cell": "Infinite Storage Cell",
+  "item.ae2lt.infinite_high_voltage_lightning_cell": "Infinite High Voltage Lightning Cell",
+  "item.ae2lt.infinite_infinite_high_voltage_lightning_cell": "Infinite Infinite High Voltage Lightning Cell Cell",
+  "item.ae2lt.fixed_infinite_cell": "Infinite %s Cell",
   "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
-  "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s"
+  "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s",
+  "tooltip.ae2lt.fixed_infinite_cell.infinite": "Infinite Supply"
 }
 

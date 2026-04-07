@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
@@ -11,7 +12,9 @@ import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
+import appeng.api.stacks.AEItemKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -108,6 +111,18 @@ public final class ModItems {
                             8, Integer.MAX_VALUE,
                             32));
 
+    public static final DeferredItem<FixedInfiniteCellItem> INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL =
+            ITEMS.register("infinite_high_voltage_lightning_cell",
+                    () -> new FixedInfiniteCellItem(
+                            new Item.Properties(),
+                            () -> LightningKey.HIGH_VOLTAGE));
+
+    public static final DeferredItem<FixedInfiniteCellItem> INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL =
+            ITEMS.register("infinite_infinite_high_voltage_lightning_cell",
+                    () -> new FixedInfiniteCellItem(
+                            new Item.Properties(),
+                            () -> AEItemKey.of(INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL.get())));
+
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
             OverloadedWirelessConnectorItem::new,
@@ -173,6 +188,8 @@ public final class ModItems {
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
         registerStorageCellModel(INFINITE_STORAGE_CELL, "256k_item_cell");
+        registerStorageCellModel(INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL, "256k_item_cell");
+        registerStorageCellModel(INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL, "256k_item_cell");
     }
 
     private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(

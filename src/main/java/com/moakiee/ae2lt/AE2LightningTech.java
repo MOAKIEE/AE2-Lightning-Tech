@@ -88,6 +88,8 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_IV);
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_V);
                         output.accept(ModItems.INFINITE_STORAGE_CELL);
+                        output.accept(ModItems.INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
+                        output.accept(ModItems.INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.LIGHTNING_COLLECTOR);
