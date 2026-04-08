@@ -66,7 +66,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     @GuiSync(84)
     public int currentParallel;
     @GuiSync(85)
-    public int matrixCount;
+    public int parallelCapacity;
     @GuiSync(86)
     public long highVoltageAvailable;
     @GuiSync(87)
@@ -136,7 +136,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
             consumedEnergy = host.getConsumedEnergy();
             totalEnergy = host.getLockedRecipe().map(lockedRecipe -> lockedRecipe.totalEnergy()).orElse(0L);
             working = host.isWorking();
-            matrixCount = host.getInstalledMatrixCount();
+            parallelCapacity = host.getInstalledParallelCapacity();
             highVoltageAvailable = host.getAvailableHighVoltage();
             extremeHighVoltageAvailable = host.getAvailableExtremeHighVoltage();
             autoExport = host.isAutoExportEnabled();
@@ -312,7 +312,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     }
 
     public Component getParallelMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.parallel", currentParallel, matrixCount);
+        return Component.translatable("ae2lt.gui.overload_factory.parallel", currentParallel, parallelCapacity);
     }
 
     public Component getHighVoltageMessage() {

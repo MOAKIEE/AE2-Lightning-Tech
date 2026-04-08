@@ -26,11 +26,11 @@ public final class OverloadProcessingFactoryLogic extends AbstractGridRecipeMach
     @Override
     protected long getMaxEnergyPerTickForSpeedCards(int speedCards) {
         return switch (speedCards) {
-            case 0 -> 200_000L;
-            case 1 -> 1_000_000L;
-            case 2 -> 4_000_000L;
-            case 3 -> 16_000_000L;
-            default -> 64_000_000L;
+            case 0 -> 400_000L;
+            case 1 -> 2_000_000L;
+            case 2 -> 8_000_000L;
+            case 3 -> 32_000_000L;
+            default -> 128_000_000L;
         };
     }
 

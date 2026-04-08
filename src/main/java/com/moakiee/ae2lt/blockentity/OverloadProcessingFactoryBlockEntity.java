@@ -70,7 +70,6 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
 
     public static final int ENERGY_CAPACITY = 640_000_000;
-    public static final int ENERGY_RECEIVE_PER_OPERATION = 64_000_000;
     public static final int INPUT_TANK_CAPACITY = 512_000;
     public static final int OUTPUT_TANK_CAPACITY = 512_000;
     public static final int SPEED_CARD_SLOTS = 4;
@@ -86,7 +85,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private final OverloadProcessingFactoryFluidHandler fluidHandler =
             new OverloadProcessingFactoryFluidHandler(inputTank, outputTank);
     private final OverloadProcessingFactoryEnergyStorage energyStorage =
-            new OverloadProcessingFactoryEnergyStorage(ENERGY_CAPACITY, ENERGY_RECEIVE_PER_OPERATION, this::onEnergyChanged);
+            new OverloadProcessingFactoryEnergyStorage(ENERGY_CAPACITY, this::onEnergyChanged);
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final OverloadProcessingFactoryLogic logic;
@@ -144,6 +143,10 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     public int getInstalledMatrixCount() {
         return inventory.getInstalledMatrixCount();
+    }
+
+    public int getInstalledParallelCapacity() {
+        return inventory.getInstalledParallelCapacity();
     }
 
     public Optional<OverloadProcessingRecipeCandidate> findProcessableRecipe() {

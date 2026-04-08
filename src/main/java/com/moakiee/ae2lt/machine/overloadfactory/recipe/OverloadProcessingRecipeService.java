@@ -70,7 +70,7 @@ public final class OverloadProcessingRecipeService {
                     input,
                     inventory,
                     outputFluid,
-                    inventory.getInstalledMatrixCount(),
+                    inventory.getInstalledParallelCapacity(),
                     availableHighVoltage,
                     availableExtremeHighVoltage);
             if (parallel <= 0) {
@@ -163,9 +163,11 @@ public final class OverloadProcessingRecipeService {
         }
 
         try {
+            long divisor = (long) (OverloadProcessingFactoryInventory.MAX_PARALLEL * 2 - 2);
+            long numeratorFactor = (long) (parallel + OverloadProcessingFactoryInventory.MAX_PARALLEL * 2 - 3);
             long linearEnergy = Math.multiplyExact(singleOperationEnergy, parallel);
-            long scaled = Math.multiplyExact(linearEnergy, (long) (parallel + 253));
-            return divideCeil(scaled, 254L);
+            long scaled = Math.multiplyExact(linearEnergy, numeratorFactor);
+            return divideCeil(scaled, divisor);
         } catch (ArithmeticException e) {
             return Long.MAX_VALUE;
         }
@@ -225,10 +227,10 @@ public final class OverloadProcessingRecipeService {
             OverloadProcessingRecipeInput input,
             OverloadProcessingFactoryInventory inventory,
             FluidStack outputFluid,
-            int matrixCount,
+            int parallelCapacity,
             long availableHighVoltage,
             long availableExtremeHighVoltage) {
-        int upper = Math.min(OverloadProcessingFactoryInventory.MATRIX_SLOT_LIMIT, matrixCount);
+        int upper = parallelCapacity;
         if (upper <= 0) {
             return 0;
         }

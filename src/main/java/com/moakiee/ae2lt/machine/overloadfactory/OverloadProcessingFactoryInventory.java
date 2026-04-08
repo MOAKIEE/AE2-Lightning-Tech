@@ -20,6 +20,8 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
     public static final int OUTPUT_SLOT_COUNT = 1;
     public static final int LARGE_SLOT_LIMIT = 8192;
     public static final int MATRIX_SLOT_LIMIT = 128;
+    public static final int PARALLEL_PER_MATRIX = 2;
+    public static final int MAX_PARALLEL = MATRIX_SLOT_LIMIT * PARALLEL_PER_MATRIX;
 
     public OverloadProcessingFactoryInventory(@Nullable Runnable changeListener) {
         super(SLOT_COUNT, changeListener);
@@ -68,6 +70,17 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
 
     public boolean hasLightningCollapseMatrix() {
         return getInstalledMatrixCount() > 0;
+    }
+
+    public int getInstalledParallelCapacity() {
+        return getMaxParallelForMatrixCount(getInstalledMatrixCount());
+    }
+
+    public static int getMaxParallelForMatrixCount(int matrixCount) {
+        if (matrixCount <= 0) {
+            return 0;
+        }
+        return Math.min(MAX_PARALLEL, matrixCount * PARALLEL_PER_MATRIX);
     }
 
     public boolean canAcceptRecipeOutputs(List<ItemStack> outputs) {
