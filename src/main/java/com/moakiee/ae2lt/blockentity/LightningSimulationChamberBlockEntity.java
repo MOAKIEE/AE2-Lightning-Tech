@@ -232,7 +232,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     public boolean hasAutoExportWork() {
-        return AdjacentItemAutoExportHelper.hasAnyOutput(
+        return !allowedOutputs.isEmpty() && AdjacentItemAutoExportHelper.hasAnyOutput(
                 autoExport,
                 LightningSimulationChamberInventory.SLOT_OUTPUT,
                 1,
@@ -252,7 +252,12 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
                 1,
                 inventory::getStackInSlot,
                 (slot, amount) -> inventory.extractItem(slot, amount, false),
-                remainder -> inventory.insertRecipeOutput(remainder, false),
+                remainder -> {
+                    ItemStack leftover = inventory.insertRecipeOutput(remainder, false);
+                    if (!leftover.isEmpty() && level != null) {
+                        Block.popResource(level, worldPosition, leftover);
+                    }
+                },
                 direction -> getExportTarget(serverLevel, direction));
     }
 
