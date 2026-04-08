@@ -265,6 +265,7 @@
   "item.ae2lt.fixed_infinite_cell": "Infinite %s Cell",
   "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s",
-  "tooltip.ae2lt.fixed_infinite_cell.infinite": "Infinite Supply"
+  "tooltip.ae2lt.fixed_infinite_cell.infinite": "Infinite Supply",
+  "ae2lt.gui.slot_count": "Count: %s"
 }
 

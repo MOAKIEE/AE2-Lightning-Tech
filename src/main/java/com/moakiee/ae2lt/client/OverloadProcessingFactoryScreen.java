@@ -2,16 +2,11 @@ package com.moakiee.ae2lt.client;
 
 import java.util.List;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
-import org.joml.Matrix4f;
-
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import appeng.api.config.ActionItems;
 import appeng.client.gui.AEBaseScreen;
@@ -22,11 +17,10 @@ import appeng.client.gui.widgets.ToggleButton;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.menu.SlotSemantics;
 
-import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
+import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 
 public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProcessingFactoryMenu> {
-    private static final float LARGE_STACK_COUNT_SCALE = 0.9F;
     private static final int INFO_X = 8;
     private static final int PARALLEL_Y = 88;
     private static final int HV_Y = 98;
@@ -98,17 +92,14 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     @Override
     public void renderSlot(GuiGraphics guiGraphics, Slot slot) {
         super.renderSlot(guiGraphics, slot);
+        LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
+    }
 
-        if (!(slot instanceof LargeStackAppEngSlot)) {
-            return;
-        }
-
-        var stack = slot.getItem();
-        if (stack.isEmpty() || stack.getCount() <= 1) {
-            return;
-        }
-
-        renderLargeStackCount(guiGraphics, slot.x, slot.y, Integer.toString(stack.getCount()));
+    @Override
+    protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
+        var lines = super.getTooltipFromContainerItem(stack);
+        LargeStackCountRenderer.appendCountTooltip(lines, hoveredSlot);
+        return lines;
     }
 
     @Override
@@ -120,27 +111,5 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
         guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EHV_Y, 0xBBBBBB, false);
         guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0xBBBBBB, false);
         guiGraphics.drawString(font, menu.getSubstitutionMessage(), INFO_X, SUBSTITUTION_Y, 0xBBBBBB, false);
-    }
-
-    private void renderLargeStackCount(GuiGraphics guiGraphics, int xPos, int yPos, String text) {
-        float inverseScale = 1.0F / LARGE_STACK_COUNT_SCALE;
-        int drawX = (int) ((xPos + 18.0F - font.width(text) * LARGE_STACK_COUNT_SCALE) * inverseScale);
-        int drawY = (int) ((yPos + 16.0F - 5.0F * LARGE_STACK_COUNT_SCALE) * inverseScale);
-
-        var pose = guiGraphics.pose();
-        pose.pushPose();
-        pose.translate(0, 0, 300);
-        pose.scale(LARGE_STACK_COUNT_SCALE, LARGE_STACK_COUNT_SCALE, LARGE_STACK_COUNT_SCALE);
-        renderLargeStackCountLabel(pose.last().pose(), font, drawX, drawY, text);
-        pose.popPose();
-    }
-
-    private static void renderLargeStackCountLabel(Matrix4f matrix, Font font, int x, int y, String text) {
-        RenderSystem.disableBlend();
-        var buffer = Minecraft.getInstance().renderBuffers().bufferSource();
-        font.drawInBatch(text, x + 1, y + 1, 0x413f54, false, matrix, buffer, Font.DisplayMode.NORMAL, 0, 15728880);
-        font.drawInBatch(text, x, y, 0xFFFFFF, false, matrix, buffer, Font.DisplayMode.NORMAL, 0, 15728880);
-        buffer.endBatch();
-        RenderSystem.enableBlend();
     }
 }
