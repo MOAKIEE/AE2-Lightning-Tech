@@ -69,8 +69,8 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private static final String TAG_AUTO_EXPORT = "AutoExport";
     private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
 
-    public static final int ENERGY_CAPACITY = 64_000_000;
-    public static final int ENERGY_RECEIVE_PER_OPERATION = 6_400_000;
+    public static final int ENERGY_CAPACITY = 640_000_000;
+    public static final int ENERGY_RECEIVE_PER_OPERATION = 64_000_000;
     public static final int INPUT_TANK_CAPACITY = 512_000;
     public static final int OUTPUT_TANK_CAPACITY = 512_000;
     public static final int SPEED_CARD_SLOTS = 4;

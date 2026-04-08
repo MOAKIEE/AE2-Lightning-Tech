@@ -12,7 +12,7 @@ public final class OverloadProcessingFactoryLogic extends AbstractGridRecipeMach
         OverloadProcessingFactoryBlockEntity,
         OverloadProcessingLockedRecipe,
         OverloadProcessingRecipeCandidate> {
-    public static final int MIN_PROCESS_TICKS = 20;
+    public static final int MIN_PROCESS_TICKS = 5;
 
     public OverloadProcessingFactoryLogic(OverloadProcessingFactoryBlockEntity host) {
         super(host);
@@ -26,11 +26,11 @@ public final class OverloadProcessingFactoryLogic extends AbstractGridRecipeMach
     @Override
     protected long getMaxEnergyPerTickForSpeedCards(int speedCards) {
         return switch (speedCards) {
-            case 0 -> 20_000L;
-            case 1 -> 100_000L;
-            case 2 -> 400_000L;
-            case 3 -> 1_600_000L;
-            default -> 6_400_000L;
+            case 0 -> 200_000L;
+            case 1 -> 1_000_000L;
+            case 2 -> 4_000_000L;
+            case 3 -> 16_000_000L;
+            default -> 64_000_000L;
         };
     }
 

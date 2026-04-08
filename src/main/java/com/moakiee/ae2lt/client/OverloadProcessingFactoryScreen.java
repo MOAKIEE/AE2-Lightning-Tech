@@ -90,8 +90,9 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
         guiGraphics.fill(offsetX, offsetY, offsetX + imageWidth, offsetY + imageHeight, 0xFF1B1F24);
         guiGraphics.fill(offsetX + 1, offsetY + 1, offsetX + imageWidth - 1, offsetY + imageHeight - 1, 0xFF222831);
-        guiGraphics.fill(offsetX + 7, offsetY + 17, offsetX + 61, offsetY + 71, 0xFF181C22);
-        guiGraphics.fill(offsetX + 115, offsetY + 17, offsetX + 151, offsetY + 53, 0xFF181C22);
+        guiGraphics.fill(offsetX + 7, offsetY + 17, offsetX + 63, offsetY + 73, 0xFF181C22);
+        guiGraphics.fill(offsetX + 62, offsetY + 17, offsetX + 80, offsetY + 77, 0xFF181C22);
+        guiGraphics.fill(offsetX + 129, offsetY + 17, offsetX + 167, offsetY + 77, 0xFF181C22);
     }
 
     @Override
@@ -114,11 +115,11 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
         super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
 
-        guiGraphics.drawString(font, menu.getParallelMessage(), INFO_X, PARALLEL_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HV_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EHV_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getSubstitutionMessage(), INFO_X, SUBSTITUTION_Y, 0x404040, false);
+        guiGraphics.drawString(font, menu.getParallelMessage(), INFO_X, PARALLEL_Y, 0xBBBBBB, false);
+        guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HV_Y, 0xBBBBBB, false);
+        guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EHV_Y, 0xBBBBBB, false);
+        guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0xBBBBBB, false);
+        guiGraphics.drawString(font, menu.getSubstitutionMessage(), INFO_X, SUBSTITUTION_Y, 0xBBBBBB, false);
     }
 
     private void renderLargeStackCount(GuiGraphics guiGraphics, int xPos, int yPos, String text) {

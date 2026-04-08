@@ -1,10 +1,6 @@
 {
   "$schema": "schema.json",
   "includes": ["common/common.json", "common/player_inventory.json"],
-  "background": {
-    "texture": "ae2lt:textures/guis/lightning_assembly_chamber.png",
-    "srcRect": [0, 0, 176, 178]
-  },
   "slots": {
     "AE2LT_LIGHTNING_ASSEMBLY_INPUT_0": { "left": 8, "top": 18 },
     "AE2LT_LIGHTNING_ASSEMBLY_INPUT_1": { "left": 26, "top": 18 },

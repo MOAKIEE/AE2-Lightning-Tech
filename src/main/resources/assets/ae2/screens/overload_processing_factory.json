@@ -33,16 +33,16 @@
   },
   "widgets": {
     "energyBar": {
-      "left": 165,
-      "top": 24
+      "left": 168,
+      "top": 18
     },
     "inputFluidBar": {
-      "left": 9,
-      "top": 21
+      "left": 63,
+      "top": 18
     },
     "outputFluidBar": {
-      "left": 151,
-      "top": 21
+      "left": 150,
+      "top": 18
     }
   }
 }
