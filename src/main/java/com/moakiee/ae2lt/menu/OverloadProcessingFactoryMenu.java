@@ -28,6 +28,7 @@ import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeCandidate;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeService;
@@ -273,7 +274,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     }
 
     public long getEnergyCapacity() {
-        return OverloadProcessingFactoryBlockEntity.ENERGY_CAPACITY;
+        return AE2LTCommonConfig.overloadFactoryEnergyCapacity();
     }
 
     public int getInputTankCapacity() {

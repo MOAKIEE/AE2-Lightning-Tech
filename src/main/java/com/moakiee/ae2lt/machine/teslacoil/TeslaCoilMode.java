@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.machine.teslacoil;
 
 import net.minecraft.util.StringRepresentable;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.me.key.LightningKey;
 
 public enum TeslaCoilMode implements StringRepresentable {
@@ -9,11 +10,6 @@ public enum TeslaCoilMode implements StringRepresentable {
     EXTREME_HIGH_VOLTAGE("extreme_high_voltage");
 
     public static final int PROCESS_TICKS = 5;
-    private static final int HIGH_VOLTAGE_DUST_COST = 4;
-    private static final int HIGH_VOLTAGE_ENERGY = 50_000;
-    private static final int EXTREME_HIGH_VOLTAGE_INPUT = 4;
-    private static final int EXTREME_HIGH_VOLTAGE_ENERGY = 500_000;
-
     private final String serializedName;
 
     TeslaCoilMode(String serializedName) {
@@ -38,7 +34,9 @@ public enum TeslaCoilMode implements StringRepresentable {
     }
 
     public long totalEnergy() {
-        return this == EXTREME_HIGH_VOLTAGE ? EXTREME_HIGH_VOLTAGE_ENERGY : HIGH_VOLTAGE_ENERGY;
+        return this == EXTREME_HIGH_VOLTAGE
+                ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageFe()
+                : AE2LTCommonConfig.teslaCoilHighVoltageFe();
     }
 
     public long requiredEnergyForTick(int completedTicks, long consumedEnergy) {
@@ -56,11 +54,11 @@ public enum TeslaCoilMode implements StringRepresentable {
     }
 
     public int requiredDust() {
-        return this == HIGH_VOLTAGE ? HIGH_VOLTAGE_DUST_COST : 0;
+        return this == HIGH_VOLTAGE ? AE2LTCommonConfig.teslaCoilHighVoltageDustCost() : 0;
     }
 
     public long requiredHighVoltage() {
-        return this == EXTREME_HIGH_VOLTAGE ? EXTREME_HIGH_VOLTAGE_INPUT : 0L;
+        return this == EXTREME_HIGH_VOLTAGE ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageInput() : 0L;
     }
 
     public LightningKey outputKey() {

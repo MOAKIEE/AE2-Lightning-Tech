@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.machine.overloadfactory;
 import java.util.Optional;
 
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingLockedRecipe;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeCandidate;
@@ -26,11 +27,11 @@ public final class OverloadProcessingFactoryLogic extends AbstractGridRecipeMach
     @Override
     protected long getMaxEnergyPerTickForSpeedCards(int speedCards) {
         return switch (speedCards) {
-            case 0 -> 400_000L;
-            case 1 -> 2_000_000L;
-            case 2 -> 8_000_000L;
-            case 3 -> 32_000_000L;
-            default -> 128_000_000L;
+            case 0 -> AE2LTCommonConfig.overloadFactoryFePerTickNoSpeedCard();
+            case 1 -> AE2LTCommonConfig.overloadFactoryFePerTickOneSpeedCard();
+            case 2 -> AE2LTCommonConfig.overloadFactoryFePerTickTwoSpeedCards();
+            case 3 -> AE2LTCommonConfig.overloadFactoryFePerTickThreeSpeedCards();
+            default -> AE2LTCommonConfig.overloadFactoryFePerTickFourSpeedCards();
         };
     }
 

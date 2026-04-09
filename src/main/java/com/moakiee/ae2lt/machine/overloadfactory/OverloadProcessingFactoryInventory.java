@@ -6,6 +6,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.ItemStack;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.lightningchamber.LargeStackItemHandler;
 import com.moakiee.ae2lt.registry.ModItems;
 
@@ -20,9 +21,6 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
     public static final int OUTPUT_SLOT_COUNT = 1;
     public static final int LARGE_SLOT_LIMIT = 8192;
     public static final int MATRIX_SLOT_LIMIT = 128;
-    public static final int PARALLEL_PER_MATRIX = 2;
-    public static final int MAX_PARALLEL = MATRIX_SLOT_LIMIT * PARALLEL_PER_MATRIX;
-
     public OverloadProcessingFactoryInventory(@Nullable Runnable changeListener) {
         super(SLOT_COUNT, changeListener);
     }
@@ -80,7 +78,15 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
         if (matrixCount <= 0) {
             return 0;
         }
-        return Math.min(MAX_PARALLEL, matrixCount * PARALLEL_PER_MATRIX);
+        int parallelPerMatrix = AE2LTCommonConfig.overloadFactoryParallelPerMatrix();
+        int maxParallel = getMaxParallel();
+        long scaledParallel = (long) matrixCount * parallelPerMatrix;
+        return (int) Math.min(maxParallel, Math.min(Integer.MAX_VALUE, scaledParallel));
+    }
+
+    public static int getMaxParallel() {
+        long maxParallel = (long) MATRIX_SLOT_LIMIT * AE2LTCommonConfig.overloadFactoryParallelPerMatrix();
+        return (int) Math.min(Integer.MAX_VALUE, maxParallel);
     }
 
     public boolean canAcceptRecipeOutputs(List<ItemStack> outputs) {

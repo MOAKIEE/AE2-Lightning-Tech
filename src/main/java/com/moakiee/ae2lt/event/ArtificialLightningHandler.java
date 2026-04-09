@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.event;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerLevel;
@@ -28,8 +29,7 @@ public final class ArtificialLightningHandler {
             return;
         }
 
-        boolean carryingOverloadCrystal = player.getOffhandItem().getItem() instanceof OverloadCrystalItem
-                || player.getInventory().items.stream().anyMatch(stack -> stack.getItem() instanceof OverloadCrystalItem);
+        boolean carryingOverloadCrystal = isCarryingConfiguredCrystal(player);
 
         if (!carryingOverloadCrystal) {
             player.getPersistentData().remove(HELD_TICKS_TAG);
@@ -62,5 +62,29 @@ public final class ArtificialLightningHandler {
         }
 
         level.addFreshEntity(lightningBolt);
+    }
+
+    private static boolean isCarryingConfiguredCrystal(Player player) {
+        if (AE2LTCommonConfig.artificialLightningTriggerFromHotbar()) {
+            if (player.getOffhandItem().getItem() instanceof OverloadCrystalItem) {
+                return true;
+            }
+
+            for (int slot = 0; slot < 9; slot++) {
+                if (player.getInventory().items.get(slot).getItem() instanceof OverloadCrystalItem) {
+                    return true;
+                }
+            }
+        }
+
+        if (AE2LTCommonConfig.artificialLightningTriggerFromBackpack()) {
+            for (int slot = 9; slot < player.getInventory().items.size(); slot++) {
+                if (player.getInventory().items.get(slot).getItem() instanceof OverloadCrystalItem) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 }

@@ -163,8 +163,12 @@ public final class OverloadProcessingRecipeService {
         }
 
         try {
-            long divisor = (long) (OverloadProcessingFactoryInventory.MAX_PARALLEL * 2 - 2);
-            long numeratorFactor = (long) (parallel + OverloadProcessingFactoryInventory.MAX_PARALLEL * 2 - 3);
+            int maxParallel = OverloadProcessingFactoryInventory.getMaxParallel();
+            if (maxParallel <= 1) {
+                return Math.multiplyExact(singleOperationEnergy, parallel);
+            }
+            long divisor = (long) (maxParallel * 2 - 2);
+            long numeratorFactor = (long) (parallel + maxParallel * 2 - 3);
             long linearEnergy = Math.multiplyExact(singleOperationEnergy, parallel);
             long scaled = Math.multiplyExact(linearEnergy, numeratorFactor);
             return divideCeil(scaled, divisor);

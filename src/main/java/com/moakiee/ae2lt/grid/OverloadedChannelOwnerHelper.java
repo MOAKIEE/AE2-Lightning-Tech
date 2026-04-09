@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -18,7 +19,6 @@ import appeng.blockentity.networking.ControllerBlockEntity;
  * automatically granted elevated channel capacity by the AE2LT mixins.
  */
 public final class OverloadedChannelOwnerHelper {
-    public static final int CHANNELS_PER_CONTROLLER = 128;
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final Set<String> LOGGED_OWNER_LOOKUP_FAILURES =
             Collections.synchronizedSet(new java.util.HashSet<>());
@@ -32,6 +32,15 @@ public final class OverloadedChannelOwnerHelper {
 
     public static boolean is128ChannelConnection(@Nullable Object ownerA, @Nullable Object ownerB) {
         return is128ChannelOwner(ownerA) && is128ChannelOwner(ownerB);
+    }
+
+    public static int channelsPerController() {
+        return AE2LTCommonConfig.overloadedControllerChannelsPerController();
+    }
+
+    public static int supplyPerController(int cableCapacityFactor) {
+        long supply = (long) channelsPerController() * Math.max(1, cableCapacityFactor);
+        return (int) Math.min(Integer.MAX_VALUE / 2, supply);
     }
 
     public static @Nullable Object tryGetOwner(IGridNode node) {
@@ -66,6 +75,7 @@ public final class OverloadedChannelOwnerHelper {
             return 0;
         }
 
-        return CHANNELS_PER_CONTROLLER * overloadedCount * channelMode.getCableCapacityFactor();
+        long capacity = (long) channelsPerController() * overloadedCount * channelMode.getCableCapacityFactor();
+        return (int) Math.min(Integer.MAX_VALUE, capacity);
     }
 }

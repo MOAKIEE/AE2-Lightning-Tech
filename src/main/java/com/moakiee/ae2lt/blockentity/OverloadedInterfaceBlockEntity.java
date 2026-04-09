@@ -11,6 +11,7 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
@@ -87,9 +88,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     //  Reference: ExtAE extended bus — 96 base (4 speed cards) × 8 busSpeed
     //  = 768 items per activation.
     // ══════════════════════════════════════════════════════════════════════
-
-    private static final int TRANSFER_BUDGET_NORMAL = 4096;
-    private static final int TRANSFER_BUDGET_FAST   = 16384;
 
     /** ExternalStorageStrategy wrapper cache staleness guard (both directions). */
     private static final int WRAPPER_REFRESH_TICKS = 20;
@@ -630,7 +628,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var wrappers = cst.resolveWrappers(targetLevel, conn);
         if (wrappers == null) return 0;
 
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST ? TRANSFER_BUDGET_FAST : TRANSFER_BUDGET_NORMAL;
+        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
+                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
+                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget = transferBudget;
         int moved  = 0;
 
@@ -691,7 +691,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         var config     = getInterfaceLogic().getConfig();
         int configSize = config.size();
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST ? TRANSFER_BUDGET_FAST : TRANSFER_BUDGET_NORMAL;
+        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
+                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
+                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget     = transferBudget;
         int moved      = 0;
 

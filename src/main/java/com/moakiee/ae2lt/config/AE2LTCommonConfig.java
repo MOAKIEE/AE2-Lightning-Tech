@@ -24,21 +24,301 @@ public final class AE2LTCommonConfig {
         return VALUES.electroChimeMaxCatalysis.get();
     }
 
+    public static boolean overloadTntEnableTerrainDamage() {
+        return VALUES.overloadTntEnableTerrainDamage.get();
+    }
+
+    public static int overloadTntGlobalBlockBudgetPerTick() {
+        return VALUES.overloadTntGlobalBlockBudgetPerTick.get();
+    }
+
+    public static int overloadTntGlobalLightningBudgetPerTick() {
+        return VALUES.overloadTntGlobalLightningBudgetPerTick.get();
+    }
+
+    public static int overloadedControllerChannelsPerController() {
+        return VALUES.overloadedControllerChannelsPerController.get();
+    }
+
+    public static double overloadedControllerPassiveAePerTick() {
+        return VALUES.overloadedControllerPassiveAePerTick.get();
+    }
+
+    public static int overloadedInterfaceTransferBudgetNormal() {
+        return VALUES.overloadedInterfaceTransferBudgetNormal.get();
+    }
+
+    public static int overloadedInterfaceTransferBudgetFast() {
+        return VALUES.overloadedInterfaceTransferBudgetFast.get();
+    }
+
+    public static int overloadFactoryParallelPerMatrix() {
+        return VALUES.overloadFactoryParallelPerMatrix.get();
+    }
+
+    public static long overloadFactoryEnergyCapacity() {
+        return VALUES.overloadFactoryEnergyCapacity.get();
+    }
+
+    public static long overloadFactoryFePerTickNoSpeedCard() {
+        return VALUES.overloadFactoryFePerTickNoSpeedCard.get();
+    }
+
+    public static long overloadFactoryFePerTickOneSpeedCard() {
+        return VALUES.overloadFactoryFePerTickOneSpeedCard.get();
+    }
+
+    public static long overloadFactoryFePerTickTwoSpeedCards() {
+        return VALUES.overloadFactoryFePerTickTwoSpeedCards.get();
+    }
+
+    public static long overloadFactoryFePerTickThreeSpeedCards() {
+        return VALUES.overloadFactoryFePerTickThreeSpeedCards.get();
+    }
+
+    public static long overloadFactoryFePerTickFourSpeedCards() {
+        return VALUES.overloadFactoryFePerTickFourSpeedCards.get();
+    }
+
+    public static boolean artificialLightningTriggerFromHotbar() {
+        return VALUES.artificialLightningTriggerFromHotbar.get();
+    }
+
+    public static boolean artificialLightningTriggerFromBackpack() {
+        return VALUES.artificialLightningTriggerFromBackpack.get();
+    }
+
+    public static int lightningCollectorHvBaseMin() {
+        return VALUES.lightningCollectorHvBaseMin.get();
+    }
+
+    public static int lightningCollectorHvBaseMax() {
+        return VALUES.lightningCollectorHvBaseMax.get();
+    }
+
+    public static int lightningCollectorEhvBaseMin() {
+        return VALUES.lightningCollectorEhvBaseMin.get();
+    }
+
+    public static int lightningCollectorEhvBaseMax() {
+        return VALUES.lightningCollectorEhvBaseMax.get();
+    }
+
+    public static int lightningCollectorHvCrystalStart() {
+        return VALUES.lightningCollectorHvCrystalStart.get();
+    }
+
+    public static int lightningCollectorHvCrystalEnd() {
+        return VALUES.lightningCollectorHvCrystalEnd.get();
+    }
+
+    public static int lightningCollectorEhvCrystalStart() {
+        return VALUES.lightningCollectorEhvCrystalStart.get();
+    }
+
+    public static int lightningCollectorEhvCrystalEnd() {
+        return VALUES.lightningCollectorEhvCrystalEnd.get();
+    }
+
+    public static int lightningCollectorPerfectHvOutput() {
+        return VALUES.lightningCollectorPerfectHvOutput.get();
+    }
+
+    public static int lightningCollectorPerfectEhvOutput() {
+        return VALUES.lightningCollectorPerfectEhvOutput.get();
+    }
+
+    public static double lightningCollectorCrystalFeedRatio() {
+        return VALUES.lightningCollectorCrystalFeedRatio.get();
+    }
+
+    public static double lightningCollectorSpreadRatio() {
+        return VALUES.lightningCollectorSpreadRatio.get();
+    }
+
+    public static int teslaCoilHighVoltageDustCost() {
+        return VALUES.teslaCoilHighVoltageDustCost.get();
+    }
+
+    public static int teslaCoilHighVoltageFe() {
+        return VALUES.teslaCoilHighVoltageFe.get();
+    }
+
+    public static int teslaCoilExtremeHighVoltageInput() {
+        return VALUES.teslaCoilExtremeHighVoltageInput.get();
+    }
+
+    public static int teslaCoilExtremeHighVoltageFe() {
+        return VALUES.teslaCoilExtremeHighVoltageFe.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.IntValue electroChimeMaxCatalysis;
+        private final ModConfigSpec.BooleanValue overloadTntEnableTerrainDamage;
+        private final ModConfigSpec.IntValue overloadTntGlobalBlockBudgetPerTick;
+        private final ModConfigSpec.IntValue overloadTntGlobalLightningBudgetPerTick;
+        private final ModConfigSpec.IntValue overloadedControllerChannelsPerController;
+        private final ModConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
+        private final ModConfigSpec.IntValue overloadedInterfaceTransferBudgetNormal;
+        private final ModConfigSpec.IntValue overloadedInterfaceTransferBudgetFast;
+        private final ModConfigSpec.IntValue overloadFactoryParallelPerMatrix;
+        private final ModConfigSpec.LongValue overloadFactoryEnergyCapacity;
+        private final ModConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
+        private final ModConfigSpec.LongValue overloadFactoryFePerTickOneSpeedCard;
+        private final ModConfigSpec.LongValue overloadFactoryFePerTickTwoSpeedCards;
+        private final ModConfigSpec.LongValue overloadFactoryFePerTickThreeSpeedCards;
+        private final ModConfigSpec.LongValue overloadFactoryFePerTickFourSpeedCards;
+        private final ModConfigSpec.BooleanValue artificialLightningTriggerFromHotbar;
+        private final ModConfigSpec.BooleanValue artificialLightningTriggerFromBackpack;
+        private final ModConfigSpec.IntValue lightningCollectorHvBaseMin;
+        private final ModConfigSpec.IntValue lightningCollectorHvBaseMax;
+        private final ModConfigSpec.IntValue lightningCollectorEhvBaseMin;
+        private final ModConfigSpec.IntValue lightningCollectorEhvBaseMax;
+        private final ModConfigSpec.IntValue lightningCollectorHvCrystalStart;
+        private final ModConfigSpec.IntValue lightningCollectorHvCrystalEnd;
+        private final ModConfigSpec.IntValue lightningCollectorEhvCrystalStart;
+        private final ModConfigSpec.IntValue lightningCollectorEhvCrystalEnd;
+        private final ModConfigSpec.IntValue lightningCollectorPerfectHvOutput;
+        private final ModConfigSpec.IntValue lightningCollectorPerfectEhvOutput;
+        private final ModConfigSpec.DoubleValue lightningCollectorCrystalFeedRatio;
+        private final ModConfigSpec.DoubleValue lightningCollectorSpreadRatio;
+        private final ModConfigSpec.IntValue teslaCoilHighVoltageDustCost;
+        private final ModConfigSpec.IntValue teslaCoilHighVoltageFe;
+        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
+        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
             lightningCollectorCooldownTicks = builder
                     .comment("Cooldown in ticks after each captured lightning strike.")
                     .defineInRange("cooldownTicks", 100, 0, Integer.MAX_VALUE);
+            builder.push("outputProfile");
+            lightningCollectorHvBaseMin = builder
+                    .comment("Minimum HV output before crystal bonuses are applied.")
+                    .defineInRange("hvBaseMin", 1, 0, Integer.MAX_VALUE);
+            lightningCollectorHvBaseMax = builder
+                    .comment("Maximum HV output before crystal bonuses are applied.")
+                    .defineInRange("hvBaseMax", 2, 0, Integer.MAX_VALUE);
+            lightningCollectorEhvBaseMin = builder
+                    .comment("Minimum EHV output before crystal bonuses are applied.")
+                    .defineInRange("ehvBaseMin", 1, 0, Integer.MAX_VALUE);
+            lightningCollectorEhvBaseMax = builder
+                    .comment("Maximum EHV output before crystal bonuses are applied.")
+                    .defineInRange("ehvBaseMax", 4, 0, Integer.MAX_VALUE);
+            lightningCollectorHvCrystalStart = builder
+                    .comment("HV crystal count where bonus scaling starts.")
+                    .defineInRange("hvCrystalStart", 2, 0, Integer.MAX_VALUE);
+            lightningCollectorHvCrystalEnd = builder
+                    .comment("HV crystal count where bonus scaling ends.")
+                    .defineInRange("hvCrystalEnd", 16, 0, Integer.MAX_VALUE);
+            lightningCollectorEhvCrystalStart = builder
+                    .comment("EHV crystal count where bonus scaling starts.")
+                    .defineInRange("ehvCrystalStart", 4, 0, Integer.MAX_VALUE);
+            lightningCollectorEhvCrystalEnd = builder
+                    .comment("EHV crystal count where bonus scaling ends.")
+                    .defineInRange("ehvCrystalEnd", 32, 0, Integer.MAX_VALUE);
+            lightningCollectorPerfectHvOutput = builder
+                    .comment("Fixed HV output for a perfect crystal.")
+                    .defineInRange("perfectHvOutput", 16, 0, Integer.MAX_VALUE);
+            lightningCollectorPerfectEhvOutput = builder
+                    .comment("Fixed EHV output for a perfect crystal.")
+                    .defineInRange("perfectEhvOutput", 32, 0, Integer.MAX_VALUE);
+            lightningCollectorCrystalFeedRatio = builder
+                    .comment("Fraction of output used to feed crystals.")
+                    .defineInRange("crystalFeedRatio", 0.15D, 0.0D, Double.MAX_VALUE);
+            lightningCollectorSpreadRatio = builder
+                    .comment("Fraction of output used as random spread.")
+                    .defineInRange("spreadRatio", 0.12D, 0.0D, Double.MAX_VALUE);
+            builder.pop();
             builder.pop();
 
             builder.push("electroChimeCrystal");
             electroChimeMaxCatalysis = builder
                     .comment("Catalysis value needed to transform an electro chime crystal into its perfect form.")
                     .defineInRange("maxCatalysis", 256, 1, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("overloadTnt");
+            overloadTntEnableTerrainDamage = builder
+                    .comment("Controls whether overload TNT can damage terrain with the custom blast task.")
+                    .define("enableTerrainDamage", true);
+            overloadTntGlobalBlockBudgetPerTick = builder
+                    .comment("Maximum blocks processed per tick across all overload TNT tasks.")
+                    .defineInRange("globalBlockBudgetPerTick", 2400, 0, Integer.MAX_VALUE);
+            overloadTntGlobalLightningBudgetPerTick = builder
+                    .comment("Maximum lightning strikes processed per tick across all overload TNT tasks.")
+                    .defineInRange("globalLightningBudgetPerTick", 8, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("network");
+            builder.push("overloadedController");
+            overloadedControllerChannelsPerController = builder
+                    .comment("Extra channels provided by each overloaded controller.")
+                    .defineInRange("channelsPerController", 128, 0, Integer.MAX_VALUE);
+            overloadedControllerPassiveAePerTick = builder
+                    .comment("Passive AE injected per tick by an overloaded controller.")
+                    .defineInRange("passiveAePerTick", 100.0D, 0.0D, Double.MAX_VALUE);
+            builder.pop();
+            builder.pop();
+
+            builder.push("overloadedInterface");
+            overloadedInterfaceTransferBudgetNormal = builder
+                    .comment("Transfer budget for the overloaded interface in normal mode.")
+                    .defineInRange("transferBudgetNormal", 4096, 0, Integer.MAX_VALUE);
+            overloadedInterfaceTransferBudgetFast = builder
+                    .comment("Transfer budget for the overloaded interface in fast mode.")
+                    .defineInRange("transferBudgetFast", 16384, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("overloadFactory");
+            overloadFactoryParallelPerMatrix = builder
+                    .comment("Parallel output count provided by each lightning collapse matrix.")
+                    .defineInRange("parallelPerMatrix", 2, 0, Integer.MAX_VALUE / 128);
+            overloadFactoryEnergyCapacity = builder
+                    .comment("Internal FE buffer capacity of the overload processing factory.")
+                    .defineInRange("energyCapacity", 640_000_000L, 1L, Long.MAX_VALUE);
+            overloadFactoryFePerTickNoSpeedCard = builder
+                    .comment("Maximum FE consumed per tick with no speed cards installed.")
+                    .defineInRange("fePerTickNoSpeedCard", 400_000L, 0L, Long.MAX_VALUE);
+            overloadFactoryFePerTickOneSpeedCard = builder
+                    .comment("Maximum FE consumed per tick with one speed card installed.")
+                    .defineInRange("fePerTickOneSpeedCard", 2_000_000L, 0L, Long.MAX_VALUE);
+            overloadFactoryFePerTickTwoSpeedCards = builder
+                    .comment("Maximum FE consumed per tick with two speed cards installed.")
+                    .defineInRange("fePerTickTwoSpeedCards", 8_000_000L, 0L, Long.MAX_VALUE);
+            overloadFactoryFePerTickThreeSpeedCards = builder
+                    .comment("Maximum FE consumed per tick with three speed cards installed.")
+                    .defineInRange("fePerTickThreeSpeedCards", 32_000_000L, 0L, Long.MAX_VALUE);
+            overloadFactoryFePerTickFourSpeedCards = builder
+                    .comment("Maximum FE consumed per tick with four or more speed cards installed.")
+                    .defineInRange("fePerTickFourSpeedCards", 128_000_000L, 0L, Long.MAX_VALUE);
+            builder.pop();
+
+            builder.push("artificialLightning");
+            artificialLightningTriggerFromHotbar = builder
+                    .comment("Controls whether overload crystals in the hotbar can trigger artificial lightning.")
+                    .define("triggerFromHotbar", true);
+            artificialLightningTriggerFromBackpack = builder
+                    .comment("Controls whether overload crystals anywhere else in the inventory can trigger artificial lightning.")
+                    .define("triggerFromBackpack", false);
+            builder.pop();
+
+            builder.push("teslaCoil");
+            builder.push("modeCosts");
+            teslaCoilHighVoltageDustCost = builder
+                    .comment("Dust cost for the high voltage mode.")
+                    .defineInRange("highVoltageDustCost", 4, 0, Integer.MAX_VALUE);
+            teslaCoilHighVoltageFe = builder
+                    .comment("FE cost for the high voltage mode.")
+                    .defineInRange("highVoltageFe", 50000, 0, Integer.MAX_VALUE);
+            teslaCoilExtremeHighVoltageInput = builder
+                    .comment("Input count for the extreme high voltage mode.")
+                    .defineInRange("extremeHighVoltageInput", 4, 0, Integer.MAX_VALUE);
+            teslaCoilExtremeHighVoltageFe = builder
+                    .comment("FE cost for the extreme high voltage mode.")
+                    .defineInRange("extremeHighVoltageFe", 500000, 0, Integer.MAX_VALUE);
+            builder.pop();
             builder.pop();
         }
     }

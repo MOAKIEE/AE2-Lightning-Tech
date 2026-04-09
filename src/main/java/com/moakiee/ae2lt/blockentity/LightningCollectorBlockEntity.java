@@ -42,18 +42,6 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";
-    private static final double CRYSTAL_FEED_RATIO = 0.15D;
-    private static final double OUTPUT_SPREAD_RATIO = 0.12D;
-    private static final int HIGH_BASE_MIN = 1;
-    private static final int HIGH_BASE_MAX = 2;
-    private static final int EXTREME_HIGH_BASE_MIN = 1;
-    private static final int EXTREME_HIGH_BASE_MAX = 4;
-    private static final int HIGH_CRYSTAL_START = 2;
-    private static final int HIGH_CRYSTAL_END = 16;
-    private static final int EXTREME_HIGH_CRYSTAL_START = 4;
-    private static final int EXTREME_HIGH_CRYSTAL_END = 32;
-    private static final int HIGH_PERFECT_OUTPUT = 16;
-    private static final int EXTREME_HIGH_PERFECT_OUTPUT = 32;
     private static boolean warnedInvalidHighVoltageBaseRange;
     private static boolean warnedInvalidExtremeVoltageBaseRange;
 
@@ -105,8 +93,12 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         ItemStack crystal = getInstalledCrystal();
         boolean extremeHighVoltage = tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE;
         if (crystal.isEmpty()) {
-            int baseMin = extremeHighVoltage ? EXTREME_HIGH_BASE_MIN : HIGH_BASE_MIN;
-            int baseMax = extremeHighVoltage ? EXTREME_HIGH_BASE_MAX : HIGH_BASE_MAX;
+            int baseMin = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorEhvBaseMin()
+                    : AE2LTCommonConfig.lightningCollectorHvBaseMin();
+            int baseMax = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorEhvBaseMax()
+                    : AE2LTCommonConfig.lightningCollectorHvBaseMax();
             if (baseMin > baseMax) {
                 warnInvalidBaseRange(extremeHighVoltage, baseMin, baseMax);
             }
@@ -116,16 +108,22 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         }
 
         if (crystal.is(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get())) {
-            int output = extremeHighVoltage ? EXTREME_HIGH_PERFECT_OUTPUT : HIGH_PERFECT_OUTPUT;
+            int output = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorPerfectEhvOutput()
+                    : AE2LTCommonConfig.lightningCollectorPerfectHvOutput();
             return new OutputPreview(output, output);
         }
 
         double progress = ElectroChimeCrystalItem.getCatalysisPercent(crystal);
         double center = Mth.lerp(
                 progress,
-                extremeHighVoltage ? EXTREME_HIGH_CRYSTAL_START : HIGH_CRYSTAL_START,
-                extremeHighVoltage ? EXTREME_HIGH_CRYSTAL_END : HIGH_CRYSTAL_END);
-        int spread = Math.max(1, Mth.floor(center * OUTPUT_SPREAD_RATIO));
+                extremeHighVoltage
+                        ? AE2LTCommonConfig.lightningCollectorEhvCrystalStart()
+                        : AE2LTCommonConfig.lightningCollectorHvCrystalStart(),
+                extremeHighVoltage
+                        ? AE2LTCommonConfig.lightningCollectorEhvCrystalEnd()
+                        : AE2LTCommonConfig.lightningCollectorHvCrystalEnd());
+        int spread = Math.max(1, Mth.floor(center * AE2LTCommonConfig.lightningCollectorSpreadRatio()));
         int min = Math.max(1, Mth.floor(center) - spread);
         int max = Math.max(min, Mth.ceil(center) + spread);
         return new OutputPreview(min, max);
@@ -267,7 +265,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     }
 
     private static int feedAmount(int rolledOutput) {
-        return Math.max(1, Mth.floor(rolledOutput * CRYSTAL_FEED_RATIO));
+        return Math.max(1, Mth.floor(rolledOutput * AE2LTCommonConfig.lightningCollectorCrystalFeedRatio()));
     }
 
     private static void warnInvalidBaseRange(boolean extremeHighVoltage, int min, int max) {

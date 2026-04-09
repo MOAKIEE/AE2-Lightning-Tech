@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.entity;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.logic.LightningBlastTask;
 import com.moakiee.ae2lt.logic.LightningBlastTaskManager;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -83,7 +84,9 @@ public class OverloadTntEntity extends PrimedTnt {
                     COMPATIBILITY_EXPLOSION_POWER,
                     false,
                     ExplosionInteraction.TNT);
-            LightningBlastTaskManager.schedule(new LightningBlastTask(serverLevel, this.blockPosition()));
+            if (AE2LTCommonConfig.overloadTntEnableTerrainDamage()) {
+                LightningBlastTaskManager.schedule(new LightningBlastTask(serverLevel, this.blockPosition()));
+            }
         }
     }
 

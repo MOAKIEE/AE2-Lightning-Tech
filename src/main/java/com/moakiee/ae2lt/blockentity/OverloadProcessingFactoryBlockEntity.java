@@ -38,6 +38,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
@@ -69,7 +70,6 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private static final String TAG_AUTO_EXPORT = "AutoExport";
     private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
 
-    public static final int ENERGY_CAPACITY = 640_000_000;
     public static final int INPUT_TANK_CAPACITY = 512_000;
     public static final int OUTPUT_TANK_CAPACITY = 512_000;
     public static final int SPEED_CARD_SLOTS = 4;
@@ -85,7 +85,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private final OverloadProcessingFactoryFluidHandler fluidHandler =
             new OverloadProcessingFactoryFluidHandler(inputTank, outputTank);
     private final OverloadProcessingFactoryEnergyStorage energyStorage =
-            new OverloadProcessingFactoryEnergyStorage(ENERGY_CAPACITY, this::onEnergyChanged);
+            new OverloadProcessingFactoryEnergyStorage(AE2LTCommonConfig.overloadFactoryEnergyCapacity(), this::onEnergyChanged);
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final OverloadProcessingFactoryLogic logic;
@@ -332,7 +332,14 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         }
 
         FluidStack requiredInputFluid = candidate.recipe().value().fluidInput();
-        int inputFluidCost = requiredInputFluid.isEmpty() ? 0 : requiredInputFluid.getAmount() * candidate.parallel();
+        int inputFluidCost = 0;
+        if (!requiredInputFluid.isEmpty()) {
+            long scaledInputFluidCost = (long) requiredInputFluid.getAmount() * candidate.parallel();
+            if (scaledInputFluidCost > Integer.MAX_VALUE) {
+                return false;
+            }
+            inputFluidCost = (int) scaledInputFluidCost;
+        }
         if (inputFluidCost > 0) {
             FluidStack currentInput = inputTank.getFluid();
             if (currentInput.isEmpty()
