@@ -271,52 +271,52 @@ public final class AE2LTCommonConfig {
                     .defineInRange("transferBudgetFast", 16384, 0, Integer.MAX_VALUE);
             builder.pop();
 
-            builder.push("overloadFactory");
+            builder.push("overloadProcessingFactory");
             overloadFactoryParallelPerMatrix = builder
-                    .comment("Parallel output count provided by each lightning collapse matrix.")
+                    .comment("Parallel operations provided by each Lightning Collapse Matrix.")
                     .defineInRange("parallelPerMatrix", 2, 0, Integer.MAX_VALUE / 128);
             overloadFactoryEnergyCapacity = builder
-                    .comment("Internal FE buffer capacity of the overload processing factory.")
+                    .comment("Internal FE buffer capacity of the Overload Processing Factory.")
                     .defineInRange("energyCapacity", 640_000_000L, 1L, Long.MAX_VALUE);
             overloadFactoryFePerTickNoSpeedCard = builder
-                    .comment("Maximum FE consumed per tick with no speed cards installed.")
-                    .defineInRange("fePerTickNoSpeedCard", 400_000L, 0L, Long.MAX_VALUE);
+                    .comment("Maximum FE consumed per tick with no Speed Cards installed.")
+                    .defineInRange("fePerTickBase", 400_000L, 0L, Long.MAX_VALUE);
             overloadFactoryFePerTickOneSpeedCard = builder
-                    .comment("Maximum FE consumed per tick with one speed card installed.")
-                    .defineInRange("fePerTickOneSpeedCard", 2_000_000L, 0L, Long.MAX_VALUE);
+                    .comment("Maximum FE consumed per tick with 1 Speed Card installed.")
+                    .defineInRange("fePerTick1SpeedCard", 2_000_000L, 0L, Long.MAX_VALUE);
             overloadFactoryFePerTickTwoSpeedCards = builder
-                    .comment("Maximum FE consumed per tick with two speed cards installed.")
-                    .defineInRange("fePerTickTwoSpeedCards", 8_000_000L, 0L, Long.MAX_VALUE);
+                    .comment("Maximum FE consumed per tick with 2 Speed Cards installed.")
+                    .defineInRange("fePerTick2SpeedCards", 8_000_000L, 0L, Long.MAX_VALUE);
             overloadFactoryFePerTickThreeSpeedCards = builder
-                    .comment("Maximum FE consumed per tick with three speed cards installed.")
-                    .defineInRange("fePerTickThreeSpeedCards", 32_000_000L, 0L, Long.MAX_VALUE);
+                    .comment("Maximum FE consumed per tick with 3 Speed Cards installed.")
+                    .defineInRange("fePerTick3SpeedCards", 32_000_000L, 0L, Long.MAX_VALUE);
             overloadFactoryFePerTickFourSpeedCards = builder
-                    .comment("Maximum FE consumed per tick with four or more speed cards installed.")
-                    .defineInRange("fePerTickFourSpeedCards", 128_000_000L, 0L, Long.MAX_VALUE);
+                    .comment("Maximum FE consumed per tick with 4 Speed Cards installed.")
+                    .defineInRange("fePerTick4SpeedCards", 128_000_000L, 0L, Long.MAX_VALUE);
             builder.pop();
 
             builder.push("artificialLightning");
             artificialLightningTriggerFromHotbar = builder
-                    .comment("Controls whether overload crystals in the hotbar can trigger artificial lightning.")
+                    .comment("Controls whether Overload Crystals in the hotbar or offhand can trigger artificial lightning.")
                     .define("triggerFromHotbar", true);
             artificialLightningTriggerFromBackpack = builder
-                    .comment("Controls whether overload crystals anywhere else in the inventory can trigger artificial lightning.")
+                    .comment("Controls whether Overload Crystals in the main inventory can trigger artificial lightning.")
                     .define("triggerFromBackpack", false);
             builder.pop();
 
             builder.push("teslaCoil");
             builder.push("modeCosts");
             teslaCoilHighVoltageDustCost = builder
-                    .comment("Dust cost for the high voltage mode.")
+                    .comment("Overload Crystal Dust cost for High Voltage mode.")
                     .defineInRange("highVoltageDustCost", 4, 0, Integer.MAX_VALUE);
             teslaCoilHighVoltageFe = builder
-                    .comment("FE cost for the high voltage mode.")
+                    .comment("FE cost for High Voltage mode.")
                     .defineInRange("highVoltageFe", 50000, 0, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageInput = builder
-                    .comment("Input count for the extreme high voltage mode.")
+                    .comment("High Voltage Lightning input cost for Extreme High Voltage mode.")
                     .defineInRange("extremeHighVoltageInput", 4, 0, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageFe = builder
-                    .comment("FE cost for the extreme high voltage mode.")
+                    .comment("FE cost for Extreme High Voltage mode.")
                     .defineInRange("extremeHighVoltageFe", 500000, 0, Integer.MAX_VALUE);
             builder.pop();
             builder.pop();
