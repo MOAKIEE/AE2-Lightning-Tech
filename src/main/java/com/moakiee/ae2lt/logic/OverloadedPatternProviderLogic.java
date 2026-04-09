@@ -1697,7 +1697,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var targetLevel = resolveTargetLevel(sl, entry.conn);
             var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
             if (storage != null) {
-                canReceive[i] = storage.receiveEnergy(Integer.MAX_VALUE, true);
+                canReceive[i] = AppFluxHelper.simulateReceivable(storage);
                 capacity[i] = storage.getMaxEnergyStored();
                 storedEnergy[i] = storage.getEnergyStored();
                 totalNeeded += canReceive[i];

@@ -769,22 +769,17 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var feKey = AppFluxHelper.FE_KEY; if (feKey == null) return;
         var grid = getMainNode().getGrid(); if (grid == null) return;
         if (interfaceMode == InterfaceMode.WIRELESS) tickWirelessEnergy(sl, feKey);
-        else if (energyOutputDir != null)            tickNormalEnergy(sl, feKey);
+        else if (energyOutputDir != null)            tickNormalEnergy(sl);
     }
 
-    private void tickNormalEnergy(ServerLevel sl, AEKey feKey) {
+    private void tickNormalEnergy(ServerLevel sl) {
         var tp = getBlockPos().relative(energyOutputDir);
         var st = sl.getCapability(Capabilities.EnergyStorage.BLOCK,
                 tp, energyOutputDir.getOpposite());
         if (st == null) return;
-        int cr = st.receiveEnergy(AppFluxHelper.TRANSFER_RATE, true);
-        if (cr <= 0) return;
         var mes = getMainNode().getGrid().getStorageService().getInventory();
         var src = IActionSource.ofMachine(this);
-        long ext = mes.extract(feKey, cr, Actionable.MODULATE, src);
-        if (ext <= 0) return;
-        int acc = st.receiveEnergy((int) ext, false);
-        if (ext - acc > 0) mes.insert(feKey, ext - acc, Actionable.MODULATE, src);
+        AppFluxHelper.pullPowerFromNetwork(mes, st, src);
     }
 
     // ── Wireless energy: timing-wheel scheduler ──────────────────────────
@@ -842,7 +837,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             var targetLevel = resolveTargetLevel(sl, entry.conn);
             var storage = targetLevel != null ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
             if (storage != null) {
-                canReceive[i]   = storage.receiveEnergy(Integer.MAX_VALUE, true);
+                canReceive[i]   = AppFluxHelper.simulateReceivable(storage);
                 maxCapacity[i]  = storage.getMaxEnergyStored();
                 storedEnergy[i] = storage.getEnergyStored();
                 total += canReceive[i];

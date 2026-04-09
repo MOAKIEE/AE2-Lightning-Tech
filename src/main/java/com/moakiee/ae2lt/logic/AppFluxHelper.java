@@ -6,7 +6,11 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
+import appeng.api.config.Actionable;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.storage.MEStorage;
 import appeng.api.stacks.AEKey;
 
 /**
@@ -67,6 +71,36 @@ public final class AppFluxHelper {
     public static boolean isInductionCard(Item item) {
         Item card = getInductionCard();
         return card != null && card == item;
+    }
+
+    public static int simulateReceivable(IEnergyStorage target) {
+        if (!isAvailable()) {
+            return 0;
+        }
+        return target.receiveEnergy(TRANSFER_RATE, true);
+    }
+
+    public static int pullPowerFromNetwork(MEStorage meStorage, IEnergyStorage target, IActionSource source) {
+        if (!isAvailable()) {
+            return 0;
+        }
+
+        int requested = target.receiveEnergy(TRANSFER_RATE, true);
+        if (requested <= 0) {
+            return 0;
+        }
+
+        long extracted = meStorage.extract(FE_KEY, requested, Actionable.MODULATE, source);
+        if (extracted <= 0L) {
+            return 0;
+        }
+
+        int accepted = target.receiveEnergy((int) Math.min(extracted, Integer.MAX_VALUE), false);
+        long remainder = extracted - accepted;
+        if (remainder > 0L) {
+            meStorage.insert(FE_KEY, remainder, Actionable.MODULATE, source);
+        }
+        return accepted;
     }
 
     private AppFluxHelper() {}

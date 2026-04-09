@@ -615,18 +615,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public long getMachineEnergyCapacity() {
-        return energyStorage.getCapacityLong();
+    public IEnergyStorage getMachineEnergyStorage() {
+        return energyStorage;
     }
 
     @Override
     public int extractMachineEnergy(long amount) {
         return energyStorage.extractInternal(amount, false);
-    }
-
-    @Override
-    public int receiveMachineEnergy(int amount) {
-        return energyStorage.receiveEnergy(amount, false);
     }
 
     @Override

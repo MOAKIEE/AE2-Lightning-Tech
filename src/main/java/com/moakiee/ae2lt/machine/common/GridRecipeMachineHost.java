@@ -2,6 +2,8 @@ package com.moakiee.ae2lt.machine.common;
 
 import java.util.Optional;
 
+import net.neoforged.neoforge.energy.IEnergyStorage;
+
 public interface GridRecipeMachineHost<L, C> {
     boolean hasLockedRecipe();
 
@@ -29,11 +31,9 @@ public interface GridRecipeMachineHost<L, C> {
 
     long getMachineStoredEnergy();
 
-    long getMachineEnergyCapacity();
+    IEnergyStorage getMachineEnergyStorage();
 
     int extractMachineEnergy(long amount);
-
-    int receiveMachineEnergy(int amount);
 
     void onEnergyConsumed(int consumed);
 }
