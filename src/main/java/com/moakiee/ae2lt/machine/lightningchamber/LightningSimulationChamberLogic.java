@@ -18,7 +18,7 @@ public final class LightningSimulationChamberLogic extends AbstractGridRecipeMac
         LightningSimulationChamberBlockEntity,
         LightningSimulationLockedRecipe,
         LightningSimulationRecipeCandidate> {
-    public static final int MIN_PROCESS_TICKS = 5;
+    public static final int MIN_PROCESS_TICKS = 4;
 
     public LightningSimulationChamberLogic(LightningSimulationChamberBlockEntity host) {
         super(host);

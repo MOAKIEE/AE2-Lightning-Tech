@@ -18,7 +18,7 @@ public final class LightningAssemblyChamberLogic extends AbstractGridRecipeMachi
         LightningAssemblyChamberBlockEntity,
         LightningAssemblyLockedRecipe,
         LightningAssemblyRecipeCandidate> {
-    public static final int MIN_PROCESS_TICKS = 5;
+    public static final int MIN_PROCESS_TICKS = 4;
 
     public LightningAssemblyChamberLogic(LightningAssemblyChamberBlockEntity host) {
         super(host);

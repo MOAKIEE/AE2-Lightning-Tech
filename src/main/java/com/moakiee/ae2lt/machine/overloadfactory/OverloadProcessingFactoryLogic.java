@@ -12,7 +12,7 @@ public final class OverloadProcessingFactoryLogic extends AbstractGridRecipeMach
         OverloadProcessingFactoryBlockEntity,
         OverloadProcessingLockedRecipe,
         OverloadProcessingRecipeCandidate> {
-    public static final int MIN_PROCESS_TICKS = 5;
+    public static final int MIN_PROCESS_TICKS = 4;
 
     public OverloadProcessingFactoryLogic(OverloadProcessingFactoryBlockEntity host) {
         super(host);
