@@ -225,11 +225,11 @@ public final class AE2LTCommonConfig {
                     .comment("Fixed EHV output for a perfect crystal.")
                     .defineInRange("perfectEhvOutput", 32, 0, Integer.MAX_VALUE);
             lightningCollectorCrystalFeedRatio = builder
-                    .comment("Fraction of output used to feed crystals.")
-                    .defineInRange("crystalFeedRatio", 0.15D, 0.0D, Double.MAX_VALUE);
+                    .comment("Fraction of output used to feed crystals. Range: > 0.")
+                    .defineInRange("crystalFeedRatio", 0.15D, 1.0E-6D, Double.MAX_VALUE);
             lightningCollectorSpreadRatio = builder
-                    .comment("Fraction of output used as random spread.")
-                    .defineInRange("spreadRatio", 0.12D, 0.0D, Double.MAX_VALUE);
+                    .comment("Fraction of output used as random spread. Range: > 0.")
+                    .defineInRange("spreadRatio", 0.12D, 1.0E-6D, Double.MAX_VALUE);
             builder.pop();
             builder.pop();
 
@@ -310,14 +310,14 @@ public final class AE2LTCommonConfig {
                     .comment("Overload Crystal Dust cost for High Voltage mode.")
                     .defineInRange("highVoltageDustCost", 4, 0, Integer.MAX_VALUE);
             teslaCoilHighVoltageFe = builder
-                    .comment("FE cost for High Voltage mode.")
-                    .defineInRange("highVoltageFe", 50000, 0, Integer.MAX_VALUE);
+                    .comment("FE cost for High Voltage mode. Range: >= 1.")
+                    .defineInRange("highVoltageFe", 50000, 1, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageInput = builder
                     .comment("High Voltage Lightning input cost for Extreme High Voltage mode.")
                     .defineInRange("extremeHighVoltageInput", 4, 0, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageFe = builder
-                    .comment("FE cost for Extreme High Voltage mode.")
-                    .defineInRange("extremeHighVoltageFe", 500000, 0, Integer.MAX_VALUE);
+                    .comment("FE cost for Extreme High Voltage mode. Range: >= 1.")
+                    .defineInRange("extremeHighVoltageFe", 500000, 1, Integer.MAX_VALUE);
             builder.pop();
             builder.pop();
         }
