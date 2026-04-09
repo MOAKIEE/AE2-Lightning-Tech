@@ -15,7 +15,6 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilAutomationInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilEnergyStorage;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
@@ -40,6 +39,8 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+    public static final int ENERGY_CAPACITY = 1_000_000;
+    public static final int MAX_RECEIVE = 200_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";
     private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
@@ -50,8 +51,8 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     private final TeslaCoilInventory inventory = new TeslaCoilInventory(this::onInventoryChanged);
     private final TeslaCoilAutomationInventory automationInventory = new TeslaCoilAutomationInventory(inventory);
     private final TeslaCoilEnergyStorage energyStorage = new TeslaCoilEnergyStorage(
-            AE2LTCommonConfig.teslaCoilEnergyCapacity(),
-            AE2LTCommonConfig.teslaCoilMaxReceive(),
+            ENERGY_CAPACITY,
+            MAX_RECEIVE,
             this::onEnergyChanged);
     private final TeslaCoilLogic logic;
 

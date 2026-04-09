@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.logic.WeatherControlHelper;
 
 import net.minecraft.ChatFormatting;
@@ -59,6 +58,16 @@ public class WeatherCondensateItem extends Item {
         RAIN("rain", "ae2lt.weather.rain"),
         THUNDERSTORM("thunderstorm", "ae2lt.weather.thunderstorm");
 
+        private static final int CLEAR_ENERGY = 500_000;
+        private static final int RAIN_ENERGY = 1_000_000;
+        private static final int THUNDERSTORM_ENERGY = 8_000_000;
+        private static final int CLEAR_DURATION_MIN = 12_000;
+        private static final int CLEAR_DURATION_MAX = 180_000;
+        private static final int RAIN_DURATION_MIN = 12_000;
+        private static final int RAIN_DURATION_MAX = 24_000;
+        private static final int THUNDERSTORM_DURATION_MIN = 3_600;
+        private static final int THUNDERSTORM_DURATION_MAX = 15_600;
+
         private final String serializedName;
         private final String weatherTranslationKey;
 
@@ -73,25 +82,25 @@ public class WeatherCondensateItem extends Item {
 
         public long totalEnergy() {
             return switch (this) {
-                case CLEAR -> AE2LTCommonConfig.atmosphericIonizerClearEnergy();
-                case RAIN -> AE2LTCommonConfig.atmosphericIonizerRainEnergy();
-                case THUNDERSTORM -> AE2LTCommonConfig.atmosphericIonizerThunderstormEnergy();
+                case CLEAR -> CLEAR_ENERGY;
+                case RAIN -> RAIN_ENERGY;
+                case THUNDERSTORM -> THUNDERSTORM_ENERGY;
             };
         }
 
         public int minDuration() {
             return switch (this) {
-                case CLEAR -> AE2LTCommonConfig.atmosphericIonizerClearDurationMin();
-                case RAIN -> AE2LTCommonConfig.atmosphericIonizerRainDurationMin();
-                case THUNDERSTORM -> AE2LTCommonConfig.atmosphericIonizerThunderstormDurationMin();
+                case CLEAR -> CLEAR_DURATION_MIN;
+                case RAIN -> RAIN_DURATION_MIN;
+                case THUNDERSTORM -> THUNDERSTORM_DURATION_MIN;
             };
         }
 
         public int maxDuration() {
             return switch (this) {
-                case CLEAR -> AE2LTCommonConfig.atmosphericIonizerClearDurationMax();
-                case RAIN -> AE2LTCommonConfig.atmosphericIonizerRainDurationMax();
-                case THUNDERSTORM -> AE2LTCommonConfig.atmosphericIonizerThunderstormDurationMax();
+                case CLEAR -> CLEAR_DURATION_MAX;
+                case RAIN -> RAIN_DURATION_MAX;
+                case THUNDERSTORM -> THUNDERSTORM_DURATION_MAX;
             };
         }
 
