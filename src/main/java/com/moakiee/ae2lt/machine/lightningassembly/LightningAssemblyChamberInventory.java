@@ -29,7 +29,7 @@ public class LightningAssemblyChamberInventory extends LargeStackItemHandler {
     public static final int SLOT_OUTPUT = 10;
 
     public static final int SLOT_COUNT = 11;
-    public static final int LARGE_SLOT_LIMIT = 1024;
+    public static final int LARGE_SLOT_LIMIT = 8192;
 
     public LightningAssemblyChamberInventory(@Nullable Runnable changeListener) {
         super(SLOT_COUNT, changeListener);
