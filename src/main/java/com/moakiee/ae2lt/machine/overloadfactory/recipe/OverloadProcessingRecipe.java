@@ -212,12 +212,6 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
             rawMatches.add(matchingSlots);
         }
 
-        for (int slotIndex = 0; slotIndex < slotStacks.size(); slotIndex++) {
-            if (slotFlexibility[slotIndex] == 0) {
-                return Optional.empty();
-            }
-        }
-
         List<RequirementState> requirements = new ArrayList<>(itemInputs.size());
         for (int requirementIndex = 0; requirementIndex < itemInputs.size(); requirementIndex++) {
             OverloadProcessingIngredient requirement = itemInputs.get(requirementIndex);

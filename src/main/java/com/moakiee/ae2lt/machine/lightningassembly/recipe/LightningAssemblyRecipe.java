@@ -168,12 +168,6 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
             rawMatches.add(matchingSlots);
         }
 
-        for (int slotIndex = 0; slotIndex < slotStacks.size(); slotIndex++) {
-            if (slotFlexibility[slotIndex] == 0) {
-                return Optional.empty();
-            }
-        }
-
         List<RequirementState> requirements = new ArrayList<>(inputs.size());
         for (int requirementIndex = 0; requirementIndex < inputs.size(); requirementIndex++) {
             LightningSimulationIngredient requirement = inputs.get(requirementIndex);
