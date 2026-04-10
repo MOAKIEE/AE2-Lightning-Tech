@@ -3,8 +3,8 @@
   "credit": "Made with _leng",
   "texture_size": [64, 64],
   "textures": {
-    "0": "ae2lt:block/high_voltage_aggregator",
-    "particle": "ae2lt:block/high_voltage_aggregator"
+    "0": "ae2lt:block/lightning_collector_base",
+    "particle": "ae2lt:block/lightning_collector_base"
   },
   "elements": [
     {

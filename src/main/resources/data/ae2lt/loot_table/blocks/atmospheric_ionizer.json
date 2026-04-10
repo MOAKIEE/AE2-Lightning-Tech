@@ -11,7 +11,7 @@
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "ae2lt:high_voltage_aggregator"
+          "name": "ae2lt:atmospheric_ionizer"
         }
       ],
       "rolls": 1.0
