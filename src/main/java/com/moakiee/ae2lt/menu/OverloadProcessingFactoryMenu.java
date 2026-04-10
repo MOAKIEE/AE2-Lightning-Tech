@@ -312,49 +312,6 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         return getFluid(outputFluidId, outputFluidAmount);
     }
 
-    public Component getParallelMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.parallel", currentParallel, parallelCapacity);
-    }
-
-    public Component getHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.stock.high_voltage", highVoltageAvailable);
-    }
-
-    public Component getExtremeHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.stock.extreme_high_voltage", extremeHighVoltageAvailable);
-    }
-
-    public Component getLightningDemandMessage() {
-        if (lightningTierOrdinal < 0 || lightningCost <= 0L) {
-            return Component.translatable("ae2lt.gui.overload_factory.demand.none");
-        }
-
-        return Component.translatable(
-                "ae2lt.gui.overload_factory.demand",
-                lightningCost,
-                Component.translatable(getLightningTierTranslationKey()));
-    }
-
-    public Component getSubstitutionMessage() {
-        if (lightningTierOrdinal < 0 || lightningCost <= 0L) {
-            return Component.translatable("ae2lt.gui.overload_factory.substitution.none");
-        }
-
-        if (matrixSubstitutionActive) {
-            return Component.translatable(
-                    "ae2lt.gui.overload_factory.substitution.active",
-                    equivalentHighVoltageCost);
-        }
-
-        if (LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
-            return Component.translatable(
-                    "ae2lt.gui.overload_factory.substitution.available",
-                    equivalentHighVoltageCost);
-        }
-
-        return Component.translatable("ae2lt.gui.overload_factory.substitution.inactive");
-    }
-
     public void clientToggleAutoExport() {
         sendClientAction("toggleAutoExport");
     }
@@ -471,12 +428,6 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         }
 
         return new FluidStack(fluid, amount);
-    }
-
-    private String getLightningTierTranslationKey() {
-        return LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
-                ? "ae2lt.gui.overload_factory.tier.extreme_high_voltage"
-                : "ae2lt.gui.overload_factory.tier.high_voltage";
     }
 
     private static int toOutputSideMask(EnumSet<RelativeSide> sides) {
