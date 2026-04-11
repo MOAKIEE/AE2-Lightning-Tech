@@ -10,6 +10,11 @@ import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessIdBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessTransmitterBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -82,6 +87,46 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedInterfaceBlockEntity::new,
                             ModBlocks.OVERLOADED_INTERFACE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessIdBlockEntity>>
+            WIRELESS_ID_BLOCK = BLOCK_ENTITY_TYPES.register(
+                    "wireless_id_block",
+                    () -> BlockEntityType.Builder.of(
+                            WirelessIdBlockEntity::new,
+                            ModBlocks.WIRELESS_ID_BLOCK.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessTransmitterBlockEntity>>
+            WIRELESS_TRANSMITTER = BLOCK_ENTITY_TYPES.register(
+                    "wireless_transmitter",
+                    () -> BlockEntityType.Builder.of(
+                            WirelessTransmitterBlockEntity::new,
+                            ModBlocks.WIRELESS_TRANSMITTER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessReceiverBlockEntity>>
+            WIRELESS_RECEIVER = BLOCK_ENTITY_TYPES.register(
+                    "wireless_receiver",
+                    () -> BlockEntityType.Builder.of(
+                            WirelessReceiverBlockEntity::new,
+                            ModBlocks.WIRELESS_RECEIVER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessOverloadedControllerBlockEntity>>
+            WIRELESS_OVERLOADED_CONTROLLER = BLOCK_ENTITY_TYPES.register(
+                    "wireless_overloaded_controller",
+                    () -> BlockEntityType.Builder.of(
+                            WirelessOverloadedControllerBlockEntity::new,
+                            ModBlocks.WIRELESS_OVERLOADED_CONTROLLER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<AdvancedWirelessOverloadedControllerBlockEntity>>
+            ADVANCED_WIRELESS_OVERLOADED_CONTROLLER = BLOCK_ENTITY_TYPES.register(
+                    "advanced_wireless_overloaded_controller",
+                    () -> BlockEntityType.Builder.of(
+                            AdvancedWirelessOverloadedControllerBlockEntity::new,
+                            ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get())
                             .build(null));
 
     @SuppressWarnings("DataFlowIssue")

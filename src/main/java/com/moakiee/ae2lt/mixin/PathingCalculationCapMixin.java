@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.BorrowedCapacityCalculator;
+import com.moakiee.ae2lt.grid.OverloadedSubtreeNode;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -166,12 +167,29 @@ public abstract class PathingCalculationCapMixin {
 
         BorrowedCapacityCalculator.activeNodeFlow = ae2lt$flowResult.nodeFlow();
         BorrowedCapacityCalculator.activeNetworkNodes = ae2lt$flowResult.networkNodes();
+        BorrowedCapacityCalculator.activeConnectionFlow = ae2lt$flowResult.connectionFlow();
     }
 
-    // ── Phase 4: cleanup after DFS ──
+    // ── Phase 4: force-apply max-flow results & cleanup after DFS ──
 
     @Inject(method = "compute", at = @At("TAIL"))
-    private void ae2lt$clearFlowData(CallbackInfo ci) {
+    private void ae2lt$applyFlowAndCleanup(CallbackInfo ci) {
+        if (ae2lt$flowResult != null) {
+            var nodeFlow = ae2lt$flowResult.nodeFlow();
+            for (var node : ae2lt$flowResult.networkNodes()) {
+                if (node instanceof OverloadedSubtreeNode osn) {
+                    int flow = nodeFlow.getInt(node);
+                    osn.ae2lt$setUsedChannels(flow);
+                }
+            }
+            var connFlow = ae2lt$flowResult.connectionFlow();
+            for (var entry : connFlow.reference2IntEntrySet()) {
+                entry.getKey().setAdHocChannels(entry.getIntValue());
+            }
+        }
+        BorrowedCapacityCalculator.activeNodeFlow = null;
+        BorrowedCapacityCalculator.activeNetworkNodes = null;
+        BorrowedCapacityCalculator.activeConnectionFlow = null;
         ae2lt$flowResult = null;
     }
 }

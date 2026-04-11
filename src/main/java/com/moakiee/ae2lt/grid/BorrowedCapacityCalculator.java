@@ -15,8 +15,12 @@ import appeng.blockentity.networking.ControllerBlockEntity;
 import appeng.me.GridConnection;
 import appeng.me.GridNode;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.ints.IntList;
 import it.unimi.dsi.fastutil.objects.Reference2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Assigns channels to devices in the overloaded network using
@@ -34,6 +38,7 @@ import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
  */
 public final class BorrowedCapacityCalculator {
 
+    private static final Logger LOG = LoggerFactory.getLogger("ae2lt-maxflow");
     private static final int INF = Integer.MAX_VALUE / 2;
 
     /**
@@ -45,16 +50,23 @@ public final class BorrowedCapacityCalculator {
     public static volatile Set<IGridNode> activeNetworkNodes;
 
     /**
+     * Active per-connection flow data for use by the GridConnection mixin.
+     */
+    public static volatile Reference2IntOpenHashMap<GridConnection> activeConnectionFlow;
+
+    /**
      * Result of a max-flow channel assignment.
      *
-     * @param channelNodes  devices that were granted a channel (flow=1 on device→T)
-     * @param networkNodes  all nodes discovered in the network (for usedChannels override)
-     * @param nodeFlow      flow through each node's node-split edge
-     *                      (= usedChannels for that cable/device); default 0 for missing keys
+     * @param channelNodes    devices that were granted a channel (flow=1 on device→T)
+     * @param networkNodes    all nodes discovered in the network (for usedChannels override)
+     * @param nodeFlow        flow through each node's node-split edge
+     *                        (= usedChannels for that cable/device); default 0 for missing keys
+     * @param connectionFlow  exact flow on each GridConnection from Dinic's result
      */
     public record Result(Set<GridNode> channelNodes,
                          Set<IGridNode> networkNodes,
-                         Reference2IntOpenHashMap<IGridNode> nodeFlow) {}
+                         Reference2IntOpenHashMap<IGridNode> nodeFlow,
+                         Reference2IntOpenHashMap<GridConnection> connectionFlow) {}
 
     private BorrowedCapacityCalculator() {}
 
@@ -99,14 +111,7 @@ public final class BorrowedCapacityCalculator {
                 if (!(c instanceof GridConnection gc)) continue;
                 var other = gc.getOtherSide(vc);
                 if (other.getOwner() instanceof ControllerBlockEntity) continue;
-                if (nodes.contains(other)) continue;
-
-                if (other instanceof GridNode gn && gn.hasFlag(GridFlags.CANNOT_CARRY)) {
-                    if (gn.hasFlag(GridFlags.REQUIRE_CHANNEL)) nodes.add(other);
-                    continue;
-                }
-                nodes.add(other);
-                q.add(other);
+                tryEnqueue(other, nodes, q);
             }
         }
 
@@ -115,26 +120,35 @@ public final class BorrowedCapacityCalculator {
             for (var c : cur.getConnections()) {
                 if (!(c instanceof GridConnection gc)) continue;
                 var other = gc.getOtherSide(cur);
-                if (nodes.contains(other)) continue;
-
-                if (other.getOwner() instanceof ControllerBlockEntity) {
-                    if (other.getOwner() instanceof OverloadedControllerBlockEntity) {
-                        nodes.add(other);
-                        q.add(other);
-                    }
-                    continue;
-                }
-
-                if (other instanceof GridNode gn && gn.hasFlag(GridFlags.CANNOT_CARRY)) {
-                    if (gn.hasFlag(GridFlags.REQUIRE_CHANNEL)) nodes.add(other);
-                    continue;
-                }
-
-                nodes.add(other);
-                q.add(other);
+                tryEnqueue(other, nodes, q);
             }
         }
         return nodes;
+    }
+
+    /**
+     * Attempts to add a discovered neighbour to the BFS frontier.
+     * Overloaded controllers are traversed; vanilla controllers are skipped;
+     * CANNOT_CARRY devices are added as sinks only if they REQUIRE_CHANNEL.
+     */
+    private static void tryEnqueue(IGridNode other, Set<IGridNode> nodes, Queue<IGridNode> q) {
+        if (nodes.contains(other)) return;
+
+        if (other.getOwner() instanceof ControllerBlockEntity) {
+            if (other.getOwner() instanceof OverloadedControllerBlockEntity) {
+                nodes.add(other);
+                q.add(other);
+            }
+            return;
+        }
+
+        if (other instanceof GridNode gn && gn.hasFlag(GridFlags.CANNOT_CARRY)) {
+            if (gn.hasFlag(GridFlags.REQUIRE_CHANNEL)) nodes.add(other);
+            return;
+        }
+
+        nodes.add(other);
+        q.add(other);
     }
 
     // ── flow-network construction & solve ────────────────────────────
@@ -163,8 +177,11 @@ public final class BorrowedCapacityCalculator {
             dinic.addEdge(2 * ci, 2 * ci + 1, cap);
         }
 
-        // 2) connections between discovered nodes (bidirectional, ∞)
-        Set<Object> seen = new ReferenceOpenHashSet<>();
+        // 2) connections between discovered nodes (bidirectional)
+        //    Track Dinic edge indices per GridConnection for flow readback.
+        record ConnEdge(GridConnection gc, int edgeAB, int edgeBA, int cap) {}
+        List<ConnEdge> connEdges = new ArrayList<>();
+        Set<GridConnection> seen = new ReferenceOpenHashSet<>();
         for (var n : network) {
             int ci = idx.getInt(n);
             for (var c : n.getConnections()) {
@@ -172,8 +189,12 @@ public final class BorrowedCapacityCalculator {
                 var other = gc.getOtherSide(n);
                 int oi = idx.getInt(other);
                 if (oi < 0 || !seen.add(gc)) continue;
-                dinic.addEdge(2 * ci + 1, 2 * oi, INF);
-                dinic.addEdge(2 * oi + 1, 2 * ci, INF);
+                int edgeCap = getConnectionCap(gc, n, other, mode);
+                int eAB = dinic.edgeCount();
+                dinic.addEdge(2 * ci + 1, 2 * oi, edgeCap);
+                int eBA = dinic.edgeCount();
+                dinic.addEdge(2 * oi + 1, 2 * ci, edgeCap);
+                connEdges.add(new ConnEdge(gc, eAB, eBA, edgeCap));
             }
         }
 
@@ -199,7 +220,7 @@ public final class BorrowedCapacityCalculator {
 
         // 5) REQUIRE_CHANNEL devices → T, cap=1
         List<IGridNode> sinkNodes = new ArrayList<>();
-        List<Integer> sinkEdgeIndices = new ArrayList<>();
+        IntList sinkEdgeIndices = new IntArrayList();
         for (var n : network) {
             if (!(n instanceof GridNode gn)) continue;
             if (!gn.hasFlag(GridFlags.REQUIRE_CHANNEL)) continue;
@@ -211,10 +232,13 @@ public final class BorrowedCapacityCalculator {
 
         int maxFlow = dinic.maxFlow(S, T);
 
+        LOG.debug("maxFlow={}, network={}, sinks={}, overloadedCtrl={}, supply/ctrl={}",
+                maxFlow, network.size(), sinkNodes.size(), overloadedControllers.size(), supply);
+
         // Collect winning devices
         Set<GridNode> winners = new ReferenceOpenHashSet<>();
         for (int j = 0; j < sinkNodes.size(); j++) {
-            int edgeIdx = sinkEdgeIndices.get(j);
+            int edgeIdx = sinkEdgeIndices.getInt(j);
             if (dinic.residual(edgeIdx) == 0) {
                 winners.add((GridNode) sinkNodes.get(j));
             }
@@ -232,14 +256,26 @@ public final class BorrowedCapacityCalculator {
             }
         }
 
-        return new Result(winners, network, nodeFlow);
+        // Collect exact flow on each GridConnection from Dinic edges
+        Reference2IntOpenHashMap<GridConnection> connectionFlow = new Reference2IntOpenHashMap<>();
+        connectionFlow.defaultReturnValue(0);
+        for (var ce : connEdges) {
+            int flowAB = ce.cap - dinic.residual(ce.edgeAB);
+            int flowBA = ce.cap - dinic.residual(ce.edgeBA);
+            int netFlow = Math.abs(flowAB - flowBA);
+            if (netFlow > 0) {
+                connectionFlow.put(ce.gc, netFlow);
+            }
+        }
+
+        return new Result(winners, network, nodeFlow, connectionFlow);
     }
 
     /**
      * Relay capacity for flow-network node-split.
      * REQUIRE_CHANNEL + CANNOT_CARRY devices get cap=1 (consume one channel).
      */
-    static int nodeCap(IGridNode node, ChannelMode mode) {
+    private static int nodeCap(IGridNode node, ChannelMode mode) {
         if (OverloadedChannelOwnerHelper.is128ChannelOwner(node.getOwner())) return INF;
         int f = mode.getCableCapacityFactor();
         if (node instanceof GridNode gn) {
@@ -249,6 +285,20 @@ public final class BorrowedCapacityCalculator {
             if (gn.hasFlag(GridFlags.DENSE_CAPACITY)) return 32 * f;
         }
         return 8 * f;
+    }
+
+    /**
+     * Edge capacity for a connection. Virtual wireless connections (no physical
+     * direction) where one endpoint implements {@link WirelessConnectionCapProvider}
+     * are capped according to the provider's channel limit.
+     */
+    private static int getConnectionCap(GridConnection gc, IGridNode a, IGridNode b, ChannelMode mode) {
+        // Physical connections (have a direction) are uncapped in the flow model
+        if (gc.getDirection(a) != null) return INF;
+
+        int capA = a.getOwner() instanceof WirelessConnectionCapProvider pA ? pA.getWirelessChannelCap(mode) : INF;
+        int capB = b.getOwner() instanceof WirelessConnectionCapProvider pB ? pB.getWirelessChannelCap(mode) : INF;
+        return Math.min(capA, capB);
     }
 
     // ── Dinic's max-flow ─────────────────────────────────────────────
@@ -264,6 +314,7 @@ public final class BorrowedCapacityCalculator {
             size = n;
             head = new int[n];
             Arrays.fill(head, -1);
+            // ~6 edges per node: node-split(2) + avg connections(2) + source/sink(2)
             int init = Math.max(n * 6, 64);
             to = new int[init];
             cap = new int[init];

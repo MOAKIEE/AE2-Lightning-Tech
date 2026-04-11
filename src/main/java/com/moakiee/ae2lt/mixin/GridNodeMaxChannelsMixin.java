@@ -16,7 +16,6 @@ import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.blockentity.networking.ControllerBlockEntity;
-import appeng.me.GridConnection;
 import appeng.me.GridNode;
 import appeng.me.pathfinding.IPathItem;
 
@@ -61,9 +60,8 @@ public abstract class GridNodeMaxChannelsMixin implements OverloadedSubtreeNode 
 
     /**
      * During the DFS pass, replace the bottom-up channel accumulation with
-     * the max-flow result. This makes the DFS itself produce correct
-     * usedChannels values, and GridConnection.propagateChannelsUpwards()
-     * naturally reads the correct value from sideB.usedChannels.
+     * the max-flow result. Connection usedChannels are handled by the
+     * GridConnection mixin separately.
      */
     @Inject(method = "propagateChannelsUpwards", at = @At("HEAD"), cancellable = true)
     private void ae2lt$useFlowForPropagation(boolean consumesChannel, CallbackInfoReturnable<Integer> cir) {
@@ -75,16 +73,6 @@ public abstract class GridNodeMaxChannelsMixin implements OverloadedSubtreeNode 
         var nodeFlow = BorrowedCapacityCalculator.activeNodeFlow;
         int flow = nodeFlow.getInt(self);
         this.usedChannels = flow;
-
-        for (var c : self.getConnections()) {
-            if (!(c instanceof GridConnection gc)) continue;
-            var child = gc.getOtherSide(self);
-            if (!(child instanceof IPathItem pi) || pi.getControllerRoute() != gc) continue;
-            int childFlow = nodeFlow.getInt(child);
-            int capped = Math.min(childFlow, flow);
-            ((IPathItem) gc).setAdHocChannels(capped);
-        }
-
         cir.setReturnValue(flow);
     }
 

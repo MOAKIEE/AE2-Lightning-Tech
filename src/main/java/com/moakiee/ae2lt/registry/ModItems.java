@@ -10,6 +10,8 @@ import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.WirelessIdCardItem;
+import com.moakiee.ae2lt.item.WirelessLinkToolItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.resources.ResourceLocation;
@@ -116,6 +118,16 @@ public final class ModItems {
             "overloaded_filter_component",
             OverloadedFilterComponentItem::new,
             new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<Item> WIRELESS_LINK_TOOL = ITEMS.registerItem(
+            "wireless_link_tool",
+            WirelessLinkToolItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> WIRELESS_ID_CARD = ITEMS.registerItem(
+            "wireless_id_card",
+            WirelessIdCardItem::new,
+            new Item.Properties());
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);
