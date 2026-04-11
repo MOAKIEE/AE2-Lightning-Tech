@@ -5,15 +5,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
-import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.pathing.ChannelMode;
-import appeng.blockentity.networking.ControllerBlockEntity;
 
 /**
  * Centralized owner checks for the overloaded-channel subsystem.
@@ -57,6 +53,7 @@ public final class OverloadedChannelOwnerHelper {
         }
     }
 
+
     /**
      * Returns ALL controller nodes in the grid, including subclasses.
      * AE2's {@code getMachineNodes(Class)} uses exact class matching
@@ -99,4 +96,5 @@ public final class OverloadedChannelOwnerHelper {
         long capacity = (long) channelsPerController() * overloadedCount * channelMode.getCableCapacityFactor();
         return (int) Math.min(Integer.MAX_VALUE, capacity);
     }
+
 }
