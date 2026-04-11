@@ -14,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
 
 import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
+import mezz.jei.api.gui.builder.ITooltipBuilder;
 
 /**
  * Shared rendering for slots whose stack count may exceed 64.
@@ -50,6 +51,21 @@ public final class LargeStackCountRenderer {
     }
 
     /**
+     * Renders an abbreviated stack count at a slot position.
+     * <p>
+     * Intended for contexts like JEI where there is no real {@link Slot}
+     * instance, but we still want to reuse the exact same large-stack count
+     * visuals as the machine GUI.
+     */
+    public static void renderCountAt(GuiGraphics guiGraphics, Font font, int slotX, int slotY, long count) {
+        if (count <= 1) {
+            return;
+        }
+
+        renderLabel(guiGraphics, font, slotX, slotY, formatCount(count));
+    }
+
+    /**
      * Appends a tooltip line showing the exact count when the hovered slot is a
      * {@link LargeStackAppEngSlot} with a count greater than 1.
      */
@@ -58,9 +74,26 @@ public final class LargeStackCountRenderer {
             return;
         }
 
-        int count = slot.getItem().getCount();
+        appendCountTooltip(lines, slot.getItem().getCount());
+    }
+
+    /**
+     * Appends a tooltip line showing the exact count for any stack-like count
+     * source, including JEI recipe ingredients.
+     */
+    public static void appendCountTooltip(List<Component> lines, long count) {
         if (count > 1) {
             lines.add(Component.translatable("ae2lt.gui.slot_count", String.format("%,d", count))
+                    .withStyle(ChatFormatting.GRAY));
+        }
+    }
+
+    /**
+     * Appends a tooltip line showing the exact count for JEI rich tooltips.
+     */
+    public static void appendCountTooltip(ITooltipBuilder tooltip, long count) {
+        if (count > 1) {
+            tooltip.add(Component.translatable("ae2lt.gui.slot_count", String.format("%,d", count))
                     .withStyle(ChatFormatting.GRAY));
         }
     }

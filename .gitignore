@@ -45,3 +45,4 @@ META-INF/
 #log
 DevLog/
 .claude/
+.eclipse/

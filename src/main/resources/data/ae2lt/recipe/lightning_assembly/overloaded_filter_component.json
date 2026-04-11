@@ -4,28 +4,22 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_circuit_board"
+        "item": "ae2:item_cell_housing"
       },
       "count": 1
     },
     {
       "ingredient": {
-        "item": "minecraft:redstone"
-      },
-      "count": 1
-    },
-    {
-      "ingredient": {
-        "item": "ae2:printed_silicon"
+        "item": "ae2lt:overload_crystal"
       },
       "count": 1
     }
   ],
   "result": {
-    "id": "ae2lt:overload_processor",
+    "id": "ae2lt:overloaded_filter_component",
     "count": 1
   },
-  "totalEnergy": 20000,
-  "lightningCost": 4,
+  "totalEnergy": 16000,
+  "lightningCost": 16,
   "lightningTier": "high_voltage"
 }

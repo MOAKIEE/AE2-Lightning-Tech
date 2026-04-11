@@ -1,0 +1,49 @@
+{
+  "type": "ae2lt:lightning_assembly",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2:interface"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "ae2:fluix_pearl"
+      },
+      "count": 256
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_alloy_plate"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "ae2:export_bus"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2:import_bus"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:ultimate_overload_core"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "ae2lt:overloaded_interface",
+    "count": 1
+  },
+  "totalEnergy": 1000000,
+  "lightningCost": 20,
+  "lightningTier": "extreme_high_voltage"
+}

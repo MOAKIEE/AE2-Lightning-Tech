@@ -1,0 +1,28 @@
+{
+  "type": "ae2lt:lightning_transform",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "minecraft:netherite_ingot"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_crystal_block"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:amethyst_block"
+      },
+      "count": 4
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2lt:overload_alloy"
+  }
+}

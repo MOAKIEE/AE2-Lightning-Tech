@@ -1,0 +1,31 @@
+{
+  "type": "ae2lt:lightning_simulation",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_alloy_plate"
+      },
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_singularity"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "ae2:crystal_resonance_generator"
+      },
+      "count": 64
+    }
+  ],
+  "result": {
+    "id": "ae2lt:tesla_coil",
+    "count": 1
+  },
+  "totalEnergy": 16000000,
+  "lightningCost": 16,
+  "lightningTier": "extreme_high_voltage"
+}

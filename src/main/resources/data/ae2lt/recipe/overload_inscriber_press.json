@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "ae2:logic_processor_press"
+    },
+    {
+      "item": "ae2:engineering_processor_press"
+    },
+    {
+      "item": "ae2:calculation_processor_press"
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2lt:overload_inscriber_press"
+  }
+}

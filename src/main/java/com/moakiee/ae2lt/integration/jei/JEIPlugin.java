@@ -1,6 +1,8 @@
 package com.moakiee.ae2lt.integration.jei;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.integration.jei.category.LightningAssemblyCategory;
+import com.moakiee.ae2lt.integration.jei.category.LightningTransformCategory;
 import com.moakiee.ae2lt.integration.jei.category.LightningSimulationCategory;
 import com.moakiee.ae2lt.integration.jei.category.OverloadGrowthCategory;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -30,7 +32,9 @@ public class JEIPlugin implements IModPlugin {
         var guiHelper = registration.getJeiHelpers().getGuiHelper();
         registration.addRecipeCategories(
                 new OverloadGrowthCategory(guiHelper),
-                new LightningSimulationCategory(guiHelper));
+                new LightningAssemblyCategory(guiHelper),
+                new LightningSimulationCategory(guiHelper),
+                new LightningTransformCategory(guiHelper));
     }
 
     @Override
@@ -43,9 +47,23 @@ public class JEIPlugin implements IModPlugin {
         }
 
         registration.addRecipes(
+                LightningAssemblyCategory.TYPE,
+                level.getRecipeManager()
+                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())
+                        .stream()
+                        .map(RecipeHolder::value)
+                        .toList());
+        registration.addRecipes(
                 LightningSimulationCategory.TYPE,
                 level.getRecipeManager()
                         .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())
+                        .stream()
+                        .map(RecipeHolder::value)
+                        .toList());
+        registration.addRecipes(
+                LightningTransformCategory.TYPE,
+                level.getRecipeManager()
+                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get())
                         .stream()
                         .map(RecipeHolder::value)
                         .toList());
@@ -53,6 +71,8 @@ public class JEIPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
+        registration.addRecipeCatalyst(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.toStack(), LightningAssemblyCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.toStack(), LightningSimulationCategory.TYPE);
+        registration.addRecipeCatalyst(net.minecraft.world.item.Items.LIGHTNING_ROD.getDefaultInstance(), LightningTransformCategory.TYPE);
     }
 }
