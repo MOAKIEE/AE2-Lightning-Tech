@@ -18,11 +18,11 @@ public final class FixedInfiniteCellInventory implements StorageCell {
     private final double idleDrain;
 
     public FixedInfiniteCellInventory(ItemStack stack, double idleDrain) {
-        if (!(stack.getItem() instanceof FixedInfiniteCellItem item)) {
+        if (!(stack.getItem() instanceof FixedInfiniteCellItem)) {
             throw new IllegalArgumentException("Cell isn't a fixed infinite cell");
         }
         this.stack = stack;
-        this.storedKey = item.getStoredKey();
+        this.storedKey = FixedInfiniteCellItem.getEffectiveKey(stack);
         this.idleDrain = idleDrain;
     }
 
@@ -38,12 +38,12 @@ public final class FixedInfiniteCellInventory implements StorageCell {
 
     @Override
     public long insert(AEKey what, long amount, Actionable mode, IActionSource source) {
-        return this.storedKey.equals(what) ? amount : 0;
+        return storedKey.equals(what) ? amount : 0;
     }
 
     @Override
     public long extract(AEKey what, long amount, Actionable mode, IActionSource source) {
-        return this.storedKey.equals(what) ? amount : 0;
+        return storedKey.equals(what) ? amount : 0;
     }
 
     @Override
@@ -57,12 +57,12 @@ public final class FixedInfiniteCellInventory implements StorageCell {
 
     @Override
     public void getAvailableStacks(KeyCounter out) {
-        out.add(this.storedKey, getInfiniteAmount(this.storedKey));
+        out.add(storedKey, getInfiniteAmount(storedKey));
     }
 
     @Override
     public boolean isPreferredStorageFor(AEKey what, IActionSource source) {
-        return this.storedKey.equals(what);
+        return storedKey.equals(what);
     }
 
     private static long getInfiniteAmount(AEKey key) {

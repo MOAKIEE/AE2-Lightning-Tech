@@ -11,10 +11,10 @@ import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.WirelessIdCardItem;
+import com.moakiee.ae2lt.item.WirelessLinkToolItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
-import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
-import appeng.api.stacks.AEItemKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
@@ -111,17 +111,10 @@ public final class ModItems {
                             8, Integer.MAX_VALUE,
                             32));
 
-    public static final DeferredItem<FixedInfiniteCellItem> INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL =
-            ITEMS.register("infinite_high_voltage_lightning_cell",
-                    () -> new FixedInfiniteCellItem(
-                            new Item.Properties(),
-                            () -> LightningKey.HIGH_VOLTAGE));
-
-    public static final DeferredItem<FixedInfiniteCellItem> INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL =
-            ITEMS.register("infinite_infinite_high_voltage_lightning_cell",
-                    () -> new FixedInfiniteCellItem(
-                            new Item.Properties(),
-                            () -> AEItemKey.of(INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL.get())));
+    /** Easter egg cell: behaviour determined by NBT (CellType / CellSeed). */
+    public static final DeferredItem<FixedInfiniteCellItem> MYSTERIOUS_CELL =
+            ITEMS.register("mysterious_cell",
+                    () -> new FixedInfiniteCellItem(new Item.Properties()));
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
@@ -142,6 +135,16 @@ public final class ModItems {
             "overloaded_filter_component",
             OverloadedFilterComponentItem::new,
             new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<Item> WIRELESS_LINK_TOOL = ITEMS.registerItem(
+            "wireless_link_tool",
+            WirelessLinkToolItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> WIRELESS_ID_CARD = ITEMS.registerItem(
+            "wireless_id_card",
+            WirelessIdCardItem::new,
+            new Item.Properties());
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);
@@ -188,8 +191,7 @@ public final class ModItems {
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
         registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
         registerStorageCellModel(INFINITE_STORAGE_CELL, "256k_item_cell");
-        registerStorageCellModel(INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL, "256k_item_cell");
-        registerStorageCellModel(INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL, "256k_item_cell");
+        registerStorageCellModel(MYSTERIOUS_CELL, "256k_item_cell");
     }
 
     private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(

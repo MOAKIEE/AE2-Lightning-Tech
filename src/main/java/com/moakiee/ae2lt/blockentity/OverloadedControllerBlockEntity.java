@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.config.Actionable;
@@ -27,7 +28,11 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
     private static final double INTERNAL_MAX_POWER = 16_000_000.0;
 
     public OverloadedControllerBlockEntity(BlockPos pos, BlockState blockState) {
-        super(ModBlockEntities.OVERLOADED_CONTROLLER.get(), pos, blockState);
+        this(ModBlockEntities.OVERLOADED_CONTROLLER.get(), pos, blockState);
+    }
+
+    protected OverloadedControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState blockState) {
+        super(type, pos, blockState);
         this.setInternalMaxPower(INTERNAL_MAX_POWER);
     }
 
@@ -52,7 +57,6 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        // Keep the controller-side connection type aligned with vanilla controller behavior for now.
         return AECableType.DENSE_SMART;
     }
 
