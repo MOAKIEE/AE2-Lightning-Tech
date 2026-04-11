@@ -36,17 +36,23 @@ public abstract class GridConnectionMaxChannelsMixin {
     }
 
     /**
-     * During the DFS pass, replace the routing-tree-based channel propagation
-     * with the exact per-connection flow from Dinic's max-flow result.
+     * During the DFS pass, cancel AE2's routing-tree-based channel propagation
+     * and return the exact per-connection flow from Dinic's max-flow result.
+     * The actual usedChannels field is set by Phase 4 (force-apply) after the
+     * DFS completes. Only intercepts connections belonging to the max-flow network.
      */
     @Inject(method = "propagateChannelsUpwards()I", at = @At("HEAD"), cancellable = true)
     private void ae2lt$useFlowForConnectionPropagation(CallbackInfoReturnable<Integer> cir) {
         var connFlow = BorrowedCapacityCalculator.activeConnectionFlow;
         if (connFlow == null) return;
 
+        var networkNodes = BorrowedCapacityCalculator.activeNetworkNodes;
+        if (networkNodes == null) return;
+
         var self = (GridConnection) (Object) this;
+        if (!networkNodes.contains(self.a()) && !networkNodes.contains(self.b())) return;
+
         int flow = connFlow.getInt(self);
-        this.usedChannels = flow;
         cir.setReturnValue(flow);
     }
 }

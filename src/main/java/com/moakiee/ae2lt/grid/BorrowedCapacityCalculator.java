@@ -71,6 +71,17 @@ public final class BorrowedCapacityCalculator {
     private BorrowedCapacityCalculator() {}
 
     /**
+     * Clears all static active-flow fields. Called defensively at the start
+     * of each pathing computation to guard against stale data from a previous
+     * computation that may have terminated abnormally.
+     */
+    public static void clearActiveData() {
+        activeNodeFlow = null;
+        activeNetworkNodes = null;
+        activeConnectionFlow = null;
+    }
+
+    /**
      * Runs max-flow on the entire controller network.
      *
      * @return channel assignment result, or {@code null} if the channel mode
@@ -237,7 +248,7 @@ public final class BorrowedCapacityCalculator {
             sinkNodes.add(n);
         }
 
-        int maxFlow = dinic.maxFlow(S, T);
+        int maxFlow = dinic.maxFlow(S, T, sinkNodes.size());
 
         LOG.debug("maxFlow={}, network={}, sinks={}, overloadedCtrl={}, supply/ctrl={}",
                 maxFlow, network.size(), sinkNodes.size(), overloadedControllers.size(), supply);
@@ -403,11 +414,14 @@ public final class BorrowedCapacityCalculator {
             return 0;
         }
 
-        int maxFlow(int s, int t) {
+        int maxFlow(int s, int t, int demandCap) {
             int flow = 0;
-            while (bfs(s, t)) {
+            while (flow < demandCap && bfs(s, t)) {
                 System.arraycopy(head, 0, cur, 0, size);
-                for (int d; (d = dfs(s, t, INF)) > 0; ) flow += d;
+                for (int d; (d = dfs(s, t, demandCap - flow)) > 0; ) {
+                    flow += d;
+                    if (flow >= demandCap) break;
+                }
             }
             return flow;
         }

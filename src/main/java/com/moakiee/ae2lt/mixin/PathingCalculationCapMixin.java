@@ -85,10 +85,7 @@ public abstract class PathingCalculationCapMixin {
         }
 
         IGridNode source = overloaded.get(0);
-        Set<IGridNode> nonSource = new ReferenceOpenHashSet<>();
-        for (int i = 1; i < overloaded.size(); i++) {
-            nonSource.add(overloaded.get(i));
-        }
+        Set<IGridNode> nonSource = new ReferenceOpenHashSet<>(overloaded.subList(1, overloaded.size()));
 
         for (var node : nonSource) {
             if (node instanceof IPathItem p) {
@@ -100,25 +97,38 @@ public abstract class PathingCalculationCapMixin {
         var keep = new ArrayDeque<IPathItem>();
         while (!q0.isEmpty()) {
             var item = q0.poll();
-            if (item instanceof GridConnection gc) {
-                if (nonSource.contains(gc.a()) || nonSource.contains(gc.b())) {
-                    visited.remove((IPathItem) gc);
-                    gc.setControllerRoute(null);
-                    continue;
-                }
+            if (item instanceof GridConnection gc
+                    && (nonSource.contains(gc.a()) || nonSource.contains(gc.b()))) {
+                visited.remove((IPathItem) gc);
+                gc.setControllerRoute(null);
+                continue;
             }
             keep.add(item);
         }
         q0.addAll(keep);
 
-        for (var connection : source.getConnections()) {
-            if (connection instanceof GridConnection gc) {
-                IGridNode other = gc.getOtherSide(source);
-                if (nonSource.contains(other) && !visited.contains((IPathItem) gc)) {
-                    gc.setControllerRoute((IPathItem) source);
-                    visited.add((IPathItem) gc);
-                    q0.add((IPathItem) gc);
+        // BFS from source through ALL controllers (vanilla+OC) to reach non-source OCs.
+        // This handles cases where overloaded controllers are separated by vanilla
+        // controllers in the multiblock (e.g. OC_A — Vanilla_B — OC_C).
+        Queue<IGridNode> bfs = new ArrayDeque<>();
+        Set<IGridNode> bfsVisited = new ReferenceOpenHashSet<>();
+        bfs.add(source);
+        bfsVisited.add(source);
+        while (!bfs.isEmpty()) {
+            var cur = bfs.poll();
+            for (var conn : cur.getConnections()) {
+                if (!(conn instanceof GridConnection gc)) continue;
+                var neighbor = gc.getOtherSide(cur);
+                if (!bfsVisited.add(neighbor)) continue;
+                if (!(neighbor.getOwner() instanceof ControllerBlockEntity)) continue;
+                if (nonSource.remove(neighbor)) {
+                    if (!visited.contains((IPathItem) gc)) {
+                        gc.setControllerRoute((IPathItem) cur);
+                        visited.add((IPathItem) gc);
+                        q0.add((IPathItem) gc);
+                    }
                 }
+                bfs.add(neighbor);
             }
         }
     }
@@ -140,16 +150,14 @@ public abstract class PathingCalculationCapMixin {
             at = @At(value = "INVOKE",
                      target = "Lappeng/me/pathfinding/PathingCalculation;propagateAssignments()V"))
     private void ae2lt$runMaxFlowBeforeDFS(CallbackInfo ci) {
+        BorrowedCapacityCalculator.clearActiveData();
+
         if (!ae2lt$useMaxFlow) {
-            BorrowedCapacityCalculator.activeNodeFlow = null;
-            BorrowedCapacityCalculator.activeNetworkNodes = null;
             return;
         }
 
         ae2lt$flowResult = BorrowedCapacityCalculator.assignChannels(grid, ae2lt$overloadedControllers);
         if (ae2lt$flowResult == null) {
-            BorrowedCapacityCalculator.activeNodeFlow = null;
-            BorrowedCapacityCalculator.activeNetworkNodes = null;
             return;
         }
 
@@ -207,9 +215,7 @@ public abstract class PathingCalculationCapMixin {
                 entry.getKey().setAdHocChannels(entry.getIntValue());
             }
         }
-        BorrowedCapacityCalculator.activeNodeFlow = null;
-        BorrowedCapacityCalculator.activeNetworkNodes = null;
-        BorrowedCapacityCalculator.activeConnectionFlow = null;
+        BorrowedCapacityCalculator.clearActiveData();
         ae2lt$flowResult = null;
     }
 }
