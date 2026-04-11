@@ -8,6 +8,7 @@ import java.util.Set;
 
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.BorrowedCapacityCalculator;
+import com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper;
 import com.moakiee.ae2lt.grid.OverloadedSubtreeNode;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import org.spongepowered.asm.mixin.Final;
@@ -65,15 +66,17 @@ public abstract class PathingCalculationCapMixin {
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void ae2lt$unifyOverloadedControllers(IGrid grid, CallbackInfo ci) {
+        var allControllers = OverloadedChannelOwnerHelper.getAllControllerNodes(grid);
+
         List<IGridNode> overloaded = new ArrayList<>();
-        for (var node : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        for (var node : allControllers) {
             if (node.getOwner() instanceof OverloadedControllerBlockEntity) {
                 overloaded.add(node);
             }
         }
 
         ae2lt$overloadedControllers = overloaded;
-        boolean hasControllers = grid.getMachineNodes(ControllerBlockEntity.class).iterator().hasNext();
+        boolean hasControllers = !allControllers.isEmpty();
         var channelMode = grid.getPathingService().getChannelMode();
         ae2lt$useMaxFlow = hasControllers && channelMode != ChannelMode.INFINITE;
 
@@ -175,6 +178,23 @@ public abstract class PathingCalculationCapMixin {
     @Inject(method = "compute", at = @At("TAIL"))
     private void ae2lt$applyFlowAndCleanup(CallbackInfo ci) {
         if (ae2lt$flowResult != null) {
+            // Reset ALL connections of network nodes to 0 first.
+            // AE2's DFS uses getMachineNodes(ControllerBlockEntity.class) which
+            // misses overloaded controllers (exact class match). When no vanilla
+            // controllers exist, the DFS never runs and stale usedChannels from
+            // a previous pathing calculation are never cleared.
+            Set<GridConnection> resetSeen = new ReferenceOpenHashSet<>();
+            for (var node : ae2lt$flowResult.networkNodes()) {
+                for (var conn : node.getConnections()) {
+                    if (conn instanceof GridConnection gc && resetSeen.add(gc)) {
+                        gc.setAdHocChannels(0);
+                    }
+                }
+                if (node instanceof OverloadedSubtreeNode osn) {
+                    osn.ae2lt$setUsedChannels(0);
+                }
+            }
+
             var nodeFlow = ae2lt$flowResult.nodeFlow();
             for (var node : ae2lt$flowResult.networkNodes()) {
                 if (node instanceof OverloadedSubtreeNode osn) {

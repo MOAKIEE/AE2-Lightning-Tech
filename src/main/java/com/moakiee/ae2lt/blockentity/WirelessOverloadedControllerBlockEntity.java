@@ -125,6 +125,7 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
         }
 
         saveChanges();
+        markForUpdate();
     }
 
     /**
@@ -160,6 +161,7 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
 
         manager.register(id, level.dimension(), worldPosition, getMainNode().getNode(), isAdvanced());
         registeredId = id;
+        markForUpdate();
     }
 
     // ── Lifecycle ──

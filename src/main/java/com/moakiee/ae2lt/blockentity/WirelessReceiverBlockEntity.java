@@ -19,6 +19,7 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
+import appeng.blockentity.ServerTickingBlockEntity;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.me.GridConnection;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * transmitter availability changes (card insert/remove).
  */
 public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
-        implements OverloadedGridNodeOwner, WirelessTransmitterManager.TransmitterListener {
+        implements OverloadedGridNodeOwner, WirelessTransmitterManager.TransmitterListener, ServerTickingBlockEntity {
 
     private static final Logger LOG = LoggerFactory.getLogger("ae2lt-wireless");
 
@@ -45,6 +46,8 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     private UUID boundTransmitterId;
     @Nullable
     private IGridConnection virtualConnection;
+
+    private boolean needsConnectionUpdate;
 
     public WirelessReceiverBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.WIRELESS_RECEIVER.get(), pos, state);
@@ -83,7 +86,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         this.boundTransmitterId = transmitterId;
         subscribeListener();
         saveChanges();
-        tryEstablishConnection();
+        needsConnectionUpdate = true;
     }
 
     public void unbind() {
@@ -91,6 +94,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         destroyVirtualConnection();
         this.boundTransmitterId = null;
         saveChanges();
+        markForUpdate();
     }
 
     // ── Transmitter Listener ──
@@ -98,11 +102,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onTransmitterChanged(UUID uuid, boolean available) {
         if (!uuid.equals(boundTransmitterId)) return;
-        if (available) {
-            tryEstablishConnection();
-        } else {
-            destroyVirtualConnection();
-        }
+        needsConnectionUpdate = true;
     }
 
     private void subscribeListener() {
@@ -127,11 +127,20 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     public void onMainNodeStateChanged(IGridNodeListener.State reason) {
         super.onMainNodeStateChanged(reason);
         if (reason == IGridNodeListener.State.GRID_BOOT) {
-            revalidateOrReconnect();
+            needsConnectionUpdate = true;
         }
     }
 
-    private void revalidateOrReconnect() {
+    // ── Server Tick (deferred connection management) ──
+
+    @Override
+    public void serverTick() {
+        if (!needsConnectionUpdate) return;
+
+        if (getMainNode().getNode() == null) return;
+
+        needsConnectionUpdate = false;
+
         if (boundTransmitterId == null || level == null || level.isClientSide()) return;
 
         if (virtualConnection != null) {
@@ -141,6 +150,8 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         if (virtualConnection == null) {
             tryEstablishConnection();
         }
+
+        markForUpdate();
     }
 
     // ── Virtual Connection ──
@@ -178,6 +189,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
             virtualConnection = GridConnection.create(myNode, remoteNode, null);
             LOG.debug("Virtual connection established: receiver@{} -> transmitter UUID={}",
                     worldPosition, boundTransmitterId);
+            markForUpdate();
         } catch (IllegalStateException e) {
             LOG.warn("Virtual connection FAILED: receiver@{} -> transmitter UUID={}: {}",
                     worldPosition, boundTransmitterId, e.getMessage());
@@ -252,7 +264,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         super.onReady();
         subscribeListener();
         if (boundTransmitterId != null) {
-            tryEstablishConnection();
+            needsConnectionUpdate = true;
         }
     }
 
@@ -268,7 +280,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         super.clearRemoved();
         subscribeListener();
         if (boundTransmitterId != null) {
-            tryEstablishConnection();
+            needsConnectionUpdate = true;
         }
     }
 

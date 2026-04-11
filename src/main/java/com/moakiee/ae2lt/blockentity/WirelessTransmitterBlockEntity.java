@@ -79,7 +79,7 @@ public class WirelessTransmitterBlockEntity extends AENetworkedBlockEntity
         IGrid grid = myNode.getGrid();
         if (grid == null) return null;
 
-        for (var node : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        for (var node : com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper.getAllControllerNodes(grid)) {
             if (node.getOwner() instanceof OverloadedControllerBlockEntity) {
                 return node;
             }

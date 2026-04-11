@@ -481,7 +481,8 @@ public class AE2LightningTech {
                     WirelessReceiverBlockEntity.class,
                     wirelessReceiverBeType,
                     null,
-                    null);
+                    (net.minecraft.world.level.block.entity.BlockEntityTicker)
+                            (l, p, s, be) -> ((WirelessReceiverBlockEntity) be).serverTick());
 
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     wirelessReceiverBeType,

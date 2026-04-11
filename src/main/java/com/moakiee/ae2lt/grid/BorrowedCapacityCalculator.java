@@ -105,7 +105,7 @@ public final class BorrowedCapacityCalculator {
             q.add(oc);
         }
 
-        for (var vc : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        for (var vc : OverloadedChannelOwnerHelper.getAllControllerNodes(grid)) {
             if (vc.getOwner() instanceof OverloadedControllerBlockEntity) continue;
             for (var c : vc.getConnections()) {
                 if (!(c instanceof GridConnection gc)) continue;
@@ -206,15 +206,22 @@ public final class BorrowedCapacityCalculator {
         }
 
         // 4) vanilla controller face sources: S → cable_in
+        //    Also track edge indices so we can compute flow on face connections.
         int faceCap = 32 * mode.getCableCapacityFactor();
-        for (var node : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        record FaceEdge(GridConnection gc, int edgeIdx, int cap) {}
+        List<FaceEdge> faceEdges = new ArrayList<>();
+        for (var node : OverloadedChannelOwnerHelper.getAllControllerNodes(grid)) {
             if (node.getOwner() instanceof OverloadedControllerBlockEntity) continue;
             for (var c : node.getConnections()) {
                 if (!(c instanceof GridConnection gc)) continue;
                 var other = gc.getOtherSide(node);
                 if (other.getOwner() instanceof ControllerBlockEntity) continue;
                 int oi = idx.getInt(other);
-                if (oi >= 0) dinic.addEdge(S, 2 * oi, faceCap);
+                if (oi >= 0) {
+                    int feIdx = dinic.edgeCount();
+                    dinic.addEdge(S, 2 * oi, faceCap);
+                    faceEdges.add(new FaceEdge(gc, feIdx, faceCap));
+                }
             }
         }
 
@@ -265,6 +272,17 @@ public final class BorrowedCapacityCalculator {
             int netFlow = Math.abs(flowAB - flowBA);
             if (netFlow > 0) {
                 connectionFlow.put(ce.gc, netFlow);
+            }
+        }
+
+        // Collect flow on vanilla controller face connections.
+        // These connections are not modeled as edges in the flow network
+        // (vanilla controllers are not in 'network'), so we derive their
+        // flow from the source edge S → cable_in.
+        for (var fe : faceEdges) {
+            int flow = fe.cap - dinic.residual(fe.edgeIdx);
+            if (flow > 0) {
+                connectionFlow.mergeInt(fe.gc, flow, Integer::sum);
             }
         }
 
