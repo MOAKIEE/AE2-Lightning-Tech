@@ -137,6 +137,8 @@ dependencies {
     runtimeOnly "curse.maven:spark-361579:6225208"
     runtimeOnly "curse.maven:construction-sticks-1156098:7687867"
     runtimeOnly "curse.maven:toms-storage-378609:7659872"
+    runtimeOnly "curse.maven:kubejs-238086:7278501"
+    runtimeOnly "curse.maven:rhino-416294:7104526"
 
     runtimeOnly files("libs/observable-5.4.4.jar")
     runtimeOnly "curse.maven:kotlin-for-forge-351264:7471280"

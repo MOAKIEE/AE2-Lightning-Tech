@@ -240,9 +240,10 @@
   "item.ae2lt.weather_condensate.energy": "Ionization Cost: %s AE",
   "item.ae2lt.weather_condensate.duration": "Duration: %s~%s ticks",
   "item.ae2lt.infinite_storage_cell": "Infinite Storage Cell",
-  "item.ae2lt.infinite_high_voltage_lightning_cell": "Infinite High Voltage Lightning Cell",
-  "item.ae2lt.infinite_infinite_high_voltage_lightning_cell": "Infinite Infinite High Voltage Lightning Cell Cell",
-  "item.ae2lt.fixed_infinite_cell": "Infinite %s Cell",
+  "item.ae2lt.mysterious_cell": "Infinite Infinite Lightning Cell Cell",
+  "item.ae2lt.mysterious_cell.lightning_rod": "Infinite Lightning Rod Cell",
+  "item.ae2lt.mysterious_cell.high_voltage": "Infinite High Voltage Lightning Cell",
+  "item.ae2lt.mysterious_cell.extreme_high_voltage": "Infinite Extreme High Voltage Lightning Cell",
   "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s",
   "block.ae2lt.wireless_receiver": "Wireless Receiver",
@@ -268,7 +269,10 @@
   "ae2lt.gui.wireless_controller.uuid": "ID: %s",
   "ae2lt.gui.wireless_controller.advanced": "Advanced (Cross-dimension, Unlimited Channels)",
   "ae2lt.gui.wireless_controller.normal": "Normal (Same dimension, Dense cable limit)",
-  "tooltip.ae2lt.fixed_infinite_cell.infinite": "Infinite Supply",
+  "tooltip.ae2lt.mysterious_cell": "Easter egg???",
+  "tooltip.ae2lt.mysterious_cell.lightning_rod": "Thanks for playing",
+  "tooltip.ae2lt.mysterious_cell.high_voltage": "Easter egg!",
+  "tooltip.ae2lt.mysterious_cell.extreme_high_voltage": "Easter egg!!!",
   "ae2lt.gui.slot_count": "Count: %s"
 }
 

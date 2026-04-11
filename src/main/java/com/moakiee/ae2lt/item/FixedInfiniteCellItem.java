@@ -3,50 +3,184 @@ package com.moakiee.ae2lt.item;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
+import java.util.UUID;
+
+import org.jetbrains.annotations.Nullable;
 
 import appeng.api.stacks.AEKey;
+import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.items.storage.StorageCellTooltipComponent;
 import net.minecraft.ChatFormatting;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.CustomData;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+
+import com.moakiee.ae2lt.me.key.LightningKey;
+import com.moakiee.ae2lt.registry.ModItems;
 
 public final class FixedInfiniteCellItem extends Item {
 
-    private final Supplier<AEKey> storedKey;
+    private static final String TAG_SEED = "CellSeed";
+    private static final String TAG_TYPE = "CellType";
 
-    public FixedInfiniteCellItem(Properties properties, Supplier<AEKey> storedKey) {
+    public enum CellOutcome {
+        LIGHTNING_ROD((byte) 0, "lightning_rod"),
+        HIGH_VOLTAGE((byte) 1, "high_voltage"),
+        EXTREME_HIGH_VOLTAGE((byte) 2, "extreme_high_voltage");
+
+        private final byte typeId;
+        private final String suffix;
+
+        CellOutcome(byte typeId, String suffix) {
+            this.typeId = typeId;
+            this.suffix = suffix;
+        }
+
+        public byte typeId() {
+            return typeId;
+        }
+
+        public String suffix() {
+            return suffix;
+        }
+
+        public static CellOutcome fromTypeId(byte id) {
+            return switch (id) {
+                case 1 -> HIGH_VOLTAGE;
+                case 2 -> EXTREME_HIGH_VOLTAGE;
+                default -> LIGHTNING_ROD;
+            };
+        }
+
+        public AEKey displayKey() {
+            return switch (this) {
+                case LIGHTNING_ROD -> AEItemKey.of(Items.LIGHTNING_ROD);
+                case HIGH_VOLTAGE -> LightningKey.HIGH_VOLTAGE;
+                case EXTREME_HIGH_VOLTAGE -> LightningKey.EXTREME_HIGH_VOLTAGE;
+            };
+        }
+    }
+
+    public FixedInfiniteCellItem(Properties properties) {
         super(properties.stacksTo(1));
-        this.storedKey = storedKey;
     }
 
-    public AEKey getStoredKey() {
-        return this.storedKey.get();
+    // ── Seed (outer cell only) ──
+
+    public static void setSeed(ItemStack stack, UUID seed) {
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putUUID(TAG_SEED, seed));
     }
+
+    @Nullable
+    public static UUID getSeed(ItemStack stack) {
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.hasUUID(TAG_SEED) ? tag.getUUID(TAG_SEED) : null;
+    }
+
+    public static boolean hasSeed(ItemStack stack) {
+        return getSeed(stack) != null;
+    }
+
+    /**
+     * Mix seed with world seed, then roll. 10000 possible outcomes:
+     * <ul>
+     *   <li>roll == 0 → EXTREME_HIGH_VOLTAGE (1/10000)</li>
+     *   <li>roll 1..9 → HIGH_VOLTAGE (9/10000)</li>
+     *   <li>roll 10..9999 → LIGHTNING_ROD (9990/10000)</li>
+     * </ul>
+     */
+    public static CellOutcome resolveOutcome(UUID seed, long worldSeed) {
+        long mixed = (seed.getLeastSignificantBits() ^ worldSeed)
+                   ^ (seed.getMostSignificantBits() ^ Long.reverseBytes(worldSeed));
+        int roll = Math.floorMod(mixed, 10000);
+        if (roll == 0) return CellOutcome.EXTREME_HIGH_VOLTAGE;
+        if (roll <= 9) return CellOutcome.HIGH_VOLTAGE;
+        return CellOutcome.LIGHTNING_ROD;
+    }
+
+    public static CellOutcome getOutcomeFromSeed(ItemStack stack) {
+        UUID seed = getSeed(stack);
+        if (seed == null) return CellOutcome.EXTREME_HIGH_VOLTAGE;
+        long worldSeed = 0L;
+        var server = ServerLifecycleHooks.getCurrentServer();
+        if (server != null) {
+            worldSeed = server.overworld().getSeed();
+        }
+        return resolveOutcome(seed, worldSeed);
+    }
+
+    // ── Type byte (inner cell only) ──
+
+    public static void setType(ItemStack stack, byte type) {
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putByte(TAG_TYPE, type));
+    }
+
+    public static boolean hasType(ItemStack stack) {
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.contains(TAG_TYPE);
+    }
+
+    public static byte getType(ItemStack stack) {
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.getByte(TAG_TYPE);
+    }
+
+    // ── Effective key ──
+
+    /**
+     * Has CellType → inner cell: reads type byte → actual stored content.<br>
+     * No CellType → outer cell: seed → outcome → produces inner cells with type byte baked in.
+     */
+    public static AEKey getEffectiveKey(ItemStack stack) {
+        if (hasType(stack)) {
+            return CellOutcome.fromTypeId(getType(stack)).displayKey();
+        }
+        CellOutcome outcome = getOutcomeFromSeed(stack);
+        ItemStack innerStack = new ItemStack(ModItems.MYSTERIOUS_CELL.get());
+        setType(innerStack, outcome.typeId());
+        return AEItemKey.of(innerStack);
+    }
+
+    // ── Display ──
+
+    private static final String BASE_KEY = "item.ae2lt.mysterious_cell";
 
     @Override
     public Component getName(ItemStack stack) {
-        return Component.translatable("item.ae2lt.fixed_infinite_cell", getStoredKey().getDisplayName());
+        if (hasType(stack)) {
+            return Component.translatable(BASE_KEY + "." + CellOutcome.fromTypeId(getType(stack)).suffix());
+        }
+        return Component.translatable(BASE_KEY);
     }
+
+    private static final String TOOLTIP_KEY = "tooltip.ae2lt.mysterious_cell";
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(
-                "tooltip.ae2lt.fixed_infinite_cell.infinite").withStyle(ChatFormatting.GREEN));
+        if (hasType(stack)) {
+            String suffix = CellOutcome.fromTypeId(getType(stack)).suffix();
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + "." + suffix)
+                    .withStyle(ChatFormatting.GREEN));
+        } else {
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY)
+                    .withStyle(ChatFormatting.GREEN));
+        }
     }
 
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
-        var content = Collections.singletonList(new GenericStack(getStoredKey(), getInfiniteAmount()));
+        AEKey key = getEffectiveKey(stack);
+        long amount = (long) Integer.MAX_VALUE * key.getAmountPerUnit();
+        var content = Collections.singletonList(new GenericStack(key, amount));
         return Optional.of(new StorageCellTooltipComponent(List.of(), content, false, true));
-    }
-
-    private long getInfiniteAmount() {
-        return (long) Integer.MAX_VALUE * getStoredKey().getAmountPerUnit();
     }
 }
