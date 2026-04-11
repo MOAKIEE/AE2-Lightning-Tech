@@ -136,7 +136,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
-                        output.accept(ModBlocks.UPDATE_SUPPRESSOR);
                         output.accept(ModBlocks.WIRELESS_ID_BLOCK);
                         output.accept(ModBlocks.WIRELESS_TRANSMITTER);
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
@@ -488,9 +487,6 @@ public class AE2LightningTech {
                     wirelessReceiverBeType,
                     wirelessReceiverBlock.asItem());
 
-            if (extendedAELoaded) {
-                com.moakiee.ae2lt.compat.extae.ExtendedAECompat.setupBlockEntities();
-            }
         });
     }
 

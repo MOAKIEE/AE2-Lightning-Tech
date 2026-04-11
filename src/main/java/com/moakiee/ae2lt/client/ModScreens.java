@@ -39,7 +39,6 @@ public class ModScreens {
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
         event.register(WirelessControllerMenu.TYPE, ModScreens::createWirelessControllerScreen);
-        registerExtendedAEScreens(event);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -96,16 +95,4 @@ public class ModScreens {
         return new WirelessControllerScreen(menu, inv, title, style);
     }
 
-    private static void registerExtendedAEScreens(RegisterMenuScreensEvent event) {
-        if (!AE2LightningTech.isExtendedAELoaded()) {
-            return;
-        }
-
-        try {
-            Class.forName("com.moakiee.ae2lt.compat.extae.client.ExtendedAEClientCompat")
-                    .getMethod("registerScreens", RegisterMenuScreensEvent.class)
-                    .invoke(null, event);
-        } catch (ReflectiveOperationException ignored) {
-        }
-    }
 }
