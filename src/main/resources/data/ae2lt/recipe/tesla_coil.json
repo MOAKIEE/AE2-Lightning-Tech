@@ -1,0 +1,39 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "A B",
+    "CDE",
+    "FGH"
+  ],
+  "key": {
+    "A": {
+      "item": "minecraft:lightning_rod"
+    },
+    "B": {
+      "item": "minecraft:lightning_rod"
+    },
+    "C": {
+      "item": "ae2:fluix_glass_cable"
+    },
+    "D": {
+      "item": "ae2lt:lightning_collector"
+    },
+    "E": {
+      "item": "ae2:fluix_glass_cable"
+    },
+    "F": {
+      "item": "ae2lt:overload_crystal"
+    },
+    "G": {
+      "item": "ae2lt:overload_machine_frame"
+    },
+    "H": {
+      "item": "ae2lt:overload_crystal"
+    }
+  },
+  "result": {
+    "count": 1,
+    "id": "ae2lt:tesla_coil"
+  }
+}
