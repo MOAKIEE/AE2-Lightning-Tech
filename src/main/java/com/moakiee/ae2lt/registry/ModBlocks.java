@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
+import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
@@ -58,11 +59,21 @@ public final class ModBlocks {
             .sound(SoundType.METAL)
             .forceSolidOn();
 
+    private static final BlockBehaviour.Properties OVERLOAD_MACHINE_FRAME_PROPERTIES = BlockBehaviour.Properties.of()
+            .mapColor(MapColor.METAL)
+            .strength(5.0F, 6.0F)
+            .sound(SoundType.METAL)
+            .forceSolidOn()
+            .requiresCorrectToolForDrops();
+
     public static final DeferredBlock<Block> OVERLOAD_CRYSTAL_BLOCK =
             registerBlock("overload_crystal_block", () -> new Block(OVERLOAD_CRYSTAL_BLOCK_PROPERTIES));
 
     public static final DeferredBlock<Block> SILICON_BLOCK =
             registerBlock("silicon_block", () -> new Block(SILICON_BLOCK_PROPERTIES));
+
+    public static final DeferredBlock<Block> OVERLOAD_MACHINE_FRAME =
+            registerBlock("overload_machine_frame", () -> new Block(OVERLOAD_MACHINE_FRAME_PROPERTIES));
 
     public static final DeferredBlock<OverloadTntBlock> OVERLOAD_TNT =
             registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.TNT)));
@@ -72,6 +83,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<LightningSimulationChamberBlock> LIGHTNING_SIMULATION_CHAMBER =
             registerBlock("lightning_simulation_room", LightningSimulationChamberBlock::new);
+
+    public static final DeferredBlock<LightningAssemblyChamberBlock> LIGHTNING_ASSEMBLY_CHAMBER =
+            registerBlock("lightning_assembly_chamber", LightningAssemblyChamberBlock::new);
 
     public static final DeferredBlock<OverloadProcessingFactoryBlock> OVERLOAD_PROCESSING_FACTORY =
             registerBlock("overload_processing_factory", OverloadProcessingFactoryBlock::new);

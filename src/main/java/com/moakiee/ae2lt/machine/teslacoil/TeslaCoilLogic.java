@@ -1,8 +1,6 @@
 package com.moakiee.ae2lt.machine.teslacoil;
 
-import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
@@ -96,32 +94,11 @@ public final class TeslaCoilLogic implements IGridTickable {
             return;
         }
 
-        long missing = host.getEnergyStorage().getCapacityLong() - host.getEnergyStorage().getStoredEnergyLong();
-        if (missing <= 0L) {
-            return;
-        }
-
         host.getMainNode().ifPresent((grid, node) -> {
-            long requested = Math.min(missing, AppFluxHelper.TRANSFER_RATE);
-            if (requested <= 0L) {
-                return;
-            }
-
-            long extracted = grid.getStorageService().getInventory().extract(
-                    AppFluxHelper.FE_KEY,
-                    requested,
-                    Actionable.MODULATE,
-                    IActionSource.ofMachine(host));
-            if (extracted <= 0L) {
-                return;
-            }
-
-            int inserted = host.getEnergyStorage().receiveEnergy((int) extracted, false);
-            long remainder = extracted - inserted;
-            if (remainder > 0L) {
-                grid.getStorageService().getInventory()
-                        .insert(AppFluxHelper.FE_KEY, remainder, Actionable.MODULATE, IActionSource.ofMachine(host));
-            }
+            AppFluxHelper.pullPowerFromNetwork(
+                    grid.getStorageService().getInventory(),
+                    host.getEnergyStorage(),
+                    appeng.api.networking.security.IActionSource.ofMachine(host));
         });
     }
 }

@@ -35,15 +35,11 @@ public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isOverloadCrystalDust(stack)) {
-            return inventory.insertItem(TeslaCoilInventory.SLOT_DUST, stack, simulate);
+        if (!inventory.isItemValid(slot, stack)) {
+            return stack;
         }
 
-        if (inventory.isLightningCollapseMatrix(stack)) {
-            return inventory.insertItem(TeslaCoilInventory.SLOT_MATRIX, stack, simulate);
-        }
-
-        return stack;
+        return inventory.insertItem(slot, stack, simulate);
     }
 
     @Override

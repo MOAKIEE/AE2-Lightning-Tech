@@ -122,6 +122,32 @@ public final class LightningSimulationRecipeService {
         return Optional.of(new LightningSimulationRecipeCandidate(recipe.get(), match.get()));
     }
 
+    public static Optional<LightningSimulationRecipeCandidate> findLockedRecipeMatchIgnoringLightning(
+            Level level,
+            LightningSimulationChamberInventory inventory,
+            LightningSimulationLockedRecipe lockedRecipe) {
+        if (level == null || lockedRecipe == null) {
+            return Optional.empty();
+        }
+
+        Optional<RecipeHolder<LightningSimulationRecipe>> recipe = findRecipeById(level, lockedRecipe.recipeId());
+        if (recipe.isEmpty()) {
+            return Optional.empty();
+        }
+
+        LightningSimulationRecipeInput input = LightningSimulationRecipeInput.fromInventory(inventory);
+        if (input.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<LightningSimulationRecipeMatch> match = recipe.get().value().planMatch(input);
+        if (match.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new LightningSimulationRecipeCandidate(recipe.get(), match.get()));
+    }
+
     public static Optional<LightningConsumptionPlan> resolveLightningConsumption(
             LightningSimulationChamberInventory inventory,
             LightningKey.Tier lightningTier,

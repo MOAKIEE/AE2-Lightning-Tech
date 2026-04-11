@@ -4,56 +4,54 @@ import java.util.List;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.fml.ModList;
 
+import appeng.api.stacks.AmountFormat;
+import appeng.api.stacks.GenericStack;
+import appeng.core.localization.Tooltips;
 import appeng.client.gui.widgets.ITooltip;
 
 public class OverloadProcessingFactoryFluidWidget extends AbstractWidget implements ITooltip {
     private final Supplier<FluidStack> fluidSupplier;
     private final IntSupplier capacitySupplier;
-    private final Component emptyMessage;
     private final int color;
 
     public OverloadProcessingFactoryFluidWidget(
             Supplier<FluidStack> fluidSupplier,
             IntSupplier capacitySupplier,
-            Component emptyMessage,
             int color) {
-        super(0, 0, 16, 58, Component.empty());
+        super(0, 0, 16, 54, Component.empty());
         this.fluidSupplier = fluidSupplier;
         this.capacitySupplier = capacitySupplier;
-        this.emptyMessage = emptyMessage;
         this.color = color;
     }
 
     @Override
     protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.fill(getX(), getY(), getX() + width, getY() + height, 0xFF4A515E);
-        guiGraphics.fill(getX() + 1, getY() + 1, getX() + width - 1, getY() + height - 1, 0xFF14181D);
-        guiGraphics.fill(getX() + 2, getY() + 2, getX() + width - 2, getY() + height - 2, 0xFF0D1014);
-
         FluidStack fluid = fluidSupplier.get();
         if (fluid.isEmpty()) {
             return;
         }
 
         int capacity = Math.max(1, capacitySupplier.getAsInt());
-        int innerHeight = height - 4;
-        int filled = (int) Math.round(innerHeight * (double) fluid.getAmount() / (double) capacity);
+        int filled = (int) Math.round(height * (double) fluid.getAmount() / (double) capacity);
         if (filled <= 0) {
             return;
         }
 
         guiGraphics.fill(
-                getX() + 2,
-                getY() + height - 2 - filled,
-                getX() + width - 2,
-                getY() + height - 2,
+                getX(),
+                getY() + height - filled,
+                getX() + width,
+                getY() + height,
                 color);
     }
 
@@ -61,17 +59,29 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     public List<Component> getTooltipMessage() {
         FluidStack fluid = fluidSupplier.get();
         if (fluid.isEmpty()) {
-            return List.of(emptyMessage);
+            return List.of(
+                    Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", 0, capacitySupplier.getAsInt())
+                            .withStyle(Tooltips.NUMBER_TEXT));
         }
+
+        var genericStack = GenericStack.fromFluidStack(fluid);
+        var amountText = genericStack == null
+                ? Integer.toString(fluid.getAmount())
+                : genericStack.what().formatAmount(genericStack.amount(), AmountFormat.SLOT);
 
         return List.of(
                 fluid.getHoverName(),
-                Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", fluid.getAmount(), capacitySupplier.getAsInt()));
+                Component.empty(),
+                Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", amountText, capacitySupplier.getAsInt())
+                        .withStyle(Tooltips.NUMBER_TEXT),
+                Component.empty(),
+                Component.literal(getModDisplayName(fluid))
+                        .withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC));
     }
 
     @Override
     public Rect2i getTooltipArea() {
-        return new Rect2i(getX() - 1, getY() - 1, width + 2, height + 2);
+        return new Rect2i(getX(), getY(), width, height);
     }
 
     @Override
@@ -81,5 +91,24 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
 
     @Override
     protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    }
+
+    private static String getModDisplayName(FluidStack fluid) {
+        var key = fluid.getFluid() == Fluids.EMPTY
+                ? null
+                : fluid.getFluid().builtInRegistryHolder().key().location();
+        if (key == null) {
+            return "Minecraft";
+        }
+
+        var namespace = key.getNamespace();
+        if ("c".equals(namespace)) {
+            return "Common";
+        }
+
+        return ModList.get()
+                .getModContainerById(namespace)
+                .map(container -> container.getModInfo().getDisplayName())
+                .orElseGet(() -> namespace.replace('_', ' '));
     }
 }

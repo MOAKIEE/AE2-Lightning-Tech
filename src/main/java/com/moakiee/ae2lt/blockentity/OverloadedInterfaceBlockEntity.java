@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.blockentity;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.List;
@@ -10,7 +11,9 @@ import java.util.Map;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
+import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
@@ -49,6 +52,8 @@ import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.InternalInventoryHost;
 
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -71,6 +76,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final String TAG_CONNECTIONS    = "WirelessConnections";
     private static final String TAG_ENERGY_DIR     = "EnergyDir";
     private static final String TAG_UNLIMITED_SLOTS = "UnlimitedSlots";
+    private static final String TAG_FILTER_INV     = "FilterInv";
 
     public enum InterfaceMode { NORMAL, WIRELESS }
     public enum IOSpeedMode   { NORMAL, FAST }
@@ -82,9 +88,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     //  Reference: ExtAE extended bus — 96 base (4 speed cards) × 8 busSpeed
     //  = 768 items per activation.
     // ══════════════════════════════════════════════════════════════════════
-
-    private static final int TRANSFER_BUDGET_NORMAL = 4096;
-    private static final int TRANSFER_BUDGET_FAST   = 16384;
 
     /** ExternalStorageStrategy wrapper cache staleness guard (both directions). */
     private static final int WRAPPER_REFRESH_TICKS = 20;
@@ -332,8 +335,29 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
+        @Override
+        public void saveChangedInventory(AppEngInternalInventory inv) {
+            saveChanges(); markForUpdate();
+        }
+
+        @Override
+        public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+            rebuildFilter();
+        }
+
+        @Override
+        public boolean isClientSide() {
+            return level != null && level.isClientSide();
+        }
+    };
+    private final AppEngInternalInventory filterInv = new AppEngInternalInventory(filterInvHost, 1) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return !stack.isEmpty() && stack.getItem() instanceof OverloadedFilterComponentItem;
+        }
+    };
     private @Nullable DirectMEInsertInventory directInsertInv;
-    private boolean ejectRegistered = false;
     private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
@@ -393,14 +417,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         return directInsertInv;
     }
 
+    public AppEngInternalInventory getFilterInv() {
+        return filterInv;
+    }
+
     public void rebuildFilter() {
         if (directInsertInv == null) return;
-        var upgrades = getInterfaceLogic().getUpgrades();
-        ItemStack filterStack = ItemStack.EMPTY;
-        for (int i = 0; i < upgrades.size(); i++) {
-            var s = upgrades.getStackInSlot(i);
-            if (s.getItem() instanceof ICellWorkbenchItem) { filterStack = s; break; }
-        }
+        ItemStack filterStack = filterInv.getStackInSlot(0);
         if (filterStack.isEmpty()
                 || !(filterStack.getItem() instanceof ICellWorkbenchItem cwi)) {
             directInsertInv.setFilter(null); return;
@@ -471,7 +494,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     // ── Wireless connections ─────────────────────────────────────────────
 
-    public List<WirelessConnection> getConnections() { return connections; }
+    public List<WirelessConnection> getConnections() { return Collections.unmodifiableList(connections); }
 
     public void addOrUpdateConnection(WirelessConnection conn) {
         connections.removeIf(c ->
@@ -605,7 +628,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var wrappers = cst.resolveWrappers(targetLevel, conn);
         if (wrappers == null) return 0;
 
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST ? TRANSFER_BUDGET_FAST : TRANSFER_BUDGET_NORMAL;
+        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
+                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
+                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget = transferBudget;
         int moved  = 0;
 
@@ -666,7 +691,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         var config     = getInterfaceLogic().getConfig();
         int configSize = config.size();
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST ? TRANSFER_BUDGET_FAST : TRANSFER_BUDGET_NORMAL;
+        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
+                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
+                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget     = transferBudget;
         int moved      = 0;
 
@@ -742,22 +769,17 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var feKey = AppFluxHelper.FE_KEY; if (feKey == null) return;
         var grid = getMainNode().getGrid(); if (grid == null) return;
         if (interfaceMode == InterfaceMode.WIRELESS) tickWirelessEnergy(sl, feKey);
-        else if (energyOutputDir != null)            tickNormalEnergy(sl, feKey);
+        else if (energyOutputDir != null)            tickNormalEnergy(sl);
     }
 
-    private void tickNormalEnergy(ServerLevel sl, AEKey feKey) {
+    private void tickNormalEnergy(ServerLevel sl) {
         var tp = getBlockPos().relative(energyOutputDir);
         var st = sl.getCapability(Capabilities.EnergyStorage.BLOCK,
                 tp, energyOutputDir.getOpposite());
         if (st == null) return;
-        int cr = st.receiveEnergy(AppFluxHelper.TRANSFER_RATE, true);
-        if (cr <= 0) return;
         var mes = getMainNode().getGrid().getStorageService().getInventory();
         var src = IActionSource.ofMachine(this);
-        long ext = mes.extract(feKey, cr, Actionable.MODULATE, src);
-        if (ext <= 0) return;
-        int acc = st.receiveEnergy((int) ext, false);
-        if (ext - acc > 0) mes.insert(feKey, ext - acc, Actionable.MODULATE, src);
+        AppFluxHelper.pullPowerFromNetwork(mes, st, src);
     }
 
     // ── Wireless energy: timing-wheel scheduler ──────────────────────────
@@ -815,7 +837,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             var targetLevel = resolveTargetLevel(sl, entry.conn);
             var storage = targetLevel != null ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
             if (storage != null) {
-                canReceive[i]   = storage.receiveEnergy(Integer.MAX_VALUE, true);
+                canReceive[i]   = AppFluxHelper.simulateReceivable(storage);
                 maxCapacity[i]  = storage.getMaxEnergyStored();
                 storedEnergy[i] = storage.getEnergyStored();
                 total += canReceive[i];
@@ -978,7 +1000,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 registerEjectAt(srv, level.dimension(),
                         getBlockPos().relative(d), d.getOpposite());
         }
-        ejectRegistered = true;
     }
 
     private void registerEjectAt(net.minecraft.server.MinecraftServer srv,
@@ -1002,7 +1023,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 if (t!=null) t.invalidateCapabilities(dp.pos());
             }
         }
-        ejectRegistered = false;
     }
 
     @Override
@@ -1131,6 +1151,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var cl = new ListTag();
         for (var c : connections) cl.add(c.toTag());
         d.put(TAG_CONNECTIONS, cl);
+        filterInv.writeToNBT(d, TAG_FILTER_INV, r);
     }
 
     @Override
@@ -1162,6 +1183,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             for (int i = 0; i < cl.size(); i++)
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
+        filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        invalidateConnectionCache();
+        refreshEjectRegistrations();
     }
 
 }

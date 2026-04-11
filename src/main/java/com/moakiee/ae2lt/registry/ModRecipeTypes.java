@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
+import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe;
 import net.minecraft.core.registries.Registries;
@@ -38,6 +39,17 @@ public final class ModRecipeTypes {
                     () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "lightning_simulation")));
+
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningAssemblyRecipe>>
+            LIGHTNING_ASSEMBLY_SERIALIZER =
+                    RECIPE_SERIALIZERS.register("lightning_assembly", LightningAssemblyRecipe.Serializer::new);
+
+    public static final DeferredHolder<RecipeType<?>, RecipeType<LightningAssemblyRecipe>> LIGHTNING_ASSEMBLY_TYPE =
+            RECIPE_TYPES.register(
+                    "lightning_assembly",
+                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                            AE2LightningTech.MODID,
+                            "lightning_assembly")));
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<OverloadProcessingRecipe>>
             OVERLOAD_PROCESSING_SERIALIZER =

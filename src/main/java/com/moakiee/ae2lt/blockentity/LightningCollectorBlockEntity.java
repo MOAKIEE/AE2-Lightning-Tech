@@ -4,6 +4,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.security.IActionHost;
@@ -37,8 +39,11 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+    private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";
+    private static boolean warnedInvalidHighVoltageBaseRange;
+    private static boolean warnedInvalidExtremeVoltageBaseRange;
 
     private final LightningCollectorInventory inventory = new LightningCollectorInventory(this::onInventoryChanged);
 
@@ -88,22 +93,37 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         ItemStack crystal = getInstalledCrystal();
         boolean extremeHighVoltage = tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE;
         if (crystal.isEmpty()) {
+            int baseMin = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorEhvBaseMin()
+                    : AE2LTCommonConfig.lightningCollectorHvBaseMin();
+            int baseMax = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorEhvBaseMax()
+                    : AE2LTCommonConfig.lightningCollectorHvBaseMax();
+            if (baseMin > baseMax) {
+                warnInvalidBaseRange(extremeHighVoltage, baseMin, baseMax);
+            }
             return new OutputPreview(
-                    AE2LTCommonConfig.lightningCollectorBaseMin(extremeHighVoltage),
-                    AE2LTCommonConfig.lightningCollectorBaseMax(extremeHighVoltage));
+                    Math.min(baseMin, baseMax),
+                    Math.max(baseMin, baseMax));
         }
 
         if (crystal.is(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get())) {
-            int output = AE2LTCommonConfig.lightningCollectorPerfectOutput(extremeHighVoltage);
+            int output = extremeHighVoltage
+                    ? AE2LTCommonConfig.lightningCollectorPerfectEhvOutput()
+                    : AE2LTCommonConfig.lightningCollectorPerfectHvOutput();
             return new OutputPreview(output, output);
         }
 
         double progress = ElectroChimeCrystalItem.getCatalysisPercent(crystal);
         double center = Mth.lerp(
                 progress,
-                AE2LTCommonConfig.lightningCollectorCrystalStart(extremeHighVoltage),
-                AE2LTCommonConfig.lightningCollectorCrystalEnd(extremeHighVoltage));
-        int spread = Math.max(1, Mth.floor(center * AE2LTCommonConfig.lightningCollectorOutputSpreadRatio()));
+                extremeHighVoltage
+                        ? AE2LTCommonConfig.lightningCollectorEhvCrystalStart()
+                        : AE2LTCommonConfig.lightningCollectorHvCrystalStart(),
+                extremeHighVoltage
+                        ? AE2LTCommonConfig.lightningCollectorEhvCrystalEnd()
+                        : AE2LTCommonConfig.lightningCollectorHvCrystalEnd());
+        int spread = Math.max(1, Mth.floor(center * AE2LTCommonConfig.lightningCollectorSpreadRatio()));
         int min = Math.max(1, Mth.floor(center) - spread);
         int max = Math.max(min, Mth.ceil(center) + spread);
         return new OutputPreview(min, max);
@@ -235,16 +255,37 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         }
 
         int feed = feedAmount(rolledOutput);
+        int before = ElectroChimeCrystalItem.getCatalysisValue(crystal);
         int catalysis = ElectroChimeCrystalItem.addCatalysis(crystal, feed);
         if (catalysis >= ElectroChimeCrystalItem.getMaxCatalysis()) {
             inventory.setStackInSlot(LightningCollectorInventory.SLOT_CRYSTAL,
                     new ItemStack(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get()));
         }
-        return feed;
+        return Math.max(0, catalysis - before);
     }
 
     private static int feedAmount(int rolledOutput) {
         return Math.max(1, Mth.floor(rolledOutput * AE2LTCommonConfig.lightningCollectorCrystalFeedRatio()));
+    }
+
+    private static void warnInvalidBaseRange(boolean extremeHighVoltage, int min, int max) {
+        if (extremeHighVoltage) {
+            if (warnedInvalidExtremeVoltageBaseRange) {
+                return;
+            }
+            warnedInvalidExtremeVoltageBaseRange = true;
+        } else {
+            if (warnedInvalidHighVoltageBaseRange) {
+                return;
+            }
+            warnedInvalidHighVoltageBaseRange = true;
+        }
+
+        LOG.warn(
+                "Invalid lightning collector {} base output range: min={} max={}. Swapping values as a fallback.",
+                extremeHighVoltage ? "extremeHighVoltage" : "highVoltage",
+                min,
+                max);
     }
 
     private void onInventoryChanged() {

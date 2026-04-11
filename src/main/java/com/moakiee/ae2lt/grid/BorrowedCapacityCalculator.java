@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  * <p>
  * Flow network model:
  * <ul>
- *   <li><b>Sources</b>: overloaded controllers (cap={@code CHANNELS_PER_CONTROLLER}),
+ *   <li><b>Sources</b>: overloaded controllers (cap={@code channelsPerController}),
  *       vanilla controller faces (cap={@code 32×factor}).</li>
  *   <li><b>Relays</b> (node-split): overloaded cables/controllers = ∞,
  *       dense cables = 32×f, normal cables = 8×f.</li>
@@ -199,7 +199,7 @@ public final class BorrowedCapacityCalculator {
         }
 
         // 3) overloaded controller sources: S → OC_in
-        int supply = OverloadedChannelOwnerHelper.CHANNELS_PER_CONTROLLER * mode.getCableCapacityFactor();
+        int supply = OverloadedChannelOwnerHelper.supplyPerController(mode.getCableCapacityFactor());
         for (var oc : overloadedControllers) {
             int ci = idx.getInt(oc);
             dinic.addEdge(S, 2 * ci, supply);

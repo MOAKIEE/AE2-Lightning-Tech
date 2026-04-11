@@ -3,9 +3,6 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.List;
 import java.util.Optional;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
-import java.util.Map;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
@@ -25,26 +22,24 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
-import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.RelativeSide;
-import appeng.api.stacks.AEItemKey;
-import appeng.api.stacks.AEKeyType;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
-import appeng.me.storage.CompositeStorage;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
-import appeng.parts.automation.StackWorldBehaviors;
 
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
+import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
+import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberEnergyStorage;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
@@ -58,7 +53,8 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntity
-        implements IUpgradeableObject, IActionHost {
+    implements IUpgradeableObject,
+        GridRecipeMachineHost<LightningSimulationLockedRecipe, LightningSimulationRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
     private static final String TAG_UPGRADES = "Upgrades";
@@ -81,15 +77,14 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final LightningSimulationChamberLogic logic;
-    @SuppressWarnings("UnstableApiUsage")
-    private final HashMap<Direction, Map<AEKeyType, ExternalStorageStrategy>> exportStrategies = new HashMap<>();
-
     private LightningSimulationLockedRecipe lockedRecipe;
     private long consumedEnergy;
     private int processingTicksSpent;
     private boolean working;
     private boolean autoExport;
     private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
+    private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
+            new AdjacentItemAutoExportHelper.DirectionalTargetCache();
 
     public LightningSimulationChamberBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(), pos, blockState);
@@ -231,53 +226,45 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         this.allowedOutputs = allowedOutputs.isEmpty()
                 ? EnumSet.noneOf(RelativeSide.class)
                 : EnumSet.copyOf(allowedOutputs);
+        invalidateExportTargets();
         saveChanges();
         logic.onStateChanged();
     }
 
     public boolean hasAutoExportWork() {
-        return autoExport && !inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OUTPUT).isEmpty();
+        return !allowedOutputs.isEmpty() && AdjacentItemAutoExportHelper.hasAnyOutput(
+                autoExport,
+                LightningSimulationChamberInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot);
     }
 
     public boolean pushOutResult() {
-        if (!hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
+        if (allowedOutputs.isEmpty() || !hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
             return false;
         }
 
-        var orientation = getOrientation();
-        for (var side : allowedOutputs) {
-            var target = getExportTarget(serverLevel, orientation.getSide(side));
-            if (target == null) {
-                continue;
-            }
+        return AdjacentItemAutoExportHelper.pushOutResult(
+                this,
+                getOrientation(),
+                allowedOutputs,
+                LightningSimulationChamberInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot,
+                (slot, amount) -> inventory.extractItem(slot, amount, false),
+                remainder -> {
+                    ItemStack leftover = inventory.insertRecipeOutput(remainder, false);
+                    if (!leftover.isEmpty() && level != null) {
+                        Block.popResource(level, worldPosition, leftover);
+                    }
+                },
+                direction -> getExportTarget(serverLevel, direction));
+    }
 
-            ItemStack output = inventory.getStackInSlot(LightningSimulationChamberInventory.SLOT_OUTPUT);
-            if (output.isEmpty()) {
-                return false;
-            }
-
-            var key = AEItemKey.of(output);
-            if (key == null) {
-                continue;
-            }
-
-            ItemStack extracted = inventory.extractItem(
-                    LightningSimulationChamberInventory.SLOT_OUTPUT,
-                    output.getCount(),
-                    false);
-            long inserted = target.insert(key, extracted.getCount(), Actionable.MODULATE, IActionSource.ofMachine(this));
-
-            if (inserted < extracted.getCount()) {
-                ItemStack remainder = extracted.copyWithCount((int) (extracted.getCount() - inserted));
-                inventory.insertRecipeOutput(remainder, false);
-            }
-
-            if (inserted > 0) {
-                return true;
-            }
+    public void onNeighborChanged(BlockPos changedPos) {
+        if (changedPos != null && worldPosition.distManhattan(changedPos) == 1) {
+            invalidateExportTargets();
         }
-
-        return false;
     }
 
     public long getAvailableHighVoltage() {
@@ -295,66 +282,61 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     public boolean completeLockedRecipe(
             LightningSimulationLockedRecipe lockedRecipe,
             LightningSimulationRecipeCandidate candidate) {
-        if (!inventory.canAcceptRecipeOutput(candidate.recipe().value().getResultStack())) {
-            return false;
-        }
+        boolean completed = SingleOutputLightningRecipeExecutor.complete(
+                LightningSimulationChamberInventory.SLOT_INPUT_0,
+                LightningSimulationChamberInventory.SLOT_INPUT_2,
+                candidate.match()::getConsumptionForSlot,
+                candidate.recipe().value().getResultStack(),
+                () -> LightningSimulationRecipeService.resolveLightningConsumption(
+                                inventory,
+                                lockedRecipe.lightningTier(),
+                                lockedRecipe.lightningCost(),
+                                getAvailableHighVoltage(),
+                                getAvailableExtremeHighVoltage())
+                        .map(plan -> new SingleOutputLightningRecipeExecutor.LightningPlan(plan.key(), plan.amount())),
+                new SingleOutputLightningRecipeExecutor.InventoryAdapter() {
+                    @Override
+                    public boolean canAcceptOutput(ItemStack result) {
+                        return inventory.canAcceptRecipeOutput(result);
+                    }
 
-        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
-             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
-             slot++) {
-            int toConsume = candidate.match().getConsumptionForSlot(slot);
-            if (toConsume <= 0) {
-                continue;
-            }
+                    @Override
+                    public ItemStack getStackInSlot(int slot) {
+                        return inventory.getStackInSlot(slot);
+                    }
 
-            if (inventory.getStackInSlot(slot).getCount() < toConsume) {
-                return false;
-            }
-        }
+                    @Override
+                    public ItemStack extractItem(int slot, int amount) {
+                        return inventory.extractItem(slot, amount, false);
+                    }
 
-        var lightningPlan = LightningSimulationRecipeService.resolveLightningConsumption(
-                inventory,
-                lockedRecipe.lightningTier(),
-                lockedRecipe.lightningCost(),
-                getAvailableHighVoltage(),
-                getAvailableExtremeHighVoltage());
-        if (lightningPlan.isEmpty()) {
-            return false;
-        }
-        var plan = lightningPlan.get();
-        if (simulateLightningExtract(plan.key(), plan.amount()) < plan.amount()) {
-            return false;
-        }
+                    @Override
+                    public ItemStack insertOutput(ItemStack stack) {
+                        return inventory.insertRecipeOutput(stack, false);
+                    }
 
-        ItemStack[] extractedInputs = new ItemStack[3];
-        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
-             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
-             slot++) {
-            int toConsume = candidate.match().getConsumptionForSlot(slot);
-            if (toConsume <= 0) {
-                continue;
-            }
+                    @Override
+                    public void insertInput(int slot, ItemStack stack) {
+                        inventory.insertItem(slot, stack, false);
+                    }
+                },
+                new SingleOutputLightningRecipeExecutor.LightningAdapter() {
+                    @Override
+                    public long simulateExtract(LightningKey key, long amount) {
+                        return simulateLightningExtract(key, amount);
+                    }
 
-            ItemStack extracted = inventory.extractItem(slot, toConsume, false);
-            if (extracted.getCount() != toConsume) {
-                rollbackInputs(extractedInputs);
-                return false;
-            }
-            extractedInputs[slot] = extracted;
-        }
+                    @Override
+                    public long extract(LightningKey key, long amount) {
+                        return extractLightning(key, amount);
+                    }
 
-        long extractedLightning = extractLightning(plan.key(), plan.amount());
-        if (extractedLightning < plan.amount()) {
-            rollbackInputs(extractedInputs);
-            if (extractedLightning > 0L) {
-                insertLightning(plan.key(), extractedLightning);
-            }
-            return false;
-        }
-
-        if (!inventory.insertRecipeOutput(candidate.recipe().value().getResultStack(), false).isEmpty()) {
-            insertLightning(plan.key(), extractedLightning);
-            rollbackInputs(extractedInputs);
+                    @Override
+                    public long insert(LightningKey key, long amount) {
+                        return insertLightning(key, amount);
+                    }
+                });
+        if (!completed) {
             return false;
         }
 
@@ -414,30 +396,14 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         logic.onStateChanged();
     }
 
-    @SuppressWarnings("UnstableApiUsage")
-    private CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
-        if (exportStrategies.get(direction) == null) {
-            exportStrategies.put(
-                    direction,
-                    StackWorldBehaviors.createExternalStorageStrategies(
-                            level,
-                            worldPosition.relative(direction),
-                            direction.getOpposite()));
-        }
+    private appeng.me.storage.CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
+        return exportTargetCache.resolve(level, worldPosition, direction);
+    }
 
-        var externalStorages = new IdentityHashMap<AEKeyType, appeng.api.storage.MEStorage>(2);
-        for (var entry : exportStrategies.get(direction).entrySet()) {
-            var wrapper = entry.getValue().createWrapper(false, () -> {});
-            if (wrapper != null) {
-                externalStorages.put(entry.getKey(), wrapper);
-            }
-        }
-
-        if (!externalStorages.isEmpty()) {
-            return new CompositeStorage(externalStorages);
-        }
-
-        return null;
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        invalidateExportTargets();
     }
 
     @Override
@@ -473,7 +439,10 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         allowedOutputs.clear();
         ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
         for (int i = 0; i < outputTags.size(); i++) {
-            allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            try {
+                allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            } catch (IllegalArgumentException ignored) {
+            }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
             lockedRecipe = LightningSimulationLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
@@ -488,6 +457,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
         }
         working = lockedRecipe != null;
+        invalidateExportTargets();
     }
 
     @Override
@@ -554,15 +524,34 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         return EnumSet.allOf(Direction.class);
     }
 
-    private void rollbackInputs(ItemStack[] extractedInputs) {
-        for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
-             slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
-             slot++) {
-            ItemStack extracted = extractedInputs[slot];
-            if (extracted != null && !extracted.isEmpty()) {
-                inventory.insertItem(slot, extracted, false);
-            }
-        }
+    private void invalidateExportTargets() {
+        exportTargetCache.invalidate();
+    }
+
+    @Override
+    public boolean hasProcessableRecipe() {
+        return findProcessableRecipe().isPresent();
+    }
+
+    @Override
+    public long getMachineStoredEnergy() {
+        return energyStorage.getStoredEnergyLong();
+    }
+
+    @Override
+    public IEnergyStorage getMachineEnergyStorage() {
+        return energyStorage;
+    }
+
+    @Override
+    public int extractMachineEnergy(long amount) {
+        return energyStorage.extractInternal(amount, false);
+    }
+
+    @Override
+    public void onEnergyConsumed(int consumed) {
+        addConsumedEnergy(consumed);
+        incrementProcessingTicksSpent();
     }
 
     private long simulateLightningExtract(LightningKey key, long amount) {

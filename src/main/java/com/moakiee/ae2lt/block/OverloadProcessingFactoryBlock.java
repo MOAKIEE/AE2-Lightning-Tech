@@ -55,6 +55,15 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
     }
 
     @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos,
+                                Block block, BlockPos fromPos, boolean isMoving) {
+        var be = getBlockEntity(level, pos);
+        if (be != null) {
+            be.onNeighborChanged(fromPos);
+        }
+    }
+
+    @Override
     protected InteractionResult useWithoutItem(
             BlockState state, Level level, net.minecraft.core.BlockPos pos, Player player, BlockHitResult hitResult) {
         var be = getBlockEntity(level, pos);

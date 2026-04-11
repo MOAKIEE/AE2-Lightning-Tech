@@ -212,20 +212,15 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
             rawMatches.add(matchingSlots);
         }
 
-        for (int slotIndex = 0; slotIndex < slotStacks.size(); slotIndex++) {
-            if (slotFlexibility[slotIndex] == 0) {
-                return Optional.empty();
-            }
-        }
-
         List<RequirementState> requirements = new ArrayList<>(itemInputs.size());
         for (int requirementIndex = 0; requirementIndex < itemInputs.size(); requirementIndex++) {
             OverloadProcessingIngredient requirement = itemInputs.get(requirementIndex);
             List<Integer> matchingSlots = rawMatches.get(requirementIndex);
+            // When multiple slots can satisfy the same ingredient, prefer the
+            // machine's natural top-to-bottom slot order so repeated crafts
+            // drain upper rows before lower ones.
             matchingSlots.sort(Comparator
-                    .comparingInt((Integer slotIndex) -> slotFlexibility[slotIndex])
-                    .thenComparing(Comparator.comparingInt(
-                            (Integer slotIndex) -> slotStacks.get(slotIndex).stack().getCount()).reversed()));
+                    .comparingInt((Integer slotIndex) -> slotStacks.get(slotIndex).slot()));
             requirements.add(new RequirementState(
                     multiplyExactToInt(requirement.count(), operations),
                     matchingSlots.stream().mapToInt(Integer::intValue).toArray()));

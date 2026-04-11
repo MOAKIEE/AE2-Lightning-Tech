@@ -73,6 +73,8 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
     @Override
     protected List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
         if (builder.getOptionalParameter(LootContextParams.THIS_ENTITY) == null) {
+            // Intentional design: non-entity destruction paths such as explosions or piston-related
+            // breakage should not drop cluster items.
             return List.of();
         }
         return super.getDrops(state, builder);

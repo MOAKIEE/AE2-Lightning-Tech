@@ -74,6 +74,9 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
     @GuiSync(32)
     public long equivalentHighVoltageCost;
 
+    @GuiSync(33)
+    public boolean lightningInsufficient;
+
     private final LightningSimulationChamberBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(3);
     private final Slot catalystSlot;
@@ -152,9 +155,11 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
                 equivalentHighVoltageCost = LightningSimulationRecipeService.getEquivalentHighVoltageCost(
                         tier,
                         lightningCost);
+                lightningInsufficient = lockedRecipe != null && plan.isEmpty();
             } else {
                 matrixSubstitutionActive = false;
                 equivalentHighVoltageCost = 0L;
+                lightningInsufficient = false;
             }
         }
 
@@ -289,6 +294,18 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
         }
 
         return Component.translatable("ae2lt.gui.lightning_simulation.substitution.inactive");
+    }
+
+    public boolean isLightningInsufficient() {
+        return lightningInsufficient;
+    }
+
+    public Component getStatusMessage() {
+        return Component.translatable(
+                "ae2lt.gui.lightning_simulation.status.label",
+                Component.translatable(lightningInsufficient
+                        ? "ae2lt.gui.lightning_simulation.status.waiting_lightning"
+                        : "ae2lt.gui.lightning_simulation.status.normal"));
     }
 
     public double getProgress() {

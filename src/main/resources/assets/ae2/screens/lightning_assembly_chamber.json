@@ -1,0 +1,37 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "slots": {
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_0": { "left": 8, "top": 18 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_1": { "left": 26, "top": 18 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_2": { "left": 44, "top": 18 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_3": { "left": 8, "top": 36 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_4": { "left": 26, "top": 36 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_5": { "left": 44, "top": 36 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_6": { "left": 8, "top": 54 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_7": { "left": 26, "top": 54 },
+    "AE2LT_LIGHTNING_ASSEMBLY_INPUT_8": { "left": 44, "top": 54 },
+    "AE2LT_LIGHTNING_ASSEMBLY_CATALYST": { "left": 70, "top": 36 },
+    "MACHINE_OUTPUT": { "left": 130, "top": 36 }
+  },
+  "text": {
+    "dialog_title": {
+      "text": { "translate": "block.ae2lt.lightning_assembly_chamber" },
+      "position": { "left": 8, "top": 6 }
+    }
+  },
+  "images": {
+    "energyBar": {
+      "texture": "ae2:textures/guis/inscriber.png",
+      "srcRect": [176, 0, 6, 18]
+    },
+    "processOverlay": {
+      "texture": "ae2lt:textures/guis/lightning_assembly_chamber.png",
+      "srcRect": [177, 48, 50, 46]
+    }
+  },
+  "widgets": {
+    "processArea": { "left": 88, "top": 22 },
+    "energyBar": { "left": 152, "top": 36 }
+  }
+}

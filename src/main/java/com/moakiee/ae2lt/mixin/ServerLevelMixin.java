@@ -14,7 +14,8 @@ public abstract class ServerLevelMixin {
             method = "tickChunk",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/server/level/ServerLevel;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z"))
+                    target = "Lnet/minecraft/server/level/ServerLevel;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z",
+                    ordinal = 0))
     private Entity ae2lt$markNaturalWeatherLightning(Entity entity) {
         if (entity instanceof LightningBolt lightningBolt) {
             lightningBolt.getPersistentData().putBoolean(

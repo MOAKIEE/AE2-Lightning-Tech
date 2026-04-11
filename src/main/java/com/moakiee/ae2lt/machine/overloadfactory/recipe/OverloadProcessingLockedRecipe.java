@@ -41,8 +41,9 @@ public final class OverloadProcessingLockedRecipe {
         this.totalEnergy = totalEnergy;
         this.totalLightningCost = totalLightningCost;
         this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
-        if (parallel <= 0 || parallel > OverloadProcessingFactoryInventory.MATRIX_SLOT_LIMIT) {
-            throw new IllegalArgumentException("parallel must be in range 1..128");
+        int maxParallel = OverloadProcessingFactoryInventory.getMaxParallel();
+        if (parallel <= 0 || parallel > maxParallel) {
+            throw new IllegalArgumentException("parallel must be in range 1.." + maxParallel);
         }
         if (totalEnergy <= 0L) {
             throw new IllegalArgumentException("totalEnergy must be positive");

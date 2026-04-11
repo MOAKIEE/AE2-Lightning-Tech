@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.fluids.FluidStack;
 
@@ -27,16 +28,19 @@ public final class OverloadProcessingRecipeService {
             .thenComparing(holder -> holder.id().toString());
 
     private static Object cachedRawRecipeList;
+    private static RecipeManager cachedRecipeManager;
     private static List<RecipeHolder<OverloadProcessingRecipe>> sortedRecipeCache;
 
     private OverloadProcessingRecipeService() {
     }
 
     private static List<RecipeHolder<OverloadProcessingRecipe>> getSortedRecipes(Level level) {
-        var raw = level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
-        if (raw != cachedRawRecipeList) {
+        RecipeManager recipeManager = level.getRecipeManager();
+        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
+        if (recipeManager != cachedRecipeManager || raw != cachedRawRecipeList || sortedRecipeCache == null) {
             sortedRecipeCache = new ArrayList<>(raw);
             sortedRecipeCache.sort(RECIPE_ORDER);
+            cachedRecipeManager = recipeManager;
             cachedRawRecipeList = raw;
         }
         return sortedRecipeCache;
@@ -66,7 +70,7 @@ public final class OverloadProcessingRecipeService {
                     input,
                     inventory,
                     outputFluid,
-                    inventory.getInstalledMatrixCount(),
+                    inventory.getInstalledParallelCapacity(),
                     availableHighVoltage,
                     availableExtremeHighVoltage);
             if (parallel <= 0) {
@@ -159,9 +163,15 @@ public final class OverloadProcessingRecipeService {
         }
 
         try {
+            int maxParallel = OverloadProcessingFactoryInventory.getMaxParallel();
+            if (maxParallel <= 1) {
+                return Math.multiplyExact(singleOperationEnergy, parallel);
+            }
+            long divisor = (long) (maxParallel * 2 - 2);
+            long numeratorFactor = (long) (parallel + maxParallel * 2 - 3);
             long linearEnergy = Math.multiplyExact(singleOperationEnergy, parallel);
-            long scaled = Math.multiplyExact(linearEnergy, (long) (parallel + 253));
-            return divideCeil(scaled, 254L);
+            long scaled = Math.multiplyExact(linearEnergy, numeratorFactor);
+            return divideCeil(scaled, divisor);
         } catch (ArithmeticException e) {
             return Long.MAX_VALUE;
         }
@@ -221,10 +231,10 @@ public final class OverloadProcessingRecipeService {
             OverloadProcessingRecipeInput input,
             OverloadProcessingFactoryInventory inventory,
             FluidStack outputFluid,
-            int matrixCount,
+            int parallelCapacity,
             long availableHighVoltage,
             long availableExtremeHighVoltage) {
-        int upper = Math.min(OverloadProcessingFactoryInventory.MATRIX_SLOT_LIMIT, matrixCount);
+        int upper = parallelCapacity;
         if (upper <= 0) {
             return 0;
         }

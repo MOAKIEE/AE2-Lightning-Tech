@@ -15,6 +15,9 @@ import net.minecraft.world.item.component.CustomData;
 
 public class ElectroChimeCrystalItem extends Item {
     private static final String TAG_CATALYSIS = "ae2lt.catalysis_value";
+    private static final int STAGE_1_THRESHOLD = 4;
+    private static final int STAGE_2_THRESHOLD = 16;
+    private static final int STAGE_3_THRESHOLD = 64;
 
     public ElectroChimeCrystalItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -51,13 +54,13 @@ public class ElectroChimeCrystalItem extends Item {
     }
 
     public static int getCatalysisStage(int catalysisValue) {
-        if (catalysisValue >= AE2LTCommonConfig.electroChimeStageThreshold(2)) {
+        if (catalysisValue >= stageThreshold(2)) {
             return 3;
         }
-        if (catalysisValue >= AE2LTCommonConfig.electroChimeStageThreshold(1)) {
+        if (catalysisValue >= stageThreshold(1)) {
             return 2;
         }
-        if (catalysisValue >= AE2LTCommonConfig.electroChimeStageThreshold(0)) {
+        if (catalysisValue >= stageThreshold(0)) {
             return 1;
         }
         return 0;
@@ -88,5 +91,17 @@ public class ElectroChimeCrystalItem extends Item {
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.stage",
                 getStageName(stack)).withStyle(ChatFormatting.LIGHT_PURPLE));
+    }
+
+    private static int stageThreshold(int stage) {
+        int maxCatalysis = getMaxCatalysis();
+        int stage1 = Mth.clamp(STAGE_1_THRESHOLD, 1, maxCatalysis);
+        int stage2 = Mth.clamp(STAGE_2_THRESHOLD, stage1, maxCatalysis);
+        int stage3 = Mth.clamp(STAGE_3_THRESHOLD, stage2, maxCatalysis);
+        return switch (stage) {
+            case 0 -> stage1;
+            case 1 -> stage2;
+            default -> stage3;
+        };
     }
 }

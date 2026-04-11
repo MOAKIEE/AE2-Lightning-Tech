@@ -29,7 +29,9 @@ public final class LightningKey extends AEKey {
 
     public static final LightningKey HIGH_VOLTAGE = new LightningKey(Tier.HIGH_VOLTAGE);
     public static final LightningKey EXTREME_HIGH_VOLTAGE = new LightningKey(Tier.EXTREME_HIGH_VOLTAGE);
-        public static final MapCodec<LightningKey> MAP_CODEC =
+    // Be permissive when decoding persisted data: if "tier" is missing, fall back to
+    // HIGH_VOLTAGE instead of failing hard and risking broken cell/network data migration.
+    public static final MapCodec<LightningKey> MAP_CODEC =
             Tier.CODEC.optionalFieldOf("tier", Tier.HIGH_VOLTAGE)
                 .xmap(LightningKey::of, LightningKey::tier);
 
@@ -55,6 +57,8 @@ public final class LightningKey extends AEKey {
         public static Tier fromOrdinal(int ordinal) {
             return switch (ordinal) {
                 case 1 -> EXTREME_HIGH_VOLTAGE;
+                // Unknown packet values intentionally degrade to the safe baseline tier
+                // so malformed or future-facing data does not hard-fail the connection.
                 default -> HIGH_VOLTAGE;
             };
         }

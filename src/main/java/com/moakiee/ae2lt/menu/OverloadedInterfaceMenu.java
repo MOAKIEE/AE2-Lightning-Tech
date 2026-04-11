@@ -10,6 +10,7 @@ import java.util.Set;
 import com.google.common.collect.ArrayListMultimap;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
+import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 
 import net.minecraft.core.Direction;
@@ -34,6 +35,8 @@ import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.InterfaceMenu;
 import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.menu.implementations.SetStockAmountMenu;
+import appeng.api.inventories.InternalInventory;
+import appeng.client.gui.Icon;
 import appeng.menu.slot.AppEngSlot;
 
 public class OverloadedInterfaceMenu extends InterfaceMenu {
@@ -91,6 +94,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
     private final Set<Slot> storageSlotSet;
     private final Set<Slot> containerSlotSet;
     private final List<Slot> allConfigSlots;
+    private Slot filterSlot;
     private int lastShownPage = -1;
 
     public OverloadedInterfaceMenu(int id, Inventory playerInventory, InterfaceLogicHost host) {
@@ -98,6 +102,12 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         this.host = host;
 
         remapSlotSemantics();
+
+        if (host instanceof OverloadedInterfaceBlockEntity be) {
+            var filterSlot = new OverloadedFilterSlot(be.getFilterInv(), 0);
+            filterSlot.setNotDraggable();
+            this.filterSlot = this.addSlot(filterSlot, SlotSemantics.UPGRADE);
+        }
 
         var logic = host.getInterfaceLogic();
         int configSize = logic.getConfig().size();
@@ -168,6 +178,10 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
 
     public List<Slot> getAllConfigSlots() {
         return allConfigSlots;
+    }
+
+    public Slot getFilterSlot() {
+        return filterSlot;
     }
 
     private void syncFromBE() {
@@ -464,6 +478,15 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         if (slot.hasItem()) {
             var stack = slot.getItem();
 
+            if (stack.getItem() instanceof OverloadedFilterComponentItem) {
+                int beforeCount = stack.getCount();
+                var superResult = super.quickMoveStack(player, idx);
+                int afterCount = slot.hasItem() ? slot.getItem().getCount() : 0;
+                if (afterCount < beforeCount) {
+                    return superResult;
+                }
+            }
+
             if (Upgrades.isUpgradeCardItem(stack)) {
                 int beforeCount = stack.getCount();
                 var superResult = super.quickMoveStack(player, idx);
@@ -535,6 +558,23 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
         super.broadcastChanges();
         if (lastShownPage != currentPage) {
             showPage(currentPage);
+        }
+    }
+
+    private static final class OverloadedFilterSlot extends AppEngSlot {
+        private OverloadedFilterSlot(InternalInventory inv, int invSlot) {
+            super(inv, invSlot);
+            setIcon(Icon.BACKGROUND_STORAGE_CELL);
+        }
+
+        @Override
+        public boolean mayPlace(ItemStack stack) {
+            return !stack.isEmpty() && stack.getItem() instanceof OverloadedFilterComponentItem;
+        }
+
+        @Override
+        public int getMaxStackSize() {
+            return 1;
         }
     }
 }

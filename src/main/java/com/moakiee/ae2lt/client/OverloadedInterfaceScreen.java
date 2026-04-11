@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
@@ -14,17 +15,22 @@ import net.minecraft.world.inventory.Slot;
 import appeng.api.config.FuzzyMode;
 import appeng.api.config.Settings;
 import appeng.client.gui.Icon;
-import appeng.client.gui.implementations.UpgradeableScreen;
+import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.IconButton;
 import appeng.client.gui.widgets.ServerSettingToggleButton;
 import appeng.client.gui.widgets.SettingToggleButton;
+import appeng.client.gui.widgets.ToolboxPanel;
+import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.core.definitions.AEItems;
 import appeng.core.localization.ButtonToolTips;
+import appeng.core.localization.GuiText;
+import appeng.api.upgrades.Upgrades;
+import appeng.menu.SlotSemantics;
 
 
-public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInterfaceMenu> {
+public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceMenu> {
 
     private static final int SLOTS_PER_PAGE = 18;
     private static final int COLS = 9;
@@ -49,6 +55,18 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
     public OverloadedInterfaceScreen(OverloadedInterfaceMenu menu, Inventory playerInventory,
                                      Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
+
+        var filterSlot = menu.getFilterSlot();
+        var upgradeSlots = menu.getSlots(SlotSemantics.UPGRADE).stream()
+                .filter(slot -> slot != filterSlot)
+                .collect(Collectors.toList());
+        widgets.add("upgrades", new UpgradesPanel(upgradeSlots, this::getCompatibleUpgrades));
+        if (filterSlot != null) {
+            widgets.add("overloadedFilter", new UpgradesPanel(List.of(filterSlot), List::of));
+        }
+        if (menu.getToolbox().isPresent()) {
+            this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
+        }
 
         this.fuzzyMode = new ServerSettingToggleButton<>(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
         addToLeftToolbar(this.fuzzyMode);
@@ -196,6 +214,13 @@ public class OverloadedInterfaceScreen extends UpgradeableScreen<OverloadedInter
                 }
             }
         }
+    }
+
+    private List<Component> getCompatibleUpgrades() {
+        var list = new ArrayList<Component>();
+        list.add(GuiText.CompatibleUpgrades.text());
+        list.addAll(Upgrades.getTooltipLinesForMachine(menu.getUpgrades().getUpgradableItem()));
+        return list;
     }
 
 

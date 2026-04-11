@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.logic;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -11,8 +12,6 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class LightningBlastTaskManager {
-    private static final int GLOBAL_BLOCK_BUDGET_PER_TICK = 2400;
-    private static final int GLOBAL_LIGHTNING_BUDGET_PER_TICK = 8;
     private static final List<LightningBlastTask> ACTIVE_TASKS = new ArrayList<>();
 
     private LightningBlastTaskManager() {
@@ -36,8 +35,8 @@ public final class LightningBlastTaskManager {
             return;
         }
 
-        int remainingBlockBudget = GLOBAL_BLOCK_BUDGET_PER_TICK;
-        int remainingLightningBudget = GLOBAL_LIGHTNING_BUDGET_PER_TICK;
+        int remainingBlockBudget = AE2LTCommonConfig.overloadTntGlobalBlockBudgetPerTick();
+        int remainingLightningBudget = AE2LTCommonConfig.overloadTntGlobalLightningBudgetPerTick();
         Iterator<LightningBlastTask> iterator = ACTIVE_TASKS.iterator();
         int remainingTasks = ACTIVE_TASKS.size();
         while (iterator.hasNext()) {

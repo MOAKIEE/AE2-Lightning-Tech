@@ -5,8 +5,10 @@ import org.jetbrains.annotations.Nullable;
 import appeng.api.storage.cells.ICellHandler;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
+import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 
 public final class InfiniteCellHandler implements ICellHandler {
@@ -17,16 +19,22 @@ public final class InfiniteCellHandler implements ICellHandler {
 
     @Override
     public boolean isCell(ItemStack is) {
-        return is.getItem() instanceof InfiniteStorageCellItem;
+        Item item = is.getItem();
+        return item instanceof InfiniteStorageCellItem || item instanceof FixedInfiniteCellItem;
     }
 
     @Override
     public @Nullable StorageCell getCellInventory(ItemStack is, @Nullable ISaveProvider host) {
-        if (!(is.getItem() instanceof InfiniteStorageCellItem cell)) return null;
-        return InfiniteCellInventory.create(
-                is, null,
-                cell.getBytesPerType(), cell.getMaxTypes(),
-                cell.getCapacityLo(), cell.getCapacityHi(),
-                cell.getIdleDrain());
+        if (is.getItem() instanceof InfiniteStorageCellItem cell) {
+            return InfiniteCellInventory.create(
+                    is, null,
+                    cell.getBytesPerType(), cell.getMaxTypes(),
+                    cell.getCapacityLo(), cell.getCapacityHi(),
+                    cell.getIdleDrain());
+        }
+        if (is.getItem() instanceof FixedInfiniteCellItem) {
+            return new FixedInfiniteCellInventory(is, 32);
+        }
+        return null;
     }
 }

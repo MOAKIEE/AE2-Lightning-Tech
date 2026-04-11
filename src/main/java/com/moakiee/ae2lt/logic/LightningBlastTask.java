@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.logic;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
@@ -16,6 +17,12 @@ import net.minecraft.world.phys.Vec3;
 
 public class LightningBlastTask {
     public record TickResult(int consumedBlocks, int consumedLightning) {}
+    private record BlastCandidate(BlockPos pos, double priority) implements Comparable<BlastCandidate> {
+        @Override
+        public int compareTo(BlastCandidate other) {
+            return Double.compare(this.priority, other.priority);
+        }
+    }
 
     public static final int DEFAULT_RADIUS = 48;
     public static final int DEFAULT_BLOCKS_PER_TICK = 1800;
@@ -26,6 +33,16 @@ public class LightningBlastTask {
     public static final int DEFAULT_SHORT_THUNDERSTORM_TICKS = 160;
     public static final int DEFAULT_LIGHTNING_HORIZONTAL_RADIUS = 24;
     public static final int DEFAULT_SHELLS_PER_TICK = 3;
+    private static final double CORE_RADIUS_RATIO = 0.28D;
+    private static final double INNER_BLAST_SCORE = 24.0D;
+    private static final double OUTER_BLAST_SCORE = 3.5D;
+    private static final double CORE_BLAST_BONUS = 10.0D;
+    private static final double HARDNESS_WEIGHT = 1.05D;
+    private static final double RESISTANCE_WEIGHT = 0.14D;
+    private static final double CHANCE_FLOOR = 3.0D;
+    private static final double CHANCE_DIVISOR = 9.0D;
+    private static final int QUEUE_LOOKAHEAD_SHELLS = 8;
+    private static final double SHELL_PRIORITY_JITTER = 2.75D;
 
     private static final Set<Block> PROTECTED_BLOCKS = Set.of(
             Blocks.BEDROCK,
@@ -42,9 +59,8 @@ public class LightningBlastTask {
     private final int blocksPerTick;
     private final int shellsPerTick;
 
-    private int currentShellRadius;
-    private List<BlockPos> currentShellBlocks;
-    private int currentShellIndex;
+    private final PriorityQueue<BlastCandidate> pendingBlastBlocks;
+    private int nextShellRadiusToQueue;
     private boolean scanFinished;
     private int destroyedBlocks;
     private boolean strikeSequenceStarted;
@@ -68,9 +84,8 @@ public class LightningBlastTask {
         this.radiusSquared = this.radius * this.radius;
         this.blocksPerTick = Math.max(1, blocksPerTick);
         this.shellsPerTick = Math.max(1, shellsPerTick);
-        this.currentShellRadius = 0;
-        this.currentShellBlocks = List.of(this.center);
-        this.currentShellIndex = 0;
+        this.pendingBlastBlocks = new PriorityQueue<>();
+        this.nextShellRadiusToQueue = 0;
     }
 
     public ServerLevel getLevel() {
@@ -154,55 +169,55 @@ public class LightningBlastTask {
             return 0;
         }
 
+        queuePendingShells();
         int destroyLimit = Math.min(this.blocksPerTick, blockBudget);
         int destroyedThisTick = 0;
-        int completedShells = 0;
 
         while (!this.scanFinished && destroyedThisTick < destroyLimit) {
-            if (this.currentShellIndex >= this.currentShellBlocks.size()) {
-                completedShells++;
-                if (this.currentShellRadius >= this.radius) {
+            if (this.pendingBlastBlocks.isEmpty()) {
+                queuePendingShells();
+                if (this.pendingBlastBlocks.isEmpty()) {
                     this.scanFinished = true;
                     break;
                 }
-
-                if (completedShells >= this.shellsPerTick) {
-                    break;
-                }
-
-                advanceShell();
-                continue;
             }
 
-            BlockPos pos = this.currentShellBlocks.get(this.currentShellIndex++);
+            BlockPos pos = this.pendingBlastBlocks.poll().pos();
             if (!this.level.isInWorldBounds(pos) || !this.level.hasChunkAt(pos)) {
                 continue;
             }
 
             BlockState state = this.level.getBlockState(pos);
-            if (!shouldDestroy(state, this.level, pos)) {
+            if (!shouldDestroy(pos, state, this.level, this.center, this.radius)) {
                 continue;
             }
 
             destroyBlockFast(pos, state);
             destroyedThisTick++;
             this.destroyedBlocks++;
+
+            if (this.pendingBlastBlocks.size() < destroyLimit) {
+                queuePendingShells();
+            }
+        }
+
+        if (this.nextShellRadiusToQueue > this.radius && this.pendingBlastBlocks.isEmpty()) {
+            this.scanFinished = true;
         }
 
         return destroyedThisTick;
     }
 
-    private void advanceShell() {
-        this.currentShellRadius++;
-        if (this.currentShellRadius > this.radius) {
-            this.scanFinished = true;
-            this.currentShellBlocks = List.of();
-            this.currentShellIndex = 0;
-            return;
+    private void queuePendingShells() {
+        int queuedShells = 0;
+        while (this.nextShellRadiusToQueue <= this.radius && queuedShells < QUEUE_LOOKAHEAD_SHELLS) {
+            int shellRadius = this.nextShellRadiusToQueue++;
+            for (BlockPos pos : buildShell(shellRadius)) {
+                double jitter = (this.level.random.nextDouble() * 2.0D - 1.0D) * SHELL_PRIORITY_JITTER;
+                this.pendingBlastBlocks.add(new BlastCandidate(pos, shellRadius + jitter));
+            }
+            queuedShells++;
         }
-
-        this.currentShellBlocks = buildShell(this.currentShellRadius);
-        this.currentShellIndex = 0;
     }
 
     private void startStrikeSequence() {
@@ -283,7 +298,7 @@ public class LightningBlastTask {
         WeatherControlHelper.setThunderstorm(this.level, DEFAULT_SHORT_THUNDERSTORM_TICKS);
     }
 
-    private static boolean shouldDestroy(BlockState state, ServerLevel level, BlockPos pos) {
+    private static boolean shouldDestroy(BlockPos pos, BlockState state, ServerLevel level, BlockPos center, int radius) {
         if (state.isAir()) {
             return false;
         }
@@ -292,7 +307,32 @@ public class LightningBlastTask {
             return false;
         }
 
-        return state.getDestroySpeed(level, pos) >= 0.0F;
+        if (!state.getFluidState().isEmpty()) {
+            return false;
+        }
+
+        double hardness = state.getDestroySpeed(level, pos);
+        if (hardness < 0.0F) {
+            return false;
+        }
+
+        double safeRadius = Math.max(1.0D, radius);
+        double distanceRatio = Math.min(1.0D, Math.sqrt(center.distSqr(pos)) / safeRadius);
+        double blastScore = computeBlastScore(distanceRatio, radius);
+        double blockScore = hardness * HARDNESS_WEIGHT + state.getBlock().getExplosionResistance() * RESISTANCE_WEIGHT;
+
+        if (distanceRatio <= CORE_RADIUS_RATIO) {
+            return blockScore <= blastScore + CORE_BLAST_BONUS;
+        }
+
+        double chance = clampDouble((blastScore - blockScore + CHANCE_FLOOR) / CHANCE_DIVISOR, 0.0D, 1.0D);
+        return chance > 0.0D && level.random.nextDouble() < chance;
+    }
+
+    private static double computeBlastScore(double distanceRatio, int radius) {
+        double radialStrength = 1.0D - clampDouble(distanceRatio, 0.0D, 1.0D);
+        double radiusBonus = Math.min(4.0D, radius / 16.0D);
+        return OUTER_BLAST_SCORE + radialStrength * (INNER_BLAST_SCORE + radiusBonus);
     }
 
     private void destroyBlockFast(BlockPos pos, BlockState state) {
@@ -337,6 +377,10 @@ public class LightningBlastTask {
     }
 
     private static int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private static double clampDouble(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
 }

@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.menu;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
 
+import appeng.api.orientation.RelativeSide;
 import appeng.api.upgrades.Upgrades;
 import appeng.core.localization.GuiText;
 import appeng.menu.AEBaseMenu;
@@ -26,6 +28,7 @@ import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeCandidate;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeService;
@@ -51,6 +54,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
             Ae2ltSlotSemantics.OVERLOAD_FACTORY_INPUT_8);
     private static final List<SlotSemantic> OUTPUT_SEMANTICS = List.of(
             Ae2ltSlotSemantics.OVERLOAD_FACTORY_OUTPUT_0);
+    private static final RelativeSide[] OUTPUT_SIDES = RelativeSide.values();
 
     @GuiSync(80)
     public long storedEnergy;
@@ -63,7 +67,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     @GuiSync(84)
     public int currentParallel;
     @GuiSync(85)
-    public int matrixCount;
+    public int parallelCapacity;
     @GuiSync(86)
     public long highVoltageAvailable;
     @GuiSync(87)
@@ -85,6 +89,12 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     @GuiSync(95)
     public long equivalentHighVoltageCost;
 
+    @GuiSync(96)
+    public boolean autoExport;
+
+    @GuiSync(97)
+    public int outputSideMask;
+
     private final OverloadProcessingFactoryBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(OverloadProcessingFactoryInventory.INPUT_SLOT_COUNT);
     private final Slot matrixSlot;
@@ -101,6 +111,10 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
                 Ae2ltSlotSemantics.OVERLOAD_FACTORY_MATRIX);
         setupUpgrades(host.getUpgrades());
         createPlayerInventorySlots(playerInventory);
+
+        registerClientAction("toggleAutoExport", this::toggleAutoExport);
+        registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
+        registerClientAction("clearOutputSides", this::clearOutputSides);
     }
 
     private void addMachineSlots() {
@@ -123,9 +137,11 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
             consumedEnergy = host.getConsumedEnergy();
             totalEnergy = host.getLockedRecipe().map(lockedRecipe -> lockedRecipe.totalEnergy()).orElse(0L);
             working = host.isWorking();
-            matrixCount = host.getInstalledMatrixCount();
+            parallelCapacity = host.getInstalledParallelCapacity();
             highVoltageAvailable = host.getAvailableHighVoltage();
             extremeHighVoltageAvailable = host.getAvailableExtremeHighVoltage();
+            autoExport = host.isAutoExportEnabled();
+            outputSideMask = toOutputSideMask(host.getAllowedOutputs());
 
             var inputFluid = host.getInputFluid();
             inputFluidId = inputFluid.isEmpty() ? -1 : BuiltInRegistries.FLUID.getId(inputFluid.getFluid());
@@ -258,7 +274,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     }
 
     public long getEnergyCapacity() {
-        return OverloadProcessingFactoryBlockEntity.ENERGY_CAPACITY;
+        return AE2LTCommonConfig.overloadFactoryEnergyCapacity();
     }
 
     public int getInputTankCapacity() {
@@ -271,6 +287,14 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
 
     public boolean isWorking() {
         return working;
+    }
+
+    public boolean isAutoExportEnabled() {
+        return autoExport;
+    }
+
+    public boolean isOutputSideEnabled(RelativeSide side) {
+        return (outputSideMask & (1 << side.ordinal())) != 0;
     }
 
     public double getProgress() {
@@ -288,47 +312,16 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         return getFluid(outputFluidId, outputFluidAmount);
     }
 
-    public Component getParallelMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.parallel", currentParallel, matrixCount);
+    public void clientToggleAutoExport() {
+        sendClientAction("toggleAutoExport");
     }
 
-    public Component getHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.stock.high_voltage", highVoltageAvailable);
+    public void clientToggleOutputSide(RelativeSide side) {
+        sendClientAction("toggleOutputSide", side.ordinal());
     }
 
-    public Component getExtremeHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.overload_factory.stock.extreme_high_voltage", extremeHighVoltageAvailable);
-    }
-
-    public Component getLightningDemandMessage() {
-        if (lightningTierOrdinal < 0 || lightningCost <= 0L) {
-            return Component.translatable("ae2lt.gui.overload_factory.demand.none");
-        }
-
-        return Component.translatable(
-                "ae2lt.gui.overload_factory.demand",
-                lightningCost,
-                Component.translatable(getLightningTierTranslationKey()));
-    }
-
-    public Component getSubstitutionMessage() {
-        if (lightningTierOrdinal < 0 || lightningCost <= 0L) {
-            return Component.translatable("ae2lt.gui.overload_factory.substitution.none");
-        }
-
-        if (matrixSubstitutionActive) {
-            return Component.translatable(
-                    "ae2lt.gui.overload_factory.substitution.active",
-                    equivalentHighVoltageCost);
-        }
-
-        if (LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
-            return Component.translatable(
-                    "ae2lt.gui.overload_factory.substitution.available",
-                    equivalentHighVoltageCost);
-        }
-
-        return Component.translatable("ae2lt.gui.overload_factory.substitution.inactive");
+    public void clientClearOutputSides() {
+        sendClientAction("clearOutputSides");
     }
 
     public List<Component> getCompatibleUpgradeLines() {
@@ -336,6 +329,35 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         list.add(GuiText.CompatibleUpgrades.text());
         list.addAll(Upgrades.getTooltipLinesForMachine(host.getUpgrades().getUpgradableItem()));
         return list;
+    }
+
+    private void toggleAutoExport() {
+        if (!isServerSide()) {
+            return;
+        }
+
+        host.setAutoExportEnabled(!host.isAutoExportEnabled());
+    }
+
+    private void toggleOutputSide(Integer ordinal) {
+        if (!isServerSide() || ordinal == null || ordinal < 0 || ordinal >= OUTPUT_SIDES.length) {
+            return;
+        }
+
+        var updated = host.getAllowedOutputs();
+        var side = OUTPUT_SIDES[ordinal];
+        if (!updated.add(side)) {
+            updated.remove(side);
+        }
+        host.updateOutputSides(updated);
+    }
+
+    private void clearOutputSides() {
+        if (!isServerSide()) {
+            return;
+        }
+
+        host.updateOutputSides(EnumSet.noneOf(RelativeSide.class));
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
@@ -408,10 +430,12 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         return new FluidStack(fluid, amount);
     }
 
-    private String getLightningTierTranslationKey() {
-        return LightningKey.Tier.fromOrdinal(lightningTierOrdinal) == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
-                ? "ae2lt.gui.overload_factory.tier.extreme_high_voltage"
-                : "ae2lt.gui.overload_factory.tier.high_voltage";
+    private static int toOutputSideMask(EnumSet<RelativeSide> sides) {
+        int mask = 0;
+        for (var side : sides) {
+            mask |= 1 << side.ordinal();
+        }
+        return mask;
     }
 
     private boolean handleLargeMachineSlotPickup(int slotId, int button, Player player) {

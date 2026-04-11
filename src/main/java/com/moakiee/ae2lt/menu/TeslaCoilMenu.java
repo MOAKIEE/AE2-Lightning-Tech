@@ -18,7 +18,6 @@ import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilMode;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilStatus;
@@ -167,7 +166,7 @@ public class TeslaCoilMenu extends AEBaseMenu {
     }
 
     public long getEnergyCapacity() {
-        return AE2LTCommonConfig.teslaCoilEnergyCapacity();
+        return TeslaCoilBlockEntity.ENERGY_CAPACITY;
     }
 
     public double getProgress() {

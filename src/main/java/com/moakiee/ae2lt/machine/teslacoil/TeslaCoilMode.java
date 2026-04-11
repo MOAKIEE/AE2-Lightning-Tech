@@ -10,7 +10,6 @@ public enum TeslaCoilMode implements StringRepresentable {
     EXTREME_HIGH_VOLTAGE("extreme_high_voltage");
 
     public static final int PROCESS_TICKS = 5;
-
     private final String serializedName;
 
     TeslaCoilMode(String serializedName) {
@@ -36,8 +35,8 @@ public enum TeslaCoilMode implements StringRepresentable {
 
     public long totalEnergy() {
         return this == EXTREME_HIGH_VOLTAGE
-                ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageEnergy()
-                : AE2LTCommonConfig.teslaCoilHighVoltageEnergy();
+                ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageFe()
+                : AE2LTCommonConfig.teslaCoilHighVoltageFe();
     }
 
     public long requiredEnergyForTick(int completedTicks, long consumedEnergy) {
@@ -60,10 +59,6 @@ public enum TeslaCoilMode implements StringRepresentable {
 
     public long requiredHighVoltage() {
         return this == EXTREME_HIGH_VOLTAGE ? AE2LTCommonConfig.teslaCoilExtremeHighVoltageInput() : 0L;
-    }
-
-    public boolean requiresMatrix() {
-        return this == EXTREME_HIGH_VOLTAGE;
     }
 
     public LightningKey outputKey() {

@@ -11,6 +11,7 @@ import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
@@ -32,6 +33,7 @@ public class ModScreens {
         event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
+        event.register(LightningAssemblyChamberMenu.TYPE, ModScreens::createLightningAssemblyChamberScreen);
         event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
         event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
@@ -56,6 +58,12 @@ public class ModScreens {
             LightningSimulationChamberMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/lightning_simulation_room.json");
         return new LightningSimulationChamberScreen(menu, inv, title, style);
+    }
+
+    private static LightningAssemblyChamberScreen createLightningAssemblyChamberScreen(
+            LightningAssemblyChamberMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/lightning_assembly_chamber.json");
+        return new LightningAssemblyChamberScreen(menu, inv, title, style);
     }
 
     private static LightningCollectorScreen createLightningCollectorScreen(

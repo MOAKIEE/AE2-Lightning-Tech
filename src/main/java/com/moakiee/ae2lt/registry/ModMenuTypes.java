@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
@@ -38,6 +39,11 @@ public final class ModMenuTypes {
             LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(
                     "lightning_simulation_room",
                     () -> LightningSimulationChamberMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<LightningAssemblyChamberMenu>>
+            LIGHTNING_ASSEMBLY_CHAMBER = MENU_TYPES.register(
+                    "lightning_assembly_chamber",
+                    () -> LightningAssemblyChamberMenu.TYPE);
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningCollectorMenu>>
             LIGHTNING_COLLECTOR = MENU_TYPES.register(

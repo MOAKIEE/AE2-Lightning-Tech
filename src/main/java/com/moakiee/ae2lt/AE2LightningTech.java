@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
+import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -64,8 +65,6 @@ import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
 
-    private static boolean extendedAELoaded;
-
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
@@ -76,6 +75,7 @@ public class AE2LightningTech {
                     .icon(() -> ModItems.OVERLOAD_CRYSTAL.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         output.accept(ModBlocks.SILICON_BLOCK);
+                        output.accept(ModBlocks.OVERLOAD_MACHINE_FRAME);
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);
@@ -91,7 +91,14 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
+                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_I);
+                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_II);
+                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_III);
+                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_IV);
+                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_V);
                         output.accept(ModItems.INFINITE_STORAGE_CELL);
+                        output.accept(ModItems.INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
+                        output.accept(ModItems.INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
                         output.accept(ModBlocks.OVERLOAD_TNT);
                         output.accept(ModBlocks.LIGHTNING_COLLECTOR);
@@ -103,6 +110,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.RAIN_CONDENSATE);
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
+                        output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
                         output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModItems.OVERLOADED_CABLE);
@@ -144,10 +152,6 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
-                        if (extendedAELoaded) {
-                            com.moakiee.ae2lt.compat.extae.ExtendedAECompat
-                                    .addCreativeTabItems(output);
-                        }
                     })
                     .build());
 
@@ -168,16 +172,7 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
 
-        extendedAELoaded = ModList.get().isLoaded("extendedae");
-        if (extendedAELoaded) {
-            com.moakiee.ae2lt.compat.extae.ExtendedAECompat.init(modEventBus);
-        }
-
         registerOptionalClientIntegrations();
-    }
-
-    public static boolean isExtendedAELoaded() {
-        return extendedAELoaded;
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -189,6 +184,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
 
         event.registerBlockEntity(
@@ -218,6 +218,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
@@ -240,6 +245,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -344,6 +354,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var assemblyBlock = ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get();
+            var assemblyBeType = ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get();
+            assemblyBlock.setBlockEntity(
+                    LightningAssemblyChamberBlockEntity.class,
+                    assemblyBeType,
+                    null,
+                    null);
+
             var overloadProcessingFactoryBlock = ModBlocks.OVERLOAD_PROCESSING_FACTORY.get();
             var overloadProcessingFactoryBeType = ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get();
             overloadProcessingFactoryBlock.setBlockEntity(
@@ -401,6 +419,9 @@ public class AE2LightningTech {
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    assemblyBeType,
+                    assemblyBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     overloadProcessingFactoryBeType,
                     overloadProcessingFactoryBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
@@ -416,6 +437,8 @@ public class AE2LightningTech {
             ModItems.registerStorageCellModels();
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(),
                     LightningSimulationChamberBlockEntity.SPEED_CARD_SLOTS);
+            Upgrades.add(AEItems.SPEED_CARD, ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                    LightningAssemblyChamberBlockEntity.SPEED_CARD_SLOTS);
             Upgrades.add(AEItems.SPEED_CARD, ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(),
                     OverloadProcessingFactoryBlockEntity.SPEED_CARD_SLOTS);
 
