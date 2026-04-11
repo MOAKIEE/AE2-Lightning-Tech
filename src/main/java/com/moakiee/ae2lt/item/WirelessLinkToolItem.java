@@ -20,19 +20,16 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
-import com.moakiee.ae2lt.blockentity.WirelessIdBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 
 /**
- * Tool for binding wireless transmitters and receivers.
+ * Tool for binding wireless controllers and receivers.
  * <ol>
- *   <li>Right-click an ID Block → store the transmitter UUID in the tool</li>
+ *   <li>Right-click a Wireless Controller → store the transmitter UUID in the tool</li>
  *   <li>Right-click a Wireless Receiver → bind it to the stored UUID</li>
  *   <li>Right-click air → clear the stored UUID</li>
  * </ol>
- * When placed in a Curios trinket slot (if Curios is installed) or held in the
- * player's inventory, placing a Wireless Receiver auto-binds it to the stored UUID.
  */
 public class WirelessLinkToolItem extends Item {
 
@@ -54,22 +51,6 @@ public class WirelessLinkToolItem extends Item {
         if (level.isClientSide()) return InteractionResult.SUCCESS;
 
         var be = level.getBlockEntity(pos);
-
-        if (be instanceof WirelessIdBlockEntity idBe) {
-            UUID id = idBe.getWirelessId();
-            if (id == null) {
-                player.displayClientMessage(
-                        Component.translatable("ae2lt.link_tool.id_not_ready")
-                                .withStyle(ChatFormatting.RED), true);
-                return InteractionResult.FAIL;
-            }
-            setBoundId(stack, id);
-            String shortId = id.toString().substring(0, 8);
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.link_tool.bound", shortId)
-                            .withStyle(ChatFormatting.GREEN), true);
-            return InteractionResult.SUCCESS;
-        }
 
         if (be instanceof WirelessOverloadedControllerBlockEntity wirelessCtrl) {
             UUID id = wirelessCtrl.getCardUUID();

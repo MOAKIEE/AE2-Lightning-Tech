@@ -20,7 +20,6 @@ import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
-import com.moakiee.ae2lt.blockentity.WirelessTransmitterBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -136,8 +135,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
-                        output.accept(ModBlocks.WIRELESS_ID_BLOCK);
-                        output.accept(ModBlocks.WIRELESS_TRANSMITTER);
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
                         output.accept(ModItems.WIRELESS_LINK_TOOL);
                         output.accept(ModItems.WIRELESS_ID_CARD);
@@ -284,11 +281,6 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
-                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
-
-        event.registerBlockEntity(
-                AECapabilities.IN_WORLD_GRID_NODE_HOST,
-                ModBlockEntities.WIRELESS_TRANSMITTER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -462,18 +454,6 @@ public class AE2LightningTech {
                     (net.minecraft.world.level.block.entity.BlockEntityTicker) (l, p, s, be) ->
                             AdvancedWirelessOverloadedControllerBlockEntity.advancedWirelessServerTick(
                                     l, p, s, (AdvancedWirelessOverloadedControllerBlockEntity) be));
-
-            var wirelessTransmitterBlock = ModBlocks.WIRELESS_TRANSMITTER.get();
-            var wirelessTransmitterBeType = ModBlockEntities.WIRELESS_TRANSMITTER.get();
-            wirelessTransmitterBlock.setBlockEntity(
-                    WirelessTransmitterBlockEntity.class,
-                    wirelessTransmitterBeType,
-                    null,
-                    WirelessTransmitterBlockEntity::serverTick);
-
-            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
-                    wirelessTransmitterBeType,
-                    wirelessTransmitterBlock.asItem());
 
             var wirelessReceiverBlock = ModBlocks.WIRELESS_RECEIVER.get();
             var wirelessReceiverBeType = ModBlockEntities.WIRELESS_RECEIVER.get();

@@ -245,8 +245,6 @@
   "item.ae2lt.fixed_infinite_cell": "无限%s元件",
   "tooltip.ae2lt.infinite_cell.types": "已存储类型: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "已使用字节: %s",
-  "block.ae2lt.wireless_id_block": "无线ID方块",
-  "block.ae2lt.wireless_transmitter": "无线发射器",
   "block.ae2lt.wireless_receiver": "无线接收器",
   "item.ae2lt.wireless_link_tool": "无线链接工具",
   "ae2lt.wireless_id.bound": "ID: %s",

@@ -14,10 +14,8 @@ import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
-import com.moakiee.ae2lt.block.WirelessIdBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessReceiverBlock;
-import com.moakiee.ae2lt.block.WirelessTransmitterBlock;
 import java.util.function.Supplier;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -135,12 +133,6 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadedInterfaceBlock> OVERLOADED_INTERFACE =
             registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
-
-    public static final DeferredBlock<WirelessIdBlock> WIRELESS_ID_BLOCK =
-            registerBlock("wireless_id_block", WirelessIdBlock::new);
-
-    public static final DeferredBlock<WirelessTransmitterBlock> WIRELESS_TRANSMITTER =
-            registerBlock("wireless_transmitter", WirelessTransmitterBlock::new);
 
     public static final DeferredBlock<WirelessReceiverBlock> WIRELESS_RECEIVER =
             registerBlock("wireless_receiver", WirelessReceiverBlock::new);

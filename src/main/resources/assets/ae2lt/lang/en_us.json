@@ -245,8 +245,6 @@
   "item.ae2lt.fixed_infinite_cell": "Infinite %s Cell",
   "tooltip.ae2lt.infinite_cell.types": "Stored Types: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "Used Bytes: %s",
-  "block.ae2lt.wireless_id_block": "Wireless ID Block",
-  "block.ae2lt.wireless_transmitter": "Wireless Transmitter",
   "block.ae2lt.wireless_receiver": "Wireless Receiver",
   "item.ae2lt.wireless_link_tool": "Wireless Link Tool",
   "ae2lt.wireless_id.bound": "ID: %s",
