@@ -314,7 +314,7 @@ public final class AE2LTCommonConfig {
                     .defineInRange("highVoltageFe", 25000, 1, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageInput = builder
                     .comment("High Voltage Lightning input cost for Extreme High Voltage mode.")
-                    .defineInRange("extremeHighVoltageInput", 4, 0, Integer.MAX_VALUE);
+                    .defineInRange("extremeHighVoltageInput", 8, 0, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageFe = builder
                     .comment("FE cost for Extreme High Voltage mode. Range: >= 1.")
                     .defineInRange("extremeHighVoltageFe", 500000, 1, Integer.MAX_VALUE);
