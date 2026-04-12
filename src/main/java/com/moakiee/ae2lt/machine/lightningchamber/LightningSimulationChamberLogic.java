@@ -48,9 +48,11 @@ public final class LightningSimulationChamberLogic extends AbstractGridRecipeMac
     @Override
     protected Optional<LightningSimulationRecipeCandidate> validateLockedRecipe(
             LightningSimulationLockedRecipe lockedRecipe) {
-        return LightningSimulationRecipeService.findLockedRecipeMatchIgnoringLightning(
+        return LightningSimulationRecipeService.findLockedRecipeMatch(
                 host.getLevel(),
                 host.getInventory(),
-                lockedRecipe);
+                lockedRecipe,
+                host.getAvailableHighVoltage(),
+                host.getAvailableExtremeHighVoltage());
     }
 }
