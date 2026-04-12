@@ -10,9 +10,9 @@
     },
     {
       "ingredient": {
-        "item": "ae2lt:overload_singularity"
+        "item": "ae2lt:overload_processor"
       },
-      "count": 4
+      "count": 64
     },
     {
       "ingredient": {
@@ -25,7 +25,7 @@
     "id": "ae2lt:tesla_coil",
     "count": 1
   },
-  "totalEnergy": 16000000,
-  "lightningCost": 16,
+  "totalEnergy": 8000000,
+  "lightningCost": 8,
   "lightningTier": "extreme_high_voltage"
 }

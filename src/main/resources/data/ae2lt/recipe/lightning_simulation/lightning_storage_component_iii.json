@@ -25,7 +25,7 @@
     "id": "ae2lt:lightning_cell_component_iii",
     "count": 1
   },
-  "totalEnergy": 4000000,
-  "lightningCost": 32,
+  "totalEnergy": 500000,
+  "lightningCost": 16,
   "lightningTier": "high_voltage"
 }

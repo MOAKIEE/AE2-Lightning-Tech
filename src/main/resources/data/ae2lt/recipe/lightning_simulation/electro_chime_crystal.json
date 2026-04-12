@@ -6,26 +6,26 @@
       "ingredient": {
         "item": "ae2:fluix_crystal"
       },
-      "count": 64
+      "count": 16
     },
     {
       "ingredient": {
         "item": "ae2:charged_certus_quartz_crystal"
       },
-      "count": 64
+      "count": 16
     },
     {
       "ingredient": {
         "item": "ae2lt:overload_crystal"
       },
-      "count": 64
+      "count": 16
     }
   ],
   "result": {
     "id": "ae2lt:electro_chime_crystal",
     "count": 1
   },
-  "totalEnergy": 1000000,
-  "lightningCost": 64,
+  "totalEnergy": 200000,
+  "lightningCost": 16,
   "lightningTier": "high_voltage"
 }

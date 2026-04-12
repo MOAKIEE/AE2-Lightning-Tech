@@ -6,20 +6,26 @@
       "ingredient": {
         "item": "ae2lt:overload_singularity"
       },
-      "count": 256
+      "count": 16
     },
     {
       "ingredient": {
         "item": "ae2lt:overload_alloy_plate"
       },
-      "count": 256
+      "count": 32
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:nether_star"
+      },
+      "count": 1
     }
   ],
   "result": {
     "id": "ae2lt:ultimate_overload_core",
     "count": 1
   },
-  "totalEnergy": 64000000,
-  "lightningCost": 100,
+  "totalEnergy": 32000000,
+  "lightningCost": 16,
   "lightningTier": "extreme_high_voltage"
 }

@@ -12,7 +12,7 @@
       "ingredient": {
         "item": "ae2:controller"
       },
-      "count": 1
+      "count": 4
     },
     {
       "ingredient": {
@@ -32,6 +32,6 @@
     "count": 1
   },
   "totalEnergy": 1000000,
-  "lightningCost": 20,
+  "lightningCost": 32,
   "lightningTier": "extreme_high_voltage"
 }

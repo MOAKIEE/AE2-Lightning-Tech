@@ -18,11 +18,11 @@
       "ingredient": {
         "item": "ae2lt:overload_alloy_plate"
       },
-      "count": 256
+      "count": 8
     },
     {
       "ingredient": {
-        "item": "ae2lt:ultimate_overload_core"
+        "item": "ae2lt:overload_singularity"
       },
       "count": 1
     }
@@ -32,6 +32,6 @@
     "count": 1
   },
   "totalEnergy": 1000000,
-  "lightningCost": 20,
+  "lightningCost": 16,
   "lightningTier": "extreme_high_voltage"
 }

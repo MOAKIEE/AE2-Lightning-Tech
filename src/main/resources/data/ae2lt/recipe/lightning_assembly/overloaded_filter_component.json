@@ -12,7 +12,13 @@
       "ingredient": {
         "item": "ae2lt:overload_crystal"
       },
-      "count": 1
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_processor"
+      },
+      "count": 4
     }
   ],
   "result": {
@@ -20,6 +26,6 @@
     "count": 1
   },
   "totalEnergy": 16000,
-  "lightningCost": 16,
-  "lightningTier": "high_voltage"
+  "lightningCost": 4,
+  "lightningTier": "extreme_high_voltage"
 }

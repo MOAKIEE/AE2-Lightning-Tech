@@ -12,14 +12,14 @@
       "ingredient": {
         "item": "ae2lt:overload_alloy_plate"
       },
-      "count": 8
+      "count": 1
     }
   ],
   "result": {
     "id": "ae2lt:overloaded_cable",
-    "count": 1
+    "count": 8
   },
   "totalEnergy": 1000000,
-  "lightningCost": 3,
+  "lightningCost": 2,
   "lightningTier": "extreme_high_voltage"
 }

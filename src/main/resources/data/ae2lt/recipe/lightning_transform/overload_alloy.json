@@ -4,19 +4,19 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "minecraft:netherite_ingot"
-      },
-      "count": 16
-    },
-    {
-      "ingredient": {
-        "item": "ae2lt:overload_crystal_block"
+        "item": "minecraft:iron_ingot"
       },
       "count": 4
     },
     {
       "ingredient": {
-        "item": "minecraft:amethyst_block"
+        "item": "ae2lt:overload_crystal"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:amethyst_shard"
       },
       "count": 4
     }

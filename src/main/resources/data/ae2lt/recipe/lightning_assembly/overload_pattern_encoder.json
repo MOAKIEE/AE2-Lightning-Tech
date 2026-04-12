@@ -12,12 +12,6 @@
       "ingredient": {
         "item": "ae2lt:overload_processor"
       },
-      "count": 64
-    },
-    {
-      "ingredient": {
-        "item": "ae2lt:overload_singularity"
-      },
       "count": 16
     }
   ],

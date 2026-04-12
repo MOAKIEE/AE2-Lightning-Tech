@@ -10,15 +10,9 @@
     },
     {
       "ingredient": {
-        "item": "minecraft:nether_star"
-      },
-      "count": 1
-    },
-    {
-      "ingredient": {
         "item": "ae2lt:overload_circuit_board"
       },
-      "count": 64
+      "count": 16
     }
   ],
   "result": {
@@ -26,6 +20,6 @@
     "count": 1
   },
   "totalEnergy": 2000000,
-  "lightningCost": 16,
+  "lightningCost": 8,
   "lightningTier": "high_voltage"
 }

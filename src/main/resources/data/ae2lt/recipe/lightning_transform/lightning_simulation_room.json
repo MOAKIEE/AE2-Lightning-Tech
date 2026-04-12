@@ -6,19 +6,19 @@
       "ingredient": {
         "item": "ae2lt:overload_processor"
       },
-      "count": 64
+      "count": 32
     },
     {
       "ingredient": {
         "item": "ae2lt:overload_alloy"
       },
-      "count": 64
+      "count": 32
     },
     {
       "ingredient": {
         "item": "ae2lt:overload_crystal_block"
       },
-      "count": 64
+      "count": 16
     }
   ],
   "result": {
