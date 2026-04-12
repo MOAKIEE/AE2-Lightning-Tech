@@ -214,16 +214,16 @@ public final class AE2LTCommonConfig {
                     .defineInRange("hvCrystalEnd", 16, 0, Integer.MAX_VALUE);
             lightningCollectorEhvCrystalStart = builder
                     .comment("EHV crystal count where bonus scaling starts.")
-                    .defineInRange("ehvCrystalStart", 4, 0, Integer.MAX_VALUE);
+                    .defineInRange("ehvCrystalStart", 2, 0, Integer.MAX_VALUE);
             lightningCollectorEhvCrystalEnd = builder
                     .comment("EHV crystal count where bonus scaling ends.")
-                    .defineInRange("ehvCrystalEnd", 32, 0, Integer.MAX_VALUE);
+                    .defineInRange("ehvCrystalEnd", 16, 0, Integer.MAX_VALUE);
             lightningCollectorPerfectHvOutput = builder
                     .comment("Fixed HV output for a perfect crystal.")
                     .defineInRange("perfectHvOutput", 16, 0, Integer.MAX_VALUE);
             lightningCollectorPerfectEhvOutput = builder
                     .comment("Fixed EHV output for a perfect crystal.")
-                    .defineInRange("perfectEhvOutput", 32, 0, Integer.MAX_VALUE);
+                    .defineInRange("perfectEhvOutput", 16, 0, Integer.MAX_VALUE);
             lightningCollectorCrystalFeedRatio = builder
                     .comment("Fraction of output used to feed crystals. Range: > 0.")
                     .defineInRange("crystalFeedRatio", 0.15D, 1.0E-6D, Double.MAX_VALUE);
@@ -236,7 +236,7 @@ public final class AE2LTCommonConfig {
             builder.push("electroChimeCrystal");
             electroChimeMaxCatalysis = builder
                     .comment("Catalysis value needed to transform an electro chime crystal into its perfect form.")
-                    .defineInRange("maxCatalysis", 256, 1, Integer.MAX_VALUE);
+                    .defineInRange("maxCatalysis", 19, 1, Integer.MAX_VALUE);
             builder.pop();
 
             builder.push("overloadTnt");
@@ -308,10 +308,10 @@ public final class AE2LTCommonConfig {
             builder.push("modeCosts");
             teslaCoilHighVoltageDustCost = builder
                     .comment("Overload Crystal Dust cost for High Voltage mode.")
-                    .defineInRange("highVoltageDustCost", 4, 0, Integer.MAX_VALUE);
+                    .defineInRange("highVoltageDustCost", 2, 0, Integer.MAX_VALUE);
             teslaCoilHighVoltageFe = builder
                     .comment("FE cost for High Voltage mode. Range: >= 1.")
-                    .defineInRange("highVoltageFe", 50000, 1, Integer.MAX_VALUE);
+                    .defineInRange("highVoltageFe", 25000, 1, Integer.MAX_VALUE);
             teslaCoilExtremeHighVoltageInput = builder
                     .comment("High Voltage Lightning input cost for Extreme High Voltage mode.")
                     .defineInRange("extremeHighVoltageInput", 4, 0, Integer.MAX_VALUE);
