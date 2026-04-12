@@ -10,7 +10,7 @@
     },
     {
       "ingredient": {
-        "item": "ae2lt:lightning_storage_component_ii"
+        "item": "ae2lt:lightning_cell_component_ii"
       },
       "count": 3
     },
@@ -22,7 +22,7 @@
     }
   ],
   "result": {
-    "id": "ae2lt:lightning_storage_component_iii",
+    "id": "ae2lt:lightning_cell_component_iii",
     "count": 1
   },
   "totalEnergy": 4000000,

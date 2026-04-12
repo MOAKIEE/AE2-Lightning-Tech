@@ -192,7 +192,7 @@ public final class AE2LTCommonConfig {
             builder.push("lightningCollector");
             lightningCollectorCooldownTicks = builder
                     .comment("Cooldown in ticks after each captured lightning strike.")
-                    .defineInRange("cooldownTicks", 100, 0, Integer.MAX_VALUE);
+                    .defineInRange("cooldownTicks", 0, 0, Integer.MAX_VALUE);
             builder.push("outputProfile");
             lightningCollectorHvBaseMin = builder
                     .comment("Minimum HV output before crystal bonuses are applied.")

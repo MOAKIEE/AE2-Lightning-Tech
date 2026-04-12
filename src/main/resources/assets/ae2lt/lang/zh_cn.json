@@ -216,7 +216,6 @@
   "item.ae2lt.perfect_electro_chime_crystal": "完美电鸣水晶",
   "block.ae2lt.lightning_collector": "闪电收集器",
   "block.ae2lt.atmospheric_ionizer": "大气电离仪",
-  "jade.ae2lt.lightning_collector.cooldown": "冷却：%s秒",
   "gui.ae2lt.lightning_collector.high_output": "高压产量：%s",
   "gui.ae2lt.lightning_collector.extreme_output.simple": "极高压产量：%s",
   "ae2lt.gui.atmospheric_ionizer.status.label": "状态：%s",

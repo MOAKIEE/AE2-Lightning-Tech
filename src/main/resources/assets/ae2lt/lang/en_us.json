@@ -79,7 +79,6 @@
   "block.ae2lt.overloaded_controller": "Overloaded ME Controller",
   "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
   "block.ae2lt.overloaded_interface": "Overloaded ME Interface",
-  "jade.ae2lt.lightning_collector.cooldown": "Cooldown: %ss",
   "ae2lt.ponder.flawless_budding_overload_crystal.header": "Transformation of Flawless Budding Overload Crystal",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_1": "Use a Flawless Budding Quartz block as the core.",
   "ae2lt.ponder.flawless_budding_overload_crystal.text_2": "Place 4 Fluix Blocks on the four sides.",
