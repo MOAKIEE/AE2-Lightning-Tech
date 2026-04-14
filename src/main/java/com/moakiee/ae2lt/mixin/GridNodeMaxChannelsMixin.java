@@ -59,9 +59,9 @@ public abstract class GridNodeMaxChannelsMixin implements OverloadedSubtreeNode 
     }
 
     /**
-     * During the DFS pass, replace the bottom-up channel accumulation with
-     * the max-flow result. Connection usedChannels are handled by the
-     * GridConnection mixin separately.
+     * During the DFS pass, cancel AE2's bottom-up channel accumulation and
+     * return the max-flow value instead. The actual usedChannels field is
+     * set by Phase 4 (force-apply) after the DFS completes.
      */
     @Inject(method = "propagateChannelsUpwards", at = @At("HEAD"), cancellable = true)
     private void ae2lt$useFlowForPropagation(boolean consumesChannel, CallbackInfoReturnable<Integer> cir) {
@@ -72,7 +72,6 @@ public abstract class GridNodeMaxChannelsMixin implements OverloadedSubtreeNode 
 
         var nodeFlow = BorrowedCapacityCalculator.activeNodeFlow;
         int flow = nodeFlow.getInt(self);
-        this.usedChannels = flow;
         cir.setReturnValue(flow);
     }
 
