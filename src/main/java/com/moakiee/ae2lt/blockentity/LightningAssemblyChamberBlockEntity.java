@@ -40,7 +40,6 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
-import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberAutomationInventory;
