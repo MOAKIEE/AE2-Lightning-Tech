@@ -1,7 +1,6 @@
 {
   "type": "ae2lt:lightning_transform",
   "priority": 0,
-  "success_chance": 0.75,
   "inputs": [
     {
       "ingredient": {

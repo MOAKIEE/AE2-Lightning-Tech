@@ -48,9 +48,11 @@ public final class LightningAssemblyChamberLogic extends AbstractGridRecipeMachi
     @Override
     protected Optional<LightningAssemblyRecipeCandidate> validateLockedRecipe(
             LightningAssemblyLockedRecipe lockedRecipe) {
-        return LightningAssemblyRecipeService.findLockedRecipeMatchIgnoringLightning(
+        return LightningAssemblyRecipeService.findLockedRecipeMatch(
                 host.getLevel(),
                 host.getInventory(),
-                lockedRecipe);
+                lockedRecipe,
+                host.getAvailableHighVoltage(),
+                host.getAvailableExtremeHighVoltage());
     }
 }

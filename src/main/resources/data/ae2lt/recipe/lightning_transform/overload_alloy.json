@@ -1,0 +1,28 @@
+{
+  "type": "ae2lt:lightning_transform",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "minecraft:iron_ingot"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_crystal"
+      },
+      "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:amethyst_shard"
+      },
+      "count": 4
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2lt:overload_alloy"
+  }
+}

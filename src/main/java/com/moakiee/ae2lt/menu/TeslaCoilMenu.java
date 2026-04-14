@@ -85,7 +85,7 @@ public class TeslaCoilMenu extends AEBaseMenu {
         if (isServerSide()) {
             storedEnergy = host.getEnergyStorage().getStoredEnergyLong();
             consumedEnergy = host.getConsumedEnergy();
-            totalEnergy = host.hasLockedMode() ? host.getCurrentMode().totalEnergy() : 0L;
+            totalEnergy = host.hasLockedMode() ? host.getCurrentTotalEnergy() : 0L;
             working = host.isWorking();
             modeOrdinal = host.getSelectedMode().ordinal();
             statusOrdinal = host.getStatus().ordinal();

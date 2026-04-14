@@ -1,0 +1,28 @@
+{
+  "type": "ae2lt:lightning_transform",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2lt:lightning_storage_component_v"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_singularity"
+      },
+      "count": 64
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:lightning_collapse_matrix"
+      },
+      "count": 4
+    }
+  ],
+  "result": {
+    "count": 1,
+    "id": "ae2lt:infinite_high_voltage_lightning_cell"
+  }
+}

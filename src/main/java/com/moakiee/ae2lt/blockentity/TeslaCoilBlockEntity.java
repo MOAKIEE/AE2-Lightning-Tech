@@ -39,7 +39,7 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost {
-    public static final int ENERGY_CAPACITY = 1_000_000;
+    public static final int ENERGY_CAPACITY = 16_000_000;
     public static final int MAX_RECEIVE = 200_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";
@@ -47,6 +47,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     private static final String TAG_PROCESSING_TICKS = "ProcessingTicks";
     private static final String TAG_SELECTED_MODE = "SelectedMode";
     private static final String TAG_LOCKED_MODE = "LockedMode";
+    private static final String TAG_LOCKED_BATCH_SIZE = "LockedBatchSize";
 
     private final TeslaCoilInventory inventory = new TeslaCoilInventory(this::onInventoryChanged);
     private final TeslaCoilAutomationInventory automationInventory = new TeslaCoilAutomationInventory(inventory);
@@ -58,6 +59,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
 
     private TeslaCoilMode selectedMode = TeslaCoilMode.HIGH_VOLTAGE;
     private TeslaCoilMode lockedMode;
+    private long lockedBatchSize = 0L;
     private long consumedEnergy;
     private int processingTicksSpent;
     private boolean working;
@@ -94,8 +96,10 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         return selectedMode;
     }
 
-    public TeslaCoilMode getCurrentMode() {
-        return lockedMode != null ? lockedMode : selectedMode;
+    public long getCurrentTotalEnergy() {
+        TeslaCoilMode mode = lockedMode != null ? lockedMode : selectedMode;
+        long batchSize = lockedMode != null ? lockedBatchSize : getBatchSizeForMode(mode);
+        return getTotalEnergyFor(mode, batchSize);
     }
 
     public void cycleMode() {
@@ -119,6 +123,11 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         }
 
         lockedMode = selectedMode;
+        lockedBatchSize = getBatchSizeForMode(selectedMode);
+        if (lockedBatchSize <= 0L) {
+            lockedMode = null;
+            return false;
+        }
         saveChanges();
         markForClientUpdate();
         logic.onStateChanged();
@@ -126,19 +135,27 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     public boolean hasLocalStartPrerequisites() {
-        return hasLocalPrerequisites(selectedMode);
+        return hasLocalPrerequisites(selectedMode, getBatchSizeForMode(selectedMode));
     }
 
     public boolean hasLockedModeLocalPrerequisites() {
-        return lockedMode != null && hasLocalPrerequisites(lockedMode);
+        return lockedMode != null && hasLocalPrerequisites(lockedMode, lockedBatchSize);
     }
 
     public boolean canStartSelectedMode() {
-        return hasLocalPrerequisites(selectedMode) && canCommitAgainstNetwork(selectedMode);
+        long batchSize = getBatchSizeForMode(selectedMode);
+        return batchSize > 0L
+                && hasLocalPrerequisites(selectedMode, batchSize)
+                && canCommitAgainstNetwork(selectedMode, batchSize);
     }
 
     public boolean hasEnoughEnergyForSelectedStart() {
-        return energyStorage.getStoredEnergyLong() >= selectedMode.requiredEnergyForTick(0, 0L);
+        long batchSize = getBatchSizeForMode(selectedMode);
+        return batchSize > 0L
+                && energyStorage.getStoredEnergyLong() >= selectedMode.requiredEnergyForTick(
+                        0,
+                        0L,
+                        getTotalEnergyFor(selectedMode, batchSize));
     }
 
     public long getConsumedEnergy() {
@@ -153,20 +170,23 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         if (lockedMode == null) {
             return 0L;
         }
-        return lockedMode.requiredEnergyForTick(processingTicksSpent, consumedEnergy);
+        return lockedMode.requiredEnergyForTick(processingTicksSpent, consumedEnergy, getLockedTotalEnergy());
     }
 
     public double getProgress() {
-        if (lockedMode == null || lockedMode.totalEnergy() <= 0L) {
+        long totalEnergy = getLockedTotalEnergy();
+        if (lockedMode == null || totalEnergy <= 0L) {
             return 0.0D;
         }
-        return Math.min(1.0D, (double) consumedEnergy / (double) lockedMode.totalEnergy());
+        return Math.min(1.0D, (double) consumedEnergy / (double) totalEnergy);
     }
 
     public boolean isReadyToCommit() {
+        long totalEnergy = getLockedTotalEnergy();
         return lockedMode != null
+                && lockedBatchSize > 0L
                 && processingTicksSpent >= TeslaCoilMode.PROCESS_TICKS
-                && consumedEnergy >= lockedMode.totalEnergy();
+                && consumedEnergy >= totalEnergy;
     }
 
     public void advanceProgress(long amount) {
@@ -174,7 +194,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             return;
         }
 
-        consumedEnergy = Math.min(lockedMode.totalEnergy(), consumedEnergy + amount);
+        consumedEnergy = Math.min(getLockedTotalEnergy(), consumedEnergy + amount);
         processingTicksSpent = Math.min(TeslaCoilMode.PROCESS_TICKS, processingTicksSpent + 1);
         saveChanges();
         markForClientUpdate();
@@ -186,15 +206,15 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         }
 
         if (isReadyToCommit()) {
-            if (!hasLocalPrerequisites(lockedMode)) {
+            if (!hasLocalPrerequisites(lockedMode, lockedBatchSize)) {
                 return TeslaCoilStatus.WAITING_INPUTS;
             }
-            return canCommitAgainstNetwork(lockedMode)
+            return canCommitAgainstNetwork(lockedMode, lockedBatchSize)
                     ? TeslaCoilStatus.READY
                     : TeslaCoilStatus.WAITING_NETWORK;
         }
 
-        if (!hasLocalPrerequisites(lockedMode)) {
+        if (!hasLocalPrerequisites(lockedMode, lockedBatchSize)) {
             return TeslaCoilStatus.WAITING_INPUTS;
         }
 
@@ -221,7 +241,10 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     public boolean commitLockedMode() {
-        if (lockedMode == null || !canCommitAgainstNetwork(lockedMode) || !hasLocalPrerequisites(lockedMode)) {
+        if (lockedMode == null
+                || lockedBatchSize <= 0L
+                || !canCommitAgainstNetwork(lockedMode, lockedBatchSize)
+                || !hasLocalPrerequisites(lockedMode, lockedBatchSize)) {
             return false;
         }
 
@@ -234,6 +257,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         }
 
         lockedMode = null;
+        lockedBatchSize = 0L;
         consumedEnergy = 0L;
         processingTicksSpent = 0;
         saveChanges();
@@ -281,8 +305,10 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         data.putString(TAG_SELECTED_MODE, selectedMode.getSerializedName());
         if (lockedMode != null) {
             data.putString(TAG_LOCKED_MODE, lockedMode.getSerializedName());
+            data.putLong(TAG_LOCKED_BATCH_SIZE, lockedBatchSize);
         } else {
             data.remove(TAG_LOCKED_MODE);
+            data.remove(TAG_LOCKED_BATCH_SIZE);
         }
     }
 
@@ -295,14 +321,19 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         lockedMode = data.contains(TAG_LOCKED_MODE)
                 ? TeslaCoilMode.fromName(data.getString(TAG_LOCKED_MODE))
                 : null;
+        lockedBatchSize = Math.max(0L, data.getLong(TAG_LOCKED_BATCH_SIZE));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
 
         if (lockedMode == null) {
+            lockedBatchSize = 0L;
             consumedEnergy = 0L;
             processingTicksSpent = 0;
         } else {
-            consumedEnergy = Math.min(consumedEnergy, lockedMode.totalEnergy());
+            if (lockedBatchSize <= 0L) {
+                lockedBatchSize = 1L;
+            }
+            consumedEnergy = Math.min(consumedEnergy, getLockedTotalEnergy());
             processingTicksSpent = Math.min(processingTicksSpent, TeslaCoilMode.PROCESS_TICKS);
         }
         working = lockedMode != null;
@@ -340,20 +371,25 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         return EnumSet.allOf(Direction.class);
     }
 
-    private boolean hasLocalPrerequisites(TeslaCoilMode mode) {
+    private boolean hasLocalPrerequisites(TeslaCoilMode mode, long batchSize) {
+        if (batchSize <= 0L) {
+            return false;
+        }
+
         return switch (mode) {
-            case HIGH_VOLTAGE -> inventory.hasRequiredDust(mode.requiredDust());
+            case HIGH_VOLTAGE -> inventory.hasRequiredDust(getRequiredDustForBatch(mode, batchSize));
             case EXTREME_HIGH_VOLTAGE -> inventory.hasMatrix();
         };
     }
 
-    private boolean canCommitAgainstNetwork(TeslaCoilMode mode) {
-        if (simulateInsert(mode.outputKey(), 1L) < 1L) {
+    private boolean canCommitAgainstNetwork(TeslaCoilMode mode, long batchSize) {
+        if (batchSize <= 0L || simulateInsert(mode.outputKey(), batchSize) < batchSize) {
             return false;
         }
 
         if (mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE) {
-            return simulateExtract(LightningKey.HIGH_VOLTAGE, mode.requiredHighVoltage()) >= mode.requiredHighVoltage();
+            long requiredHighVoltage = getRequiredHighVoltageForBatch(mode, batchSize);
+            return simulateExtract(LightningKey.HIGH_VOLTAGE, requiredHighVoltage) >= requiredHighVoltage;
         }
 
         return true;
@@ -364,14 +400,14 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     private boolean commitHighVoltage() {
-        int requiredDust = lockedMode.requiredDust();
+        int requiredDust = getRequiredDustForBatch(lockedMode, lockedBatchSize);
         ItemStack extractedDust = inventory.extractItem(TeslaCoilInventory.SLOT_DUST, requiredDust, false);
         if (extractedDust.getCount() != requiredDust) {
             return false;
         }
 
-        long inserted = insert(lockedMode.outputKey(), 1L);
-        if (inserted < 1L) {
+        long inserted = insert(lockedMode.outputKey(), lockedBatchSize);
+        if (inserted < lockedBatchSize) {
             inventory.insertItem(TeslaCoilInventory.SLOT_DUST, extractedDust, false);
             return false;
         }
@@ -380,7 +416,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     private boolean commitExtremeHighVoltage() {
-        long requiredHighVoltage = lockedMode.requiredHighVoltage();
+        long requiredHighVoltage = getRequiredHighVoltageForBatch(lockedMode, lockedBatchSize);
         long extracted = extract(LightningKey.HIGH_VOLTAGE, requiredHighVoltage);
         if (extracted < requiredHighVoltage) {
             if (extracted > 0L) {
@@ -389,8 +425,8 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             return false;
         }
 
-        long inserted = insert(lockedMode.outputKey(), 1L);
-        if (inserted < 1L) {
+        long inserted = insert(lockedMode.outputKey(), lockedBatchSize);
+        if (inserted < lockedBatchSize) {
             insert(LightningKey.HIGH_VOLTAGE, extracted);
             return false;
         }
@@ -456,5 +492,42 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         saveChanges();
         markForClientUpdate();
         logic.onStateChanged();
+    }
+
+    private long getBatchSizeForMode(TeslaCoilMode mode) {
+        if (mode == TeslaCoilMode.HIGH_VOLTAGE) {
+            int dustPerOperation = mode.requiredDust();
+            if (dustPerOperation <= 0) {
+                return 0L;
+            }
+
+            long craftable = inventory.getStackInSlot(TeslaCoilInventory.SLOT_DUST).getCount() / dustPerOperation;
+            if (craftable <= 0L) {
+                return 0L;
+            }
+
+            return Math.min(craftable, simulateInsert(mode.outputKey(), craftable));
+        }
+
+        return hasLocalPrerequisites(mode, 1L) && canCommitAgainstNetwork(mode, 1L) ? 1L : 0L;
+    }
+
+    private long getTotalEnergyFor(TeslaCoilMode mode, long batchSize) {
+        if (mode == null || batchSize <= 0L) {
+            return 0L;
+        }
+        return Math.multiplyExact(mode.totalEnergy(), batchSize);
+    }
+
+    private long getLockedTotalEnergy() {
+        return getTotalEnergyFor(lockedMode, lockedBatchSize);
+    }
+
+    private int getRequiredDustForBatch(TeslaCoilMode mode, long batchSize) {
+        return Math.toIntExact(Math.multiplyExact(mode.requiredDust(), batchSize));
+    }
+
+    private long getRequiredHighVoltageForBatch(TeslaCoilMode mode, long batchSize) {
+        return Math.multiplyExact(mode.requiredHighVoltage(), batchSize);
     }
 }

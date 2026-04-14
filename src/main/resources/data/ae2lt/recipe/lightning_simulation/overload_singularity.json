@@ -1,0 +1,25 @@
+{
+  "type": "ae2lt:lightning_simulation",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2:singularity"
+      },
+      "count": 1024
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_circuit_board"
+      },
+      "count": 16
+    }
+  ],
+  "result": {
+    "id": "ae2lt:overload_singularity",
+    "count": 1
+  },
+  "totalEnergy": 2000000,
+  "lightningCost": 8,
+  "lightningTier": "high_voltage"
+}

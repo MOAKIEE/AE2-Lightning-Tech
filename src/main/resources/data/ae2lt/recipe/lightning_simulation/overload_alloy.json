@@ -1,0 +1,31 @@
+{
+  "type": "ae2lt:lightning_simulation",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "minecraft:iron_ingot"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_crystal"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:amethyst_shard"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "ae2lt:overload_alloy",
+    "count": 1
+  },
+  "totalEnergy": 20000,
+  "lightningCost": 2,
+  "lightningTier": "high_voltage"
+}

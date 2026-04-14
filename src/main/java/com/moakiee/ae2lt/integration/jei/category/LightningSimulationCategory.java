@@ -13,11 +13,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
+import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
@@ -96,11 +99,17 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
         for (int index = 0; index < recipe.inputs().size(); index++) {
             var input = recipe.inputs().get(index);
             builder.addSlot(RecipeIngredientRole.INPUT, SLOT_INPUT_X, SLOT_INPUT_Y + index * SLOT_INPUT_SPACING)
-                    .addItemStacks(expandIngredient(input.ingredient(), input.count()));
+                    .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
+                    .addItemStacks(expandIngredient(input.ingredient(), input.count()))
+                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                            LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
-                .addItemStack(recipe.getResultStack());
+                .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
+                .addItemStack(recipe.getResultStack())
+                .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                        LargeStackCountRenderer.appendCountTooltip(tooltip, recipe.getResultStack().getCount()));
     }
 
     @Override
