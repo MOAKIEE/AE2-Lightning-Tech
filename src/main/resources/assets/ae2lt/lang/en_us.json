@@ -246,7 +246,7 @@
   "item.ae2lt.weather_condensate.energy": "Ionization Cost: %s AE",
   "item.ae2lt.weather_condensate.duration": "Duration: %s~%s ticks",
   "item.ae2lt.infinite_storage_cell": "Infinite Storage Cell",
-  "item.ae2lt.mysterious_cell": "Infinite Infinite Lightning Cell Cell",
+  "item.ae2lt.mysterious_cell": "Mysterious Cell",
   "item.ae2lt.mysterious_cell.lightning_rod": "Infinite Lightning Rod Cell",
   "item.ae2lt.mysterious_cell.high_voltage": "Infinite High Voltage Lightning Cell",
   "item.ae2lt.mysterious_cell.extreme_high_voltage": "Infinite Extreme High Voltage Lightning Cell",

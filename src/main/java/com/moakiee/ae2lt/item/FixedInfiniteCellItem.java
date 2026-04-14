@@ -178,6 +178,9 @@ public final class FixedInfiniteCellItem extends Item {
 
     @Override
     public Optional<TooltipComponent> getTooltipImage(ItemStack stack) {
+        if (!hasType(stack) && !hasSeed(stack)) {
+            return Optional.empty();
+        }
         AEKey key = getEffectiveKey(stack);
         long amount = (long) Integer.MAX_VALUE * key.getAmountPerUnit();
         var content = Collections.singletonList(new GenericStack(key, amount));
