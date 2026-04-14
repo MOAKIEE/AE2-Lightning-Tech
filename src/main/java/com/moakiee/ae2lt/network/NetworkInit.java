@@ -18,6 +18,10 @@ public final class NetworkInit {
                 WirelessConnectorUsePacket.TYPE,
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
+        registrar.playToClient(
+                EasterEggPacket.TYPE,
+                EasterEggPacket.STREAM_CODEC,
+                EasterEggPacket::handle);
     }
 
     public static ResourceLocation id(String path) {
