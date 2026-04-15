@@ -4,25 +4,25 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_processor"
+        "item": "ae2lt:overload_alloy"
       },
-      "count": 1
+      "count": 8
     },
     {
       "ingredient": {
-        "item": "ae2lt:lightning_storage_component_i"
+        "item": "ae2lt:overload_circuit_board"
       },
-      "count": 3
+      "count": 8
     },
     {
       "ingredient": {
-        "item": "minecraft:redstone"
+        "item": "ae2lt:overload_crystal_block"
       },
-      "count": 4
+      "count": 8
     }
   ],
   "result": {
     "count": 1,
-    "id": "ae2lt:lightning_storage_component_ii"
+    "id": "ae2lt:lightning_collector"
   }
 }

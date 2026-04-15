@@ -13,6 +13,12 @@
         "item": "ae2lt:overload_processor"
       },
       "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_alloy_plate"
+      },
+      "count": 4
     }
   ],
   "result": {

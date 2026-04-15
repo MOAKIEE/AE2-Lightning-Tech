@@ -12,14 +12,14 @@
       "ingredient": {
         "item": "ae2lt:overload_singularity"
       },
-      "count": 1
+      "count": 1024
     }
   ],
   "result": {
     "id": "ae2lt:perfect_electro_chime_crystal",
     "count": 1
   },
-  "totalEnergy": 2000000,
-  "lightningCost": 64,
+  "totalEnergy": 200000000,
+  "lightningCost": 512,
   "lightningTier": "extreme_high_voltage"
 }

@@ -10,9 +10,9 @@
     },
     {
       "ingredient": {
-        "item": "ae2lt:overload_circuit_board"
+        "item": "minecraft:nether_star"
       },
-      "count": 16
+      "count": 1
     }
   ],
   "result": {

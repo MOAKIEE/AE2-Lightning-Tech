@@ -4,21 +4,15 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "minecraft:iron_ingot"
+        "item": "ae2lt:overload_alloy_blank"
       },
       "count": 1
     },
     {
       "ingredient": {
-        "item": "ae2lt:overload_crystal"
+        "item": "ae2lt:overload_crystal_dust"
       },
-      "count": 1
-    },
-    {
-      "ingredient": {
-        "item": "minecraft:amethyst_shard"
-      },
-      "count": 1
+      "count": 4
     }
   ],
   "result": {

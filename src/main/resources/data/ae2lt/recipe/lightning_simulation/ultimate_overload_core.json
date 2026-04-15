@@ -4,21 +4,21 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_singularity"
-      },
-      "count": 16
-    },
-    {
-      "ingredient": {
         "item": "ae2lt:overload_alloy_plate"
       },
       "count": 32
     },
     {
       "ingredient": {
-        "item": "minecraft:nether_star"
+        "item": "ae2lt:overload_singularity"
       },
-      "count": 1
+      "count": 16
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:echo_shard"
+      },
+      "count": 16
     }
   ],
   "result": {

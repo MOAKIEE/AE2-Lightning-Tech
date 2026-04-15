@@ -4,25 +4,19 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_circuit_board"
+        "item": "ae2lt:unoverloaded_circuit_board"
       },
       "count": 1
     },
     {
       "ingredient": {
-        "item": "minecraft:redstone"
+        "item": "ae2lt:overload_crystal_dust"
       },
-      "count": 1
-    },
-    {
-      "ingredient": {
-        "item": "ae2:printed_silicon"
-      },
-      "count": 1
+      "count": 4
     }
   ],
   "result": {
-    "id": "ae2lt:overload_processor",
+    "id": "ae2lt:overload_circuit_board",
     "count": 1
   },
   "totalEnergy": 20000,

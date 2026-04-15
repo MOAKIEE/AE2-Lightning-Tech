@@ -4,6 +4,12 @@
   "inputs": [
     {
       "ingredient": {
+        "item": "ae2:item_cell_housing"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
         "item": "ae2lt:lightning_storage_component_v"
       },
       "count": 1
