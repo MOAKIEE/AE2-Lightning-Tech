@@ -108,6 +108,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_SINGULARITY);
                         output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
                         output.accept(ModItems.LIGHTNING_COLLAPSE_MATRIX);
+                        output.accept(ModItems.UNOVERLOADED_CIRCUIT_BOARD);
                         output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);
                         output.accept(ModItems.OVERLOAD_PROCESSOR);
                         output.accept(ModItems.OVERLOAD_INSCRIBER_PRESS);
