@@ -40,7 +40,6 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
-import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryAutomationInventory;
