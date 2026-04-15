@@ -47,6 +47,9 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_ALLOY =
             ITEMS.registerSimpleItem("overload_alloy", new Item.Properties());
 
+    public static final DeferredItem<Item> OVERLOAD_ALLOY_BLANK =
+            ITEMS.registerSimpleItem("overload_alloy_blank", new Item.Properties());
+
     public static final DeferredItem<Item> OVERLOAD_ALLOY_PLATE =
             ITEMS.registerSimpleItem("overload_alloy_plate", new Item.Properties());
 

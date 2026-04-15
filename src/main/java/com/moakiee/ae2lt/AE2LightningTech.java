@@ -103,6 +103,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
                         output.accept(ModItems.OVERLOAD_ALLOY);
+                        output.accept(ModItems.OVERLOAD_ALLOY_BLANK);
                         output.accept(ModItems.OVERLOAD_ALLOY_PLATE);
                         output.accept(ModItems.OVERLOAD_SINGULARITY);
                         output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
