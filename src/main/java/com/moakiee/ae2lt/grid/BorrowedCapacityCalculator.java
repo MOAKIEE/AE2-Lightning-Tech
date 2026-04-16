@@ -9,6 +9,7 @@ import java.util.Set;
 
 import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridMultiblock;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.blockentity.networking.ControllerBlockEntity;
@@ -198,11 +199,34 @@ public final class BorrowedCapacityCalculator {
         }
 
         // 5) REQUIRE_CHANNEL devices → T, cap=1
+        //    Multiblock groups (e.g. crafting CPUs) share a single sink edge
+        //    so the entire multiblock consumes only 1 channel.
+        Set<IGridNode> multiblockSkip = new ReferenceOpenHashSet<>();
+        for (var n : network) {
+            if (!(n instanceof GridNode gn)) continue;
+            if (!gn.hasFlag(GridFlags.REQUIRE_CHANNEL) || !gn.hasFlag(GridFlags.MULTIBLOCK)) continue;
+            if (multiblockSkip.contains(n)) continue;
+
+            var multiblock = n.getService(IGridMultiblock.class);
+            if (multiblock == null) continue;
+
+            // Mark all siblings in the network as skip; the first encountered
+            // node becomes the representative and keeps its sink edge.
+            var siblings = multiblock.getMultiblockNodes();
+            while (siblings.hasNext()) {
+                var sibling = siblings.next();
+                if (sibling != n && idx.getInt(sibling) >= 0) {
+                    multiblockSkip.add(sibling);
+                }
+            }
+        }
+
         List<IGridNode> sinkNodes = new ArrayList<>();
         List<Integer> sinkEdgeIndices = new ArrayList<>();
         for (var n : network) {
             if (!(n instanceof GridNode gn)) continue;
             if (!gn.hasFlag(GridFlags.REQUIRE_CHANNEL)) continue;
+            if (multiblockSkip.contains(n)) continue;
             int ci = idx.getInt(n);
             sinkEdgeIndices.add(dinic.edgeCount());
             dinic.addEdge(2 * ci + 1, T, 1);
