@@ -1,10 +1,12 @@
 package com.moakiee.ae2lt.grid;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
-import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -55,13 +57,33 @@ public final class OverloadedChannelOwnerHelper {
         }
     }
 
+
+    /**
+     * Returns ALL controller nodes in the grid, including subclasses.
+     * AE2's {@code getMachineNodes(Class)} uses exact class matching
+     * ({@code owner.getClass()}), so subclasses of {@code ControllerBlockEntity}
+     * must be queried by their concrete class. This method scans all registered
+     * machine classes and collects those assignable to {@code ControllerBlockEntity}.
+     */
+    public static List<IGridNode> getAllControllerNodes(IGrid grid) {
+        List<IGridNode> all = new ArrayList<>();
+        for (var clazz : grid.getMachineClasses()) {
+            if (ControllerBlockEntity.class.isAssignableFrom(clazz)) {
+                for (var node : grid.getMachineNodes(clazz)) {
+                    all.add(node);
+                }
+            }
+        }
+        return all;
+    }
+
     /**
      * @return total channel capacity for an overloaded-controller network,
      *         or 0 if no overloaded controllers are present / channel mode is INFINITE.
      */
     public static int calculateOverloadedNetworkCapacity(IGrid grid) {
         int overloadedCount = 0;
-        for (var node : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        for (var node : getAllControllerNodes(grid)) {
             if (node.getOwner() instanceof OverloadedControllerBlockEntity) {
                 overloadedCount++;
             }
@@ -78,4 +100,5 @@ public final class OverloadedChannelOwnerHelper {
         long capacity = (long) channelsPerController() * overloadedCount * channelMode.getCableCapacityFactor();
         return (int) Math.min(Integer.MAX_VALUE, capacity);
     }
+
 }

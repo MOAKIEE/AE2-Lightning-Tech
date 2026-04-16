@@ -8,6 +8,8 @@ import java.util.Set;
 
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.BorrowedCapacityCalculator;
+import com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper;
+import com.moakiee.ae2lt.grid.OverloadedSubtreeNode;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -64,15 +66,17 @@ public abstract class PathingCalculationCapMixin {
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void ae2lt$unifyOverloadedControllers(IGrid grid, CallbackInfo ci) {
+        var allControllers = OverloadedChannelOwnerHelper.getAllControllerNodes(grid);
+
         List<IGridNode> overloaded = new ArrayList<>();
-        for (var node : grid.getMachineNodes(ControllerBlockEntity.class)) {
+        for (var node : allControllers) {
             if (node.getOwner() instanceof OverloadedControllerBlockEntity) {
                 overloaded.add(node);
             }
         }
 
         ae2lt$overloadedControllers = overloaded;
-        boolean hasControllers = grid.getMachineNodes(ControllerBlockEntity.class).iterator().hasNext();
+        boolean hasControllers = !allControllers.isEmpty();
         var channelMode = grid.getPathingService().getChannelMode();
         ae2lt$useMaxFlow = hasControllers && channelMode != ChannelMode.INFINITE;
 
@@ -81,10 +85,7 @@ public abstract class PathingCalculationCapMixin {
         }
 
         IGridNode source = overloaded.get(0);
-        Set<IGridNode> nonSource = new ReferenceOpenHashSet<>();
-        for (int i = 1; i < overloaded.size(); i++) {
-            nonSource.add(overloaded.get(i));
-        }
+        Set<IGridNode> nonSource = new ReferenceOpenHashSet<>(overloaded.subList(1, overloaded.size()));
 
         for (var node : nonSource) {
             if (node instanceof IPathItem p) {
@@ -96,25 +97,38 @@ public abstract class PathingCalculationCapMixin {
         var keep = new ArrayDeque<IPathItem>();
         while (!q0.isEmpty()) {
             var item = q0.poll();
-            if (item instanceof GridConnection gc) {
-                if (nonSource.contains(gc.a()) || nonSource.contains(gc.b())) {
-                    visited.remove((IPathItem) gc);
-                    gc.setControllerRoute(null);
-                    continue;
-                }
+            if (item instanceof GridConnection gc
+                    && (nonSource.contains(gc.a()) || nonSource.contains(gc.b()))) {
+                visited.remove((IPathItem) gc);
+                gc.setControllerRoute(null);
+                continue;
             }
             keep.add(item);
         }
         q0.addAll(keep);
 
-        for (var connection : source.getConnections()) {
-            if (connection instanceof GridConnection gc) {
-                IGridNode other = gc.getOtherSide(source);
-                if (nonSource.contains(other) && !visited.contains((IPathItem) gc)) {
-                    gc.setControllerRoute((IPathItem) source);
-                    visited.add((IPathItem) gc);
-                    q0.add((IPathItem) gc);
+        // BFS from source through ALL controllers (vanilla+OC) to reach non-source OCs.
+        // This handles cases where overloaded controllers are separated by vanilla
+        // controllers in the multiblock (e.g. OC_A — Vanilla_B — OC_C).
+        Queue<IGridNode> bfs = new ArrayDeque<>();
+        Set<IGridNode> bfsVisited = new ReferenceOpenHashSet<>();
+        bfs.add(source);
+        bfsVisited.add(source);
+        while (!bfs.isEmpty()) {
+            var cur = bfs.poll();
+            for (var conn : cur.getConnections()) {
+                if (!(conn instanceof GridConnection gc)) continue;
+                var neighbor = gc.getOtherSide(cur);
+                if (!bfsVisited.add(neighbor)) continue;
+                if (!(neighbor.getOwner() instanceof ControllerBlockEntity)) continue;
+                if (nonSource.remove(neighbor)) {
+                    if (!visited.contains((IPathItem) gc)) {
+                        gc.setControllerRoute((IPathItem) cur);
+                        visited.add((IPathItem) gc);
+                        q0.add((IPathItem) gc);
+                    }
                 }
+                bfs.add(neighbor);
             }
         }
     }
@@ -136,16 +150,14 @@ public abstract class PathingCalculationCapMixin {
             at = @At(value = "INVOKE",
                      target = "Lappeng/me/pathfinding/PathingCalculation;propagateAssignments()V"))
     private void ae2lt$runMaxFlowBeforeDFS(CallbackInfo ci) {
+        BorrowedCapacityCalculator.clearActiveData();
+
         if (!ae2lt$useMaxFlow) {
-            BorrowedCapacityCalculator.activeNodeFlow = null;
-            BorrowedCapacityCalculator.activeNetworkNodes = null;
             return;
         }
 
         ae2lt$flowResult = BorrowedCapacityCalculator.assignChannels(grid, ae2lt$overloadedControllers);
         if (ae2lt$flowResult == null) {
-            BorrowedCapacityCalculator.activeNodeFlow = null;
-            BorrowedCapacityCalculator.activeNetworkNodes = null;
             return;
         }
 
@@ -166,12 +178,44 @@ public abstract class PathingCalculationCapMixin {
 
         BorrowedCapacityCalculator.activeNodeFlow = ae2lt$flowResult.nodeFlow();
         BorrowedCapacityCalculator.activeNetworkNodes = ae2lt$flowResult.networkNodes();
+        BorrowedCapacityCalculator.activeConnectionFlow = ae2lt$flowResult.connectionFlow();
     }
 
-    // ── Phase 4: cleanup after DFS ──
+    // ── Phase 4: force-apply max-flow results & cleanup after DFS ──
 
     @Inject(method = "compute", at = @At("TAIL"))
-    private void ae2lt$clearFlowData(CallbackInfo ci) {
+    private void ae2lt$applyFlowAndCleanup(CallbackInfo ci) {
+        if (ae2lt$flowResult != null) {
+            // Reset ALL connections of network nodes to 0 first.
+            // AE2's DFS uses getMachineNodes(ControllerBlockEntity.class) which
+            // misses overloaded controllers (exact class match). When no vanilla
+            // controllers exist, the DFS never runs and stale usedChannels from
+            // a previous pathing calculation are never cleared.
+            Set<GridConnection> resetSeen = new ReferenceOpenHashSet<>();
+            for (var node : ae2lt$flowResult.networkNodes()) {
+                for (var conn : node.getConnections()) {
+                    if (conn instanceof GridConnection gc && resetSeen.add(gc)) {
+                        gc.setAdHocChannels(0);
+                    }
+                }
+                if (node instanceof OverloadedSubtreeNode osn) {
+                    osn.ae2lt$setUsedChannels(0);
+                }
+            }
+
+            var nodeFlow = ae2lt$flowResult.nodeFlow();
+            for (var node : ae2lt$flowResult.networkNodes()) {
+                if (node instanceof OverloadedSubtreeNode osn) {
+                    int flow = nodeFlow.getInt(node);
+                    osn.ae2lt$setUsedChannels(flow);
+                }
+            }
+            var connFlow = ae2lt$flowResult.connectionFlow();
+            for (var entry : connFlow.reference2IntEntrySet()) {
+                entry.getKey().setAdHocChannels(entry.getIntValue());
+            }
+        }
+        BorrowedCapacityCalculator.clearActiveData();
         ae2lt$flowResult = null;
     }
 }

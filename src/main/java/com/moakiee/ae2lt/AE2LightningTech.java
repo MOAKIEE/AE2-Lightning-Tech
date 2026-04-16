@@ -17,6 +17,9 @@ import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -40,10 +43,15 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
+import appeng.block.AEBaseEntityBlock;
+import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
+
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
+import com.moakiee.ae2lt.grid.WirelessTransmitterManager;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -138,6 +146,12 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        // 无线设备
+                        output.accept(ModBlocks.WIRELESS_RECEIVER);
+                        output.accept(ModItems.WIRELESS_LINK_TOOL);
+                        output.accept(ModItems.WIRELESS_ID_CARD);
+                        output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
+                        output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -270,6 +284,21 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_INTERFACE.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.WIRELESS_RECEIVER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlock(
@@ -423,6 +452,35 @@ public class AE2LightningTech {
 
             registerAppliedFluxInductionCardCompat();
 
+            setupWirelessControllerBlock(
+                    ModBlocks.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    WirelessOverloadedControllerBlockEntity.class,
+                    (net.minecraft.world.level.block.entity.BlockEntityTicker) (l, p, s, be) ->
+                            WirelessOverloadedControllerBlockEntity.wirelessServerTick(
+                                    l, p, s, (WirelessOverloadedControllerBlockEntity) be));
+
+            setupWirelessControllerBlock(
+                    ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    AdvancedWirelessOverloadedControllerBlockEntity.class,
+                    (net.minecraft.world.level.block.entity.BlockEntityTicker) (l, p, s, be) ->
+                            AdvancedWirelessOverloadedControllerBlockEntity.advancedWirelessServerTick(
+                                    l, p, s, (AdvancedWirelessOverloadedControllerBlockEntity) be));
+
+            var wirelessReceiverBlock = ModBlocks.WIRELESS_RECEIVER.get();
+            var wirelessReceiverBeType = ModBlockEntities.WIRELESS_RECEIVER.get();
+            wirelessReceiverBlock.setBlockEntity(
+                    WirelessReceiverBlockEntity.class,
+                    wirelessReceiverBeType,
+                    null,
+                    (net.minecraft.world.level.block.entity.BlockEntityTicker)
+                            (l, p, s, be) -> ((WirelessReceiverBlockEntity) be).serverTick());
+
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    wirelessReceiverBeType,
+                    wirelessReceiverBlock.asItem());
+
         });
     }
 
@@ -439,10 +497,22 @@ public class AE2LightningTech {
 
     private void onServerStarting(ServerStartingEvent event) {
         EjectModeRegistry.onServerStart(event.getServer());
+        WirelessTransmitterManager.onServerStart(event.getServer());
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
+        WirelessTransmitterManager.onServerStop();
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void setupWirelessControllerBlock(
+            AEBaseEntityBlock block,
+            BlockEntityType beType,
+            Class beClass,
+            net.minecraft.world.level.block.entity.BlockEntityTicker serverTicker) {
+        block.setBlockEntity(beClass, beType, null, serverTicker);
+        AEBaseBlockEntity.registerBlockEntityItem(beType, block.asItem());
     }
 
     private static void registerOptionalClientIntegrations() {
