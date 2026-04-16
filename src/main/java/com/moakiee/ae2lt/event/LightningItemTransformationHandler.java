@@ -49,7 +49,8 @@ public final class LightningItemTransformationHandler {
     @SubscribeEvent
     public static void onEntityStruckByLightning(EntityStruckByLightningEvent event) {
         if (event.getEntity() instanceof ItemEntity itemEntity
-                && ProtectedItemEntityHelper.isProtectedItem(itemEntity)) {
+                && (ProtectedItemEntityHelper.isProtectedItem(itemEntity)
+                        || ProtectedItemEntityHelper.isFireproofItem(itemEntity))) {
             event.setCanceled(true);
         }
     }

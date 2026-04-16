@@ -88,11 +88,19 @@ public final class LightningTransformPlan {
                 itemEntity.discard();
             } else {
                 itemEntity.setItem(stack);
-                ProtectedItemEntityHelper.applyTransformLock(itemEntity, gameTime);
             }
         }
 
         return true;
+    }
+
+    public void applyTransformLocks(long gameTime) {
+        for (Consumption consumption : consumptions) {
+            ItemEntity itemEntity = consumption.itemEntity();
+            if (itemEntity.isAlive() && !itemEntity.getItem().isEmpty()) {
+                ProtectedItemEntityHelper.applyTransformLock(itemEntity, gameTime);
+            }
+        }
     }
 
     private boolean isStillValid(long gameTime) {
