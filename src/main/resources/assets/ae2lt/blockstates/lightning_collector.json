@@ -1,7 +1,10 @@
 {
   "variants": {
-    "": {
+    "working=false": {
       "model": "ae2lt:block/lightning_collector"
+    },
+    "working=true": {
+      "model": "ae2lt:block/lightning_collector_work"
     }
   }
 }
