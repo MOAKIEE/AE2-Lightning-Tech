@@ -19,7 +19,7 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
 
     public LightningCollectorBlock() {
-        super(metalProps().noOcclusion());
+        super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState().setValue(WORKING, false));
     }
 

@@ -43,7 +43,7 @@ import appeng.util.Platform;
 public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<OverloadedPatternProviderBlockEntity> {
 
     public OverloadedPatternProviderBlock() {
-        super(metalProps());
+        super(metalProps().forceSolidOn());
         registerDefaultState(defaultBlockState().setValue(PatternProviderBlock.PUSH_DIRECTION, PushDirection.ALL));
     }
 
