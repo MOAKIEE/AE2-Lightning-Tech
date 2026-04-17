@@ -69,22 +69,28 @@ public final class InfiniteCellSavedData extends SavedData {
     }
 
     /**
-     * Registers a newly-created storage (for cells that didn't have a UUID yet).
+     * Serialises the given storage to NBT under the specified UUID and marks dirty.
+     * Re-registers the storage in the cache in case it was previously removed
+     * (e.g. by {@link #removeCell(UUID)}) — the caller's wrapper may still hold
+     * a live reference that must continue to persist.
      */
-    public void registerStorage(UUID id, IndexedStorage storage) {
-        storageCache.put(id, storage);
-    }
-
-    /**
-     * Serialises the cached storage for the given UUID to NBT and marks dirty.
-     */
-    public void persistStorage(UUID id, HolderLookup.Provider registries) {
-        IndexedStorage storage = storageCache.get(id);
+    public void persistStorage(UUID id, IndexedStorage storage, HolderLookup.Provider registries) {
         if (storage == null) return;
+        storageCache.put(id, storage);
         CompoundTag lastRoot = cells.get(id);
         CompoundTag data = storage.persist(lastRoot, registries);
         cells.put(id, data);
         setDirty();
+    }
+
+    /**
+     * Drops all data associated with the given cell UUID. Called when a cell
+     * becomes empty so the world save file doesn't accumulate dead entries.
+     */
+    public void removeCell(UUID id) {
+        boolean had = cells.remove(id) != null;
+        storageCache.remove(id);
+        if (had) setDirty();
     }
 
     // ── SavedData serialization ─────────────────────────────────────────
