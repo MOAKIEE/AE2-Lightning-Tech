@@ -4,8 +4,10 @@ import com.glodblock.github.extendedae.common.blocks.BlockWirelessConnector;
 import com.glodblock.github.extendedae.common.blocks.BlockWirelessHub;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -43,6 +45,7 @@ public class OverloadedWirelessConnectorItem extends Item {
 
     public static final String HOST_PROVIDER = "provider";
     public static final String HOST_INTERFACE = "interface";
+    public static final String HOST_POWER_SUPPLY = "power_supply";
 
     public OverloadedWirelessConnectorItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -72,7 +75,8 @@ public class OverloadedWirelessConnectorItem extends Item {
             return InteractionResult.PASS;
         }
         boolean isHost = state.getBlock() instanceof OverloadedPatternProviderBlock
-                || state.getBlock() instanceof OverloadedInterfaceBlock;
+                || state.getBlock() instanceof OverloadedInterfaceBlock
+                || state.getBlock() instanceof OverloadedPowerSupplyBlock;
         boolean isMachine = targetBe != null;
 
         if (!isHost && !isMachine) {
@@ -170,5 +174,11 @@ public class OverloadedWirelessConnectorItem extends Item {
     public static OverloadedInterfaceBlockEntity getSelectedInterface(Level level, ItemStack stack) {
         var be = resolveSelectedHost(level, stack);
         return be instanceof OverloadedInterfaceBlockEntity iface ? iface : null;
+    }
+
+    @Nullable
+    public static OverloadedPowerSupplyBlockEntity getSelectedPowerSupply(Level level, ItemStack stack) {
+        var be = resolveSelectedHost(level, stack);
+        return be instanceof OverloadedPowerSupplyBlockEntity powerSupply ? powerSupply : null;
     }
 }

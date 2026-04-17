@@ -2,8 +2,10 @@ package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 import java.util.ArrayList;
@@ -70,7 +72,8 @@ public record WirelessConnectorUsePacket(
         var targetBe = level.getBlockEntity(pos);
         boolean isProvider = state.getBlock() instanceof OverloadedPatternProviderBlock;
         boolean isInterface = state.getBlock() instanceof OverloadedInterfaceBlock;
-        boolean isHost = isProvider || isInterface;
+        boolean isPowerSupply = state.getBlock() instanceof OverloadedPowerSupplyBlock;
+        boolean isHost = isProvider || isInterface || isPowerSupply;
         boolean isMachine = targetBe != null;
 
         if (!isHost && !isMachine) return;
@@ -107,6 +110,16 @@ public record WirelessConnectorUsePacket(
             return;
         }
 
+        if (isPowerSupply) {
+            OverloadedWirelessConnectorItem.selectHost(stack, level, pos,
+                    OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY);
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.selected_power_supply",
+                            pos.getX(), pos.getY(), pos.getZ())
+                            .withStyle(ChatFormatting.GREEN), true);
+            return;
+        }
+
         // ── Clicking a machine: connect to the selected host ─────────────
         if (!OverloadedWirelessConnectorItem.hasSelection(stack)) {
             return;
@@ -118,6 +131,8 @@ public record WirelessConnectorUsePacket(
             handleProviderConnection(player, level, stack);
         } else if (OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(hostType)) {
             handleInterfaceConnection(player, level, stack);
+        } else if (OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(hostType)) {
+            handlePowerSupplyConnection(player, level, stack);
         }
     }
 
@@ -217,6 +232,57 @@ public record WirelessConnectorUsePacket(
             } else {
                 iface.addOrUpdateConnection(
                         new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
+                connected.add(targetPos.immutable());
+            }
+        }
+
+        sendConnectionFeedback(player, disconnected, updated, connected);
+    }
+
+    private void handlePowerSupplyConnection(ServerPlayer player, net.minecraft.world.level.Level level, ItemStack stack) {
+        var powerSupply = OverloadedWirelessConnectorItem.getSelectedPowerSupply(level, stack);
+        if (powerSupply == null) {
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.power_supply_lost").withStyle(ChatFormatting.GREEN), true);
+            OverloadedWirelessConnectorItem.clearSelection(stack);
+            return;
+        }
+
+        if (level.getBlockEntity(pos) instanceof OverloadedPowerSupplyBlockEntity) {
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.cannot_bind_power_supply")
+                            .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        var targets = WirelessConnectorTargetHelper.collectTargets(level, pos, contiguous);
+        if (targets.isEmpty()) {
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.not_machine").withStyle(ChatFormatting.GREEN), true);
+            return;
+        }
+
+        var targetDim = level.dimension();
+        var disconnected = new ArrayList<BlockPos>();
+        var updated = new ArrayList<BlockPos>();
+        var connected = new ArrayList<BlockPos>();
+
+        for (var targetPos : targets) {
+            var existing = powerSupply.getConnections().stream()
+                    .filter(c -> c.sameTarget(targetDim, targetPos))
+                    .findFirst().orElse(null);
+
+            if (existing != null) {
+                if (existing.boundFace() == face) {
+                    if (powerSupply.removeConnection(targetDim, targetPos)) {
+                        disconnected.add(targetPos.immutable());
+                    }
+                } else {
+                    powerSupply.addOrUpdateConnection(targetDim, targetPos, face);
+                    updated.add(targetPos.immutable());
+                }
+            } else {
+                powerSupply.addOrUpdateConnection(targetDim, targetPos, face);
                 connected.add(targetPos.immutable());
             }
         }

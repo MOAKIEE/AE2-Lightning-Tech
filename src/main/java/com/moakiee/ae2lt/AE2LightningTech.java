@@ -14,12 +14,15 @@ import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadArmorWorkbenchBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import com.moakiee.ae2lt.item.OverloadArmorItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -35,17 +38,21 @@ import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
+import net.minecraft.world.item.ItemStack;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.features.HotkeyAction;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
 import appeng.block.AEBaseEntityBlock;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
+import appeng.menu.locator.MenuLocators;
 
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
@@ -54,6 +61,9 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.overload.armor.OverloadArmorMenuLocator;
+import com.moakiee.ae2lt.overload.armor.OverloadArmorTerminalService;
+import com.moakiee.ae2lt.overload.armor.OverloadArmorTerminalLocator;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -85,10 +95,12 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
                         output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
+                        output.accept(ModBlocks.OVERLOAD_ARMOR_WORKBENCH);
                         // 网络设备
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
+                        output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
                         // 线缆
                         output.accept(ModItems.OVERLOADED_CABLE);
                         output.accept(ModItems.OVERLOADED_CABLE_WHITE);
@@ -143,6 +155,8 @@ public class AE2LightningTech {
                         // 工具
                         output.accept(ModItems.OVERLOAD_PATTERN);
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
+                        output.accept(ModItems.OVERLOAD_ARMOR);
+                        output.accept(ModItems.TEST_OVERLOAD_ARMOR_SUBMODULE);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
                         // 无线设备
@@ -162,6 +176,8 @@ public class AE2LightningTech {
                     .build());
 
     public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
+        registerMenuLocators();
+
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
@@ -177,9 +193,44 @@ public class AE2LightningTech {
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onLivingEquipmentChange);
+        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onLevelSave);
+        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onPlayerLoggedOut);
+        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onPlayerLoggedIn);
 
         registerOptionalClientIntegrations();
     }
+
+    private static void registerMenuLocators() {
+        MenuLocators.register(
+                OverloadArmorMenuLocator.class,
+                OverloadArmorMenuLocator::writeToPacket,
+                OverloadArmorMenuLocator::readFromPacket);
+        MenuLocators.register(
+                OverloadArmorTerminalLocator.class,
+                OverloadArmorTerminalLocator::writeToPacket,
+                OverloadArmorTerminalLocator::readFromPacket);
+    }
+
+    private static void registerHotkeyActions() {
+        HotkeyAction.register(
+                OverloadArmorTerminalService::openEquippedTerminalFromHotkey,
+                HotkeyAction.WIRELESS_TERMINAL);
+    }
+
+    /**
+     * Shared no-op item handler given to anything that tries to externally access the Overload
+     * Armor Workbench (hoppers, item pipes, AE2 export buses, etc.). Presents a single virtual
+     * slot that silently refuses both insert and extract, so the workbench stays GUI-only.
+     */
+    private static final IItemHandler WORKBENCH_REJECTING_ITEM_HANDLER = new IItemHandler() {
+        @Override public int getSlots() { return 1; }
+        @Override public ItemStack getStackInSlot(int slot) { return ItemStack.EMPTY; }
+        @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) { return stack; }
+        @Override public ItemStack extractItem(int slot, int amount, boolean simulate) { return ItemStack.EMPTY; }
+        @Override public int getSlotLimit(int slot) { return 0; }
+        @Override public boolean isItemValid(int slot, ItemStack stack) { return false; }
+    };
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
@@ -211,6 +262,16 @@ public class AE2LightningTech {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        // Overload Armor Workbench is deliberately isolated from external automation: hoppers,
+        // droppers, item pipes, and AE2 interfaces must not be able to insert or extract the
+        // armor/core/buffer/terminal/modules. We expose a capability-level rejecting handler so
+        // any external query resolves to a no-op handler rather than returning null and letting
+        // addons fall back on default inventory access.
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.OVERLOAD_ARMOR_WORKBENCH.get(),
+                (blockEntity, side) -> WORKBENCH_REJECTING_ITEM_HANDLER);
 
         event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
@@ -285,6 +346,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
@@ -331,6 +397,8 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            registerHotkeyActions();
+
             var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
             var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
             lightningCollectorBlock.setBlockEntity(
@@ -387,6 +455,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var overloadArmorWorkbenchBlock = ModBlocks.OVERLOAD_ARMOR_WORKBENCH.get();
+            var overloadArmorWorkbenchBeType = ModBlockEntities.OVERLOAD_ARMOR_WORKBENCH.get();
+            overloadArmorWorkbenchBlock.setBlockEntity(
+                    OverloadArmorWorkbenchBlockEntity.class,
+                    overloadArmorWorkbenchBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(
@@ -404,6 +480,14 @@ public class AE2LightningTech {
                     null,
                     OverloadedInterfaceBlockEntity::serverTick);
 
+            var powerSupplyBlock = ModBlocks.OVERLOADED_POWER_SUPPLY.get();
+            var powerSupplyBeType = ModBlockEntities.OVERLOADED_POWER_SUPPLY.get();
+            powerSupplyBlock.setBlockEntity(
+                    OverloadedPowerSupplyBlockEntity.class,
+                    powerSupplyBeType,
+                    null,
+                    null);
+
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     lightningCollectorBeType,
                     lightningCollectorBlock.asItem());
@@ -416,6 +500,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    powerSupplyBeType,
+                    powerSupplyBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
@@ -431,6 +518,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     atmosphericIonizerBeType,
                     atmosphericIonizerBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    overloadArmorWorkbenchBeType,
+                    overloadArmorWorkbenchBlock.asItem());
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);

@@ -192,7 +192,8 @@ public abstract class PathingCalculationCapMixin {
             // controllers exist, the DFS never runs and stale usedChannels from
             // a previous pathing calculation are never cleared.
             Set<GridConnection> resetSeen = new ReferenceOpenHashSet<>();
-            for (var node : ae2lt$flowResult.networkNodes()) {
+            Set<IGridNode> networkNodes = ae2lt$flowResult.networkNodes();
+            for (var node : networkNodes) {
                 for (var conn : node.getConnections()) {
                     if (conn instanceof GridConnection gc && resetSeen.add(gc)) {
                         gc.setAdHocChannels(0);
@@ -204,12 +205,27 @@ public abstract class PathingCalculationCapMixin {
             }
 
             var nodeFlow = ae2lt$flowResult.nodeFlow();
-            for (var node : ae2lt$flowResult.networkNodes()) {
+            for (var node : networkNodes) {
                 if (node instanceof OverloadedSubtreeNode osn) {
                     int flow = nodeFlow.getInt(node);
                     osn.ae2lt$setUsedChannels(flow);
                 }
             }
+
+            // Vanilla AE2 gives every non-winner multiblock sibling +1 via
+            // incrementChannelCount at the end of propagateAssignments, so that
+            // meetsChannelRequirements() is true for the entire cluster.
+            // We overwrote usedChannels above, so re-apply the bonus here for
+            // siblings we manage. Without this, the cluster's core block may
+            // end up with usedChannels=0 and the whole multiblock (e.g. a
+            // crafting CPU) reports isActive()=false even though the flow
+            // reservation succeeded.
+            for (var sibling : multiblocksWithChannel) {
+                if (networkNodes.contains(sibling)) {
+                    sibling.incrementChannelCount(1);
+                }
+            }
+
             var connFlow = ae2lt$flowResult.connectionFlow();
             for (var entry : connFlow.reference2IntEntrySet()) {
                 entry.getKey().setAdHocChannels(entry.getIntValue());

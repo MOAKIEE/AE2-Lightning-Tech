@@ -6,10 +6,12 @@ import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadArmorWorkbenchBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -64,6 +66,14 @@ public final class ModBlockEntities {
                             ModBlocks.OVERLOAD_PROCESSING_FACTORY.get())
                             .build(null));
 
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadArmorWorkbenchBlockEntity>>
+            OVERLOAD_ARMOR_WORKBENCH = BLOCK_ENTITY_TYPES.register(
+                    "overload_armor_workbench",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadArmorWorkbenchBlockEntity::new,
+                            ModBlocks.OVERLOAD_ARMOR_WORKBENCH.get())
+                            .build(null));
+
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TeslaCoilBlockEntity>>
             TESLA_COIL = BLOCK_ENTITY_TYPES.register(
                     "tesla_coil",
@@ -94,6 +104,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedInterfaceBlockEntity::new,
                             ModBlocks.OVERLOADED_INTERFACE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPowerSupplyBlockEntity>>
+            OVERLOADED_POWER_SUPPLY = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_power_supply",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedPowerSupplyBlockEntity::new,
+                            ModBlocks.OVERLOADED_POWER_SUPPLY.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessReceiverBlockEntity>>

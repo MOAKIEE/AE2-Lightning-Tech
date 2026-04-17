@@ -19,7 +19,8 @@
     "PathingCalculationCapMixin",
     "ControllerValidatorMixin",
     "EjectCapabilityMixin",
-    "EjectGhostBEMixin"
+    "EjectGhostBEMixin",
+    "WUTHandlerMixin"
   ],
   "client": [
     "client.CableBusRenderStateMixin",
