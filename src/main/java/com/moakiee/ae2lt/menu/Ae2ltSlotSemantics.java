@@ -56,9 +56,6 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_MATRIX", false);
     public static final SlotSemantic OVERLOAD_FACTORY_OUTPUT_0 =
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_OUTPUT_0", false);
-    public static final SlotSemantic WIRELESS_ID_CARD =
-            SlotSemantics.register("AE2LT_WIRELESS_ID_CARD", false);
-
     private Ae2ltSlotSemantics() {
     }
 }

@@ -10,7 +10,9 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.client.gui.FrequencyScreen;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.FrequencyMenu;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
@@ -19,7 +21,6 @@ import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
-import com.moakiee.ae2lt.menu.WirelessControllerMenu;
 
 /**
  * Client event: binds MenuType to Screen.
@@ -38,7 +39,7 @@ public class ModScreens {
         event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
-        event.register(WirelessControllerMenu.TYPE, ModScreens::createWirelessControllerScreen);
+        event.register(FrequencyMenu.TYPE, FrequencyScreen::new);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -87,12 +88,6 @@ public class ModScreens {
             AtmosphericIonizerMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/atmospheric_ionizer.json");
         return new AtmosphericIonizerScreen(menu, inv, title, style);
-    }
-
-    private static WirelessControllerScreen createWirelessControllerScreen(
-            WirelessControllerMenu menu, Inventory inv, Component title) {
-        var style = StyleManager.loadStyleDoc("/screens/wireless_controller.json");
-        return new WirelessControllerScreen(menu, inv, title, style);
     }
 
 }

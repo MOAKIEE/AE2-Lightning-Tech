@@ -1,25 +1,20 @@
 package com.moakiee.ae2lt.block;
 
-import java.util.UUID;
-
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
 
 import appeng.block.AEBaseEntityBlock;
 
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
-import com.moakiee.ae2lt.item.WirelessLinkToolItem;
+import com.moakiee.ae2lt.menu.FrequencyMenu;
 
 /**
- * Wireless receiver block. Place at a remote location and bind to a transmitter
- * using the wireless link tool to create a virtual network bridge.
- * Auto-links on placement if the player carries a bound link tool.
+ * Wireless receiver block. Right-click to open the frequency selection GUI.
  */
 public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlockEntity> {
 
@@ -28,16 +23,17 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
     }
 
     @Override
-    public void setPlacedBy(Level level, BlockPos pos, BlockState state,
-                            @Nullable LivingEntity placer, ItemStack stack) {
-        super.setPlacedBy(level, pos, state, placer, stack);
-        if (level.isClientSide() || !(placer instanceof Player player)) return;
-
-        if (level.getBlockEntity(pos) instanceof WirelessReceiverBlockEntity receiver) {
-            UUID boundId = WirelessLinkToolItem.findBoundIdInInventory(player);
-            if (boundId != null) {
-                receiver.bindToTransmitter(boundId);
+    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
+                                               BlockHitResult hitResult) {
+        if (level.getBlockEntity(pos) instanceof WirelessReceiverBlockEntity be) {
+            if (!level.isClientSide && player instanceof ServerPlayer sp) {
+                sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
+                        (id, inv, p) -> new FrequencyMenu(id, inv, be),
+                        be.getBlockState().getBlock().getName()
+                ), buf -> FrequencyMenu.writeExtraData(buf, be));
             }
+            return InteractionResult.sidedSuccess(level.isClientSide);
         }
+        return super.useWithoutItem(state, level, pos, player, hitResult);
     }
 }

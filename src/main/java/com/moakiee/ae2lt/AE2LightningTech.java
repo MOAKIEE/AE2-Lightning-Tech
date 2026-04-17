@@ -51,7 +51,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
-import com.moakiee.ae2lt.grid.WirelessTransmitterManager;
+import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -139,8 +139,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_V);
                         // 无限存储单元
                         output.accept(ModItems.INFINITE_STORAGE_CELL);
-                        output.accept(ModItems.INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
-                        output.accept(ModItems.INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
                         // 工具
                         output.accept(ModItems.OVERLOAD_PATTERN);
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
@@ -148,8 +146,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
                         // 无线设备
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
-                        output.accept(ModItems.WIRELESS_LINK_TOOL);
-                        output.accept(ModItems.WIRELESS_ID_CARD);
                         output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
                         // 水晶生长
@@ -497,12 +493,12 @@ public class AE2LightningTech {
 
     private void onServerStarting(ServerStartingEvent event) {
         EjectModeRegistry.onServerStart(event.getServer());
-        WirelessTransmitterManager.onServerStart(event.getServer());
+        WirelessFrequencyManager.onServerStart(event.getServer());
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
-        WirelessTransmitterManager.onServerStop();
+        WirelessFrequencyManager.onServerStop();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})

@@ -10,7 +10,7 @@ import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
-import com.moakiee.ae2lt.menu.WirelessControllerMenu;
+import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -65,10 +65,10 @@ public final class ModMenuTypes {
                     "atmospheric_ionizer",
                     () -> AtmosphericIonizerMenu.TYPE);
 
-    public static final DeferredHolder<MenuType<?>, MenuType<WirelessControllerMenu>>
-            WIRELESS_CONTROLLER = MENU_TYPES.register(
-                    "wireless_controller",
-                    () -> WirelessControllerMenu.TYPE);
+    public static final DeferredHolder<MenuType<?>, MenuType<FrequencyMenu>>
+            FREQUENCY_MENU = MENU_TYPES.register(
+                    "frequency_menu",
+                    () -> FrequencyMenu.TYPE);
 
     private ModMenuTypes() {
     }

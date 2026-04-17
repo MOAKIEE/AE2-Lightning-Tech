@@ -1,7 +1,6 @@
 package com.moakiee.ae2lt.blockentity;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -18,32 +17,22 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.me.GridConnection;
-import appeng.util.inv.AppEngInternalInventory;
 
 import com.moakiee.ae2lt.grid.WirelessConnectionCapProvider;
-import com.moakiee.ae2lt.grid.WirelessTransmitterManager;
-import com.moakiee.ae2lt.item.WirelessIdCardItem;
+import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 /**
  * Wireless Overloaded Controller: an overloaded controller that also acts as a
- * wireless transmitter. Insert a {@link WirelessIdCardItem} into the internal
- * slot to register this controller in the global {@link WirelessTransmitterManager}.
- * Receivers with the matching UUID connect directly to this controller's grid node.
+ * wireless transmitter. Select a frequency via the GUI to register this
+ * controller in the global {@link WirelessFrequencyManager}.
+ * Receivers with the matching frequency connect directly to this controller's grid node.
  */
 public class WirelessOverloadedControllerBlockEntity extends OverloadedControllerBlockEntity
-        implements WirelessTransmitterManager.WirelessTransmitterNodeProvider, WirelessConnectionCapProvider {
+        implements WirelessFrequencyManager.WirelessTransmitterNodeProvider, WirelessConnectionCapProvider {
 
-    private final AppEngInternalInventory cardInv = new AppEngInternalInventory(this, 1, 1) {
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.getItem() instanceof WirelessIdCardItem && WirelessIdCardItem.hasCardId(stack);
-        }
-    };
-
-    @Nullable
-    private UUID registeredId;
+    private int frequencyId = -1;
 
     public WirelessOverloadedControllerBlockEntity(BlockPos pos, BlockState blockState) {
         this(ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(), pos, blockState);
@@ -51,14 +40,6 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
 
     protected WirelessOverloadedControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState blockState) {
         super(type, pos, blockState);
-    }
-
-    @Override
-    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
-        super.onChangeInventory(inv, slot);
-        if (inv == cardInv) {
-            onCardChanged();
-        }
     }
 
     @Override
@@ -90,48 +71,137 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     }
 
     @Override
-    @Nullable
-    public UUID getTransmitterUUID() {
-        return getCardUUID();
+    public int getTransmitterFrequencyId() {
+        return frequencyId;
     }
 
-    // ── Card Inventory ──
+    // ── Frequency Management ──
 
-    public AppEngInternalInventory getCardInventory() {
-        return cardInv;
+    public int getFrequencyId() {
+        return frequencyId;
     }
 
-    @Nullable
-    public UUID getCardUUID() {
-        ItemStack card = cardInv.getStackInSlot(0);
-        if (card.isEmpty()) return null;
-        return WirelessIdCardItem.getCardId(card);
+    /**
+     * Channels currently allocated across the grid.
+     * Counts channel-requiring nodes whose requirements are met, instead of
+     * {@code pathingService.getUsedChannels()} — AE2's counter is bugged for
+     * overloaded-only networks (DFS in {@code PathingCalculation.propagateAssignments}
+     * uses {@code getMachineNodes(ControllerBlockEntity.class)} which misses
+     * our controller subclasses due to exact-class indexing).
+     */
+    public int getGridUsedChannels() {
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
+        int count = 0;
+        for (var node : grid.getNodes()) {
+            if (node.hasFlag(appeng.api.networking.GridFlags.REQUIRE_CHANNEL)
+                    && node.meetsChannelRequirements()) {
+                count++;
+            }
+        }
+        return count;
     }
 
-    private void onCardChanged() {
-        UUID newId = getCardUUID();
-        var manager = WirelessTransmitterManager.get();
-        if (manager == null) return;
+    /**
+     * Maximum channels the grid could support.
+     * Returns -1 as a sentinel when the grid is in INFINITE channel mode.
+     */
+    public int getGridMaxChannels() {
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
 
-        if (registeredId != null && !registeredId.equals(newId)) {
-            destroyAllVirtualConnections();
-            manager.unregister(registeredId);
-            registeredId = null;
+        var channelMode = grid.getPathingService().getChannelMode();
+        if (channelMode == appeng.api.networking.pathing.ChannelMode.INFINITE) {
+            return -1;
         }
 
-        if (newId != null && level != null) {
-            manager.register(newId, level.dimension(), worldPosition, getMainNode().getNode(), isAdvanced());
-            registeredId = newId;
+        int overloadedCount = 0;
+        int vanillaCount = 0;
+        for (var node : com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper.getAllControllerNodes(grid)) {
+            if (node.getOwner() instanceof OverloadedControllerBlockEntity) {
+                overloadedCount++;
+            } else {
+                vanillaCount++;
+            }
+        }
+        int factor = Math.max(1, channelMode.getCableCapacityFactor());
+        long cap = (long) overloadedCount
+                * com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper.channelsPerController() * factor
+                + (long) vanillaCount * 32L * factor;
+        return (int) Math.min(Integer.MAX_VALUE, cap);
+    }
+
+    public boolean isFrequencyActive() {
+        if (frequencyId <= 0 || level == null) {
+            return false;
+        }
+
+        var manager = WirelessFrequencyManager.get();
+        if (manager == null) {
+            return false;
+        }
+
+        var entry = manager.findTransmitter(frequencyId);
+        return entry != null
+                && entry.dimension().equals(level.dimension())
+                && entry.pos().equals(worldPosition)
+                && getMainNode().getNode() != null;
+    }
+
+    public void setFrequency(int newFreqId) {
+        if (newFreqId == frequencyId) return;
+
+        var manager = WirelessFrequencyManager.get();
+        if (manager == null) return;
+
+        // validate new frequency is free BEFORE releasing the old one
+        if (newFreqId > 0 && level != null
+                && !manager.canRegisterTransmitter(newFreqId, level.dimension(), worldPosition)) {
+            markForUpdate();
+            return;
+        }
+
+        // release old
+        if (frequencyId > 0) {
+            destroyAllVirtualConnections();
+            manager.unregisterTransmitter(frequencyId);
+            if (level != null) {
+                manager.unregisterDevice(frequencyId, level.dimension(), worldPosition);
+            }
+        }
+
+        int oldFreqId = frequencyId;
+        frequencyId = newFreqId;
+
+        // register new
+        if (frequencyId > 0 && level != null) {
+            if (!manager.registerTransmitter(frequencyId, level.dimension(), worldPosition,
+                    getMainNode().getNode(), isAdvanced())) {
+                // lost race: restore old binding (canRegister check above is best-effort)
+                frequencyId = oldFreqId;
+                if (frequencyId > 0) {
+                    manager.registerTransmitter(frequencyId, level.dimension(), worldPosition,
+                            getMainNode().getNode(), isAdvanced());
+                    manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                            level.dimension(), worldPosition, true, isAdvanced()));
+                }
+            } else {
+                manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                        level.dimension(), worldPosition, true, isAdvanced()));
+            }
         }
 
         saveChanges();
         markForUpdate();
     }
 
+    public void clearFrequency() {
+        setFrequency(-1);
+    }
+
     /**
      * Destroys all virtual (direction-less) connections on this controller's
-     * grid node. Called when the ID card is removed to ensure receivers
-     * in unloaded chunks don't leave orphaned connections.
+     * grid node.
      */
     private void destroyAllVirtualConnections() {
         IGridNode node = getMainNode().getNode();
@@ -155,12 +225,26 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     }
 
     private void updateManagerRegistration() {
-        UUID id = getCardUUID();
-        var manager = WirelessTransmitterManager.get();
-        if (manager == null || id == null || level == null) return;
+        var manager = WirelessFrequencyManager.get();
+        if (manager == null || frequencyId <= 0 || level == null) return;
 
-        manager.register(id, level.dimension(), worldPosition, getMainNode().getNode(), isAdvanced());
-        registeredId = id;
+        // validate frequency still exists; clear zombie binding
+        if (!manager.isFrequencyValid(frequencyId)) {
+            frequencyId = -1;
+            saveChanges();
+            markForUpdate();
+            return;
+        }
+
+        if (!manager.registerTransmitter(frequencyId, level.dimension(), worldPosition,
+                getMainNode().getNode(), isAdvanced())) {
+            frequencyId = -1;
+            saveChanges();
+            markForUpdate();
+            return;
+        }
+        manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                level.dimension(), worldPosition, true, isAdvanced()));
         markForUpdate();
     }
 
@@ -173,22 +257,14 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     }
 
     @Override
-    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
-        super.addAdditionalDrops(level, pos, drops);
-        for (int slot = 0; slot < cardInv.size(); slot++) {
-            ItemStack stack = cardInv.getStackInSlot(slot);
-            if (!stack.isEmpty()) {
-                drops.add(stack.copy());
-            }
-        }
-    }
-
-    @Override
     public void setRemoved() {
-        var manager = WirelessTransmitterManager.get();
-        if (manager != null && registeredId != null) {
-            manager.unregister(registeredId);
-            registeredId = null;
+        var manager = WirelessFrequencyManager.get();
+        if (manager != null && frequencyId > 0) {
+            destroyAllVirtualConnections();
+            manager.unregisterTransmitter(frequencyId);
+            if (level != null) {
+                manager.unregisterDevice(frequencyId, level.dimension(), worldPosition);
+            }
         }
         super.setRemoved();
     }
@@ -214,14 +290,12 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     @Override
     public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        var cardTag = new CompoundTag();
-        cardInv.writeToNBT(cardTag, "CardInv", registries);
-        tag.merge(cardTag);
+        tag.putInt("FrequencyId", frequencyId);
     }
 
     @Override
     public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadTag(tag, registries);
-        cardInv.readFromNBT(tag, "CardInv", registries);
+        frequencyId = tag.contains("FrequencyId") ? tag.getInt("FrequencyId") : -1;
     }
 }
