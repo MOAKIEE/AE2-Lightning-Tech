@@ -236,7 +236,6 @@
   "ae2lt.gui.io_speed.normal": "I/O Speed: Normal (5-80t)",
   "ae2lt.gui.io_speed.fast": "I/O Speed: Fast (1-40t, Probe)",
   "ae2lt.gui.set_amount.tooltip": "Click: Set Amount\nShift+Click: Toggle Unlimited",
-  "item.ae2lt.electro_chime_crystal.catalysis": "Catalysis: %s/%s",
   "item.ae2lt.electro_chime_crystal.percent": "Progress: %s%%",
   "item.ae2lt.electro_chime_crystal.stage": "Stage: %s",
   "item.ae2lt.electro_chime_crystal.stage.0": "Dormant",

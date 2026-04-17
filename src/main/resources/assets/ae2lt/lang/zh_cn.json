@@ -236,7 +236,6 @@
   "ae2lt.weather.clear": "晴天",
   "ae2lt.weather.rain": "雨天",
   "ae2lt.weather.thunderstorm": "雷暴",
-  "item.ae2lt.electro_chime_crystal.catalysis": "催化：%s/%s",
   "item.ae2lt.electro_chime_crystal.percent": "进度：%s%%",
   "item.ae2lt.electro_chime_crystal.stage": "阶段：%s",
   "item.ae2lt.electro_chime_crystal.stage.0": "沉寂",

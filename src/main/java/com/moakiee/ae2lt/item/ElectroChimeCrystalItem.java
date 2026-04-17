@@ -81,14 +81,9 @@ public class ElectroChimeCrystalItem extends Item {
             TooltipContext context,
             List<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
-        int catalysisValue = getCatalysisValue(stack);
-        tooltipComponents.add(Component.translatable(
-                "item.ae2lt.electro_chime_crystal.catalysis",
-                catalysisValue,
-                getMaxCatalysis()).withStyle(ChatFormatting.AQUA));
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.percent",
-                String.format("%.1f", getCatalysisPercent(stack) * 100.0D)).withStyle(ChatFormatting.GRAY));
+                String.format("%.1f", getCatalysisPercent(stack) * 100.0D)).withStyle(ChatFormatting.AQUA));
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.stage",
                 getStageName(stack)).withStyle(ChatFormatting.LIGHT_PURPLE));
