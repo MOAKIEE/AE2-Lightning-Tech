@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
@@ -13,8 +14,6 @@ import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.blockentity.networking.ControllerBlockEntity;
-
-import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 
 /**
  * Centralized owner checks for the overloaded-channel subsystem.

@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.blockentity;
 
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -26,24 +25,23 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
-import com.moakiee.ae2lt.grid.WirelessTransmitterManager;
+import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 /**
  * Wireless receiver that creates a virtual {@link GridConnection} to a remote transmitter.
- * The binding UUID is set by the wireless link tool or wireless link card.
+ * The binding is done via a frequency ID selected through the GUI.
  * Connection management is event-driven: via {@link IGridNodeListener} for grid
- * changes and via {@link WirelessTransmitterManager.TransmitterListener} for
- * transmitter availability changes (card insert/remove).
+ * changes and via {@link WirelessFrequencyManager.TransmitterListener} for
+ * transmitter availability changes.
  */
 public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
-        implements OverloadedGridNodeOwner, WirelessTransmitterManager.TransmitterListener, ServerTickingBlockEntity {
+        implements OverloadedGridNodeOwner, WirelessFrequencyManager.TransmitterListener, ServerTickingBlockEntity {
 
     private static final Logger LOG = LoggerFactory.getLogger("ae2lt-wireless");
 
-    @Nullable
-    private UUID boundTransmitterId;
+    private int frequencyId = -1;
     @Nullable
     private IGridConnection virtualConnection;
 
@@ -71,28 +69,78 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         return EnumSet.allOf(Direction.class);
     }
 
-    // ── Binding ──
+    // ── Frequency Binding ──
 
-    @Nullable
-    public UUID getBoundTransmitterId() {
-        return boundTransmitterId;
+    public int getFrequencyId() {
+        return frequencyId;
     }
 
-    public void bindToTransmitter(UUID transmitterId) {
-        if (transmitterId.equals(this.boundTransmitterId)) return;
+    public int getGridUsedChannels() {
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
+        int count = 0;
+        for (var node : grid.getNodes()) {
+            if (node.hasFlag(appeng.api.networking.GridFlags.REQUIRE_CHANNEL)
+                    && node.meetsChannelRequirements()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    public int getGridMaxChannels() {
+        var grid = getMainNode().getGrid();
+        if (grid == null) return 0;
+
+        var channelMode = grid.getPathingService().getChannelMode();
+        if (channelMode == appeng.api.networking.pathing.ChannelMode.INFINITE) {
+            return -1;
+        }
+
+        int overloadedCount = 0;
+        int vanillaCount = 0;
+        for (var node : com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper.getAllControllerNodes(grid)) {
+            if (node.getOwner() instanceof com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity) {
+                overloadedCount++;
+            } else {
+                vanillaCount++;
+            }
+        }
+        int factor = Math.max(1, channelMode.getCableCapacityFactor());
+        long cap = (long) overloadedCount
+                * com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper.channelsPerController() * factor
+                + (long) vanillaCount * 32L * factor;
+        return (int) Math.min(Integer.MAX_VALUE, cap);
+    }
+
+    public void setFrequency(int newFreqId) {
+        if (newFreqId == this.frequencyId) return;
+
+        var manager = WirelessFrequencyManager.get();
 
         unsubscribeListener();
         destroyVirtualConnection();
-        this.boundTransmitterId = transmitterId;
+        if (manager != null && frequencyId > 0 && level != null) {
+            manager.unregisterDevice(frequencyId, level.dimension(), worldPosition);
+        }
+        this.frequencyId = newFreqId;
         subscribeListener();
+        if (manager != null && frequencyId > 0 && level != null) {
+            manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                    level.dimension(), worldPosition, false, false));
+        }
         saveChanges();
         needsConnectionUpdate = true;
     }
 
-    public void unbind() {
+    public void clearFrequency() {
+        var manager = WirelessFrequencyManager.get();
         unsubscribeListener();
         destroyVirtualConnection();
-        this.boundTransmitterId = null;
+        if (manager != null && frequencyId > 0 && level != null) {
+            manager.unregisterDevice(frequencyId, level.dimension(), worldPosition);
+        }
+        this.frequencyId = -1;
         saveChanges();
         markForUpdate();
     }
@@ -100,24 +148,40 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     // ── Transmitter Listener ──
 
     @Override
-    public void onTransmitterChanged(UUID uuid, boolean available) {
-        if (!uuid.equals(boundTransmitterId)) return;
+    public void onTransmitterChanged(int freqId, boolean available) {
+        if (freqId != frequencyId) return;
+        if (!available) {
+            // check if the frequency itself was deleted (not just transmitter offline)
+            var manager = WirelessFrequencyManager.get();
+            if (manager != null && !manager.isFrequencyValid(freqId)) {
+                // frequency deleted — fully unbind
+                destroyVirtualConnection();
+                unsubscribeListener();
+                if (level != null) {
+                    manager.unregisterDevice(freqId, level.dimension(), worldPosition);
+                }
+                this.frequencyId = -1;
+                saveChanges();
+                markForUpdate();
+                return;
+            }
+        }
         needsConnectionUpdate = true;
     }
 
     private void subscribeListener() {
-        if (boundTransmitterId == null) return;
-        var manager = WirelessTransmitterManager.get();
+        if (frequencyId <= 0) return;
+        var manager = WirelessFrequencyManager.get();
         if (manager != null) {
-            manager.addListener(boundTransmitterId, this);
+            manager.addListener(frequencyId, this);
         }
     }
 
     private void unsubscribeListener() {
-        if (boundTransmitterId == null) return;
-        var manager = WirelessTransmitterManager.get();
+        if (frequencyId <= 0) return;
+        var manager = WirelessFrequencyManager.get();
         if (manager != null) {
-            manager.removeListener(boundTransmitterId, this);
+            manager.removeListener(frequencyId, this);
         }
     }
 
@@ -141,7 +205,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
 
         needsConnectionUpdate = false;
 
-        if (boundTransmitterId == null || level == null || level.isClientSide()) return;
+        if (frequencyId <= 0 || level == null || level.isClientSide()) return;
 
         if (virtualConnection != null) {
             revalidateConnection();
@@ -157,16 +221,16 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     // ── Virtual Connection ──
 
     private void tryEstablishConnection() {
-        if (boundTransmitterId == null || level == null || level.isClientSide()) return;
+        if (frequencyId <= 0 || level == null || level.isClientSide()) return;
         if (virtualConnection != null) return;
 
         IGridNode myNode = getMainNode().getNode();
         if (myNode == null) return;
 
-        var manager = WirelessTransmitterManager.get();
+        var manager = WirelessFrequencyManager.get();
         if (manager == null) return;
 
-        var entry = manager.find(boundTransmitterId);
+        var entry = manager.findTransmitter(frequencyId);
         if (entry == null) return;
 
         if (!entry.advanced()) {
@@ -176,7 +240,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
         }
 
         var server = ((ServerLevel) level).getServer();
-        IGridNode remoteNode = manager.resolveNode(boundTransmitterId, server);
+        IGridNode remoteNode = manager.resolveNode(frequencyId, server);
         if (remoteNode == null) return;
 
         for (var conn : myNode.getConnections()) {
@@ -187,12 +251,12 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
 
         try {
             virtualConnection = GridConnection.create(myNode, remoteNode, null);
-            LOG.debug("Virtual connection established: receiver@{} -> transmitter UUID={}",
-                    worldPosition, boundTransmitterId);
+            LOG.debug("Virtual connection established: receiver@{} -> freq={}",
+                    worldPosition, frequencyId);
             markForUpdate();
         } catch (IllegalStateException e) {
-            LOG.warn("Virtual connection FAILED: receiver@{} -> transmitter UUID={}: {}",
-                    worldPosition, boundTransmitterId, e.getMessage());
+            LOG.warn("Virtual connection FAILED: receiver@{} -> freq={}: {}",
+                    worldPosition, frequencyId, e.getMessage());
         }
     }
 
@@ -225,7 +289,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     }
 
     private void revalidateConnection() {
-        if (boundTransmitterId == null || level == null || level.isClientSide()) return;
+        if (frequencyId <= 0 || level == null || level.isClientSide()) return;
         if (virtualConnection == null) return;
 
         IGridNode myNode = getMainNode().getNode();
@@ -246,11 +310,11 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
             return;
         }
 
-        var manager = WirelessTransmitterManager.get();
+        var manager = WirelessFrequencyManager.get();
         if (manager == null) return;
 
         var server = ((ServerLevel) level).getServer();
-        IGridNode currentTarget = manager.resolveNode(boundTransmitterId, server);
+        IGridNode currentTarget = manager.resolveNode(frequencyId, server);
 
         if (currentTarget == null || connectedTarget != currentTarget) {
             destroyVirtualConnection();
@@ -262,16 +326,33 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onReady() {
         super.onReady();
+        // validate frequency still exists; clear zombie binding
+        if (frequencyId > 0) {
+            var manager = WirelessFrequencyManager.get();
+            if (manager != null && !manager.isFrequencyValid(frequencyId)) {
+                frequencyId = -1;
+                saveChanges();
+                return;
+            }
+            if (manager != null && level != null) {
+                manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                        level.dimension(), worldPosition, false, false));
+            }
+        }
         subscribeListener();
-        if (boundTransmitterId != null) {
+        if (frequencyId > 0) {
             needsConnectionUpdate = true;
         }
     }
 
     @Override
     public void setRemoved() {
+        var manager = WirelessFrequencyManager.get();
         unsubscribeListener();
         destroyVirtualConnection();
+        if (manager != null && frequencyId > 0 && level != null) {
+            manager.unregisterDevice(frequencyId, level.dimension(), worldPosition);
+        }
         super.setRemoved();
     }
 
@@ -279,7 +360,12 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     public void clearRemoved() {
         super.clearRemoved();
         subscribeListener();
-        if (boundTransmitterId != null) {
+        var manager = WirelessFrequencyManager.get();
+        if (manager != null && frequencyId > 0 && level != null) {
+            manager.registerDevice(frequencyId, new WirelessFrequencyManager.DeviceEntry(
+                    level.dimension(), worldPosition, false, false));
+        }
+        if (frequencyId > 0) {
             needsConnectionUpdate = true;
         }
     }
@@ -294,16 +380,12 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     @Override
     public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
-        if (boundTransmitterId != null) {
-            tag.putUUID("BoundTransmitter", boundTransmitterId);
-        }
+        tag.putInt("FrequencyId", frequencyId);
     }
 
     @Override
     public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadTag(tag, registries);
-        if (tag.hasUUID("BoundTransmitter")) {
-            boundTransmitterId = tag.getUUID("BoundTransmitter");
-        }
+        frequencyId = tag.contains("FrequencyId") ? tag.getInt("FrequencyId") : -1;
     }
 }
