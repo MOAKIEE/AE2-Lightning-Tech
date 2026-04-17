@@ -152,10 +152,10 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             return false;
         }
 
-        int fedAmount = tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
-                ? cultivateCrystal(rolledOutput)
-                : 0;
-        long amountToInsert = Math.max(0L, rolledOutput - (long) fedAmount);
+        if (tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
+            cultivateCrystal(serverLevel.random);
+        }
+        long amountToInsert = rolledOutput;
         long inserted = amountToInsert > 0
                 ? grid.getStorageService().getInventory().insert(
                         LightningKey.of(tier),
@@ -164,7 +164,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
                         IActionSource.ofMachine(this))
                 : 0L;
 
-        boolean captured = inserted > 0 || fedAmount > 0;
+        boolean captured = inserted > 0;
         if (!captured) {
             return false;
         }
@@ -248,24 +248,18 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         return EnumSet.allOf(Direction.class);
     }
 
-    private int cultivateCrystal(int rolledOutput) {
+    private void cultivateCrystal(RandomSource random) {
         ItemStack crystal = getInstalledCrystal();
         if (crystal.isEmpty() || crystal.is(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get())) {
-            return 0;
+            return;
         }
 
-        int feed = feedAmount(rolledOutput);
-        int before = ElectroChimeCrystalItem.getCatalysisValue(crystal);
+        int feed = ElectroChimeCrystalItem.rollCatalysisFeed(random);
         int catalysis = ElectroChimeCrystalItem.addCatalysis(crystal, feed);
         if (catalysis >= ElectroChimeCrystalItem.getMaxCatalysis()) {
             inventory.setStackInSlot(LightningCollectorInventory.SLOT_CRYSTAL,
                     new ItemStack(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get()));
         }
-        return Math.max(0, catalysis - before);
-    }
-
-    private static int feedAmount(int rolledOutput) {
-        return Math.max(1, Mth.floor(rolledOutput * AE2LTCommonConfig.lightningCollectorCrystalFeedRatio()));
     }
 
     private static void warnInvalidBaseRange(boolean extremeHighVoltage, int min, int max) {
