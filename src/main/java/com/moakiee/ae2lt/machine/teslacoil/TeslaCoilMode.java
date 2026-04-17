@@ -39,13 +39,13 @@ public enum TeslaCoilMode implements StringRepresentable {
                 : AE2LTCommonConfig.teslaCoilHighVoltageFe();
     }
 
-    public long requiredEnergyForTick(int completedTicks, long consumedEnergy) {
+    public long requiredEnergyForTick(int completedTicks, long consumedEnergy, long totalEnergy) {
         if (completedTicks >= PROCESS_TICKS) {
             return 0L;
         }
 
         int remainingTicks = Math.max(1, PROCESS_TICKS - completedTicks);
-        long remainingEnergy = Math.max(0L, totalEnergy() - consumedEnergy);
+        long remainingEnergy = Math.max(0L, totalEnergy - consumedEnergy);
         if (remainingEnergy <= 0L) {
             return 0L;
         }

@@ -5,7 +5,6 @@ import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
@@ -34,10 +33,5 @@ public class LightningCollectorJadeProvider implements IBlockComponentProvider, 
         if (!accessor.getBlockState().is(ModBlocks.LIGHTNING_COLLECTOR.get())) {
             return;
         }
-
-        CompoundTag data = accessor.getServerData();
-        tooltip.add(Component.translatable(
-                "jade.ae2lt.lightning_collector.cooldown",
-                String.format("%.1f", Math.max(0, data.getInt("CooldownTicks")) / 20.0D)));
     }
 }

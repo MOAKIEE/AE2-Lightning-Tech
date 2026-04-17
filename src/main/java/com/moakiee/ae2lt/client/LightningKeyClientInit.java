@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.client;
 
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,6 +13,7 @@ import appeng.api.client.AEKeyRendering;
 import appeng.items.storage.BasicStorageCell;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.me.key.LightningKeyType;
 import com.moakiee.ae2lt.registry.ModItems;
@@ -22,8 +25,14 @@ public final class LightningKeyClientInit {
 
     @SubscribeEvent
     public static void onClientSetup(FMLClientSetupEvent event) {
-        event.enqueueWork(() ->
-                AEKeyRendering.register(LightningKeyType.INSTANCE, LightningKey.class, LightningKeyRenderHandler.INSTANCE));
+        event.enqueueWork(() -> {
+            AEKeyRendering.register(LightningKeyType.INSTANCE, LightningKey.class, LightningKeyRenderHandler.INSTANCE);
+
+            ItemProperties.register(
+                    ModItems.ELECTRO_CHIME_CRYSTAL.get(),
+                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "catalysis_stage"),
+                    (stack, level, entity, seed) -> ElectroChimeCrystalItem.getCatalysisStage(stack) * 0.25F);
+        });
     }
 
     @SubscribeEvent

@@ -58,7 +58,9 @@ public final class InfiniteCellSavedData extends SavedData {
         var storage = new IndexedStorage();
 
         CompoundTag data = cells.get(id);
-        if (data != null && data.contains("entries")) {
+        if (data != null) {
+            // IndexedStorage persists a split root (keys/lo/hi/totalTypes), not an "entries" list.
+            // Loading unconditionally keeps the deserializer aligned with the current on-disk format.
             storage.load(data, registries);
         }
 

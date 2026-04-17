@@ -2,5 +2,11 @@
   "parent": "item/generated",
   "textures": {
     "layer0": "ae2lt:item/overload_crystal"
-  }
+  },
+  "overrides": [
+    { "predicate": { "ae2lt:catalysis_stage": 0.00 }, "model": "ae2lt:item/electro_chime_crystal_stage_0" },
+    { "predicate": { "ae2lt:catalysis_stage": 0.25 }, "model": "ae2lt:item/electro_chime_crystal_stage_1" },
+    { "predicate": { "ae2lt:catalysis_stage": 0.50 }, "model": "ae2lt:item/electro_chime_crystal_stage_2" },
+    { "predicate": { "ae2lt:catalysis_stage": 0.75 }, "model": "ae2lt:item/electro_chime_crystal_stage_3" }
+  ]
 }

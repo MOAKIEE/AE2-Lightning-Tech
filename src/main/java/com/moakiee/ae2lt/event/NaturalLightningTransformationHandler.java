@@ -64,7 +64,7 @@ public final class NaturalLightningTransformationHandler {
     }
 
     @SubscribeEvent
-    public static void onLightningTick(EntityTickEvent.Post event) {
+    public static void onLightningTick(EntityTickEvent.Pre event) {
         if (!(event.getEntity() instanceof LightningBolt lightningBolt)
                 || !(lightningBolt.level() instanceof ServerLevel serverLevel)) {
             return;

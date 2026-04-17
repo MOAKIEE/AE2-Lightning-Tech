@@ -1,0 +1,9 @@
+{
+  "sources": [
+    {
+      "type": "minecraft:directory",
+      "source": "part/cable/dense_covered_core",
+      "prefix": "part/cable/dense_covered_core/"
+    }
+  ]
+}

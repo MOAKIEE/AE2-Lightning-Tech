@@ -15,7 +15,9 @@ public abstract class ServerLevelMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/server/level/ServerLevel;addFreshEntity(Lnet/minecraft/world/entity/Entity;)Z",
-                    ordinal = 0))
+                    // In 1.21.1 tickChunk spawns the skeleton horse trap first and the
+                    // actual weather lightning bolt second. We must mark the lightning call.
+                    ordinal = 1))
     private Entity ae2lt$markNaturalWeatherLightning(Entity entity) {
         if (entity instanceof LightningBolt lightningBolt) {
             lightningBolt.getPersistentData().putBoolean(

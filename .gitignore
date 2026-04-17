@@ -45,3 +45,5 @@ META-INF/
 #log
 DevLog/
 .claude/
+.codex-tmp/
+.eclipse/

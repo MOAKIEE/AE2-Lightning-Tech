@@ -23,6 +23,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 
 public final class OverloadedCableRenderHelper {
     private static final String DENSE_COVERED_TEXTURE_FOLDER = "part/cable/dense_covered/";
+    private static final String DENSE_COVERED_CORE_TEXTURE_FOLDER = "part/cable/dense_covered_core/";
 
     private OverloadedCableRenderHelper() {
     }
@@ -33,17 +34,19 @@ public final class OverloadedCableRenderHelper {
             return;
         }
 
-        var texture = getTexture(renderState.getCableColor());
+        var cableColor = renderState.getCableColor();
+        var texture = getTexture(cableColor);
+        var coreTexture = getCoreTexture(cableColor);
         var connectionTypes = renderState.getConnectionTypes();
 
         boolean noAttachments = !renderState.getAttachments().values().stream()
                 .anyMatch(IPartModel::requireCableConnection);
         if (noAttachments && isStraightLine(cableType, connectionTypes)) {
-            addStraightDenseConnection(connectionTypes.keySet().iterator().next(), texture, quadsOut);
+            addStraightDenseConnection(connectionTypes.keySet().iterator().next(), coreTexture, texture, quadsOut);
             return;
         }
 
-        addDenseCore(texture, quadsOut);
+        addDenseCore(coreTexture, quadsOut);
 
         for (Entry<Direction, AECableType> connection : connectionTypes.entrySet()) {
             var facing = connection.getKey();
@@ -65,6 +68,13 @@ public final class OverloadedCableRenderHelper {
         return atlas.apply(ResourceLocation.fromNamespaceAndPath(
                 AE2LightningTech.MODID,
                 DENSE_COVERED_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
+    }
+
+    private static TextureAtlasSprite getCoreTexture(AEColor color) {
+        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
+        return atlas.apply(ResourceLocation.fromNamespaceAndPath(
+                AE2LightningTech.MODID,
+                DENSE_COVERED_CORE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
     }
 
     private static boolean isStraightLine(AECableType cableType, EnumMap<Direction, AECableType> sides) {
@@ -117,35 +127,21 @@ public final class OverloadedCableRenderHelper {
         addCoveredCableSizedCube(facing, cubeBuilder);
     }
 
-    private static void addStraightDenseConnection(Direction facing, TextureAtlasSprite texture,
-            List<BakedQuad> quadsOut) {
-        var cubeBuilder = new CubeBuilder(quadsOut);
-        cubeBuilder.setTexture(texture);
-        setStraightCableUVs(cubeBuilder, facing, 3 / 16f, 13 / 16f);
-        addStraightDenseCableSizedCube(facing, cubeBuilder);
-    }
+    private static void addStraightDenseConnection(Direction facing, TextureAtlasSprite coreTexture,
+            TextureAtlasSprite cableTexture, List<BakedQuad> quadsOut) {
+        // Core segment (center 3-13 range)
+        addDenseCore(coreTexture, quadsOut);
 
-    private static void setStraightCableUVs(CubeBuilder cubeBuilder, Direction facing, float x, float y) {
-        switch (facing) {
-            case DOWN, UP -> {
-                cubeBuilder.setCustomUv(Direction.NORTH, x, 0, y, x);
-                cubeBuilder.setCustomUv(Direction.EAST, x, 0, y, x);
-                cubeBuilder.setCustomUv(Direction.SOUTH, x, 0, y, x);
-                cubeBuilder.setCustomUv(Direction.WEST, x, 0, y, x);
-            }
-            case EAST, WEST -> {
-                cubeBuilder.setCustomUv(Direction.UP, 0, x, x, y);
-                cubeBuilder.setCustomUv(Direction.DOWN, 0, x, x, y);
-                cubeBuilder.setCustomUv(Direction.NORTH, 0, x, x, y);
-                cubeBuilder.setCustomUv(Direction.SOUTH, 0, x, x, y);
-            }
-            case NORTH, SOUTH -> {
-                cubeBuilder.setCustomUv(Direction.UP, x, 0, y, x);
-                cubeBuilder.setCustomUv(Direction.DOWN, x, 0, y, x);
-                cubeBuilder.setCustomUv(Direction.EAST, 0, x, x, y);
-                cubeBuilder.setCustomUv(Direction.WEST, 0, x, x, y);
-            }
-        }
+        // Two connection arms using the cable texture
+        var cubeBuilder = new CubeBuilder(quadsOut);
+        cubeBuilder.setTexture(cableTexture);
+        cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing)));
+        addDenseCableSizedCube(facing, cubeBuilder);
+
+        cubeBuilder = new CubeBuilder(quadsOut);
+        cubeBuilder.setTexture(cableTexture);
+        cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing.getOpposite())));
+        addDenseCableSizedCube(facing.getOpposite(), cubeBuilder);
     }
 
     private static void addDenseCableSizedCube(Direction facing, CubeBuilder cubeBuilder) {
@@ -156,30 +152,6 @@ public final class OverloadedCableRenderHelper {
             case SOUTH -> cubeBuilder.addCube(4, 4, 11, 12, 12, 16);
             case UP -> cubeBuilder.addCube(4, 11, 4, 12, 16, 12);
             case WEST -> cubeBuilder.addCube(0, 4, 4, 5, 12, 12);
-        }
-    }
-
-    private static void addStraightDenseCableSizedCube(Direction facing, CubeBuilder cubeBuilder) {
-        switch (facing) {
-            case DOWN, UP -> {
-                cubeBuilder.setUvRotation(Direction.EAST, 2);
-                cubeBuilder.addCube(3, -0.01f, 3, 13, 16.01f, 13);
-                cubeBuilder.setUvRotation(Direction.EAST, 0);
-            }
-            case EAST, WEST -> {
-                cubeBuilder.setUvRotation(Direction.SOUTH, 2);
-                cubeBuilder.setUvRotation(Direction.NORTH, 2);
-                cubeBuilder.addCube(-0.01f, 3, 3, 16.01f, 13, 13);
-                cubeBuilder.setUvRotation(Direction.SOUTH, 0);
-                cubeBuilder.setUvRotation(Direction.NORTH, 0);
-            }
-            case NORTH, SOUTH -> {
-                cubeBuilder.setUvRotation(Direction.EAST, 2);
-                cubeBuilder.setUvRotation(Direction.WEST, 2);
-                cubeBuilder.addCube(3, 3, -0.01f, 13, 13, 16.01f);
-                cubeBuilder.setUvRotation(Direction.EAST, 0);
-                cubeBuilder.setUvRotation(Direction.WEST, 0);
-            }
         }
     }
 

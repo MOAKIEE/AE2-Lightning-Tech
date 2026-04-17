@@ -8,6 +8,7 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -15,9 +16,9 @@ import net.minecraft.world.item.component.CustomData;
 
 public class ElectroChimeCrystalItem extends Item {
     private static final String TAG_CATALYSIS = "ae2lt.catalysis_value";
-    private static final int STAGE_1_THRESHOLD = 4;
-    private static final int STAGE_2_THRESHOLD = 16;
-    private static final int STAGE_3_THRESHOLD = 64;
+    private static final double STAGE_1_FRACTION = 0.20D;
+    private static final double STAGE_2_FRACTION = 0.55D;
+    private static final double STAGE_3_FRACTION = 0.85D;
 
     public ElectroChimeCrystalItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -80,24 +81,25 @@ public class ElectroChimeCrystalItem extends Item {
             TooltipContext context,
             List<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
-        int catalysisValue = getCatalysisValue(stack);
-        tooltipComponents.add(Component.translatable(
-                "item.ae2lt.electro_chime_crystal.catalysis",
-                catalysisValue,
-                getMaxCatalysis()).withStyle(ChatFormatting.AQUA));
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.percent",
-                String.format("%.1f", getCatalysisPercent(stack) * 100.0D)).withStyle(ChatFormatting.GRAY));
+                String.format("%.1f", getCatalysisPercent(stack) * 100.0D)).withStyle(ChatFormatting.AQUA));
         tooltipComponents.add(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.stage",
                 getStageName(stack)).withStyle(ChatFormatting.LIGHT_PURPLE));
     }
 
+    public static int rollCatalysisFeed(RandomSource random) {
+        int min = Math.max(1, AE2LTCommonConfig.electroChimeCatalysisPerStrikeMin());
+        int max = Math.max(min, AE2LTCommonConfig.electroChimeCatalysisPerStrikeMax());
+        return min + random.nextInt(max - min + 1);
+    }
+
     private static int stageThreshold(int stage) {
         int maxCatalysis = getMaxCatalysis();
-        int stage1 = Mth.clamp(STAGE_1_THRESHOLD, 1, maxCatalysis);
-        int stage2 = Mth.clamp(STAGE_2_THRESHOLD, stage1, maxCatalysis);
-        int stage3 = Mth.clamp(STAGE_3_THRESHOLD, stage2, maxCatalysis);
+        int stage1 = Mth.clamp(Mth.ceil(maxCatalysis * STAGE_1_FRACTION), 1, maxCatalysis);
+        int stage2 = Mth.clamp(Mth.ceil(maxCatalysis * STAGE_2_FRACTION), stage1, maxCatalysis);
+        int stage3 = Mth.clamp(Mth.ceil(maxCatalysis * STAGE_3_FRACTION), stage2, maxCatalysis);
         return switch (stage) {
             case 0 -> stage1;
             case 1 -> stage2;

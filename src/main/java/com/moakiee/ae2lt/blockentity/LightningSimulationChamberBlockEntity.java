@@ -24,8 +24,11 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageWatcherNode;
 import appeng.api.orientation.RelativeSide;
+import appeng.api.stacks.AEKey;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.upgrades.IUpgradeInventory;
@@ -37,7 +40,6 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
-import com.moakiee.ae2lt.machine.common.AbstractGridRecipeMachineLogic;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberAutomationInventory;
@@ -91,7 +93,18 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         this.logic = new LightningSimulationChamberLogic(this);
         this.getMainNode()
                 .setIdlePowerUsage(0)
-                .addService(IGridTickable.class, logic);
+                .addService(IGridTickable.class, logic)
+                .addService(IStorageWatcherNode.class, new IStorageWatcherNode() {
+                    @Override
+                    public void updateWatcher(IStackWatcher newWatcher) {
+                        configureLightningWatcher(newWatcher);
+                    }
+
+                    @Override
+                    public void onStackChange(AEKey what, long amount) {
+                        onLightningStackChanged(what);
+                    }
+                });
     }
 
     public LightningSimulationChamberInventory getInventory() {
@@ -394,6 +407,18 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private void onUpgradesChanged() {
         saveChanges();
         logic.onStateChanged();
+    }
+
+    private void configureLightningWatcher(IStackWatcher watcher) {
+        watcher.reset();
+        watcher.add(LightningKey.HIGH_VOLTAGE);
+        watcher.add(LightningKey.EXTREME_HIGH_VOLTAGE);
+    }
+
+    private void onLightningStackChanged(AEKey what) {
+        if (LightningKey.HIGH_VOLTAGE.equals(what) || LightningKey.EXTREME_HIGH_VOLTAGE.equals(what)) {
+            logic.onStateChanged();
+        }
     }
 
     private appeng.me.storage.CompositeStorage getExportTarget(ServerLevel level, Direction direction) {

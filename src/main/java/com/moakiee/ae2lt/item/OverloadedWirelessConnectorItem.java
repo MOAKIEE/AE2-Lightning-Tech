@@ -119,21 +119,9 @@ public class OverloadedWirelessConnectorItem extends Item {
         });
     }
 
-    /** @deprecated Use {@link #selectHost} instead. Kept for API compatibility. */
-    @Deprecated
-    public static void selectProvider(ItemStack stack, Level level, BlockPos pos) {
-        selectHost(stack, level, pos, HOST_PROVIDER);
-    }
-
     public static boolean hasSelection(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         return tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND);
-    }
-
-    /** @deprecated Use {@link #hasSelection} instead. */
-    @Deprecated
-    public static boolean hasSelectedProvider(ItemStack stack) {
-        return hasSelection(stack) && HOST_PROVIDER.equals(getSelectedHostType(stack));
     }
 
     @Nullable

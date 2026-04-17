@@ -31,35 +31,41 @@ public final class LightningTransformService {
 
     public static void handleLightning(ServerLevel level, LightningBolt lightningBolt) {
         long gameTime = level.getGameTime();
-        List<ItemEntity> candidates = collectCandidates(level, lightningBolt.position(), gameTime);
-        if (candidates.isEmpty()) {
-            return;
+        List<LightningTransformPlan> executedPlans = new ArrayList<>();
+        List<RecipeHolder<LightningTransformRecipe>> sortedRecipes = getSortedRecipes(level);
+
+        while (true) {
+            List<ItemEntity> candidates = collectCandidates(level, lightningBolt.position(), gameTime);
+            if (candidates.isEmpty()) {
+                break;
+            }
+
+            LightningTransformRecipeInput input = LightningTransformRecipeInput.fromEntities(candidates);
+            if (input.size() == 0) {
+                break;
+            }
+
+            Optional<MatchedRecipe> matchedRecipe = selectRecipe(sortedRecipes, input);
+            if (matchedRecipe.isEmpty()) {
+                break;
+            }
+
+            LightningTransformPlan plan = matchedRecipe.get().plan();
+            if (!plan.consumeInputs(gameTime)) {
+                break;
+            }
+
+            spawnResult(
+                    level,
+                    matchedRecipe.get().recipe().value().getResultItem(level.registryAccess()),
+                    plan.spawnPosition(),
+                    gameTime);
+            executedPlans.add(plan);
         }
 
-        LightningTransformRecipeInput input = LightningTransformRecipeInput.fromEntities(candidates);
-        if (input.size() == 0) {
-            return;
+        for (LightningTransformPlan plan : executedPlans) {
+            plan.applyTransformLocks(gameTime);
         }
-
-        Optional<MatchedRecipe> matchedRecipe = selectRecipe(level, input);
-        if (matchedRecipe.isEmpty()) {
-            return;
-        }
-
-        LightningTransformPlan plan = matchedRecipe.get().plan();
-        if (!plan.consumeInputs(gameTime)) {
-            return;
-        }
-
-        if (level.random.nextDouble() >= matchedRecipe.get().recipe().value().successChance()) {
-            return;
-        }
-
-        spawnResult(
-                level,
-                matchedRecipe.get().recipe().value().getResultItem(level.registryAccess()),
-                plan.spawnPosition(),
-                gameTime);
     }
 
     private static List<ItemEntity> collectCandidates(ServerLevel level, Vec3 lightningPosition, long gameTime) {
@@ -73,12 +79,16 @@ public final class LightningTransformService {
                 itemEntity -> ProtectedItemEntityHelper.canParticipateInTransform(itemEntity, gameTime));
     }
 
-    private static Optional<MatchedRecipe> selectRecipe(ServerLevel level, LightningTransformRecipeInput input) {
+    private static List<RecipeHolder<LightningTransformRecipe>> getSortedRecipes(ServerLevel level) {
         List<RecipeHolder<LightningTransformRecipe>> recipes =
                 new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
         recipes.sort(RECIPE_ORDER);
+        return recipes;
+    }
 
-        for (RecipeHolder<LightningTransformRecipe> recipeHolder : recipes) {
+    private static Optional<MatchedRecipe> selectRecipe(
+            List<RecipeHolder<LightningTransformRecipe>> sortedRecipes, LightningTransformRecipeInput input) {
+        for (RecipeHolder<LightningTransformRecipe> recipeHolder : sortedRecipes) {
             Optional<LightningTransformPlan> plan = recipeHolder.value().planMatch(input);
             if (plan.isPresent()) {
                 return Optional.of(new MatchedRecipe(recipeHolder, plan.get()));
