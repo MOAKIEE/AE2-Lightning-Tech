@@ -67,7 +67,7 @@ public record EditFrequencyPacket(
             }
 
             var access = freq.getPlayerAccess(player);
-            if (!access.canEdit()) {
+            if (!access.isManager()) {
                 PacketDistributor.sendToPlayer(player,
                         new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                 return;
@@ -78,29 +78,40 @@ public record EditFrequencyPacket(
             }
 
             boolean securityChanged = freq.getSecurity() != pkt.security;
+            // pkt.password is plaintext from the client; freq.getPassword()
+            // is the stored SHA-256 hash. Hash the incoming plaintext with
+            // the same id-salt before comparing — a raw .equals would
+            // always report "changed" once the server-side hashing was
+            // turned on.
             boolean passwordChanged = pkt.security == FrequencySecurityLevel.ENCRYPTED
                     && !pkt.password.isEmpty()
-                    && !pkt.password.equals(freq.getPassword());
-            if ((securityChanged || passwordChanged) && !access.canDelete()) {
+                    && !WirelessFrequency.hashPassword(pkt.password, freq.getId())
+                            .equals(freq.getPassword());
+            if ((securityChanged || passwordChanged) && !access.isOwner()) {
                 PacketDistributor.sendToPlayer(player,
                         new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                 return;
             }
-            if (pkt.security == FrequencySecurityLevel.ENCRYPTED
+            // UI rule: "ENCRYPTED without a password is PRIVATE". When the
+            // request wants ENCRYPTED but there's no stored password AND
+            // the client didn't supply a new one, silently downgrade
+            // instead of bouncing with REQUIRE_PASSWORD. This is the
+            // edit-time counterpart of the same rule in
+            // {@link CreateFrequencyPacket}.
+            FrequencySecurityLevel effectiveSecurity = pkt.security;
+            if (effectiveSecurity == FrequencySecurityLevel.ENCRYPTED
                     && pkt.password.isBlank()
                     && freq.getPassword().isBlank()) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.REQUIRE_PASSWORD));
-                return;
+                effectiveSecurity = FrequencySecurityLevel.PRIVATE;
             }
 
             freq.setName(pkt.name);
             freq.setColor(pkt.color);
-            if (securityChanged) {
-                freq.setSecurity(pkt.security);
+            if (freq.getSecurity() != effectiveSecurity) {
+                freq.setSecurity(effectiveSecurity);
             }
-            if (pkt.security != FrequencySecurityLevel.ENCRYPTED) {
-                // clear stale password when leaving ENCRYPTED
+            if (effectiveSecurity != FrequencySecurityLevel.ENCRYPTED) {
+                // clear stale password when leaving (or falling back from) ENCRYPTED
                 freq.setPassword("");
             } else if (!pkt.password.isEmpty()) {
                 freq.setPassword(pkt.password);

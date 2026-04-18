@@ -63,6 +63,18 @@ neoForge {
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
+        // Second dev client for local multiplayer testing — runs as
+        // "Dev2" with an isolated game directory so options.txt /
+        // saves / resource packs don't collide with the primary client.
+        // Launch via `./gradlew runClient2`; the primary client opens
+        // the world to LAN and this one joins via localhost.
+        client2 {
+            client()
+            programArguments.addAll '--username', 'Dev2'
+            gameDirectory = project.file('run2')
+            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+        }
+
         server {
             server()
             programArgument '--nogui'

@@ -50,7 +50,11 @@ public record DeleteFrequencyPacket(int token, int frequencyId) implements Custo
                 return;
             }
 
-            if (!freq.getOwnerUUID().equals(player.getUUID())) {
+            // Multi-owner rule: any OWNER can delete the frequency —
+            // we check isOwner() rather than the legacy single
+            // ownerUUID equality, which would have gated deletion to
+            // only the original creator.
+            if (!freq.getPlayerAccess(player).isOwner()) {
                 PacketDistributor.sendToPlayer(player,
                         new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                 return;
