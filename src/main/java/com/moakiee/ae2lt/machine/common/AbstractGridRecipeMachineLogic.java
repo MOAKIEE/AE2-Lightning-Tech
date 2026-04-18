@@ -51,7 +51,7 @@ public abstract class AbstractGridRecipeMachineLogic<
 
         host.setWorking(true);
 
-        if (shouldSkipValidationThisTick(lockedRecipe.get())) {
+        if (!canAcceptOutputThisTick(lockedRecipe.get())) {
             if (host.pushOutResult()) {
                 return TickRateModulation.URGENT;
             }
@@ -112,18 +112,14 @@ public abstract class AbstractGridRecipeMachineLogic<
 
     protected abstract Optional<C> validateLockedRecipe(L lockedRecipe);
 
-    protected boolean canConsumeEnergyThisTick(L lockedRecipe, C lockedCandidate) {
-        return true;
-    }
-
     /**
-     * When the machine cannot accept output (e.g. output slot full), skip the
-     * expensive {@link #validateLockedRecipe} call and just attempt auto-export.
-     * Subclasses that override {@link #canConsumeEnergyThisTick} should also
-     * override this to return the same condition.
+     * Returns whether the machine can currently accept the locked recipe's
+     * output. When this returns false, both recipe validation and energy
+     * consumption are skipped for the tick, so we fall through to auto-export
+     * until the output slot drains.
      */
-    protected boolean shouldSkipValidationThisTick(L lockedRecipe) {
-        return false;
+    protected boolean canAcceptOutputThisTick(L lockedRecipe) {
+        return true;
     }
 
     private TickRateModulation tickActiveRecipe(L lockedRecipe, C lockedCandidate) {
@@ -132,7 +128,7 @@ public abstract class AbstractGridRecipeMachineLogic<
             return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
         }
 
-        if (!canConsumeEnergyThisTick(lockedRecipe, lockedCandidate)) {
+        if (!canAcceptOutputThisTick(lockedRecipe)) {
             if (host.pushOutResult()) {
                 return TickRateModulation.URGENT;
             }
