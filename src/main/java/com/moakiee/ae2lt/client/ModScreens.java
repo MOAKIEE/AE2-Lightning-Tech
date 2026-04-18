@@ -11,6 +11,7 @@ import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
@@ -37,6 +38,7 @@ public class ModScreens {
         event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
+        event.register(CrystalCatalyzerMenu.TYPE, ModScreens::createCrystalCatalyzerScreen);
     }
 
     private static OverloadedPatternProviderScreen createOverloadedPatternProviderScreen(
@@ -85,6 +87,12 @@ public class ModScreens {
             AtmosphericIonizerMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/atmospheric_ionizer.json");
         return new AtmosphericIonizerScreen(menu, inv, title, style);
+    }
+
+    private static CrystalCatalyzerScreen createCrystalCatalyzerScreen(
+            CrystalCatalyzerMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/crystal_catalyzer.json");
+        return new CrystalCatalyzerScreen(menu, inv, title, style);
     }
 
 }

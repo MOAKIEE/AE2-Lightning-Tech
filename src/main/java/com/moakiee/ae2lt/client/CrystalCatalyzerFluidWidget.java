@@ -1,0 +1,112 @@
+package com.moakiee.ae2lt.client;
+
+import java.util.List;
+import java.util.function.IntSupplier;
+import java.util.function.Supplier;
+
+import net.minecraft.ChatFormatting;
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
+import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.fluids.FluidStack;
+
+import appeng.core.localization.Tooltips;
+import appeng.client.gui.widgets.ITooltip;
+
+/**
+ * Vertical fluid bar for the Crystal Catalyzer. Tooltip shows both the current
+ * amount and capacity in raw millibuckets.
+ */
+public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITooltip {
+    private final Supplier<FluidStack> fluidSupplier;
+    private final IntSupplier capacitySupplier;
+    private final int color;
+
+    public CrystalCatalyzerFluidWidget(
+            Supplier<FluidStack> fluidSupplier,
+            IntSupplier capacitySupplier,
+            int color) {
+        super(0, 0, 16, 54, Component.empty());
+        this.fluidSupplier = fluidSupplier;
+        this.capacitySupplier = capacitySupplier;
+        this.color = color;
+    }
+
+    @Override
+    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        FluidStack fluid = fluidSupplier.get();
+        if (fluid.isEmpty()) {
+            return;
+        }
+
+        int capacity = Math.max(1, capacitySupplier.getAsInt());
+        int filled = (int) Math.round(height * (double) fluid.getAmount() / (double) capacity);
+        if (filled <= 0) {
+            return;
+        }
+
+        guiGraphics.fill(
+                getX(),
+                getY() + height - filled,
+                getX() + width,
+                getY() + height,
+                color);
+    }
+
+    @Override
+    public List<Component> getTooltipMessage() {
+        FluidStack fluid = fluidSupplier.get();
+        int capacity = capacitySupplier.getAsInt();
+        if (fluid.isEmpty()) {
+            return List.of(
+                    Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", 0, capacity)
+                            .withStyle(Tooltips.NUMBER_TEXT));
+        }
+
+        return List.of(
+                fluid.getHoverName(),
+                Component.empty(),
+                Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", fluid.getAmount(), capacity)
+                        .withStyle(Tooltips.NUMBER_TEXT),
+                Component.empty(),
+                Component.literal(getModDisplayName(fluid))
+                        .withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC));
+    }
+
+    @Override
+    public Rect2i getTooltipArea() {
+        return new Rect2i(getX(), getY(), width, height);
+    }
+
+    @Override
+    public boolean isTooltipAreaVisible() {
+        return true;
+    }
+
+    @Override
+    protected void updateWidgetNarration(NarrationElementOutput narrationElementOutput) {
+    }
+
+    private static String getModDisplayName(FluidStack fluid) {
+        var key = fluid.getFluid() == Fluids.EMPTY
+                ? null
+                : fluid.getFluid().builtInRegistryHolder().key().location();
+        if (key == null) {
+            return "Minecraft";
+        }
+
+        var namespace = key.getNamespace();
+        if ("c".equals(namespace)) {
+            return "Common";
+        }
+
+        return ModList.get()
+                .getModContainerById(namespace)
+                .map(container -> container.getModInfo().getDisplayName())
+                .orElseGet(() -> namespace.replace('_', ' '));
+    }
+}

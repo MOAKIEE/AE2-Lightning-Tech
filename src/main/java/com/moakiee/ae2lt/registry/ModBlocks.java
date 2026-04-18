@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
+import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
@@ -89,6 +90,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<AtmosphericIonizerBlock> ATMOSPHERIC_IONIZER =
             registerBlock("atmospheric_ionizer", AtmosphericIonizerBlock::new);
+
+    public static final DeferredBlock<CrystalCatalyzerBlock> CRYSTAL_CATALYZER =
+            registerBlock("crystal_catalyzer", CrystalCatalyzerBlock::new);
 
     public static final DeferredBlock<OverloadedControllerBlock> OVERLOADED_CONTROLLER =
             registerBlock("overloaded_controller", OverloadedControllerBlock::new);

@@ -1,0 +1,20 @@
+{
+  "type": "ae2lt:crystal_catalyzer",
+  "catalyst": {
+    "item": "ae2:fluix_crystal"
+  },
+  "catalystCount": 1024,
+  "primary": {
+    "item": "ae2:certus_quartz_crystal"
+  },
+  "primaryCount": 32,
+  "fluid": {
+    "id": "minecraft:water",
+    "amount": 500
+  },
+  "output": {
+    "id": "ae2:fluix_crystal",
+    "count": 64
+  },
+  "energyPerCycle": 100000
+}

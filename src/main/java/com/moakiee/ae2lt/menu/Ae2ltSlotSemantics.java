@@ -56,6 +56,14 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_MATRIX", false);
     public static final SlotSemantic OVERLOAD_FACTORY_OUTPUT_0 =
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_OUTPUT_0", false);
+    public static final SlotSemantic CRYSTAL_CATALYZER_CATALYST =
+            SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_CATALYST", false);
+    public static final SlotSemantic CRYSTAL_CATALYZER_MATRIX =
+            SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_MATRIX", false);
+    public static final SlotSemantic CRYSTAL_CATALYZER_PRIMARY =
+            SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_PRIMARY", false);
+    public static final SlotSemantic CRYSTAL_CATALYZER_FLUID =
+            SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_FLUID", false);
 
     private Ae2ltSlotSemantics() {
     }

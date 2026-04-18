@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
+import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
@@ -63,6 +64,11 @@ public final class ModMenuTypes {
             ATMOSPHERIC_IONIZER = MENU_TYPES.register(
                     "atmospheric_ionizer",
                     () -> AtmosphericIonizerMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<CrystalCatalyzerMenu>>
+            CRYSTAL_CATALYZER = MENU_TYPES.register(
+                    "crystal_catalyzer",
+                    () -> CrystalCatalyzerMenu.TYPE);
 
     private ModMenuTypes() {
     }
