@@ -8,9 +8,9 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 /**
  * Capability-facing inventory wrapper.
  *
- * <p>Automation may insert into the catalyst or matrix slot (the matrix slot
- * only accepts {@link com.moakiee.ae2lt.registry.ModItems#LIGHTNING_COLLAPSE_MATRIX});
- * extraction is restricted to the output slot.</p>
+ * <p>Automation may insert catalysts into slot 0 and may route the lightning
+ * collapse matrix through either input slot into the dedicated matrix slot.
+ * Extraction is restricted to the output slot.</p>
  */
 public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiable {
     private final CrystalCatalyzerInventory inventory;
@@ -37,15 +37,19 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
     @Override
     public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
         Objects.requireNonNull(stack, "stack");
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+        }
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isLightningCollapseMatrix(stack)) {
+        if (inventory.isLightningCollapseMatrix(stack) && slot != CrystalCatalyzerInventory.SLOT_OUTPUT) {
             return inventory.insertItem(CrystalCatalyzerInventory.SLOT_MATRIX, stack, simulate);
         }
 
-        if (slot == CrystalCatalyzerInventory.SLOT_CATALYST) {
+        if (slot == CrystalCatalyzerInventory.SLOT_CATALYST
+                && inventory.isItemValid(CrystalCatalyzerInventory.SLOT_CATALYST, stack)) {
             return inventory.insertItem(slot, stack, simulate);
         }
 
@@ -67,15 +71,18 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+        }
         if (stack.isEmpty()) {
             return false;
         }
 
         if (inventory.isLightningCollapseMatrix(stack)) {
-            return slot == CrystalCatalyzerInventory.SLOT_MATRIX;
+            return slot != CrystalCatalyzerInventory.SLOT_OUTPUT;
         }
 
-        return slot == CrystalCatalyzerInventory.SLOT_CATALYST;
+        return slot == CrystalCatalyzerInventory.SLOT_CATALYST
+                && inventory.isItemValid(CrystalCatalyzerInventory.SLOT_CATALYST, stack);
     }
 }
-

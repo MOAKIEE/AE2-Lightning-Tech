@@ -47,4 +47,11 @@ public final class CrystalCatalyzerLogic extends AbstractGridRecipeMachineLogic<
                                 .fromMachine(host.getInventory(), host.getFluid()),
                         host.getLevel()));
     }
+
+    @Override
+    protected boolean canConsumeEnergyThisTick(
+            CrystalCatalyzerLockedRecipe lockedRecipe,
+            CrystalCatalyzerRecipeCandidate lockedCandidate) {
+        return host.canAcceptLockedRecipeOutput(lockedRecipe);
+    }
 }

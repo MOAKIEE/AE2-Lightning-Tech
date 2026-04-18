@@ -68,7 +68,7 @@ public abstract class AbstractGridRecipeMachineLogic<
     }
 
     public boolean hasGridTickWork() {
-        return host.hasLockedRecipe() || host.hasProcessableRecipe() || host.hasAutoExportWork();
+        return host.hasLockedRecipe() || host.hasAutoExportWork() || host.hasProcessableRecipe();
     }
 
     public long getCurrentMaxEnergyPerTick() {
@@ -105,10 +105,21 @@ public abstract class AbstractGridRecipeMachineLogic<
 
     protected abstract Optional<C> validateLockedRecipe(L lockedRecipe);
 
+    protected boolean canConsumeEnergyThisTick(L lockedRecipe, C lockedCandidate) {
+        return true;
+    }
+
     private TickRateModulation tickActiveRecipe(L lockedRecipe, C lockedCandidate) {
         if (host.getConsumedEnergy() >= getTotalEnergy(lockedRecipe)) {
             completeRecipe(lockedRecipe, lockedCandidate);
             return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
+        }
+
+        if (!canConsumeEnergyThisTick(lockedRecipe, lockedCandidate)) {
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return TickRateModulation.SLEEP;
         }
 
         long toConsume = computeEnergyToConsumeThisTick(lockedRecipe);

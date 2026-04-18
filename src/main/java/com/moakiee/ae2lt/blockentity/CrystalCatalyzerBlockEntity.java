@@ -88,7 +88,6 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     private CrystalCatalyzerLockedRecipe lockedRecipe;
     private long consumedEnergy;
     private int processingTicksSpent;
-    private boolean working;
     private boolean autoExport;
     private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
     private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
@@ -163,8 +162,13 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     public Optional<CrystalCatalyzerRecipeCandidate> findProcessableRecipe() {
+        FluidStack currentFluid = tank.getFluid();
+        if (currentFluid.isEmpty()) {
+            return Optional.empty();
+        }
+
         Optional<CrystalCatalyzerRecipeCandidate> candidate = CrystalCatalyzerRecipeService.findRecipe(
-                level, inventory, tank.getFluid());
+                level, inventory, currentFluid);
         if (candidate.isEmpty()) {
             return Optional.empty();
         }
@@ -172,13 +176,34 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     private boolean canAcceptRecipeOutput(CrystalCatalyzerRecipeCandidate candidate) {
-        int multiplier = inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
-        ItemStack template = candidate.recipe().value().getOutputTemplate();
+        return canAcceptRecipeOutput(candidate.recipe().value().getOutputTemplate(), getCurrentOutputMultiplier());
+    }
+
+    public boolean canAcceptLockedRecipeOutput(CrystalCatalyzerLockedRecipe lockedRecipe) {
+        return !getLockedRecipeOutputStack(lockedRecipe).isEmpty();
+    }
+
+    private boolean canAcceptRecipeOutput(ItemStack template, int multiplier) {
         long outputCount = (long) template.getCount() * multiplier;
         if (outputCount <= 0 || outputCount > Integer.MAX_VALUE) {
             return false;
         }
         return inventory.canAcceptRecipeOutput(template.copyWithCount((int) outputCount));
+    }
+
+    private ItemStack getLockedRecipeOutputStack(CrystalCatalyzerLockedRecipe lockedRecipe) {
+        ItemStack template = lockedRecipe.output();
+        long outputCount = (long) template.getCount() * lockedRecipe.outputMultiplier();
+        if (outputCount <= 0 || outputCount > Integer.MAX_VALUE) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack resultStack = template.copyWithCount((int) outputCount);
+        return inventory.canAcceptRecipeOutput(resultStack) ? resultStack : ItemStack.EMPTY;
+    }
+
+    private int getCurrentOutputMultiplier() {
+        return inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
     }
 
     @Override
@@ -202,23 +227,27 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             return Optional.empty();
         }
 
-        lockedRecipe = CrystalCatalyzerLockedRecipe.fromCandidate(candidate.get());
+        lockedRecipe = CrystalCatalyzerLockedRecipe.fromCandidate(candidate.get(), getCurrentOutputMultiplier());
         saveChanges();
         return Optional.of(lockedRecipe);
     }
 
     public void clearLockedRecipe() {
-        if (lockedRecipe == null) {
+        boolean hadLockedRecipe = lockedRecipe != null;
+        boolean hadProgress = consumedEnergy != 0L || processingTicksSpent != 0;
+        if (!hadLockedRecipe && !hadProgress) {
             return;
         }
         lockedRecipe = null;
-        saveChanges();
+        resetProgressState();
+        if (hadLockedRecipe && !hadProgress) {
+            saveChanges();
+        }
     }
 
     @Override
     public void abortProcessing() {
         clearLockedRecipe();
-        resetProgressState();
         setWorking(false);
     }
 
@@ -239,7 +268,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         return Math.min(1.0D, (double) consumedEnergy / (double) lockedRecipe.totalEnergy());
     }
 
-    public void addConsumedEnergy(long amount) {
+    private void addConsumedEnergy(long amount) {
         if (amount <= 0L) {
             return;
         }
@@ -248,13 +277,10 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         } else {
             consumedEnergy += amount;
         }
-        saveChanges();
-        markForClientUpdate();
     }
 
-    public void incrementProcessingTicksSpent() {
+    private void incrementProcessingTicksSpent() {
         processingTicksSpent++;
-        saveChanges();
     }
 
     @Override
@@ -264,13 +290,12 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         processingTicksSpent = 0;
         if (changed) {
             saveChanges();
-            markForClientUpdate();
         }
     }
 
     @Override
     public boolean pushOutResult() {
-        if (allowedOutputs.isEmpty() || !hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
+        if (!hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
             return false;
         }
 
@@ -347,13 +372,8 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     public boolean completeLockedRecipe(
             CrystalCatalyzerLockedRecipe lockedRecipe,
             CrystalCatalyzerRecipeCandidate candidate) {
-        int multiplier = inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
-        ItemStack template = lockedRecipe.output();
-        int baseOutputCount = template.getCount();
-        int outputCount = Math.multiplyExact(baseOutputCount, multiplier);
-
-        ItemStack resultStack = template.copyWithCount(outputCount);
-        if (!inventory.canAcceptRecipeOutput(resultStack)) {
+        ItemStack resultStack = getLockedRecipeOutputStack(lockedRecipe);
+        if (resultStack.isEmpty()) {
             return false;
         }
 
@@ -380,7 +400,6 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         }
 
         clearLockedRecipe();
-        resetProgressState();
         setWorking(false);
         pushOutResult();
         return true;
@@ -405,23 +424,22 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     public void onEnergyConsumed(int consumed) {
         addConsumedEnergy(consumed);
         incrementProcessingTicksSpent();
+        saveChanges();
     }
 
     public boolean isWorking() {
-        return working;
+        BlockState state = getBlockState();
+        return state.hasProperty(CrystalCatalyzerBlock.WORKING)
+                && state.getValue(CrystalCatalyzerBlock.WORKING);
     }
 
     @Override
     public void setWorking(boolean working) {
-        boolean changed = this.working != working;
-        this.working = working;
         if (level != null) {
             BlockState state = getBlockState();
             if (state.hasProperty(CrystalCatalyzerBlock.WORKING)
                     && state.getValue(CrystalCatalyzerBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(CrystalCatalyzerBlock.WORKING, working), Block.UPDATE_ALL);
-            } else if (changed) {
-                markForClientUpdate();
             }
         }
     }
@@ -465,7 +483,10 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
-            lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
+            lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(
+                    data.getCompound(TAG_LOCKED_RECIPE),
+                    registries,
+                    getCurrentOutputMultiplier());
         } else {
             lockedRecipe = null;
         }
@@ -475,7 +496,6 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         } else {
             consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
         }
-        working = lockedRecipe != null;
         exportTargetCache.invalidate();
     }
 
@@ -519,8 +539,16 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     @Override
     public void clearContent() {
         super.clearContent();
+        abortProcessing();
         inventory.clear();
         tank.setFluid(FluidStack.EMPTY);
+        energyStorage.loadStoredEnergy(0L);
+        autoExport = false;
+        allowedOutputs.clear();
+        exportTargetCache.invalidate();
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
     }
 
     @Override
