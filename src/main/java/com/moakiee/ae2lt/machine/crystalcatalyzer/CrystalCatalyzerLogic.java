@@ -54,4 +54,9 @@ public final class CrystalCatalyzerLogic extends AbstractGridRecipeMachineLogic<
             CrystalCatalyzerRecipeCandidate lockedCandidate) {
         return host.canAcceptLockedRecipeOutput(lockedRecipe);
     }
+
+    @Override
+    protected boolean shouldSkipValidationThisTick(CrystalCatalyzerLockedRecipe lockedRecipe) {
+        return !host.canAcceptLockedRecipeOutput(lockedRecipe);
+    }
 }
