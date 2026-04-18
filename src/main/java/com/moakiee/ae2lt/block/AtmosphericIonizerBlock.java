@@ -24,7 +24,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     public static final DirectionProperty FACING = BlockStateProperties.FACING;
 
     public AtmosphericIonizerBlock() {
-        super(metalProps().forceSolidOn());
+        super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH));
