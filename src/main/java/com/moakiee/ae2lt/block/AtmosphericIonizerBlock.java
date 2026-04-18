@@ -21,7 +21,7 @@ import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 
 public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonizerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final DirectionProperty FACING = BlockStateProperties.FACING;
 
     public AtmosphericIonizerBlock() {
         super(metalProps().forceSolidOn());
@@ -38,7 +38,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
     @Override
     public IOrientationStrategy getOrientationStrategy() {
-        return OrientationStrategies.horizontalFacing();
+        return OrientationStrategies.facing();
     }
 
     @Override

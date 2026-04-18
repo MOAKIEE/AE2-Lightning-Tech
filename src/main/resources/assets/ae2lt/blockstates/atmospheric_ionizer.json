@@ -17,6 +17,14 @@
       "apply": { "model": "ae2lt:block/atmospheric_ionizer", "y": 270 }
     },
     {
+      "when": { "facing": "up" },
+      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "x": 270 }
+    },
+    {
+      "when": { "facing": "down" },
+      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "x": 90 }
+    },
+    {
       "when": { "facing": "north", "working": "true" },
       "apply": { "model": "ae2lt:block/atmospheric_ionizer_work" }
     },
@@ -31,6 +39,14 @@
     {
       "when": { "facing": "west", "working": "true" },
       "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "y": 270 }
+    },
+    {
+      "when": { "facing": "up", "working": "true" },
+      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "x": 270 }
+    },
+    {
+      "when": { "facing": "down", "working": "true" },
+      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "x": 90 }
     }
   ]
 }
