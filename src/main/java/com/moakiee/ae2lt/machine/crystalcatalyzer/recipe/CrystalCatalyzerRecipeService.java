@@ -61,18 +61,6 @@ public final class CrystalCatalyzerRecipeService {
         return false;
     }
 
-    public static boolean isKnownPrimary(@Nullable Level level, ItemStack stack) {
-        if (level == null || stack.isEmpty()) {
-            return false;
-        }
-        for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            if (holder.value().primary().test(stack)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static List<RecipeHolder<CrystalCatalyzerRecipe>> getRecipes(Level level) {
         return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get());
     }

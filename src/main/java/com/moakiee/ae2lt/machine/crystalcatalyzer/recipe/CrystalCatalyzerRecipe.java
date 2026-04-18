@@ -31,7 +31,6 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
  *     <li>{@code catalyst}: optional. When absent, the catalyst slot must be empty;
  *         when present, the slot content must match the ingredient and have at least
  *         {@code catalystCount} items (the stack is <em>not</em> consumed).</li>
- *     <li>{@code primary}: mandatory; {@code primaryCount} items will be consumed each cycle.</li>
  *     <li>{@code fluid}: mandatory; the tank must contain this fluid with at least {@code fluid.amount}.</li>
  *     <li>{@code output}: base per-cycle item output (final count = {@code output.count} × matrix multiplier).</li>
  *     <li>{@code energyPerCycle}: total energy (AE) consumed per cycle.</li>
@@ -45,13 +44,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             return DataResult.error(() -> "energyPerCycle must be at least " + MIN_ENERGY_PER_CYCLE);
         }
         return DataResult.success(energy);
-    });
-
-    private static final Codec<Integer> POSITIVE_COUNT_CODEC = Codec.INT.validate(count -> {
-        if (count <= 0) {
-            return DataResult.error(() -> "count must be positive");
-        }
-        return DataResult.success(count);
     });
 
     private static final Codec<Integer> NON_NEGATIVE_COUNT_CODEC = Codec.INT.validate(count -> {
@@ -70,8 +62,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     private final Optional<Ingredient> catalyst;
     private final int catalystCount;
-    private final Ingredient primary;
-    private final int primaryCount;
     private final FluidStack fluid;
     private final ItemStack output;
     private final int energyPerCycle;
@@ -79,24 +69,14 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     public CrystalCatalyzerRecipe(
             Optional<Ingredient> catalyst,
             int catalystCount,
-            Ingredient primary,
-            int primaryCount,
             FluidStack fluid,
             ItemStack output,
             int energyPerCycle) {
         this.catalyst = Objects.requireNonNull(catalyst, "catalyst");
         this.catalystCount = catalystCount;
-        this.primary = Objects.requireNonNull(primary, "primary");
-        this.primaryCount = primaryCount;
         this.fluid = Objects.requireNonNull(fluid, "fluid").copy();
         this.output = Objects.requireNonNull(output, "output").copy();
         this.energyPerCycle = energyPerCycle;
-        if (primary.hasNoItems()) {
-            throw new IllegalArgumentException("primary ingredient cannot be empty");
-        }
-        if (primaryCount <= 0) {
-            throw new IllegalArgumentException("primaryCount must be positive");
-        }
         if (catalyst.isPresent() && catalystCount <= 0) {
             throw new IllegalArgumentException("catalystCount must be positive when catalyst is present");
         }
@@ -114,14 +94,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     public int catalystCount() {
         return catalystCount;
-    }
-
-    public Ingredient primary() {
-        return primary;
-    }
-
-    public int primaryCount() {
-        return primaryCount;
     }
 
     public FluidStack fluid() {
@@ -146,13 +118,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return stack.getCount() >= catalystCount;
     }
 
-    public boolean primaryMatches(ItemStack stack) {
-        if (stack.isEmpty() || !primary.test(stack)) {
-            return false;
-        }
-        return stack.getCount() >= primaryCount;
-    }
-
     public boolean fluidMatches(FluidStack tankFluid) {
         if (tankFluid.isEmpty()) {
             return false;
@@ -163,9 +128,7 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     @Override
     public boolean matches(CrystalCatalyzerRecipeInput input, Level level) {
-        return catalystMatches(input.catalyst())
-                && primaryMatches(input.primary())
-                && fluidMatches(input.fluid());
+        return catalystMatches(input.catalyst()) && fluidMatches(input.fluid());
     }
 
     @Override
@@ -187,7 +150,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> list = NonNullList.create();
         catalyst.ifPresent(list::add);
-        list.add(primary);
         return list;
     }
 
@@ -203,11 +165,9 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     @Override
     public boolean isIncomplete() {
-        return primary.hasNoItems()
-                || output.isEmpty()
+        return output.isEmpty()
                 || fluid.isEmpty()
                 || energyPerCycle < MIN_ENERGY_PER_CYCLE
-                || primaryCount <= 0
                 || (catalyst.isPresent() && catalystCount <= 0);
     }
 
@@ -223,8 +183,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         private static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Ingredient.CODEC_NONEMPTY.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
                         NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
-                        Ingredient.CODEC_NONEMPTY.fieldOf("primary").forGetter(CrystalCatalyzerRecipe::primary),
-                        POSITIVE_COUNT_CODEC.fieldOf("primaryCount").forGetter(CrystalCatalyzerRecipe::primaryCount),
                         FLUID_CODEC.fieldOf("fluid").forGetter(CrystalCatalyzerRecipe::rawFluid),
                         ItemStack.STRICT_CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::rawOutput),
                         POSITIVE_ENERGY_CODEC.fieldOf("energyPerCycle").forGetter(CrystalCatalyzerRecipe::energyPerCycle))
@@ -239,8 +197,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         private static void encode(RegistryFriendlyByteBuf buf, CrystalCatalyzerRecipe recipe) {
             OPTIONAL_INGREDIENT_STREAM_CODEC.encode(buf, recipe.catalyst);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.catalystCount);
-            Ingredient.CONTENTS_STREAM_CODEC.encode(buf, recipe.primary);
-            ByteBufCodecs.VAR_INT.encode(buf, recipe.primaryCount);
             FluidStack.STREAM_CODEC.encode(buf, recipe.fluid);
             ItemStack.STREAM_CODEC.encode(buf, recipe.output);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.energyPerCycle);
@@ -249,12 +205,10 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         private static CrystalCatalyzerRecipe decode(RegistryFriendlyByteBuf buf) {
             Optional<Ingredient> catalyst = OPTIONAL_INGREDIENT_STREAM_CODEC.decode(buf);
             int catalystCount = ByteBufCodecs.VAR_INT.decode(buf);
-            Ingredient primary = Ingredient.CONTENTS_STREAM_CODEC.decode(buf);
-            int primaryCount = ByteBufCodecs.VAR_INT.decode(buf);
             FluidStack fluid = FluidStack.STREAM_CODEC.decode(buf);
             ItemStack output = ItemStack.STREAM_CODEC.decode(buf);
             int energyPerCycle = ByteBufCodecs.VAR_INT.decode(buf);
-            return new CrystalCatalyzerRecipe(catalyst, catalystCount, primary, primaryCount, fluid, output, energyPerCycle);
+            return new CrystalCatalyzerRecipe(catalyst, catalystCount, fluid, output, energyPerCycle);
         }
 
         @Override

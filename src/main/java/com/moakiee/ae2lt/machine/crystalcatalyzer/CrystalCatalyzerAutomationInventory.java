@@ -8,8 +8,8 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 /**
  * Capability-facing inventory wrapper.
  *
- * <p>Automation may insert into catalyst / primary / matrix slots (the matrix
- * slot only accepts {@link com.moakiee.ae2lt.registry.ModItems#LIGHTNING_COLLAPSE_MATRIX});
+ * <p>Automation may insert into the catalyst or matrix slot (the matrix slot
+ * only accepts {@link com.moakiee.ae2lt.registry.ModItems#LIGHTNING_COLLAPSE_MATRIX});
  * extraction is restricted to the output slot.</p>
  */
 public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiable {
@@ -45,8 +45,7 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
             return inventory.insertItem(CrystalCatalyzerInventory.SLOT_MATRIX, stack, simulate);
         }
 
-        if (slot == CrystalCatalyzerInventory.SLOT_CATALYST
-                || slot == CrystalCatalyzerInventory.SLOT_PRIMARY) {
+        if (slot == CrystalCatalyzerInventory.SLOT_CATALYST) {
             return inventory.insertItem(slot, stack, simulate);
         }
 
@@ -76,7 +75,7 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
             return slot == CrystalCatalyzerInventory.SLOT_MATRIX;
         }
 
-        return slot == CrystalCatalyzerInventory.SLOT_CATALYST
-                || slot == CrystalCatalyzerInventory.SLOT_PRIMARY;
+        return slot == CrystalCatalyzerInventory.SLOT_CATALYST;
     }
 }
+

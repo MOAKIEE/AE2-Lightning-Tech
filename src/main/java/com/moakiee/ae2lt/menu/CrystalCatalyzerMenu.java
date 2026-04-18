@@ -58,7 +58,6 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
     private final CrystalCatalyzerBlockEntity host;
     private final Slot catalystSlot;
     private final Slot matrixSlot;
-    private final Slot primarySlot;
     private final Slot outputSlot;
 
     public CrystalCatalyzerMenu(int id, Inventory playerInventory, CrystalCatalyzerBlockEntity host) {
@@ -72,9 +71,6 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
         this.matrixSlot = addSlot(
                 new AppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_MATRIX),
                 Ae2ltSlotSemantics.CRYSTAL_CATALYZER_MATRIX);
-        this.primarySlot = addSlot(
-                new LargeStackAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_PRIMARY),
-                Ae2ltSlotSemantics.CRYSTAL_CATALYZER_PRIMARY);
         this.outputSlot = addSlot(
                 new LargeStackAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);
@@ -272,7 +268,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
             return moveIntoSlots(stack, List.of(matrixSlot));
         }
 
-        return moveIntoSlots(stack, List.of(primarySlot, catalystSlot));
+        return moveIntoSlots(stack, List.of(catalystSlot));
     }
 
     private List<Slot> getPlayerDestinationSlots() {

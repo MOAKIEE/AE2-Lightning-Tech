@@ -17,25 +17,21 @@ public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_OUTPUT = "Output";
     private static final String TAG_FLUID = "Fluid";
     private static final String TAG_ENERGY = "Energy";
-    private static final String TAG_PRIMARY_COUNT = "PrimaryCount";
 
     private final ResourceLocation recipeId;
     private final ItemStack output;
     private final FluidStack fluid;
     private final int energyPerCycle;
-    private final int primaryCount;
 
     public CrystalCatalyzerLockedRecipe(
             ResourceLocation recipeId,
             ItemStack output,
             FluidStack fluid,
-            int energyPerCycle,
-            int primaryCount) {
+            int energyPerCycle) {
         this.recipeId = Objects.requireNonNull(recipeId, "recipeId");
         this.output = Objects.requireNonNull(output, "output").copy();
         this.fluid = Objects.requireNonNull(fluid, "fluid").copy();
         this.energyPerCycle = energyPerCycle;
-        this.primaryCount = primaryCount;
         if (output.isEmpty()) {
             throw new IllegalArgumentException("output cannot be empty");
         }
@@ -44,9 +40,6 @@ public final class CrystalCatalyzerLockedRecipe {
         }
         if (energyPerCycle <= 0) {
             throw new IllegalArgumentException("energyPerCycle must be positive");
-        }
-        if (primaryCount <= 0) {
-            throw new IllegalArgumentException("primaryCount must be positive");
         }
     }
 
@@ -57,8 +50,7 @@ public final class CrystalCatalyzerLockedRecipe {
                 holder.id(),
                 recipe.getOutputTemplate(),
                 recipe.fluid(),
-                recipe.energyPerCycle(),
-                recipe.primaryCount());
+                recipe.energyPerCycle());
     }
 
     public ResourceLocation recipeId() {
@@ -77,10 +69,6 @@ public final class CrystalCatalyzerLockedRecipe {
         return energyPerCycle;
     }
 
-    public int primaryCount() {
-        return primaryCount;
-    }
-
     public long totalEnergy() {
         return energyPerCycle;
     }
@@ -94,7 +82,6 @@ public final class CrystalCatalyzerLockedRecipe {
                 .result()
                 .ifPresent(encoded -> tag.put(TAG_FLUID, encoded));
         tag.putInt(TAG_ENERGY, energyPerCycle);
-        tag.putInt(TAG_PRIMARY_COUNT, primaryCount);
         return tag;
     }
 
@@ -118,8 +105,7 @@ public final class CrystalCatalyzerLockedRecipe {
         }
 
         int energy = tag.getInt(TAG_ENERGY);
-        int primaryCount = tag.getInt(TAG_PRIMARY_COUNT);
-        if (energy <= 0 || primaryCount <= 0) {
+        if (energy <= 0) {
             return null;
         }
 
@@ -127,7 +113,6 @@ public final class CrystalCatalyzerLockedRecipe {
                 ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
                 output,
                 fluid,
-                energy,
-                primaryCount);
+                energy);
     }
 }

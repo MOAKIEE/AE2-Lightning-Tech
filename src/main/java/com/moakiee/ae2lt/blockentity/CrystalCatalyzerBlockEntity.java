@@ -351,15 +351,9 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         ItemStack template = lockedRecipe.output();
         int baseOutputCount = template.getCount();
         int outputCount = Math.multiplyExact(baseOutputCount, multiplier);
-        int consumeCount = lockedRecipe.primaryCount();
 
         ItemStack resultStack = template.copyWithCount(outputCount);
         if (!inventory.canAcceptRecipeOutput(resultStack)) {
-            return false;
-        }
-
-        ItemStack primaryStack = inventory.getStackInSlot(CrystalCatalyzerInventory.SLOT_PRIMARY);
-        if (primaryStack.getCount() < consumeCount) {
             return false;
         }
 
@@ -371,28 +365,17 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             return false;
         }
 
-        ItemStack extractedPrimary = inventory.extractItem(
-                CrystalCatalyzerInventory.SLOT_PRIMARY, consumeCount, false);
-        if (extractedPrimary.getCount() != consumeCount) {
-            if (!extractedPrimary.isEmpty()) {
-                inventory.insertItem(CrystalCatalyzerInventory.SLOT_PRIMARY, extractedPrimary, false);
-            }
-            return false;
-        }
-
         FluidStack drained = tank.drain(requiredFluid, FluidAction.EXECUTE);
         if (drained.getAmount() != requiredFluid.getAmount()) {
             if (!drained.isEmpty()) {
                 tank.fill(drained, FluidAction.EXECUTE);
             }
-            inventory.insertItem(CrystalCatalyzerInventory.SLOT_PRIMARY, extractedPrimary, false);
             return false;
         }
 
         ItemStack leftover = inventory.insertRecipeOutput(resultStack, false);
         if (!leftover.isEmpty()) {
             tank.fill(drained, FluidAction.EXECUTE);
-            inventory.insertItem(CrystalCatalyzerInventory.SLOT_PRIMARY, extractedPrimary, false);
             return false;
         }
 
@@ -500,7 +483,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     protected void writeToStream(RegistryFriendlyByteBuf data) {
         super.writeToStream(data);
         for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
-             slot <= CrystalCatalyzerInventory.SLOT_PRIMARY;
+             slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
             ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
         }
@@ -510,7 +493,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     protected boolean readFromStream(RegistryFriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
-             slot <= CrystalCatalyzerInventory.SLOT_PRIMARY;
+             slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
             ItemStack newStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);

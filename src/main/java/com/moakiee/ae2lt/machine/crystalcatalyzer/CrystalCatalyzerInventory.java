@@ -15,15 +15,13 @@ import com.moakiee.ae2lt.registry.ModItems;
  * <p>Slot layout:
  * 0 = catalyst (1024)
  * 1 = lightning collapse matrix (1)
- * 2 = primary input (1024)
- * 3 = output (1024, machine-write only)</p>
+ * 2 = output (1024, machine-write only)</p>
  */
 public class CrystalCatalyzerInventory extends LargeStackItemHandler {
     public static final int SLOT_CATALYST = 0;
     public static final int SLOT_MATRIX = 1;
-    public static final int SLOT_PRIMARY = 2;
-    public static final int SLOT_OUTPUT = 3;
-    public static final int SLOT_COUNT = 4;
+    public static final int SLOT_OUTPUT = 2;
+    public static final int SLOT_COUNT = 3;
 
     public static final int LARGE_SLOT_LIMIT = 1024;
     public static final int MATRIX_SLOT_LIMIT = 1;
@@ -55,7 +53,6 @@ public class CrystalCatalyzerInventory extends LargeStackItemHandler {
         return switch (slot) {
             case SLOT_MATRIX -> isLightningCollapseMatrix(stack);
             case SLOT_CATALYST -> CrystalCatalyzerRecipeService.isKnownCatalyst(level, stack);
-            case SLOT_PRIMARY -> CrystalCatalyzerRecipeService.isKnownPrimary(level, stack);
             case SLOT_OUTPUT -> false;
             default -> false;
         };
