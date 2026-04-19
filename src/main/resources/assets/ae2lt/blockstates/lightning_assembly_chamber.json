@@ -1,77 +1,16 @@
 {
   "multipart": [
     {
-      "when": {
-        "facing": "north"
-      },
       "apply": {
         "model": "ae2lt:block/lightning_assembly_chamber"
       }
     },
     {
       "when": {
-        "facing": "east"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber",
-        "y": 270
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
         "working": "true"
       },
       "apply": {
         "model": "ae2lt:block/lightning_assembly_chamber_work"
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_work",
-        "y": 90
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_work",
-        "y": 180
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_work",
-        "y": 270
       }
     }
   ]

@@ -2,16 +2,13 @@ package com.moakiee.ae2lt.block;
 
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 
-import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 import appeng.api.orientation.IOrientationStrategy;
@@ -21,24 +18,30 @@ import appeng.menu.locator.MenuLocators;
 
 public class LightningAssemblyChamberBlock extends AEBaseEntityBlock<LightningAssemblyChamberBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final BooleanProperty POWERED = BooleanProperty.create("powered");
 
     public LightningAssemblyChamberBlock() {
         super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
-                .setValue(FACING, Direction.NORTH));
+                .setValue(POWERED, false));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(WORKING);
+        builder.add(POWERED);
     }
 
     @Override
     public IOrientationStrategy getOrientationStrategy() {
-        return OrientationStrategies.horizontalFacing();
+        return OrientationStrategies.none();
+    }
+
+    @Override
+    protected BlockState updateBlockStateFromBlockEntity(BlockState currentState, LightningAssemblyChamberBlockEntity be) {
+        return currentState.setValue(POWERED, be.isPowered());
     }
 
     @Override
