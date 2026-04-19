@@ -129,7 +129,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // guis/text_field.png — dark-on-dark would be invisible, so we
             // match AE2's own Quartz Knife field and use near-white text.
             palette.put(PaletteColor.TEXTFIELD_TEXT,        new Color(0xFF, 0xFF, 0xFF, 0xFF));
-            palette.put(PaletteColor.TEXTFIELD_PLACEHOLDER, new Color(0xA0, 0xA0, 0xA0, 0xFF));
+            palette.put(PaletteColor.TEXTFIELD_PLACEHOLDER, new Color(0x60, 0x60, 0x60, 0xFF));
             palette.put(PaletteColor.TEXTFIELD_SELECTION,   new Color(0x78, 0xAA, 0xFF, 0x78));
             palette.put(PaletteColor.TEXTFIELD_ERROR,       new Color(0xC8, 0x46, 0x46, 0xFF));
             palette.put(PaletteColor.ERROR,                 new Color(0xC8, 0x46, 0x46, 0xFF));
@@ -161,6 +161,29 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     // yet. Only the "Set as User" action is meaningful — the other three
     // buttons are greyed out since there's nothing to demote or remove.
     private boolean popupIsStranger = false;
+
+    /**
+     * Last server-sent {@link FrequencyResponsePacket} message rendered
+     * as an in-GUI toast. Minecraft's action-bar lives in the hotbar
+     * zone — which container screens cover — so a raw
+     * {@code displayClientMessage(..., true)} is invisible while this
+     * GUI is open. Stashing the component here and painting it inside
+     * {@link #renderLabels} makes the feedback actually reach the user.
+     */
+    private Component inlineError = null;
+    private long inlineErrorExpiresAt = 0L;
+    private static final long INLINE_ERROR_DURATION_MS = 4000L;
+
+    /**
+     * Called by {@link FrequencyResponsePacket}'s client handler when
+     * this screen is the active one. Replaces whatever prior toast was
+     * showing (a newer error always wins — the previous one is already
+     * stale information after a fresh server round-trip).
+     */
+    public void showInlineError(Component message) {
+        this.inlineError = message;
+        this.inlineErrorExpiresAt = System.currentTimeMillis() + INLINE_ERROR_DURATION_MS;
+    }
 
     // When true, the Settings-tab Delete button opened the confirmation
     // modal; the underlying tab body is suppressed and only
@@ -1348,6 +1371,25 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         // its FOCUS sprite whenever the mouse is over it. Nothing to
         // overlay here — the selected tab is identified by the GUI body
         // it opens, not by a border accent.
+
+        // Inline error toast (server-pushed). Painted last so it sits
+        // on top of every modal + tab body, near the bottom edge of
+        // the panel where it doesn't collide with the primary
+        // content. A dark translucent bar behind the text keeps it
+        // legible on top of the recessed shelf + list rows.
+        if (inlineError != null) {
+            if (System.currentTimeMillis() < inlineErrorExpiresAt) {
+                int textW = font.width(inlineError);
+                int bgW = Math.min(imageWidth - 8, textW + 8);
+                int bgX = (imageWidth - bgW) / 2;
+                int bgY = imageHeight - 14;
+                g.fill(bgX, bgY, bgX + bgW, bgY + 12, 0xD0202028);
+                g.fill(bgX, bgY, bgX + bgW, bgY + 1, 0xFFD04848);   // top accent
+                drawFlatCentered(g, inlineError, imageWidth / 2, bgY + 2, 0xFFFFB4B4);
+            } else {
+                inlineError = null;
+            }
+        }
     }
 
     /**
