@@ -59,22 +59,54 @@ public record SelectFrequencyPacket(
             var level = player.serverLevel();
             var be = level.getBlockEntity(pkt.blockPos);
 
-            // disconnect
-            if (pkt.frequencyId <= 0) {
-                if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
-                    ctrl.clearFrequency();
-                } else if (be instanceof WirelessReceiverBlockEntity recv) {
-                    recv.clearFrequency();
-                } else {
-                    PacketDistributor.sendToPlayer(player,
-                            new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
-                }
-                // DataSlot handles freqId sync back to client
+            // Resolve the device's CURRENT frequency so the block-op
+            // access gate below knows what permission to verify. Any
+            // non-wireless block entity at this pos is a REJECTED
+            // target — controllers and receivers are the only things
+            // with a frequency binding.
+            int currentFreqId;
+            if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
+                currentFreqId = ctrl.getFrequencyId();
+            } else if (be instanceof WirelessReceiverBlockEntity recv) {
+                currentFreqId = recv.getFrequencyId();
+            } else {
+                PacketDistributor.sendToPlayer(player,
+                        new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
 
             var manager = WirelessFrequencyManager.get();
             if (manager == null) return;
+
+            // Block-op access gate: if the device is currently bound to
+            // a frequency AND the player is trying to change that
+            // binding (disconnect OR switch-to-different), they need
+            // at least USE-level access on the CURRENT freq. Skips:
+            //   - unbound devices (currentFreqId <= 0): fresh config
+            //   - same-id re-select (pkt.frequencyId == currentFreqId):
+            //     this is how an ENCRYPTED outsider submits their
+            //     password to JOIN the current freq; the later
+            //     {@code canPlayerAccess} check does the real work.
+            boolean changingBinding = pkt.frequencyId != currentFreqId;
+            if (changingBinding && currentFreqId > 0) {
+                var currentFreq = manager.getFrequency(currentFreqId);
+                if (currentFreq != null && !currentFreq.canPlayerAccess(player, "")) {
+                    PacketDistributor.sendToPlayer(player,
+                            new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
+                    return;
+                }
+            }
+
+            // disconnect
+            if (pkt.frequencyId <= 0) {
+                if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
+                    ctrl.clearFrequency();
+                } else {
+                    ((WirelessReceiverBlockEntity) be).clearFrequency();
+                }
+                // DataSlot handles freqId sync back to client
+                return;
+            }
 
             WirelessFrequency freq = manager.getFrequency(pkt.frequencyId);
             if (freq == null) {
@@ -100,6 +132,21 @@ public record SelectFrequencyPacket(
                 return;
             }
 
+            // Durable auto-enroll: anyone who cleared the
+            // {@code canPlayerAccess} check above got there via one of
+            //   (a) existing member, or
+            //   (b) PUBLIC fallback USER access, or
+            //   (c) ENCRYPTED + correct password.
+            // Cases (b) and (c) leave the player with access but no
+            // persistent membership entry, so the Members tab and
+            // subsequent session re-opens would forget them. Promoting
+            // both to a real USER row makes access stable and the
+            // member list consistent with "who actually uses this freq".
+            if (!freq.isMember(player) && freq.enrollAsUser(player)) {
+                manager.markModified();
+                SyncFrequencyDetailPacket.broadcastMembersTo(player.getServer(), pkt.frequencyId);
+            }
+
             if (be instanceof WirelessOverloadedControllerBlockEntity
                     && !manager.canRegisterTransmitter(pkt.frequencyId, level.dimension(), pkt.blockPos)) {
                 PacketDistributor.sendToPlayer(player,
@@ -109,11 +156,8 @@ public record SelectFrequencyPacket(
 
             if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
                 ctrl.setFrequency(pkt.frequencyId);
-            } else if (be instanceof WirelessReceiverBlockEntity recv) {
-                recv.setFrequency(pkt.frequencyId);
             } else {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                ((WirelessReceiverBlockEntity) be).setFrequency(pkt.frequencyId);
             }
             // DataSlot handles freqId sync; members may have been updated above
         });

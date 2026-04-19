@@ -17,6 +17,10 @@ public final class NetworkInit {
 
         // existing
         registrar.playToServer(
+                OpenOverloadArmorMenuPacket.TYPE,
+                OpenOverloadArmorMenuPacket.STREAM_CODEC,
+                OpenOverloadArmorMenuPacket::handle);
+        registrar.playToServer(
                 WirelessConnectorUsePacket.TYPE,
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
@@ -24,6 +28,10 @@ public final class NetworkInit {
                 EasterEggPacket.TYPE,
                 EasterEggPacket.STREAM_CODEC,
                 EasterEggPacket::handle);
+        registrar.playToClient(
+                SubmoduleLifecyclePacket.TYPE,
+                SubmoduleLifecyclePacket.STREAM_CODEC,
+                SubmoduleLifecyclePacket::handle);
 
         // frequency system: C→S
         registrar.playToServer(

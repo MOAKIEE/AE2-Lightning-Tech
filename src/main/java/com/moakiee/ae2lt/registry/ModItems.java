@@ -6,6 +6,8 @@ import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
+import com.moakiee.ae2lt.item.OverloadArmorItem;
+import com.moakiee.ae2lt.item.TestOverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
@@ -133,6 +135,16 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_PATTERN_ENCODER = ITEMS.registerItem(
             "overload_pattern_encoder",
             OverloadPatternEncoderItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOAD_ARMOR = ITEMS.registerItem(
+            "overload_armor",
+            OverloadArmorItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<TestOverloadArmorSubmoduleItem> TEST_OVERLOAD_ARMOR_SUBMODULE = ITEMS.registerItem(
+            "test_overload_armor_submodule",
+            TestOverloadArmorSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<Item> OVERLOADED_FILTER_COMPONENT = ITEMS.registerItem(

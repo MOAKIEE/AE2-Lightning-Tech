@@ -56,6 +56,19 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_MATRIX", false);
     public static final SlotSemantic OVERLOAD_FACTORY_OUTPUT_0 =
             SlotSemantics.register("AE2LT_OVERLOAD_FACTORY_OUTPUT_0", false);
+    public static final SlotSemantic OVERLOADED_POWER_SUPPLY_CELL =
+            SlotSemantics.register("AE2LT_OVERLOADED_POWER_SUPPLY_CELL", false);
+    public static final SlotSemantic OVERLOAD_ARMOR_WORKBENCH_ARMOR =
+            SlotSemantics.register("AE2LT_OVERLOAD_ARMOR_WORKBENCH_ARMOR", false);
+    public static final SlotSemantic OVERLOAD_ARMOR_WORKBENCH_CORE =
+            SlotSemantics.register("AE2LT_OVERLOAD_ARMOR_WORKBENCH_CORE", false);
+    public static final SlotSemantic OVERLOAD_ARMOR_WORKBENCH_BUFFER =
+            SlotSemantics.register("AE2LT_OVERLOAD_ARMOR_WORKBENCH_BUFFER", false);
+    public static final SlotSemantic OVERLOAD_ARMOR_WORKBENCH_TERMINAL =
+            SlotSemantics.register("AE2LT_OVERLOAD_ARMOR_WORKBENCH_TERMINAL", false);
+    public static final SlotSemantic OVERLOAD_ARMOR_WORKBENCH_MODULE =
+            SlotSemantics.register("AE2LT_OVERLOAD_ARMOR_WORKBENCH_MODULE", false);
+
     private Ae2ltSlotSemantics() {
     }
 }

@@ -34,6 +34,7 @@ import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageService;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
@@ -41,6 +42,7 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
@@ -54,6 +56,9 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
+import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
+import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
+import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -82,6 +87,13 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private final IManagedGridNode gridNode;
     private final IActionSource wirelessSource;
     private final int totalCapacity;
+
+    @Nullable
+    private IStorageService bufferedEnergyServiceDelegate;
+    @Nullable
+    private BufferedMEStorage wirelessEnergyBufferedStorage;
+    @Nullable
+    private BufferedStorageService wirelessEnergyStorageProxy;
 
     /** Currently displayed page index (0-based). */
     private int currentPage = 0;
@@ -1650,37 +1662,32 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private void distributeWirelessEnergy(ServerLevel sl, AEKey feKey, long currentTick,
                                           int ticksElapsed) {
-        var valid = getOrRefreshValidConnections(sl, currentTick);
-        if (valid.isEmpty()) return;
-
-        wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-        if (wheelDirty) rebuildWheel(valid);
-
-        // Phase 1: deferred machines get priority
-        if (!deferredMachines.isEmpty()) {
-            long available = simulateAvailableFluxEnergy(feKey,
-                    (long) CACHED_APPFLUX_TRANSFER_RATE * deferredMachines.size());
-            if (available <= 0) return;
-            processBatch(sl, deferredMachines, feKey, available);
-            if (!deferredMachines.isEmpty()) return;
-        }
-
-        // Phase 2: poll wheel — skip empty slots to catch up after SLOWER ticks
-        for (int skip = 1; skip < ticksElapsed && wheel[wheelPointer].isEmpty(); skip++) {
-            wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-        }
-
-        var eligible = pollWheel();
-        if (eligible.isEmpty()) return;
-
-        long available = simulateAvailableFluxEnergy(feKey,
-                (long) CACHED_APPFLUX_TRANSFER_RATE * eligible.size());
-        if (available <= 0) {
-            deferredMachines.addAll(eligible);
-            eligible.clear();
+        BufferedStorageService proxy = getWirelessEnergyStorageProxy();
+        BufferedMEStorage buffered = wirelessEnergyBufferedStorage;
+        if (proxy == null || buffered == null) {
             return;
         }
-        processBatch(sl, eligible, feKey, available);
+
+        var valid = getOrRefreshValidConnections(sl, currentTick);
+        if (valid.isEmpty()) {
+            return;
+        }
+
+        buffered.setBufferCapacity(0L);
+        buffered.setCostMultiplier(1);
+
+        var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
+        for (var conn : valid) {
+            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
+        }
+
+        WirelessEnergyAPI.distributeBatch(
+                sl,
+                targets,
+                buffered,
+                proxy,
+                () -> gridNode.getGrid(),
+                wirelessSource);
     }
 
     private void processBatch(ServerLevel sl, List<ScheduleEntry> machines,
@@ -1967,6 +1974,29 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         .insert(feKey, amount, Actionable.MODULATE, wirelessSource));
     }
 
+    @Nullable
+    private BufferedStorageService getWirelessEnergyStorageProxy() {
+        var grid = gridNode.getGrid();
+        if (grid == null) {
+            bufferedEnergyServiceDelegate = null;
+            wirelessEnergyBufferedStorage = null;
+            wirelessEnergyStorageProxy = null;
+            return null;
+        }
+
+        IStorageService storageService = grid.getStorageService();
+        if (wirelessEnergyStorageProxy == null
+                || wirelessEnergyBufferedStorage == null
+                || bufferedEnergyServiceDelegate != storageService) {
+            MEStorage inventory = storageService.getInventory();
+            wirelessEnergyBufferedStorage = new BufferedMEStorage(inventory);
+            wirelessEnergyStorageProxy = new BufferedStorageService(storageService, wirelessEnergyBufferedStorage);
+            bufferedEnergyServiceDelegate = storageService;
+        }
+
+        return wirelessEnergyStorageProxy;
+    }
+
     private static final Item APPFLUX_INDUCTION_CARD =
             AppFluxHelper.getInductionCard();
 
@@ -1977,7 +2007,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final AEKey CACHED_APPFLUX_FE_KEY = AppFluxHelper.FE_KEY;
 
     /** Cached transfer rate from Applied Flux config. 0 if not available. */
-    private static final int CACHED_APPFLUX_TRANSFER_RATE = AppFluxHelper.TRANSFER_RATE;
+    private static final long CACHED_APPFLUX_TRANSFER_RATE = AppFluxHelper.TRANSFER_RATE;
 
 
     // ---- SavedData persistence helpers ------------------------------------------

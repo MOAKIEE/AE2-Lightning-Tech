@@ -6,12 +6,14 @@ import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.block.OverloadArmorWorkbenchBlock;
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.block.OverloadTntBlock;
 import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
@@ -87,6 +89,9 @@ public final class ModBlocks {
     public static final DeferredBlock<OverloadProcessingFactoryBlock> OVERLOAD_PROCESSING_FACTORY =
             registerBlock("overload_processing_factory", OverloadProcessingFactoryBlock::new);
 
+    public static final DeferredBlock<OverloadArmorWorkbenchBlock> OVERLOAD_ARMOR_WORKBENCH =
+            registerBlock("overload_armor_workbench", OverloadArmorWorkbenchBlock::new);
+
     public static final DeferredBlock<TeslaCoilBlock> TESLA_COIL =
             registerBlock("tesla_coil", TeslaCoilBlock::new);
 
@@ -133,6 +138,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadedInterfaceBlock> OVERLOADED_INTERFACE =
             registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
+
+    public static final DeferredBlock<OverloadedPowerSupplyBlock> OVERLOADED_POWER_SUPPLY =
+            registerBlock("overloaded_power_supply", OverloadedPowerSupplyBlock::new);
 
     public static final DeferredBlock<WirelessReceiverBlock> WIRELESS_RECEIVER =
             registerBlock("wireless_receiver", WirelessReceiverBlock::new);

@@ -60,16 +60,32 @@ public record CreateFrequencyPacket(
                 PacketDistributor.sendToPlayer(player, new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
-            if (pkt.security == FrequencySecurityLevel.ENCRYPTED && pkt.password.isBlank()) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.REQUIRE_PASSWORD));
-                return;
+            // UI rule: "ENCRYPTED without a password is PRIVATE" — silently
+            // downgrade instead of bouncing the request back with a
+            // REQUIRE_PASSWORD error dialog. The client-side Create tab
+            // doesn't force the user to enter a password before allowing
+            // the ENCRYPTED option, so this fallback keeps the two layers
+            // consistent.
+            FrequencySecurityLevel effectiveSecurity = pkt.security;
+            if (effectiveSecurity == FrequencySecurityLevel.ENCRYPTED && pkt.password.isBlank()) {
+                effectiveSecurity = FrequencySecurityLevel.PRIVATE;
             }
 
-            var freq = manager.createFrequency(player, pkt.name, pkt.color, pkt.security, pkt.password);
+            var freq = manager.createFrequency(player, pkt.name, pkt.color, effectiveSecurity, pkt.password);
             if (freq != null) {
                 UpdateFrequencyBasicPacket.broadcastToOpenMenus(
                         player.getServer(), UpdateFrequencyBasicPacket.forFrequency(freq));
+                // Push the member list to the creator immediately. The
+                // generic {@link SyncFrequencyDetailPacket#broadcastMembersTo}
+                // filters on "player.containerMenu's current freq id ==
+                // this freq", but a newly-created frequency isn't yet
+                // bound to any device — so without this explicit send
+                // the creator's {@link com.moakiee.ae2lt.client.ClientFrequencyCache}
+                // never learns they're an OWNER member, and the client's
+                // {@code needsPasswordUnlock} predicate misfires on the
+                // first Select click (pops the password modal for the
+                // creator of an ENCRYPTED freq they just set up).
+                SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(player, freq.getId());
             }
         });
     }

@@ -15,11 +15,14 @@ import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
+import com.moakiee.ae2lt.menu.OverloadArmorMenu;
+import com.moakiee.ae2lt.menu.OverloadArmorWorkbenchMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 
 /**
@@ -32,7 +35,10 @@ public class ModScreens {
     public static void registerScreens(RegisterMenuScreensEvent event) {
         event.register(OverloadedPatternProviderMenu.TYPE, ModScreens::createOverloadedPatternProviderScreen);
         event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
+        event.register(OverloadArmorMenu.TYPE, OverloadArmorScreen::new);
+        event.register(OverloadArmorWorkbenchMenu.TYPE, OverloadArmorWorkbenchScreen::new);
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
+        event.register(OverloadedPowerSupplyMenu.TYPE, ModScreens::createOverloadedPowerSupplyScreen);
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
         event.register(LightningAssemblyChamberMenu.TYPE, ModScreens::createLightningAssemblyChamberScreen);
         event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
@@ -52,6 +58,12 @@ public class ModScreens {
             OverloadedInterfaceMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/overloaded_interface.json");
         return new OverloadedInterfaceScreen(menu, inv, title, style);
+    }
+
+    private static OverloadedPowerSupplyScreen createOverloadedPowerSupplyScreen(
+            OverloadedPowerSupplyMenu menu, Inventory inv, Component title) {
+        var style = StyleManager.loadStyleDoc("/screens/overloaded_power_supply.json");
+        return new OverloadedPowerSupplyScreen(menu, inv, title, style);
     }
 
     private static LightningSimulationChamberScreen createLightningSimulationChamberScreen(

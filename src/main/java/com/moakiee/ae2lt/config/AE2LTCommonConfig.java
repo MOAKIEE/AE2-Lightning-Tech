@@ -128,8 +128,12 @@ public final class AE2LTCommonConfig {
         return VALUES.lightningCollectorPerfectEhvOutput.get();
     }
 
-    public static double lightningCollectorCrystalFeedRatio() {
-        return VALUES.lightningCollectorCrystalFeedRatio.get();
+    public static int electroChimeCatalysisPerStrikeMin() {
+        return VALUES.electroChimeCatalysisPerStrikeMin.get();
+    }
+
+    public static int electroChimeCatalysisPerStrikeMax() {
+        return VALUES.electroChimeCatalysisPerStrikeMax.get();
     }
 
     public static double lightningCollectorSpreadRatio() {
@@ -181,7 +185,8 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue lightningCollectorEhvCrystalEnd;
         private final ModConfigSpec.IntValue lightningCollectorPerfectHvOutput;
         private final ModConfigSpec.IntValue lightningCollectorPerfectEhvOutput;
-        private final ModConfigSpec.DoubleValue lightningCollectorCrystalFeedRatio;
+        private final ModConfigSpec.IntValue electroChimeCatalysisPerStrikeMin;
+        private final ModConfigSpec.IntValue electroChimeCatalysisPerStrikeMax;
         private final ModConfigSpec.DoubleValue lightningCollectorSpreadRatio;
         private final ModConfigSpec.IntValue teslaCoilHighVoltageDustCost;
         private final ModConfigSpec.IntValue teslaCoilHighVoltageFe;
@@ -224,9 +229,6 @@ public final class AE2LTCommonConfig {
             lightningCollectorPerfectEhvOutput = builder
                     .comment("Fixed EHV output for a perfect crystal.")
                     .defineInRange("perfectEhvOutput", 16, 0, Integer.MAX_VALUE);
-            lightningCollectorCrystalFeedRatio = builder
-                    .comment("Fraction of output used to feed crystals. Range: > 0.")
-                    .defineInRange("crystalFeedRatio", 0.15D, 1.0E-6D, Double.MAX_VALUE);
             lightningCollectorSpreadRatio = builder
                     .comment("Fraction of output used as random spread. Range: > 0.")
                     .defineInRange("spreadRatio", 0.12D, 1.0E-6D, Double.MAX_VALUE);
@@ -236,7 +238,13 @@ public final class AE2LTCommonConfig {
             builder.push("electroChimeCrystal");
             electroChimeMaxCatalysis = builder
                     .comment("Catalysis value needed to transform an electro chime crystal into its perfect form.")
-                    .defineInRange("maxCatalysis", 19, 1, Integer.MAX_VALUE);
+                    .defineInRange("maxCatalysis", 180, 1, Integer.MAX_VALUE);
+            electroChimeCatalysisPerStrikeMin = builder
+                    .comment("Minimum catalysis gained per natural (EHV) lightning strike on the collector.")
+                    .defineInRange("catalysisPerStrikeMin", 8, 1, Integer.MAX_VALUE);
+            electroChimeCatalysisPerStrikeMax = builder
+                    .comment("Maximum catalysis gained per natural (EHV) lightning strike on the collector.")
+                    .defineInRange("catalysisPerStrikeMax", 12, 1, Integer.MAX_VALUE);
             builder.pop();
 
             builder.push("overloadTnt");

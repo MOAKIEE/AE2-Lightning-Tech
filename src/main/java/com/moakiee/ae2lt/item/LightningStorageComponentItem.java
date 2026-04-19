@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.me.key.LightningKeyType;
 public final class LightningStorageComponentItem extends BasicStorageCell {
     private static final int BYTES_PER_TYPE = 8;
     private static final int TOTAL_TYPES = 2;
+    private final int usableCapacity;
     private final int totalBytes;
 
     public LightningStorageComponentItem(int usableCapacity, double idleDrain) {
@@ -18,6 +19,7 @@ public final class LightningStorageComponentItem extends BasicStorageCell {
                 BYTES_PER_TYPE,
                 TOTAL_TYPES,
                 LightningKeyType.INSTANCE);
+        this.usableCapacity = usableCapacity;
         if ((usableCapacity & 7) != 0) {
             throw new IllegalArgumentException(
                     "Lightning storage component capacity must be a multiple of 8: " + usableCapacity);
@@ -32,5 +34,9 @@ public final class LightningStorageComponentItem extends BasicStorageCell {
     @Override
     public int getBytes(ItemStack cellItem) {
         return this.totalBytes;
+    }
+
+    public int getUsableCapacity() {
+        return usableCapacity;
     }
 }
