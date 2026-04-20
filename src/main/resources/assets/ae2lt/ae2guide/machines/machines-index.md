@@ -14,7 +14,7 @@ AE2 闪电科技引入了多种加工机器，它们利用闪电和 FE 能量执
 
 | 机器 | 核心功能 | 消耗 |
 |------|---------|------|
-| [闪电模拟室](lightning-simulation-chamber.md) | 单输入材料转化 | 闪电 + FE |
+| [闪电模拟室](lightning-simulation-chamber.md) | 多输入材料转化（1~3种） | 闪电 + FE |
 | [闪电装配室](lightning-assembly-chamber.md) | 多输入高级装配 | 闪电 + FE |
 | [过载处理工厂](overload-processing-factory.md) | 流体+物品的多并行加工 | FE |
 | [水晶催化器](crystal-catalyzer.md) | 流体+催化剂的水晶培育 | FE |
