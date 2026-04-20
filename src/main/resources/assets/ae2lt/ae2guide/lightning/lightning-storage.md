@@ -9,15 +9,17 @@ item_ids:
   - ae2lt:lightning_storage_component_iii
   - ae2lt:lightning_storage_component_iv
   - ae2lt:lightning_storage_component_v
+  - ae2lt:infinite_high_voltage_lightning_cell
+  - ae2lt:infinite_storage_cell
 ---
 
 # 闪电存储元件
 
-闪电存储元件是专门用于在 ME 网络中存储闪电的存储介质。与普通物品存储元件类似，需要放入 <ItemLink id="ae2:drive" /> 中使用。
+闪电存储元件是专用于在 ME 网络中存放闪电的存储介质。与普通物品 / 流体存储元件一样，只需放入 <ItemLink id="ae2:drive" /> 即可使用。
 
 ## 元件等级
 
-闪电存储元件共有五个等级，存储容量逐级递增：
+闪电存储元件共有五档，容量逐级递增。每枚元件可以同时存放**高压闪电**与**极高压闪电**两种类型。
 
 <ItemGrid>
   <ItemIcon id="ae2lt:lightning_storage_component_i" />
@@ -27,7 +29,7 @@ item_ids:
   <ItemIcon id="ae2lt:lightning_storage_component_v" />
 </ItemGrid>
 
-| 元件等级 | 有效容量 | 待机耗电 |
+| 元件等级 | 有效容量 | 空闲耗电 |
 |---------|---------|---------|
 | 闪电存储元件 I | 128 | 32 AE/t |
 | 闪电存储元件 II | 512 | 128 AE/t |
@@ -35,18 +37,14 @@ item_ids:
 | 闪电存储元件 IV | 8,192 | 2,048 AE/t |
 | 闪电存储元件 V | 32,768 | 8,192 AE/t |
 
-每个元件可以同时存储高压闪电和极高压闪电两种类型。
-
-## 特殊存储元件
-
-### 无限高压闪电元件
+## 无限高压闪电元件
 
 <ItemImage id="ae2lt:infinite_high_voltage_lightning_cell" scale="2" float="left" />
 
-**无限高压闪电元件**是一种特殊的存储元件，它提供无限量的高压闪电。将其放入 ME 驱动器后，网络中的高压闪电数量将被视为无限。这是一种终极目标型物品，适用于大规模自动化工厂。
+**无限高压闪电元件**是一种终极型存储介质。放入 <ItemLink id="ae2:drive" /> 后，网络中高压闪电的数量将按无限处理，适用于大规模自动化产线。
 
-### 无限存储元件
+## 无限存储元件
 
 <ItemImage id="ae2lt:infinite_storage_cell" scale="2" float="left" />
 
-**无限存储元件**可以存储近乎无限量的任意物品，是一种终极存储解决方案。
+**无限存储元件**可容纳几乎无限量的任意物品，是跨类别的终极存储方案，适用于后期的主仓库节点。

@@ -1,21 +1,25 @@
 ---
 navigation:
   title: AE2 闪电科技
-  icon: ae2lt:lightning_collector
-  position: 0
+  icon: ae2lt:overload_crystal
+  position: 1000
 ---
 
 # AE2 闪电科技
 
-AE2 闪电科技（AE2 Lightning Tech）是 Applied Energistics 2 的扩展模组，围绕 **闪电** 这一全新资源类型展开，引入了一套完整的材料链、加工机器与网络扩展。
+AE2 闪电科技（AE2 Lightning Tech）是 Applied Energistics 2 的扩展模组。它为 ME 网络引入了一种全新的存储类型——**闪电**，并围绕闪电提供了完整的材料链、加工机器，以及突破原版频道上限的「过载」网络设备。
 
-本模组的核心理念是：利用自然界的雷电之力驱动 ME 网络中的高级加工流程，并通过一系列「过载」设备突破原版 AE2 网络的极限。
+主要特性：
 
-## 内容概览
+* 将自然或设备产生的雷电收集为**闪电能量**，与物品、流体一样在 ME 网络中存放
+* 使用闪电驱动多种高级加工机器，生产过载合金、过载处理器、闪电坍缩矩阵等新材料
+* 通过过载控制器、过载线缆、过载样板供应器与过载 ME 接口，扩展 ME 网络的频道容量与管理范围
 
-* [入门指南](getting-started.md) — 从零开始的闪电科技之旅
-* [闪电系统](lightning/lightning-index.md) — 闪电的收集、存储与消耗
-* [加工机器](machines/machines-index.md) — 各类加工设备的使用方法
-* [过载水晶](materials/overload-crystal.md) — 过载水晶的培育与材料链
-* [材料与物品](materials/materials-index.md) — 关键材料一览
-* [过载网络](overloaded-network/overloaded-network-index.md) — 过载控制器、线缆与高级网络设备
+## 内容导航
+
+* [入门指南](getting-started.md) — 从第一块过载水晶到第一条闪电产线
+* [闪电系统](lightning/lightning-index.md) — 闪电的产生、存储与消耗
+* [加工机器](machines/machines-index.md) — 闪电模拟室、闪电装配室、过载处理工厂等
+* [过载水晶](materials/overload-crystal.md) — 过载水晶母岩的培育与衰减
+* [材料与物品](materials/materials-index.md) — 关键材料速查
+* [过载网络](overloaded-network/overloaded-network-index.md) — 过载控制器、线缆、接口、样板供应器
