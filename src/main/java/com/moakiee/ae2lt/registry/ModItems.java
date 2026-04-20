@@ -198,6 +198,28 @@ public final class ModItems {
         registerStorageCellModel(INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
     }
 
+    public static ColoredPartItem<OverloadedCablePart> getOverloadedCable(AEColor color) {
+        return switch (color) {
+            case TRANSPARENT -> OVERLOADED_CABLE.get();
+            case WHITE -> OVERLOADED_CABLE_WHITE.get();
+            case ORANGE -> OVERLOADED_CABLE_ORANGE.get();
+            case MAGENTA -> OVERLOADED_CABLE_MAGENTA.get();
+            case LIGHT_BLUE -> OVERLOADED_CABLE_LIGHT_BLUE.get();
+            case YELLOW -> OVERLOADED_CABLE_YELLOW.get();
+            case LIME -> OVERLOADED_CABLE_LIME.get();
+            case PINK -> OVERLOADED_CABLE_PINK.get();
+            case GRAY -> OVERLOADED_CABLE_GRAY.get();
+            case LIGHT_GRAY -> OVERLOADED_CABLE_LIGHT_GRAY.get();
+            case CYAN -> OVERLOADED_CABLE_CYAN.get();
+            case PURPLE -> OVERLOADED_CABLE_PURPLE.get();
+            case BLUE -> OVERLOADED_CABLE_BLUE.get();
+            case BROWN -> OVERLOADED_CABLE_BROWN.get();
+            case GREEN -> OVERLOADED_CABLE_GREEN.get();
+            case RED -> OVERLOADED_CABLE_RED.get();
+            case BLACK -> OVERLOADED_CABLE_BLACK.get();
+        };
+    }
+
     private static DeferredItem<LightningStorageComponentItem> registerLightningStorageComponent(
             String id,
             int totalBytes,
