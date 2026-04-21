@@ -88,15 +88,15 @@ public final class ModItems {
             () -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
-            registerLightningStorageComponent("lightning_storage_component_i", 64, 32);
+            registerLightningStorageComponent("lightning_storage_component_i", 128, 32);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
-            registerLightningStorageComponent("lightning_storage_component_ii", 256, 128);
+            registerLightningStorageComponent("lightning_storage_component_ii", 512, 128);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
-            registerLightningStorageComponent("lightning_storage_component_iii", 1024, 512);
+            registerLightningStorageComponent("lightning_storage_component_iii", 2048, 512);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
-            registerLightningStorageComponent("lightning_storage_component_iv", 4096, 2048);
+            registerLightningStorageComponent("lightning_storage_component_iv", 8192, 2048);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
-            registerLightningStorageComponent("lightning_storage_component_v", 16384, 8192);
+            registerLightningStorageComponent("lightning_storage_component_v", 32768, 8192);
 
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_I =
             ITEMS.registerSimpleItem("lightning_cell_component_i", new Item.Properties());
@@ -191,12 +191,12 @@ public final class ModItems {
     }
 
     public static void registerStorageCellModels() {
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_I, "1k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_II, "4k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III, "16k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV, "64k_item_cell");
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V, "256k_item_cell");
-        registerStorageCellModel(INFINITE_STORAGE_CELL, "256k_item_cell");
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_I);
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_II);
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III);
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV);
+        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V);
+        registerStorageCellModel(INFINITE_STORAGE_CELL);
         registerStorageCellModel(MYSTERIOUS_CELL, "256k_item_cell");
     }
 
@@ -205,6 +205,14 @@ public final class ModItems {
             int totalBytes,
             double idleDrain) {
         return ITEMS.register(id, () -> new LightningStorageComponentItem(totalBytes, idleDrain));
+    }
+
+    private static void registerStorageCellModel(DeferredItem<? extends Item> item) {
+        StorageCellModels.registerModel(
+                item.get(),
+                ResourceLocation.fromNamespaceAndPath(
+                        AE2LightningTech.MODID,
+                        "block/drive/cells/" + item.getId().getPath()));
     }
 
     private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {

@@ -11,7 +11,7 @@
       "item": "ae2:printed_silicon"
     }
   },
-  "mode": "inscribe",
+  "mode": "press",
   "result": {
     "count": 1,
     "id": "ae2lt:overload_processor"

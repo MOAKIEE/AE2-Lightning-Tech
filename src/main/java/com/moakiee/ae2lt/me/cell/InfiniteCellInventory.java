@@ -40,6 +40,8 @@ public class InfiniteCellInventory implements StorageCell {
     private final double idleDrain;
     private UUID cellId;
     private long lastSyncModCount = -1;
+    private int lastWrittenTypes = -1;
+    private long lastWrittenBytes = -1;
 
     private InfiniteCellInventory(ItemStack stack, @Nullable HolderLookup.Provider registries,
                                   int bytesPerType, int maxTypes,
@@ -115,6 +117,7 @@ public class InfiniteCellInventory implements StorageCell {
         storage.insert(what, toInsert, Actionable.MODULATE);
         byteTracker.onInsert(what.getType(), toInsert, isNewKey);
         lastSyncModCount = storage.getModCount();
+        syncSummary();
         return toInsert;
     }
 
@@ -132,6 +135,7 @@ public class InfiniteCellInventory implements StorageCell {
             boolean keyRemoved = !storage.containsKey(what);
             byteTracker.onExtract(what.getType(), taken, keyRemoved);
             lastSyncModCount = storage.getModCount();
+            syncSummary();
         }
         return taken;
     }
@@ -171,18 +175,30 @@ public class InfiniteCellInventory implements StorageCell {
 
     @Override
     public void persist() {
-        if (!storage.needsPersist()) return;
-
         var savedData = InfiniteCellSavedData.getOrNull();
         if (savedData == null) return;
+
+        if (storage.getTotalTypes() == 0) {
+            if (storage.needsPersist()) {
+                storage.persist(null, resolveRegistries());
+            }
+            if (cellId != null) {
+                savedData.removeCell(cellId);
+                clearCellId();
+                cellId = null;
+            }
+            syncSummary();
+            return;
+        }
+
+        if (!storage.needsPersist()) return;
 
         if (cellId == null) {
             cellId = UUID.randomUUID();
             writeCellId(cellId);
-            savedData.registerStorage(cellId, storage);
         }
 
-        savedData.persistStorage(cellId, resolveRegistries());
+        savedData.persistStorage(cellId, storage, resolveRegistries());
         ensureSync();
         syncSummary();
     }
@@ -206,23 +222,29 @@ public class InfiniteCellInventory implements StorageCell {
 
     private @Nullable UUID readCellId() {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_CELL_ID)) return null;
-        try {
-            return UUID.fromString(tag.getString(TAG_CELL_ID));
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        if (!tag.hasUUID(TAG_CELL_ID)) return null;
+        return tag.getUUID(TAG_CELL_ID);
     }
 
     private void writeCellId(UUID id) {
         CustomData.update(DataComponents.CUSTOM_DATA, stack,
-                tag -> tag.putString(TAG_CELL_ID, id.toString()));
+                tag -> tag.putUUID(TAG_CELL_ID, id));
+    }
+
+    private void clearCellId() {
+        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+                tag -> tag.remove(TAG_CELL_ID));
     }
 
     private void syncSummary() {
+        int t = storage.getTotalTypes();
+        long b = byteTracker.getUsedBytes();
+        if (t == lastWrittenTypes && b == lastWrittenBytes) return;
+        lastWrittenTypes = t;
+        lastWrittenBytes = b;
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
-            tag.putInt("ae2lt:types", storage.getTotalTypes());
-            tag.putLong("ae2lt:bytes", byteTracker.getUsedBytes());
+            tag.putInt("ae2lt:types", t);
+            tag.putLong("ae2lt:bytes", b);
         });
     }
 }

@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
 import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe;
@@ -61,6 +62,17 @@ public final class ModRecipeTypes {
                     () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "overload_processing")));
+
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CrystalCatalyzerRecipe>>
+            CRYSTAL_CATALYZER_SERIALIZER =
+                    RECIPE_SERIALIZERS.register("crystal_catalyzer", CrystalCatalyzerRecipe.Serializer::new);
+
+    public static final DeferredHolder<RecipeType<?>, RecipeType<CrystalCatalyzerRecipe>> CRYSTAL_CATALYZER_TYPE =
+            RECIPE_TYPES.register(
+                    "crystal_catalyzer",
+                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                            AE2LightningTech.MODID,
+                            "crystal_catalyzer")));
 
     private ModRecipeTypes() {
     }

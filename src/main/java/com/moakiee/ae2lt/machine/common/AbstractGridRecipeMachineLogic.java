@@ -51,6 +51,13 @@ public abstract class AbstractGridRecipeMachineLogic<
 
         host.setWorking(true);
 
+        if (!canAcceptOutputThisTick(lockedRecipe.get())) {
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return host.hasAutoExportWork() ? TickRateModulation.SLOWER : TickRateModulation.SLEEP;
+        }
+
         Optional<C> lockedCandidate = validateLockedRecipe(lockedRecipe.get());
         if (lockedCandidate.isEmpty()) {
             host.abortProcessing();
@@ -68,7 +75,7 @@ public abstract class AbstractGridRecipeMachineLogic<
     }
 
     public boolean hasGridTickWork() {
-        return host.hasLockedRecipe() || host.hasProcessableRecipe() || host.hasAutoExportWork();
+        return host.hasLockedRecipe() || host.hasAutoExportWork() || host.hasProcessableRecipe();
     }
 
     public long getCurrentMaxEnergyPerTick() {
@@ -105,10 +112,27 @@ public abstract class AbstractGridRecipeMachineLogic<
 
     protected abstract Optional<C> validateLockedRecipe(L lockedRecipe);
 
+    /**
+     * Returns whether the machine can currently accept the locked recipe's
+     * output. When this returns false, both recipe validation and energy
+     * consumption are skipped for the tick, so we fall through to auto-export
+     * until the output slot drains.
+     */
+    protected boolean canAcceptOutputThisTick(L lockedRecipe) {
+        return true;
+    }
+
     private TickRateModulation tickActiveRecipe(L lockedRecipe, C lockedCandidate) {
         if (host.getConsumedEnergy() >= getTotalEnergy(lockedRecipe)) {
             completeRecipe(lockedRecipe, lockedCandidate);
             return host.hasLockedRecipe() ? TickRateModulation.SLOWER : TickRateModulation.URGENT;
+        }
+
+        if (!canAcceptOutputThisTick(lockedRecipe)) {
+            if (host.pushOutResult()) {
+                return TickRateModulation.URGENT;
+            }
+            return TickRateModulation.SLEEP;
         }
 
         long toConsume = computeEnergyToConsumeThisTick(lockedRecipe);

@@ -37,7 +37,7 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
 
     public OverloadProcessingFactoryBlock() {
-        super(metalProps().noOcclusion());
+        super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));

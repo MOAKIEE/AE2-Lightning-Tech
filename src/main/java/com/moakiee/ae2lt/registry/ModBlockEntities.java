@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
+import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
@@ -88,6 +89,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             AtmosphericIonizerBlockEntity::new,
                             ModBlocks.ATMOSPHERIC_IONIZER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<CrystalCatalyzerBlockEntity>>
+            CRYSTAL_CATALYZER = BLOCK_ENTITY_TYPES.register(
+                    "crystal_catalyzer",
+                    () -> BlockEntityType.Builder.of(
+                            CrystalCatalyzerBlockEntity::new,
+                            ModBlocks.CRYSTAL_CATALYZER.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPatternProviderBlockEntity>>

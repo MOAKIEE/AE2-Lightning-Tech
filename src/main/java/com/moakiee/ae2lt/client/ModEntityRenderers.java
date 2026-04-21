@@ -20,5 +20,8 @@ public final class ModEntityRenderers {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                 LightningSimulationChamberRenderer::new);
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                LightningAssemblyChamberRenderer::new);
     }
 }

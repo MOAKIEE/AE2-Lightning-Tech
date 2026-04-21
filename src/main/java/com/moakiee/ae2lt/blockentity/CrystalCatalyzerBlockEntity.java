@@ -1,0 +1,590 @@
+package com.moakiee.ae2lt.blockentity;
+
+import java.util.EnumSet;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
+import net.neoforged.neoforge.items.IItemHandlerModifiable;
+
+import appeng.api.networking.IGridNode;
+import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.ticking.IGridTickable;
+import appeng.api.orientation.BlockOrientation;
+import appeng.api.orientation.RelativeSide;
+import appeng.api.upgrades.IUpgradeInventory;
+import appeng.api.upgrades.IUpgradeableObject;
+import appeng.api.upgrades.UpgradeInventories;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuHostLocator;
+
+import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
+import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerAutomationInventory;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerFluidHandler;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerLogic;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerLockedRecipe;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeCandidate;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeService;
+import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
+import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryEnergyStorage;
+import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
+import com.moakiee.ae2lt.registry.ModBlockEntities;
+import com.moakiee.ae2lt.registry.ModBlocks;
+
+public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
+        implements IActionHost, IUpgradeableObject,
+        GridRecipeMachineHost<CrystalCatalyzerLockedRecipe, CrystalCatalyzerRecipeCandidate> {
+
+    private static final String TAG_INVENTORY = "Inventory";
+    private static final String TAG_TANK = "Tank";
+    private static final String TAG_ENERGY = "Energy";
+    private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
+    private static final String TAG_PROCESSING_TICKS = "ProcessingTicks";
+    private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
+    private static final String TAG_AUTO_EXPORT = "AutoExport";
+    private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
+
+    public static final int ENERGY_CAPACITY = 1_000_000;
+    public static final int FLUID_TANK_CAPACITY_MB = 16_000;
+    public static final int CYCLE_TICKS = 5;
+    public static final int MATRIX_OUTPUT_MULTIPLIER = 4;
+
+    private final CrystalCatalyzerInventory inventory =
+            new CrystalCatalyzerInventory(this::onInventoryChanged);
+    private final CrystalCatalyzerAutomationInventory automationInventory =
+            new CrystalCatalyzerAutomationInventory(inventory);
+    private final NotifyingFluidTank tank =
+            new NotifyingFluidTank(FLUID_TANK_CAPACITY_MB, this::onTankChanged);
+    private final CrystalCatalyzerFluidHandler fluidHandler =
+            new CrystalCatalyzerFluidHandler(tank);
+    private final OverloadProcessingFactoryEnergyStorage energyStorage =
+            new OverloadProcessingFactoryEnergyStorage(ENERGY_CAPACITY, this::onEnergyChanged);
+    private final IUpgradeInventory upgrades =
+            UpgradeInventories.forMachine(ModBlocks.CRYSTAL_CATALYZER, 0, this::onUpgradesChanged);
+    private final CrystalCatalyzerLogic logic;
+
+    private CrystalCatalyzerLockedRecipe lockedRecipe;
+    private long consumedEnergy;
+    private int processingTicksSpent;
+    private boolean autoExport;
+    private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
+    private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
+            new AdjacentItemAutoExportHelper.DirectionalTargetCache();
+
+    public CrystalCatalyzerBlockEntity(BlockPos pos, BlockState blockState) {
+        super(ModBlockEntities.CRYSTAL_CATALYZER.get(), pos, blockState);
+        this.logic = new CrystalCatalyzerLogic(this);
+        getMainNode()
+                .setIdlePowerUsage(0)
+                .addService(IGridTickable.class, logic);
+    }
+
+    public CrystalCatalyzerInventory getInventory() {
+        return inventory;
+    }
+
+    public IItemHandlerModifiable getAutomationInventory() {
+        return automationInventory;
+    }
+
+    public NotifyingFluidTank getTank() {
+        return tank;
+    }
+
+    public FluidStack getFluid() {
+        return tank.getFluid().copy();
+    }
+
+    public IFluidHandler getFluidHandlerCapability(Direction side) {
+        return fluidHandler;
+    }
+
+    public IEnergyStorage getEnergyStorageCapability(Direction side) {
+        return energyStorage;
+    }
+
+    public OverloadProcessingFactoryEnergyStorage getEnergyStorage() {
+        return energyStorage;
+    }
+
+    public CrystalCatalyzerLogic getLogic() {
+        return logic;
+    }
+
+    @Override
+    public IUpgradeInventory getUpgrades() {
+        return upgrades;
+    }
+
+    public void openMenu(Player player, MenuHostLocator locator) {
+        MenuOpener.open(CrystalCatalyzerMenu.TYPE, player, locator);
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        inventory.setLevel(level);
+        setWorking(lockedRecipe != null);
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        inventory.setLevel(level);
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        inventory.setLevel(null);
+    }
+
+    public Optional<CrystalCatalyzerRecipeCandidate> findProcessableRecipe() {
+        FluidStack currentFluid = tank.getFluid();
+        if (currentFluid.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Optional<CrystalCatalyzerRecipeCandidate> candidate = CrystalCatalyzerRecipeService.findRecipe(
+                level, inventory, currentFluid);
+        if (candidate.isEmpty()) {
+            return Optional.empty();
+        }
+        return canAcceptRecipeOutput(candidate.get()) ? candidate : Optional.empty();
+    }
+
+    private boolean canAcceptRecipeOutput(CrystalCatalyzerRecipeCandidate candidate) {
+        return canAcceptRecipeOutput(candidate.recipe().value().getOutputTemplate(), getCurrentOutputMultiplier());
+    }
+
+    public boolean canAcceptLockedRecipeOutput(CrystalCatalyzerLockedRecipe lockedRecipe) {
+        return !getLockedRecipeOutputStack(lockedRecipe).isEmpty();
+    }
+
+    private boolean canAcceptRecipeOutput(ItemStack template, int multiplier) {
+        long outputCount = (long) template.getCount() * multiplier;
+        if (outputCount <= 0 || outputCount > Integer.MAX_VALUE) {
+            return false;
+        }
+        return inventory.canAcceptRecipeOutput(template.copyWithCount((int) outputCount));
+    }
+
+    private ItemStack getLockedRecipeOutputStack(CrystalCatalyzerLockedRecipe lockedRecipe) {
+        ItemStack template = lockedRecipe.output();
+        long outputCount = (long) template.getCount() * lockedRecipe.outputMultiplier();
+        if (outputCount <= 0 || outputCount > Integer.MAX_VALUE) {
+            return ItemStack.EMPTY;
+        }
+
+        ItemStack resultStack = template.copyWithCount((int) outputCount);
+        return inventory.canAcceptRecipeOutput(resultStack) ? resultStack : ItemStack.EMPTY;
+    }
+
+    private int getCurrentOutputMultiplier() {
+        return inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
+    }
+
+    @Override
+    public boolean hasLockedRecipe() {
+        return lockedRecipe != null;
+    }
+
+    @Override
+    public Optional<CrystalCatalyzerLockedRecipe> getLockedRecipe() {
+        return Optional.ofNullable(lockedRecipe);
+    }
+
+    @Override
+    public Optional<CrystalCatalyzerLockedRecipe> lockCurrentRecipe() {
+        if (lockedRecipe != null) {
+            return Optional.of(lockedRecipe);
+        }
+
+        Optional<CrystalCatalyzerRecipeCandidate> candidate = findProcessableRecipe();
+        if (candidate.isEmpty()) {
+            return Optional.empty();
+        }
+
+        lockedRecipe = CrystalCatalyzerLockedRecipe.fromCandidate(candidate.get(), getCurrentOutputMultiplier());
+        saveChanges();
+        return Optional.of(lockedRecipe);
+    }
+
+    public void clearLockedRecipe() {
+        boolean hadLockedRecipe = lockedRecipe != null;
+        boolean hadProgress = consumedEnergy != 0L || processingTicksSpent != 0;
+        if (!hadLockedRecipe && !hadProgress) {
+            return;
+        }
+        lockedRecipe = null;
+        resetProgressState();
+        if (hadLockedRecipe && !hadProgress) {
+            saveChanges();
+        }
+    }
+
+    @Override
+    public void abortProcessing() {
+        clearLockedRecipe();
+        setWorking(false);
+    }
+
+    @Override
+    public long getConsumedEnergy() {
+        return consumedEnergy;
+    }
+
+    @Override
+    public int getProcessingTicksSpent() {
+        return processingTicksSpent;
+    }
+
+    public double getProgress() {
+        if (lockedRecipe == null || lockedRecipe.totalEnergy() <= 0L) {
+            return 0.0D;
+        }
+        return Math.min(1.0D, (double) consumedEnergy / (double) lockedRecipe.totalEnergy());
+    }
+
+    private void addConsumedEnergy(long amount) {
+        if (amount <= 0L) {
+            return;
+        }
+        if (amount > Long.MAX_VALUE - consumedEnergy) {
+            consumedEnergy = Long.MAX_VALUE;
+        } else {
+            consumedEnergy += amount;
+        }
+    }
+
+    private void incrementProcessingTicksSpent() {
+        processingTicksSpent++;
+    }
+
+    @Override
+    public void resetProgressState() {
+        boolean changed = consumedEnergy != 0L || processingTicksSpent != 0;
+        consumedEnergy = 0L;
+        processingTicksSpent = 0;
+        if (changed) {
+            saveChanges();
+        }
+    }
+
+    @Override
+    public boolean pushOutResult() {
+        if (!hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+
+        return AdjacentItemAutoExportHelper.pushOutResult(
+                this,
+                getOrientation(),
+                allowedOutputs,
+                CrystalCatalyzerInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot,
+                (slot, amount) -> inventory.extractItem(slot, amount, false),
+                remainder -> {
+                    ItemStack leftover = inventory.insertRecipeOutput(remainder, false);
+                    if (!leftover.isEmpty() && level != null) {
+                        Block.popResource(level, worldPosition, leftover);
+                    }
+                },
+                direction -> exportTargetCache.resolve(serverLevel, worldPosition, direction));
+    }
+
+    @Override
+    public boolean hasAutoExportWork() {
+        return !allowedOutputs.isEmpty() && AdjacentItemAutoExportHelper.hasAnyOutput(
+                autoExport,
+                CrystalCatalyzerInventory.SLOT_OUTPUT,
+                1,
+                inventory::getStackInSlot);
+    }
+
+    public boolean isAutoExportEnabled() {
+        return autoExport;
+    }
+
+    public void setAutoExportEnabled(boolean autoExport) {
+        if (this.autoExport == autoExport) {
+            return;
+        }
+        this.autoExport = autoExport;
+        saveChanges();
+        logic.onStateChanged();
+    }
+
+    public EnumSet<RelativeSide> getAllowedOutputs() {
+        return allowedOutputs.isEmpty() ? EnumSet.noneOf(RelativeSide.class) : EnumSet.copyOf(allowedOutputs);
+    }
+
+    public void updateOutputSides(EnumSet<RelativeSide> allowedOutputs) {
+        this.allowedOutputs = allowedOutputs.isEmpty()
+                ? EnumSet.noneOf(RelativeSide.class)
+                : EnumSet.copyOf(allowedOutputs);
+        exportTargetCache.invalidate();
+        saveChanges();
+        logic.onStateChanged();
+    }
+
+    public void onNeighborChanged(BlockPos changedPos) {
+        if (changedPos != null && worldPosition.distManhattan(changedPos) == 1) {
+            exportTargetCache.invalidate();
+        }
+    }
+
+    @Override
+    protected void onOrientationChanged(BlockOrientation orientation) {
+        super.onOrientationChanged(orientation);
+        exportTargetCache.invalidate();
+    }
+
+    @Override
+    public boolean hasProcessableRecipe() {
+        return findProcessableRecipe().isPresent();
+    }
+
+    @Override
+    public boolean completeLockedRecipe(
+            CrystalCatalyzerLockedRecipe lockedRecipe,
+            CrystalCatalyzerRecipeCandidate candidate) {
+        ItemStack resultStack = getLockedRecipeOutputStack(lockedRecipe);
+        if (resultStack.isEmpty()) {
+            return false;
+        }
+
+        FluidStack requiredFluid = lockedRecipe.fluid();
+        FluidStack currentFluid = tank.getFluid();
+        if (currentFluid.isEmpty()
+                || !FluidStack.isSameFluidSameComponents(currentFluid, requiredFluid)
+                || currentFluid.getAmount() < requiredFluid.getAmount()) {
+            return false;
+        }
+
+        FluidStack drained = tank.drain(requiredFluid, FluidAction.EXECUTE);
+        if (drained.getAmount() != requiredFluid.getAmount()) {
+            if (!drained.isEmpty()) {
+                tank.fill(drained, FluidAction.EXECUTE);
+            }
+            return false;
+        }
+
+        ItemStack leftover = inventory.insertRecipeOutput(resultStack, false);
+        if (!leftover.isEmpty()) {
+            tank.fill(drained, FluidAction.EXECUTE);
+            return false;
+        }
+
+        clearLockedRecipe();
+        setWorking(false);
+        pushOutResult();
+        return true;
+    }
+
+    @Override
+    public long getMachineStoredEnergy() {
+        return energyStorage.getStoredEnergyLong();
+    }
+
+    @Override
+    public IEnergyStorage getMachineEnergyStorage() {
+        return energyStorage;
+    }
+
+    @Override
+    public int extractMachineEnergy(long amount) {
+        return energyStorage.extractInternal(amount, false);
+    }
+
+    @Override
+    public void onEnergyConsumed(int consumed) {
+        addConsumedEnergy(consumed);
+        incrementProcessingTicksSpent();
+        saveChanges();
+    }
+
+    public boolean isWorking() {
+        BlockState state = getBlockState();
+        return state.hasProperty(CrystalCatalyzerBlock.WORKING)
+                && state.getValue(CrystalCatalyzerBlock.WORKING);
+    }
+
+    @Override
+    public void setWorking(boolean working) {
+        if (level != null) {
+            BlockState state = getBlockState();
+            if (state.hasProperty(CrystalCatalyzerBlock.WORKING)
+                    && state.getValue(CrystalCatalyzerBlock.WORKING) != working) {
+                level.setBlock(worldPosition, state.setValue(CrystalCatalyzerBlock.WORKING, working), Block.UPDATE_ALL);
+            }
+        }
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
+        super.saveAdditional(data, registries);
+        inventory.saveToTag(data, TAG_INVENTORY, registries);
+        data.put(TAG_TANK, tank.writeToNBT(registries, new CompoundTag()));
+        data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
+        data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
+        data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
+        data.putBoolean(TAG_AUTO_EXPORT, autoExport);
+        ListTag outputTags = new ListTag();
+        for (var side : allowedOutputs) {
+            outputTags.add(StringTag.valueOf(side.name()));
+        }
+        data.put(TAG_ALLOWED_OUTPUTS, outputTags);
+        if (lockedRecipe != null) {
+            data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
+        } else {
+            data.remove(TAG_LOCKED_RECIPE);
+        }
+    }
+
+    @Override
+    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
+        super.loadTag(data, registries);
+        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+        tank.readFromNBT(registries, data.getCompound(TAG_TANK));
+        energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
+        consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
+        processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        autoExport = data.getBoolean(TAG_AUTO_EXPORT);
+        allowedOutputs.clear();
+        ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
+        for (int i = 0; i < outputTags.size(); i++) {
+            try {
+                allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
+            lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(
+                    data.getCompound(TAG_LOCKED_RECIPE),
+                    registries,
+                    getCurrentOutputMultiplier());
+        } else {
+            lockedRecipe = null;
+        }
+        if (lockedRecipe == null) {
+            consumedEnergy = 0L;
+            processingTicksSpent = 0;
+        } else {
+            consumedEnergy = Math.min(consumedEnergy, lockedRecipe.totalEnergy());
+        }
+        exportTargetCache.invalidate();
+    }
+
+    @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
+             slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
+             slot++) {
+            ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+        for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
+             slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
+             slot++) {
+            ItemStack oldStack = inventory.getStackInSlot(slot);
+            ItemStack newStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+            if (!ItemStack.matches(oldStack, newStack)) {
+                inventory.setClientRenderStack(slot, newStack);
+                changed = true;
+            }
+        }
+        return changed;
+    }
+
+    @Override
+    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+        super.addAdditionalDrops(level, pos, drops);
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+            ItemStack stack = inventory.getStackInSlot(slot);
+            if (!stack.isEmpty()) {
+                drops.add(stack.copy());
+            }
+        }
+    }
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+        abortProcessing();
+        inventory.clear();
+        tank.setFluid(FluidStack.EMPTY);
+        energyStorage.loadStoredEnergy(0L);
+        autoExport = false;
+        allowedOutputs.clear();
+        exportTargetCache.invalidate();
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    @Override
+    protected net.minecraft.world.item.Item getItemFromBlockEntity() {
+        return ModBlocks.CRYSTAL_CATALYZER.get().asItem();
+    }
+
+    @Override
+    public IGridNode getActionableNode() {
+        return getMainNode().getNode();
+    }
+
+    @Override
+    public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
+        return EnumSet.allOf(Direction.class);
+    }
+
+    private void onInventoryChanged() {
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    private void onTankChanged() {
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    private void onEnergyChanged() {
+        saveChanges();
+        logic.onStateChanged();
+    }
+
+    private void onUpgradesChanged() {
+        saveChanges();
+        logic.onStateChanged();
+    }
+}

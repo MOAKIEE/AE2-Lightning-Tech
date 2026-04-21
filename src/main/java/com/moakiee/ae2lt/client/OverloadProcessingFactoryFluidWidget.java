@@ -14,8 +14,6 @@ import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.fml.ModList;
 
-import appeng.api.stacks.AmountFormat;
-import appeng.api.stacks.GenericStack;
 import appeng.core.localization.Tooltips;
 import appeng.client.gui.widgets.ITooltip;
 
@@ -58,21 +56,17 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     @Override
     public List<Component> getTooltipMessage() {
         FluidStack fluid = fluidSupplier.get();
+        int capacity = capacitySupplier.getAsInt();
         if (fluid.isEmpty()) {
             return List.of(
-                    Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", 0, capacitySupplier.getAsInt())
+                    Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", 0, capacity)
                             .withStyle(Tooltips.NUMBER_TEXT));
         }
-
-        var genericStack = GenericStack.fromFluidStack(fluid);
-        var amountText = genericStack == null
-                ? Integer.toString(fluid.getAmount())
-                : genericStack.what().formatAmount(genericStack.amount(), AmountFormat.SLOT);
 
         return List.of(
                 fluid.getHoverName(),
                 Component.empty(),
-                Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", amountText, capacitySupplier.getAsInt())
+                Component.translatable("ae2lt.gui.overload_factory.fluid.tooltip", fluid.getAmount(), capacity)
                         .withStyle(Tooltips.NUMBER_TEXT),
                 Component.empty(),
                 Component.literal(getModDisplayName(fluid))

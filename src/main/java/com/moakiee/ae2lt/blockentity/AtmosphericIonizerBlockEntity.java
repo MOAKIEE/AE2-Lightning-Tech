@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -31,11 +32,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost {
-    public static final int PROCESS_TICKS = 5;
+    public static final int PROCESS_TICKS = 100;
     private static final double POWER_EPSILON = 0.01D;
 
     private static final String TAG_INVENTORY = "Inventory";
@@ -226,11 +228,23 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     }
 
     public void setWorking(boolean working) {
-        if (this.working == working) {
-            return;
-        }
+        boolean changed = this.working != working;
         this.working = working;
-        markForClientUpdate();
+        if (level != null) {
+            BlockState state = getBlockState();
+            if (state.hasProperty(AtmosphericIonizerBlock.WORKING)
+                    && state.getValue(AtmosphericIonizerBlock.WORKING) != working) {
+                level.setBlock(worldPosition, state.setValue(AtmosphericIonizerBlock.WORKING, working), Block.UPDATE_ALL);
+            } else if (changed) {
+                markForClientUpdate();
+            }
+        }
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        setWorking(lockedType != null);
     }
 
     @Override

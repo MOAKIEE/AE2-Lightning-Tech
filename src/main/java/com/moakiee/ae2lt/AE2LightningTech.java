@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
+import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
@@ -96,6 +97,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
                         output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
                         output.accept(ModBlocks.OVERLOAD_ARMOR_WORKBENCH);
+                        output.accept(ModBlocks.CRYSTAL_CATALYZER);
                         // 网络设备
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
@@ -274,8 +276,18 @@ public class AE2LightningTech {
                 (blockEntity, side) -> WORKBENCH_REJECTING_ITEM_HANDLER);
 
         event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.CRYSTAL_CATALYZER.get(),
+                (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
                 ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
+                (blockEntity, side) -> blockEntity.getFluidHandlerCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.FluidHandler.BLOCK,
+                ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 (blockEntity, side) -> blockEntity.getFluidHandlerCapability(side));
 
         event.registerBlockEntity(
@@ -296,6 +308,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
@@ -332,6 +349,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.ATMOSPHERIC_IONIZER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -463,6 +485,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var crystalCatalyzerBlock = ModBlocks.CRYSTAL_CATALYZER.get();
+            var crystalCatalyzerBeType = ModBlockEntities.CRYSTAL_CATALYZER.get();
+            crystalCatalyzerBlock.setBlockEntity(
+                    CrystalCatalyzerBlockEntity.class,
+                    crystalCatalyzerBeType,
+                    null,
+                    null);
+
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
             block.setBlockEntity(
@@ -521,6 +551,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     overloadArmorWorkbenchBeType,
                     overloadArmorWorkbenchBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    crystalCatalyzerBeType,
+                    crystalCatalyzerBlock.asItem());
 
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);

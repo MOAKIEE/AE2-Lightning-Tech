@@ -23,7 +23,9 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageWatcherNode;
@@ -83,7 +85,9 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     private long consumedEnergy;
     private int processingTicksSpent;
     private boolean working;
+    private boolean powered;
     private boolean autoExport;
+    private ItemStack clientRecipeResult = ItemStack.EMPTY;
     private EnumSet<RelativeSide> allowedOutputs = EnumSet.noneOf(RelativeSide.class);
     private final AdjacentItemAutoExportHelper.DirectionalTargetCache exportTargetCache =
             new AdjacentItemAutoExportHelper.DirectionalTargetCache();
@@ -373,6 +377,14 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
         return working;
     }
 
+    public boolean isPowered() {
+        return powered;
+    }
+
+    public ItemStack getClientRecipeResult() {
+        return clientRecipeResult;
+    }
+
     public void setWorking(boolean working) {
         boolean changed = this.working != working;
         this.working = working;
@@ -384,6 +396,29 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
             } else if (changed) {
                 markForClientUpdate();
             }
+        }
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        if (reason != IGridNodeListener.State.GRID_BOOT) {
+            refreshPoweredState();
+        }
+    }
+
+    private void refreshPoweredState() {
+        boolean newState = false;
+        var grid = getMainNode().getGrid();
+        if (grid != null
+                && getMainNode().isPowered()
+                && grid.getEnergyService().extractAEPower(1, Actionable.SIMULATE, PowerMultiplier.CONFIG) > 0.0001
+                && energyStorage.getStoredEnergyLong() > 0L) {
+            newState = true;
+        }
+
+        if (newState != this.powered) {
+            this.powered = newState;
+            markForUpdate();
         }
     }
 
@@ -402,6 +437,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     private void onEnergyChanged() {
         saveChanges();
         logic.onStateChanged();
+        refreshPoweredState();
     }
 
     private void onUpgradesChanged() {
@@ -423,12 +459,6 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
 
     private appeng.me.storage.CompositeStorage getExportTarget(ServerLevel level, Direction direction) {
         return exportTargetCache.resolve(level, worldPosition, direction);
-    }
-
-    @Override
-    protected void onOrientationChanged(BlockOrientation orientation) {
-        super.onOrientationChanged(orientation);
-        invalidateExportTargets();
     }
 
     @Override
@@ -493,6 +523,8 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
              slot++) {
             ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
         }
+        ItemStack.OPTIONAL_STREAM_CODEC.encode(data,
+                lockedRecipe != null ? lockedRecipe.result() : ItemStack.EMPTY);
     }
 
     @Override
@@ -507,6 +539,11 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;
             }
+        }
+        ItemStack newResult = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+        if (!ItemStack.matches(clientRecipeResult, newResult)) {
+            clientRecipeResult = newResult;
+            changed = true;
         }
         return changed;
     }

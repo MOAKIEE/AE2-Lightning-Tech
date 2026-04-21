@@ -15,6 +15,7 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
+import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.machine.lightningcollector.LightningCollectorInventory;
@@ -35,6 +36,7 @@ import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
@@ -42,12 +44,15 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";
+    private static final String TAG_WORKING_TICKS = "WorkingTicks";
+    private static final int WORKING_DURATION_TICKS = 20;
     private static boolean warnedInvalidHighVoltageBaseRange;
     private static boolean warnedInvalidExtremeVoltageBaseRange;
 
     private final LightningCollectorInventory inventory = new LightningCollectorInventory(this::onInventoryChanged);
 
     private int cooldownTicks;
+    private int workingTicks;
 
     public LightningCollectorBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.LIGHTNING_COLLECTOR.get(), pos, blockState);
@@ -64,6 +69,14 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             if (blockEntity.cooldownTicks == 0) {
                 blockEntity.saveChanges();
                 blockEntity.markForClientUpdate();
+            }
+        }
+
+        if (blockEntity.workingTicks > 0) {
+            blockEntity.workingTicks--;
+            if (blockEntity.workingTicks == 0) {
+                blockEntity.updateWorkingBlockState(false);
+                blockEntity.saveChanges();
             }
         }
     }
@@ -170,6 +183,8 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         }
 
         this.cooldownTicks = AE2LTCommonConfig.lightningCollectorCooldownTicks();
+        this.workingTicks = WORKING_DURATION_TICKS;
+        updateWorkingBlockState(true);
         saveChanges();
         markForClientUpdate();
         return true;
@@ -184,6 +199,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         super.saveAdditional(data, registries);
         inventory.saveToTag(data, TAG_INVENTORY, registries);
         data.putInt(TAG_COOLDOWN, cooldownTicks);
+        data.putInt(TAG_WORKING_TICKS, workingTicks);
     }
 
     @Override
@@ -191,6 +207,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         super.loadTag(data, registries);
         inventory.loadFromTag(data, TAG_INVENTORY, registries);
         cooldownTicks = Math.max(0, data.getInt(TAG_COOLDOWN));
+        workingTicks = Math.max(0, data.getInt(TAG_WORKING_TICKS));
     }
 
     @Override
@@ -285,6 +302,23 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     private void onInventoryChanged() {
         saveChanges();
         markForClientUpdate();
+    }
+
+    private void updateWorkingBlockState(boolean working) {
+        if (level == null) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (state.hasProperty(LightningCollectorBlock.WORKING)
+                && state.getValue(LightningCollectorBlock.WORKING) != working) {
+            level.setBlock(worldPosition, state.setValue(LightningCollectorBlock.WORKING, working), Block.UPDATE_ALL);
+        }
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        updateWorkingBlockState(workingTicks > 0);
     }
 
     public record OutputPreview(int min, int max) {
