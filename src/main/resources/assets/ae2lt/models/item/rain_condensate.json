@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "minecraft:item/prismarine_crystals"
+    "layer0": "ae2lt:item/rain_condensate"
   }
 }

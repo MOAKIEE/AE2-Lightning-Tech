@@ -1,7 +1,7 @@
 {
   "parent": "block/block",
   "textures": {
-    "particle": "ae2lt:block/controller"
+    "particle": "ae2lt:block/overloaded_controller/controller"
   },
   "render_type": "cutout",
   "elements": [

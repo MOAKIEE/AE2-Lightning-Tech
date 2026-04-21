@@ -1,9 +1,12 @@
 package com.moakiee.ae2lt.block;
 
+import java.util.EnumMap;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
@@ -12,6 +15,8 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.VoxelShape;
 
 import appeng.api.orientation.IOrientationStrategy;
 import appeng.api.orientation.OrientationStrategies;
@@ -22,10 +27,20 @@ import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 
 public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    public static final DirectionProperty FACING = BlockStateProperties.FACING;
+    private static final VoxelShape UP_SHAPE = BlockShapeHelper.or(
+            Block.box(0, 0, 0, 16, 3, 16),
+            Block.box(0, 13, 0, 16, 16, 16),
+            Block.box(0, 3, 0, 3, 13, 3),
+            Block.box(0, 3, 13, 3, 13, 16),
+            Block.box(13, 3, 0, 16, 13, 3),
+            Block.box(13, 3, 13, 16, 13, 16),
+            Block.box(4, 3, 4, 12, 6, 12),
+            Block.box(4, 10, 4, 12, 13, 12));
+    private static final EnumMap<Direction, VoxelShape> SHAPES = BlockShapeHelper.createAllFacingShapes(UP_SHAPE);
 
     public CrystalCatalyzerBlock() {
-        super(metalProps().forceSolidOn());
+        super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH));
@@ -39,7 +54,18 @@ public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlo
 
     @Override
     public IOrientationStrategy getOrientationStrategy() {
-        return OrientationStrategies.horizontalFacing();
+        return OrientationStrategies.facing();
+    }
+
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return SHAPES.get(state.getValue(FACING));
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos,
+            CollisionContext context) {
+        return SHAPES.get(state.getValue(FACING));
     }
 
     @Override

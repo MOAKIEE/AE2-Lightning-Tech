@@ -1,16 +1,30 @@
 {
   "multipart": [
     {
+      "when": {
+        "powered": "false"
+      },
       "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber"
+        "model": "ae2lt:block/lightning_assembly_chamber",
+        "y": 90
       }
     },
     {
       "when": {
+        "powered": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/lightning_assembly_chamber_powered",
+        "y": 90
+      }
+    },
+    {
+      "when": {
+        "powered": "true",
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_work"
+        "model": "ae2lt:block/lightning_assembly_chamber_lightnings"
       }
     }
   ]

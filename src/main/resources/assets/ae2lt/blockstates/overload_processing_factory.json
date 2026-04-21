@@ -41,7 +41,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/overload_processing_factory"
+        "model": "ae2lt:block/overload_processing_factory_work"
       }
     },
     {
@@ -50,7 +50,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/overload_processing_factory",
+        "model": "ae2lt:block/overload_processing_factory_work",
         "y": 90
       }
     },
@@ -60,7 +60,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/overload_processing_factory",
+        "model": "ae2lt:block/overload_processing_factory_work",
         "y": 180
       }
     },
@@ -70,7 +70,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/overload_processing_factory",
+        "model": "ae2lt:block/overload_processing_factory_work",
         "y": 270
       }
     }

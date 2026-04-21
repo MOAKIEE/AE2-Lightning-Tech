@@ -1,0 +1,126 @@
+{
+    "multipart": [
+        {
+            "when": {
+                "facing": "north",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer", 
+                "x": 90 
+            }
+        },
+        {
+            "when": {
+                "facing": "south",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer", 
+                "x": 270 
+            }
+        },
+        {
+            "when": {
+                "facing": "east",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer", 
+                "x": 90, 
+                "y": 90 
+            }
+        },
+        {
+            "when": {
+                "facing": "west",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer", 
+                "x": 90, 
+                "y": 270 
+            }
+        },
+        {
+            "when": {
+                "facing": "up",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer"
+            }
+        },
+        {
+            "when": {
+                "facing": "down",
+                "working": false
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "north",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work", 
+                "x": 90 
+            }
+        },
+        {
+            "when": {
+                "facing": "south",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work", 
+                "x": 270 
+            }
+        },
+        {
+            "when": {
+                "facing": "east",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work", 
+                "x": 90, 
+                "y": 90 
+            }
+        },
+        {
+            "when": {
+                "facing": "up",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work"
+            }
+        },
+        {
+            "when": {
+                "facing": "down",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work",
+                "x": 180
+            }
+        },
+        {
+            "when": {
+                "facing": "west",
+                "working": true
+            },
+            "apply": {
+                "model": "ae2lt:block/crystal_catalyzer_work", 
+                "x": 90, 
+                "y": 270 
+            }
+        }
+    ]
+}

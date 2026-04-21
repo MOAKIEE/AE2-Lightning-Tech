@@ -2,8 +2,8 @@
   "sources": [
     {
       "type": "minecraft:directory",
-      "source": "part/cable/dense_covered_core",
-      "prefix": "part/cable/dense_covered_core/"
+      "source": "part/cable/core/overload",
+      "prefix": "part/cable/core/overload/"
     }
   ]
 }

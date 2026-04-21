@@ -22,8 +22,8 @@ import appeng.client.render.cablebus.CubeBuilder;
 import com.moakiee.ae2lt.AE2LightningTech;
 
 public final class OverloadedCableRenderHelper {
-    private static final String DENSE_COVERED_TEXTURE_FOLDER = "part/cable/dense_covered/";
-    private static final String DENSE_COVERED_CORE_TEXTURE_FOLDER = "part/cable/dense_covered_core/";
+    private static final String OVERLOAD_CABLE_LINE_TEXTURE_FOLDER = "part/cable/overload/";
+    private static final String OVERLOAD_CABLE_CORE_TEXTURE_FOLDER = "part/cable/core/overload/";
 
     private OverloadedCableRenderHelper() {
     }
@@ -34,19 +34,18 @@ public final class OverloadedCableRenderHelper {
             return;
         }
 
-        var cableColor = renderState.getCableColor();
-        var texture = getTexture(cableColor);
-        var coreTexture = getCoreTexture(cableColor);
+        var textureCore = getCoreTexture(renderState.getCableColor());
+        var textureLine = getLineTexture(renderState.getCableColor());
         var connectionTypes = renderState.getConnectionTypes();
 
         boolean noAttachments = !renderState.getAttachments().values().stream()
                 .anyMatch(IPartModel::requireCableConnection);
         if (noAttachments && isStraightLine(cableType, connectionTypes)) {
-            addStraightDenseConnection(connectionTypes.keySet().iterator().next(), coreTexture, texture, quadsOut);
+            addStraightDenseConnection(connectionTypes.keySet().iterator().next(), textureLine, quadsOut);
             return;
         }
 
-        addDenseCore(coreTexture, quadsOut);
+        addDenseCore(textureCore, quadsOut);
 
         for (Entry<Direction, AECableType> connection : connectionTypes.entrySet()) {
             var facing = connection.getKey();
@@ -56,25 +55,25 @@ public final class OverloadedCableRenderHelper {
             if (connectionType == AECableType.GLASS
                     || connectionType == AECableType.COVERED
                     || connectionType == AECableType.SMART) {
-                addCoveredConnection(facing, connectionType, cableBusAdjacent, texture, quadsOut);
+                addCoveredConnection(facing, connectionType, cableBusAdjacent, textureLine, quadsOut);
             } else {
-                addDenseConnection(facing, texture, quadsOut);
+                addDenseConnection(facing, textureLine, quadsOut);
             }
         }
-    }
-
-    private static TextureAtlasSprite getTexture(AEColor color) {
-        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-        return atlas.apply(ResourceLocation.fromNamespaceAndPath(
-                AE2LightningTech.MODID,
-                DENSE_COVERED_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
     }
 
     private static TextureAtlasSprite getCoreTexture(AEColor color) {
         var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
         return atlas.apply(ResourceLocation.fromNamespaceAndPath(
                 AE2LightningTech.MODID,
-                DENSE_COVERED_CORE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
+                OVERLOAD_CABLE_CORE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
+    }
+
+    private static TextureAtlasSprite getLineTexture(AEColor color) {
+        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
+        return atlas.apply(ResourceLocation.fromNamespaceAndPath(
+                AE2LightningTech.MODID,
+                OVERLOAD_CABLE_LINE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
     }
 
     private static boolean isStraightLine(AECableType cableType, EnumMap<Direction, AECableType> sides) {
@@ -127,21 +126,59 @@ public final class OverloadedCableRenderHelper {
         addCoveredCableSizedCube(facing, cubeBuilder);
     }
 
-    private static void addStraightDenseConnection(Direction facing, TextureAtlasSprite coreTexture,
-            TextureAtlasSprite cableTexture, List<BakedQuad> quadsOut) {
-        // Core segment (center 3-13 range)
-        addDenseCore(coreTexture, quadsOut);
-
-        // Two connection arms using the cable texture
+    private static void addStraightDenseConnection(Direction facing, TextureAtlasSprite texture,
+            List<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
-        cubeBuilder.setTexture(cableTexture);
-        cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing)));
-        addDenseCableSizedCube(facing, cubeBuilder);
+        cubeBuilder.setTexture(texture);
+        setStraightCableUVs(cubeBuilder, facing, 3 / 16f, 13 / 16f);
+        addStraightDenseCableSizedCube(facing, cubeBuilder);
+    }
 
-        cubeBuilder = new CubeBuilder(quadsOut);
-        cubeBuilder.setTexture(cableTexture);
-        cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing.getOpposite())));
-        addDenseCableSizedCube(facing.getOpposite(), cubeBuilder);
+    private static void setStraightCableUVs(CubeBuilder cubeBuilder, Direction facing, float x, float y) {
+        switch (facing) {
+            case DOWN, UP -> {
+                cubeBuilder.setCustomUv(Direction.NORTH, x, 0, y, x);
+                cubeBuilder.setCustomUv(Direction.EAST, x, 0, y, x);
+                cubeBuilder.setCustomUv(Direction.SOUTH, x, 0, y, x);
+                cubeBuilder.setCustomUv(Direction.WEST, x, 0, y, x);
+            }
+            case EAST, WEST -> {
+                cubeBuilder.setCustomUv(Direction.UP, 0, x, x, y);
+                cubeBuilder.setCustomUv(Direction.DOWN, 0, x, x, y);
+                cubeBuilder.setCustomUv(Direction.NORTH, 0, x, x, y);
+                cubeBuilder.setCustomUv(Direction.SOUTH, 0, x, x, y);
+            }
+            case NORTH, SOUTH -> {
+                cubeBuilder.setCustomUv(Direction.UP, x, 0, y, x);
+                cubeBuilder.setCustomUv(Direction.DOWN, x, 0, y, x);
+                cubeBuilder.setCustomUv(Direction.EAST, 0, x, x, y);
+                cubeBuilder.setCustomUv(Direction.WEST, 0, x, x, y);
+            }
+        }
+    }
+
+    private static void addStraightDenseCableSizedCube(Direction facing, CubeBuilder cubeBuilder) {
+        switch (facing) {
+            case DOWN, UP -> {
+                cubeBuilder.setUvRotation(Direction.EAST, 2);
+                cubeBuilder.addCube(3, -0.01f, 3, 13, 16.01f, 13);
+                cubeBuilder.setUvRotation(Direction.EAST, 0);
+            }
+            case EAST, WEST -> {
+                cubeBuilder.setUvRotation(Direction.SOUTH, 2);
+                cubeBuilder.setUvRotation(Direction.NORTH, 2);
+                cubeBuilder.addCube(-0.01f, 3, 3, 16.01f, 13, 13);
+                cubeBuilder.setUvRotation(Direction.SOUTH, 0);
+                cubeBuilder.setUvRotation(Direction.NORTH, 0);
+            }
+            case NORTH, SOUTH -> {
+                cubeBuilder.setUvRotation(Direction.EAST, 2);
+                cubeBuilder.setUvRotation(Direction.WEST, 2);
+                cubeBuilder.addCube(3, 3, -0.01f, 13, 13, 16.01f);
+                cubeBuilder.setUvRotation(Direction.EAST, 0);
+                cubeBuilder.setUvRotation(Direction.WEST, 0);
+            }
+        }
     }
 
     private static void addDenseCableSizedCube(Direction facing, CubeBuilder cubeBuilder) {
