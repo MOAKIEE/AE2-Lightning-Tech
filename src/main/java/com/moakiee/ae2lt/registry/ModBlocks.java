@@ -52,7 +52,8 @@ public final class ModBlocks {
             .mapColor(MapColor.METAL)
             .strength(5.0F, 6.0F)
             .sound(SoundType.METAL)
-            .forceSolidOn();
+            .forceSolidOn()
+            .requiresCorrectToolForDrops();
 
     private static final BlockBehaviour.Properties OVERLOAD_MACHINE_FRAME_PROPERTIES = BlockBehaviour.Properties.of()
             .mapColor(MapColor.METAL)
