@@ -1,63 +1,63 @@
 ---
 navigation:
-  title: 闪电收集器
+  title: Lightning Collector
   icon: ae2lt:lightning_collector
   parent: lightning/lightning-index.md
 item_ids:
   - ae2lt:lightning_collector
 ---
 
-# 闪电收集器
+# Lightning Collector
 
 <Row>
   <BlockImage id="ae2lt:lightning_collector" scale="4" />
 </Row>
 
-**闪电收集器**是闪电体系的起点。雷电击中收集器时，它会将闪电能量直接注入 ME 网络。
+The **Lightning Collector** is the starting point of the Lightning system. When lightning strikes the collector, it injects Lightning energy directly into the ME network.
 
-## 基本用法
+## Basic Usage
 
-将闪电收集器放置在**露天且能被雷电击中的位置**，并接入 ME 网络。收集器在正常工作前需要两项条件：
+Place the Lightning Collector **out in the open where lightning can reach it**, and connect it to an ME network. Two conditions must be met for a strike to be productive:
 
-* 网络在线
-* 网络中有足够容量接收即将产生的闪电（否则该次雷击无效）
+* The network must be online
+* The network must have enough storage capacity to accept the Lightning about to be produced (otherwise the strike is wasted)
 
-根据命中收集器的闪电类型，产出的闪电等级不同：
+The tier of Lightning produced depends on what hits the collector:
 
-* **人工闪电**（玩家携带过载水晶召唤 / 特斯拉线圈放电）→ **高压闪电**
-* **自然闪电**（雷暴天气下的天然雷电）→ **极高压闪电**
+* **Artificial lightning** (summoned by a player carrying an Overload Crystal, or discharged by a Tesla Coil) → **High Voltage Lightning**
+* **Natural lightning** (a real thunderstorm bolt) → **Extreme High Voltage Lightning**
 
-每次成功收集后，收集器会进入一小段冷却（默认 0 tick，可在配置文件中调整）。
+After each successful collection the collector enters a short cooldown (default 0 ticks, configurable).
 
-## 电鸣水晶与产量
+## Electro-Chime Crystal and Yield
 
 <ItemImage id="ae2lt:electro_chime_crystal" scale="2" float="left" />
 
-收集器具有一个**水晶槽**，可以放入一枚 <ItemLink id="ae2lt:electro_chime_crystal" />。水晶是否存在以及水晶的催化进度，会决定每次雷击的闪电产量。
+The collector has a dedicated **crystal slot** where you can insert an **Electro-Chime Crystal**. Whether a crystal is installed and how far along its cultivation is determines the yield of each strike.
 
-| 水晶状态 | 产量 |
-|---------|------|
-| 未安装水晶 | 在固定的**基础随机区间**内随机取值（默认高压 1~2，极高压 1~4） |
-| 安装未完成催化的电鸣水晶 | 随催化进度在「起始产量」与「最终产量」之间线性增长，附带少量随机浮动 |
-| 安装 <ItemLink id="ae2lt:perfect_electro_chime_crystal" /> | **固定产量**（默认高压 / 极高压均为 16），不再随机 |
+| Crystal State | Yield |
+|---------------|-------|
+| No crystal | Random within a fixed **base range** (default HV 1~2, EHV 1~4) |
+| Cultivating Electro-Chime Crystal | Scales linearly between "starting yield" and "final yield" with cultivation progress, plus a small random jitter |
+| Perfect Electro-Chime Crystal | **Fixed yield** (default 16 for both HV and EHV), no randomness |
 
-## 培育电鸣水晶
+## Cultivating the Electro-Chime Crystal
 
-电鸣水晶按催化进度分为四个阶段：
+The Electro-Chime Crystal progresses through four stages based on cultivation value:
 
-| 阶段 | 催化进度 |
-|------|---------|
-| 沉寂 | < 20% |
-| 初鸣 | 20% ~ 55% |
-| 共振 | 55% ~ 85% |
-| 过载 | ≥ 85% |
+| Stage | Progress |
+|-------|----------|
+| Dormant | < 20% |
+| Stirring | 20% ~ 55% |
+| Resonant | 55% ~ 85% |
+| Overcharged | ≥ 85% |
 
-* 仅在收集器被**自然闪电**（即产生极高压闪电的雷击）命中时，水晶才会获得催化值。人工闪电不会增加催化进度
-* 催化值达到最大值后，电鸣水晶会自动转化为**完美电鸣水晶**
-* 完美电鸣水晶不再成长，但提供稳定的最大产量
+* The crystal only gains cultivation value when the collector is struck by **natural lightning** (the strikes that produce Extreme High Voltage Lightning). Artificial lightning does not contribute to cultivation
+* Once the cultivation value reaches its maximum, the Electro-Chime Crystal automatically transforms into a **Perfect Electro-Chime Crystal**
+* The Perfect Electro-Chime Crystal no longer cultivates further, but provides a stable maximum yield
 
-## 自动化提示
+## Automation Tips
 
-* 收集器必须在线接入 ME 网络，否则雷击无效
-* 不愿等待自然雷暴时，可使用 [大气电离仪](../machines/atmospheric-ionizer.md) 消耗**雷暴凝核**强制触发雷暴天气
-* 完全不依赖天气的方案是使用 [特斯拉线圈](tesla-coil.md) 主动生产高压 / 极高压闪电
+* The collector must be connected to an online ME network, otherwise lightning strikes on it are wasted
+* If you do not want to wait for natural thunderstorms, use the [Atmospheric Ionizer](../machines/atmospheric-ionizer.md) with Thunderstorm Condensate to force thunderstorm weather
+* For a fully weather-independent solution, use the [Tesla Coil](tesla-coil.md) to produce HV / EHV Lightning on demand

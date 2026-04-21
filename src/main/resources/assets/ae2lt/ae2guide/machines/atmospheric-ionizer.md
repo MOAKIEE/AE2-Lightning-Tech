@@ -1,23 +1,23 @@
 ---
 navigation:
-  title: 大气电离仪
+  title: Atmospheric Ionizer
   icon: ae2lt:atmospheric_ionizer
   parent: machines/machines-index.md
 item_ids:
   - ae2lt:atmospheric_ionizer
 ---
 
-# 大气电离仪
+# Atmospheric Ionizer
 
 <Row>
   <BlockImage id="ae2lt:atmospheric_ionizer" scale="4" />
 </Row>
 
-**大气电离仪**是一台天气控制设备。它通过消耗**天气凝核**与 AE 能量，强制将世界天气切换为指定状态，从而配合闪电收集器获得稳定的自然雷击。
+The **Atmospheric Ionizer** is a weather control device. It consumes **Weather Condensate** and AE energy to force the world's weather to a specific state, letting you feed the Lightning Collector with reliable natural lightning strikes.
 
-## 天气凝核
+## Weather Condensate
 
-天气凝核有三种类型，分别对应三种天气：
+There are three types of Weather Condensate, one per weather state:
 
 <ItemGrid>
   <ItemIcon id="ae2lt:clear_condensate" />
@@ -25,35 +25,35 @@ item_ids:
   <ItemIcon id="ae2lt:thunderstorm_condensate" />
 </ItemGrid>
 
-| 凝核类型 | 目标天气 | AE 消耗 | 持续时间 |
-|---------|---------|---------|---------|
-| 晴空凝核 | 晴天 | 500,000 AE | 12,000 ~ 180,000 tick |
-| 降雨凝核 | 雨天 | 1,000,000 AE | 12,000 ~ 24,000 tick |
-| 雷暴凝核 | 雷暴 | 8,000,000 AE | 3,600 ~ 15,600 tick |
+| Condensate | Target Weather | AE Cost | Duration |
+|------------|----------------|---------|----------|
+| Clear Condensate | Clear | 500,000 AE | 12,000 ~ 180,000 ticks |
+| Rain Condensate | Rain | 1,000,000 AE | 12,000 ~ 24,000 ticks |
+| Thunderstorm Condensate | Thunderstorm | 8,000,000 AE | 3,600 ~ 15,600 ticks |
 
-## 工作流程
+## Operating Flow
 
-1. 将大气电离仪接入 ME 网络
-2. 将所需的天气凝核放入输入槽
-3. 机器从 ME 网络中持续提取 AE 能量进行电离
-4. 电离完成后，世界天气被强制切换为目标天气
-5. 凝核在使用后被消耗
+1. Connect the Atmospheric Ionizer to the ME network
+2. Put the required Weather Condensate into the input slot
+3. The machine continuously pulls AE from the ME network to ionize
+4. Once ionization is complete, the world weather is forced to the target state
+5. The condensate is consumed
 
-## GUI 状态
+## GUI Status
 
-| 状态 | 含义 |
-|------|------|
-| 待机 | 输入槽无凝核 |
-| 电离中 | 正在消耗 AE 能量 |
-| 等待 AE | 网络中 AE 能量不足 |
-| 等待凝核 | 输入槽无凝核 |
-| 当前维度不支持天气 | 所在维度无法控制天气（例如末地、下界） |
-| 目标天气已生效 | 目标天气已经是当前天气，无需切换 |
-| 准备就绪 | 电离完成，即将切换天气 |
+| Status | Meaning |
+|--------|---------|
+| Idle | No condensate in the input slot |
+| Ionizing | Consuming AE energy |
+| Waiting for AE | The network does not have enough AE |
+| Waiting for condensate | No condensate in the input slot |
+| Invalid dimension | The current dimension does not support weather changes (e.g. The End, The Nether) |
+| Target weather already active | The target weather is already the current weather, no switch needed |
+| Ready | Ionization complete; about to switch weather |
 
-## 注意事项
+## Notes
 
-* 大气电离仪消耗**AE 能量**（来自 ME 网络），而非 FE 能量
-* 雷暴凝核单次消耗最高（8,000,000 AE），请确保网络能量供应充足
-* 在不支持天气的维度中，机器无法工作
-* 当目标天气已经是当前天气时，机器不会消耗凝核
+* The Atmospheric Ionizer consumes **AE energy** from the ME network, not FE
+* Thunderstorm Condensate has the highest single-use cost (8,000,000 AE) — make sure the network has enough energy on hand
+* In dimensions that do not support weather, the machine cannot work
+* When the target weather is already the current weather, the machine does not consume condensate

@@ -1,71 +1,71 @@
 ---
 navigation:
-  title: 过载处理工厂
+  title: Overload Processing Factory
   icon: ae2lt:overload_processing_factory
   parent: machines/machines-index.md
 item_ids:
   - ae2lt:overload_processing_factory
 ---
 
-# 过载处理工厂
+# Overload Processing Factory
 
 <Row>
   <BlockImage id="ae2lt:overload_processing_factory" scale="4" />
 </Row>
 
-**过载处理工厂**是本模组规模最大、吞吐最高的加工设备。它支持物品与流体的混合输入输出，并通过闪电坍缩矩阵解锁多并行加工，是大规模工业化产线的核心机器。
+The **Overload Processing Factory** is the largest and highest-throughput processing device in this mod. It supports mixed item and fluid I/O, and unlocks parallel processing via the Lightning Collapse Matrix — making it the backbone of any large-scale industrial Lightning production line.
 
-## 槽位与容量
+## Slots and Capacity
 
-| 槽位 / 组件 | 容量 | 说明 |
-|------------|------|------|
-| 物品输入槽 ×9 | 8,192 | 放入待加工的物品 |
-| 矩阵槽 ×1 | 64 | 安装闪电坍缩矩阵以解锁并行能力 |
-| 物品输出槽 ×1 | 8,192 | 加工产物；仅允许机器写入 |
-| 流体输入槽 ×1 | 512,000 mB | 通过管道注入所需流体 |
-| 流体输出槽 ×1 | 512,000 mB | 存放加工产出的流体 |
-| FE 能量缓冲 | 640,000,000 FE（默认） | 内置能量缓存 |
-| 速度卡槽 | — | 最多安装 4 张 AE2 速度卡 |
+| Slot / Component | Capacity | Notes |
+|------------------|----------|-------|
+| Item Input × 9 | 8,192 | Feed in the items |
+| Matrix × 1 | 64 | Install Lightning Collapse Matrices to unlock parallelism |
+| Item Output × 1 | 8,192 | Processed output; written by the machine only |
+| Fluid Input | 512,000 mB | Feed in the required fluid through pipes |
+| Fluid Output | 512,000 mB | Holds fluid output |
+| FE Buffer | 640,000,000 FE (default) | Built-in energy buffer |
+| Speed Card Slots | — | Up to 4 AE2 Speed Cards |
 
-## 工作流程
+## Operating Flow
 
-1. 通过物品输入槽和流体输入口提供原料
-2. 机器匹配可用配方
-3. 配方匹配且 ME 网络中闪电与内部 FE 能量充足后，机器开始加工
-4. 加工过程中持续消耗闪电与 FE 能量
-5. 产物分别进入物品输出槽和流体输出槽
+1. Feed in the item and fluid inputs
+2. The machine matches the current inputs against registered recipes
+3. Once a recipe is matched and enough Lightning and FE are available, processing starts
+4. Lightning and FE are consumed throughout processing
+5. Item and fluid outputs go to their respective output slots
 
-## 多并行加工
+## Parallel Processing
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-过载处理工厂的并行能力由安装的**闪电坍缩矩阵**数量决定。矩阵槽最多容纳 64 枚矩阵，每枚矩阵按配置提供一定量的并行上限（默认每枚 4 次并行，上限 64 × 4 = 256 次）：
+The factory's parallelism is determined by the number of **Lightning Collapse Matrices** installed. The matrix slot holds up to 64 matrices, with each one providing a configurable amount of parallelism (default 4 per matrix, max 64 × 4 = 256):
 
-* 未安装矩阵时，工厂无法并行加工
-* 安装更多矩阵可线性提升并行上限
-* 实际并行数量同时受限于输入材料数量与配方的单次用量
-* 并行次数越多，单次加工的产出越多，同时 FE 能量消耗相应线性增加
+* With no matrices installed, the factory cannot parallelize
+* Installing more matrices linearly raises the parallel ceiling
+* Effective parallelism is also constrained by available input materials and each recipe's per-operation cost
+* Higher parallelism means more output per cycle, with a linear increase in FE consumption
 
-## 速度卡与能量消耗
+## Speed Cards and Energy Consumption
 
-过载处理工厂支持最多 4 张速度卡。每多装一张速度卡，单 tick 可消耗的 FE 上限即显著提升：
+The Overload Processing Factory accepts up to 4 Speed Cards. Each card significantly raises the FE cap per tick:
 
-| 速度卡数量 | 单 tick FE 上限（默认值） |
-|-----------|-------------------------|
+| Speed Cards | FE cap per tick (default) |
+|-------------|---------------------------|
 | 0 | 400,000 FE |
 | 1 | 2,000,000 FE |
 | 2 | 8,000,000 FE |
 | 3 | 32,000,000 FE |
 | 4 | 128,000,000 FE |
 
-## 流体输入 / 输出
+## Fluid I/O
 
-流体槽可通过任意流体管道系统进行输入与输出。输入槽会严格校验配方所需的流体类型。
+Fluid input and output can use any fluid pipe system. The input slot strictly validates the fluid type against the recipe.
 
-## 自动弹出
+## Auto Export
 
-启用自动弹出后，物品产物会被自动推送到允许方向的相邻容器。具体方向在 GUI 的「配置输出面」界面中设置。
+With Auto Export enabled, item outputs are automatically pushed to adjacent containers on the allowed sides. The sides are configured in the "Configure Output Sides" screen of the GUI.
 
-## 能量供应
+## Power Supply
 
-过载处理工厂通过**外部 FE 能量输入**供能，并不从 ME 网络直接提取 AE 能量。请使用任意能够输出 FE 能量的管道 / 导线将能量接入机器侧面。
+The Overload Processing Factory is powered by **external FE** on its sides — it does not draw AE from the ME network directly. Use any FE pipe or cable to connect power to one of its sides.

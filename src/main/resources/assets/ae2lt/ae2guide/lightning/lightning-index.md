@@ -1,37 +1,37 @@
 ---
 navigation:
-  title: 闪电系统
+  title: Lightning System
   icon: ae2lt:lightning_collector
   parent: index.md
   position: 20
 ---
 
-# 闪电系统
+# Lightning System
 
-闪电是本模组向 ME 网络加入的一种全新存储类型。它与物品、流体一样可以在终端中查看数量、存入存储元件、并由加工机器消耗。
+Lightning is a brand-new storage type that this mod adds to the ME network. Just like items and fluids, you can see its amount in the terminal, store it inside storage cells, and have processing machines consume it.
 
-## 两个等级
+## Two Tiers
 
-| 等级 | 产生方式 |
-|------|---------|
-| **高压闪电** | 闪电收集器被**人工闪电**命中（玩家携带过载水晶吸引，或特斯拉线圈放电） |
-| **极高压闪电** | 闪电收集器被**自然闪电**命中（雷暴天气下的天然雷电），或由特斯拉线圈从高压闪电升压而来 |
+| Tier | How it is produced |
+|------|---------------------|
+| **High Voltage Lightning** | A Lightning Collector hit by **artificial lightning** (summoned by a player carrying an Overload Crystal, or discharged by a Tesla Coil) |
+| **Extreme High Voltage Lightning** | A Lightning Collector hit by **natural lightning** (a real thunderstorm bolt), or produced by a Tesla Coil upconverting High Voltage Lightning |
 
-多数基础配方仅需要高压闪电，部分高级配方需要极高压闪电。安装**闪电坍缩矩阵**时，部分极高压配方可以使用数倍量的高压闪电进行代偿。
+Most basic recipes only need High Voltage Lightning; a few advanced recipes require Extreme High Voltage. With a **Lightning Collapse Matrix** installed, some EHV recipes can be substituted with several times the amount of HV Lightning.
 
-## 闪电的产生
+## Producing Lightning
 
-* [闪电收集器](lightning-collector.md) — 被雷击中时将闪电注入 ME 网络
-* [特斯拉线圈](tesla-coil.md) — 消耗过载水晶粉 / 高压闪电 + FE 能量，批量产出闪电
+* [Lightning Collector](lightning-collector.md) — injects Lightning into the ME network when struck by lightning
+* [Tesla Coil](tesla-coil.md) — consumes Overload Crystal Dust / HV Lightning and FE to produce Lightning on demand
 
-## 闪电的存储
+## Storing Lightning
 
-* [闪电存储元件](lightning-storage.md) — 放入 <ItemLink id="ae2:drive" /> 后即可在 ME 网络中存储闪电
+* [Lightning Storage Cells](lightning-storage.md) — place one in an <ItemLink id="ae2:drive" /> to store Lightning in your ME network
 
-## 闪电的消耗
+## Consuming Lightning
 
-[加工机器](../machines/machines-index.md)中的闪电模拟室、闪电装配室、过载处理工厂在加工时都会从 ME 网络中提取闪电。
+The Lightning Simulation Room, Lightning Assembly Chamber, and Overload Processing Factory under [Processing Machines](../machines/machines-index.md) all pull Lightning from the ME network while working.
 
-## 闪电的释放
+## Releasing Lightning
 
-* [过载 TNT](overload-tnt.md) — 一枚可控的小型天灾：先爆炸，再淋一场人工闪电
+* [Overload TNT](overload-tnt.md) — a small, controllable disaster in a box: an explosion, followed by a rain of artificial lightning

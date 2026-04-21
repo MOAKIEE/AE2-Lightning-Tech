@@ -1,106 +1,106 @@
 ---
 navigation:
-  title: 入门指南
+  title: Getting Started
   icon: ae2lt:overload_crystal
   parent: index.md
   position: 10
 ---
 
-# 入门指南
+# Getting Started
 
-本页介绍从零开始到搭建第一条闪电产线的完整流程。
+This page walks you through the full path from scratch to a working first Lightning production line.
 
-## 前置条件
+## Prerequisites
 
-开始前请确保已经具备一个可运行的 AE2 ME 网络，至少包含：
+Before starting, make sure you already have a functioning AE2 ME network that includes at least:
 
-* 一个 <ItemLink id="ae2:controller" /> 或一张无控制器的小型网络
-* 一台 <ItemLink id="ae2:charger" />
-* 少量 <ItemLink id="ae2:certus_quartz_crystal" /> 与 <ItemLink id="ae2:fluix_crystal" />
+* An <ItemLink id="ae2:controller" />, or a small controllerless network
+* A <ItemLink id="ae2:charger" />
+* A few <ItemLink id="ae2:certus_quartz_crystal" /> and <ItemLink id="ae2:fluix_crystal" />
 
-## 第一步：获取过载水晶
+## Step 1: Obtain Overload Crystals
 
 <ItemImage id="ae2lt:overload_crystal" scale="2" float="left" />
 
-**过载水晶**是本模组最基础的材料，几乎所有配方都需要用到它或其衍生产物。
+**Overload Crystal** is the most fundamental material in this mod — nearly every recipe relies on it or one of its derivatives.
 
-获得方式是培育**过载水晶母岩**：
+You obtain it by growing **Budding Overload Crystal** blocks:
 
-1. 将 AE2 的**赛特斯石英母岩**（损坏的 / 开裂的 / 有瑕的）放入 <ItemLink id="ae2:charger" /> 中充能
-2. 取出对应等级的**过载水晶母岩**
-3. 将母岩放置在世界中，等待表面自然生长水晶芽
+1. Place an AE2 **Budding Certus Quartz** (Damaged / Cracked / Flawed) in a <ItemLink id="ae2:charger" /> to charge it
+2. Collect the **Budding Overload Crystal** of the matching tier
+3. Place the budding block in the world and wait for buds to grow on its surface
 
-过载水晶母岩的行为与赛特斯石英母岩基本一致：
+Budding Overload Crystal behaves the same way as Budding Certus Quartz:
 
-* 水晶芽会依次生长为小型 → 中型 → 大型 → **过载水晶簇**
-* <ItemLink id="ae2:growth_accelerator" />（水晶生长加速器）对过载水晶同样有效
-* 破坏**未完全长成**的水晶芽会掉落**过载水晶粉**
-* 破坏**完全长成**的过载水晶簇会掉落**过载水晶**，时运附魔生效
-* 不完美的母岩每次生长都可能衰减一个等级；精准采集可以避免被破坏时的衰减
+* Buds grow in order: Small → Medium → Large → **Overload Crystal Cluster**
+* The <ItemLink id="ae2:growth_accelerator" /> works on Overload Crystal buds as well
+* Breaking a **not yet fully grown** bud drops **Overload Crystal Dust**
+* Breaking a **fully grown** Overload Crystal Cluster drops **Overload Crystals**, and Fortune applies
+* Imperfect budding blocks may decay one tier each time a bud grows on them; Silk Touch prevents decay on break
 
-更多细节请参阅 [过载水晶](materials/overload-crystal.md)。
+See [Overload Crystal](materials/overload-crystal.md) for the full details.
 
-## 第二步：通过闪电转化获取起步材料
+## Step 2: Obtain Starter Materials via Lightning Transmutation
 
-本模组的许多起步材料需要通过**闪电转化**获得——将物品丢弃在地面上，再让雷电击中这些掉落物以完成转化。
+Many starter materials are produced through **Lightning Transmutation** — drop items on the ground, then let lightning strike the drops to transmute them.
 
 <ItemImage id="ae2lt:overload_alloy" scale="2" float="left" />
 
-典型的闪电转化产物包括：
+Typical transmutation outputs include:
 
-* **过载合金锭**、**过载电路板**、**过载压印模板**等基础材料
-* **闪电收集器**、**闪电模拟室**等第一批机器
-* **电鸣水晶**与**闪电存储组件 I** 等闪电体系的起步物品
+* **Overload Alloy**, **Overload Circuit Board**, **Overload Inscriber Press** and other basic materials
+* **Lightning Collector**, **Lightning Simulation Room** and the first wave of machines
+* **Electro-Chime Crystal** and **Lightning Storage Cell I**, the starter items for the Lightning system
 
-触发闪电转化有两种方式：
+There are two ways to trigger lightning transmutation:
 
-* **自然雷暴**：雷暴天气下，野外的掉落物会被自然雷击命中
-* **主动召唤**：携带过载水晶站在露天位置约 10 秒，将在周围召唤一次人工闪电
+* **Natural thunderstorm**: during thunderstorm weather, open-air item drops can be struck by natural lightning
+* **Active summon**: carry an Overload Crystal and stand in the open for about 10 seconds to summon an artificial lightning bolt nearby
 
-> 人工闪电可以触发闪电转化配方，但**不能**触发下一步「无瑕母岩」所需的结构转化。结构转化只接受自然雷击。
+> Artificial lightning can trigger transmutation recipes, but **cannot** trigger the multiblock conversion in the next step. The multiblock conversion only accepts natural lightning strikes.
 
-## 第三步：获取无瑕的过载水晶母岩
+## Step 3: Obtain a Flawless Budding Overload Crystal
 
 <ItemImage id="ae2lt:flawless_budding_overload_crystal" scale="2" float="left" />
 
-**无瑕的过载水晶母岩**不会衰减，是大规模产线的基础。要获得它，需要搭建以下多方块结构并等待一次自然雷击：
+**Flawless Budding Overload Crystal** never decays, and is the backbone of any large-scale production line. To obtain one, assemble the following multiblock and wait for a natural lightning strike:
 
 <GameScene zoom="4" background="transparent">
   <ImportStructure src="assets/assemblies/flawless_budding_overload.snbt" />
   <IsometricCamera yaw="195" pitch="30" />
 </GameScene>
 
-* 中心放置一个**无瑕的赛特斯石英母岩**
-* 东 / 西 / 南 / 北四个正方向同一高度各放置一个 <ItemLink id="ae2:fluix_block" />
-* 四个对角各放置一个**过载水晶块**
-* 中心正上方放置一个**避雷针**
+* Place a **Flawless Budding Quartz** in the center
+* Place a <ItemLink id="ae2:fluix_block" /> on each of the four cardinal sides (E / W / N / S) at the same height
+* Place an **Overload Crystal Block** on each of the four corners
+* Place a **Lightning Rod** directly above the center
 
-搭建完成后，等待**自然雷击**命中避雷针即可完成转化。雷击命中后，周围八个外围方块会被消耗，中心方块转化为无瑕的过载水晶母岩。
+Once the structure is built, wait for a **natural lightning strike** to hit the Lightning Rod to complete the conversion. When the strike lands, the eight surrounding blocks are consumed, and the center block becomes a Flawless Budding Overload Crystal.
 
-> 结构转化只接受雷暴天气下的自然雷电。由过载水晶召唤的人工闪电不会触发结构转化。
+> The multiblock conversion only accepts natural lightning during a thunderstorm. Artificial lightning summoned by carrying Overload Crystals does not trigger the conversion.
 
-## 第四步：建立第一条闪电产线
+## Step 4: Build Your First Lightning Line
 
-获得起步材料与基础机器后，可先搭建最小可用的产线：**收集 → 存储 → 消耗**。
+Once you have starter materials and basic machines, you can put together the minimum viable line: **collect → store → consume**.
 
-1. **收集**：在空旷处放置一台**闪电收集器**并接入 ME 网络。雷电命中时，收集器会将闪电能量直接注入 ME 网络
-2. **存储**：将**闪电存储组件 I** 放入 <ItemLink id="ae2:drive" />；闪电将与物品、流体一样出现在 ME 终端中
-3. **消耗**：**闪电模拟室**与**闪电装配室**在加工时会从 ME 网络中自动提取闪电
+1. **Collect**: place a **Lightning Collector** out in the open and connect it to your ME network. When lightning strikes, the collector injects Lightning energy directly into the network
+2. **Store**: put a **Lightning Storage Cell I** into a <ItemLink id="ae2:drive" />; Lightning will appear in the ME terminal alongside items and fluids
+3. **Consume**: the **Lightning Simulation Room** and **Lightning Assembly Chamber** automatically pull Lightning from the ME network while processing
 
-此外常用的辅助设备：
+Useful supporting devices:
 
-* [特斯拉线圈](lightning/tesla-coil.md) — 消耗过载水晶粉与 FE 能量，稳定批量产出高压 / 极高压闪电
-* [大气电离仪](machines/atmospheric-ionizer.md) — 消耗 AE 能量与**天气凝核**，强制改变世界天气
+* [Tesla Coil](lightning/tesla-coil.md) — consumes Overload Crystal Dust and FE to steadily produce High / Extreme High Voltage Lightning
+* [Atmospheric Ionizer](machines/atmospheric-ionizer.md) — consumes AE energy and **Weather Condensate** to force the world weather to change
 
-## 第五步：中后期目标
+## Step 5: Mid- and Late-Game Goals
 
-起步产线成型后，可以依次解锁以下内容：
+Once your starter line is running, you can unlock the following in turn:
 
-* **闪电模拟室**（3 输入槽，简单材料转化）与**闪电装配室**（9 输入槽，复杂装配）
-* **过载处理工厂**（9 输入槽，支持物品与流体输入输出，可用闪电坍缩矩阵启用多并行）
-* **水晶催化器**（流体 + 催化剂，用于培育特殊水晶与材料）
-* **过载 ME 控制器** — 每个控制器为网络提供 128 频道
-* **过载线缆** — 单根线缆不设频道上限
-* **过载样板供应器**与**过载 ME 接口** — 36 槽位，支持无线发货与无线 I/O
+* **Lightning Simulation Room** (3 input slots, simple conversions) and **Lightning Assembly Chamber** (9 input slots, complex assembly)
+* **Overload Processing Factory** (9 input slots, supports item + fluid I/O, and parallel processing via the Lightning Collapse Matrix)
+* **Crystal Catalyzer** (fluid + catalyst, used to grow specialty crystals and materials)
+* **Overloaded ME Controller** — each controller adds 128 channels to the network
+* **Overloaded Cable** — a single cable has no per-cable channel limit
+* **Overloaded Pattern Provider** and **Overloaded ME Interface** — 36 slots each, with wireless dispatch and wireless I/O
 
-具体细节请参阅左侧导航中的各分类页面。
+See the category pages in the left sidebar for the full details.
