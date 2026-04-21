@@ -4,30 +4,30 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_crystal_block"
+        "item": "ae2lt:overload_alloy"
       },
-      "count": 1
+      "count": 16
     },
     {
       "ingredient": {
-        "item": "minecraft:redstone_block"
+        "item": "ae2lt:overload_processor"
       },
-      "count": 1
+      "count": 16
     },
     {
       "ingredient": {
-        "tag": "c:storage_blocks/silicon"
+        "item": "minecraft:netherite_ingot"
       },
-      "count": 1
+      "count": 16
     }
   ],
   "results": [
     {
-      "id": "ae2lt:overload_processor",
-      "count": 9
+      "id": "ae2lt:overload_alloy_plate",
+      "count": 1
     }
   ],
-  "totalEnergy": 200000,
+  "totalEnergy": 1000000,
   "lightningCost": 1,
   "lightningTier": "high_voltage"
 }

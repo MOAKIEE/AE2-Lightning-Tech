@@ -4,7 +4,7 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:overload_crystal_block"
+        "item": "minecraft:gold_block"
       },
       "count": 1
     },
@@ -23,11 +23,11 @@
   ],
   "results": [
     {
-      "id": "ae2lt:overload_processor",
+      "id": "ae2:logic_processor",
       "count": 9
     }
   ],
-  "totalEnergy": 200000,
+  "totalEnergy": 100000,
   "lightningCost": 1,
   "lightningTier": "high_voltage"
 }

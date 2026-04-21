@@ -37,12 +37,10 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
         widgets.add("energyBar", new OverloadProcessingFactoryEnergyBar(menu, style.getImage("energyBar")));
         widgets.add("inputFluidBar", new OverloadProcessingFactoryFluidWidget(
                 menu::getInputFluid,
-                menu::getInputTankCapacity,
-                0xCC2E86DE));
+                menu::getInputTankCapacity));
         widgets.add("outputFluidBar", new OverloadProcessingFactoryFluidWidget(
                 menu::getOutputFluid,
-                menu::getOutputTankCapacity,
-                0xCC3AB36A));
+                menu::getOutputTankCapacity));
 
         this.autoExportButton = new ToggleButton(
                 Icon.AUTO_EXPORT_ON,
