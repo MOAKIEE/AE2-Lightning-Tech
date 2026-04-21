@@ -1,18 +1,35 @@
 package com.moakiee.ae2lt.block;
 
+import java.util.List;
+
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.DirectionProperty;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
+import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
+import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
 import appeng.api.orientation.IOrientationStrategy;
@@ -25,38 +42,48 @@ import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
-    private static final VoxelShape SHAPE = BlockShapeHelper.or(
+    public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
+
+    private static final VoxelShape SHAPE_LOWER = BlockShapeHelper.or(
             Block.box(0, 0, 0, 16, 9, 16),
-            Block.box(7, 8, 1, 9, 18, 6),
-            Block.box(10, 8, 7, 15, 18, 9),
-            Block.box(7, 8, 10, 9, 18, 15),
-            Block.box(1, 8, 7, 6, 18, 9),
+            Block.box(7, 8, 1, 9, 16, 6),
+            Block.box(10, 8, 7, 15, 16, 9),
+            Block.box(7, 8, 10, 9, 16, 15),
+            Block.box(1, 8, 7, 6, 16, 9),
             Block.box(5, 9, 5, 11, 11, 11),
-            Block.box(5.5, 11, 5.5, 10.5, 25, 10.5),
-            Block.box(5, 18, 5, 11, 23, 11),
-            Block.box(5, 23, 5, 11, 24, 11),
-            Block.box(5, 25, 5, 11, 26, 11),
-            Block.box(6, 26, 6, 10, 30, 10),
-            Block.box(1, 28, 1, 12, 31, 4),
-            Block.box(1, 28, 4, 4, 31, 15),
-            Block.box(4, 28, 12, 15, 31, 15),
-            Block.box(12, 28, 1, 15, 31, 12),
-            Block.box(7.5, 26, 1, 8.5, 28, 6),
-            Block.box(10, 26, 7.5, 15, 28, 8.5),
-            Block.box(7.5, 26, 10, 8.5, 28, 15),
-            Block.box(1, 26, 7.5, 6, 28, 8.5));
+            Block.box(5.5, 11, 5.5, 10.5, 16, 10.5));
+
+    private static final VoxelShape SHAPE_UPPER = BlockShapeHelper.or(
+            Block.box(7, 0, 1, 9, 2, 6),
+            Block.box(10, 0, 7, 15, 2, 9),
+            Block.box(7, 0, 10, 9, 2, 15),
+            Block.box(1, 0, 7, 6, 2, 9),
+            Block.box(5.5, 0, 5.5, 10.5, 9, 10.5),
+            Block.box(5, 2, 5, 11, 7, 11),
+            Block.box(5, 7, 5, 11, 8, 11),
+            Block.box(5, 9, 5, 11, 10, 11),
+            Block.box(6, 10, 6, 10, 14, 10),
+            Block.box(1, 12, 1, 12, 15, 4),
+            Block.box(1, 12, 4, 4, 15, 15),
+            Block.box(4, 12, 12, 15, 15, 15),
+            Block.box(12, 12, 1, 15, 15, 12),
+            Block.box(7.5, 10, 1, 8.5, 12, 6),
+            Block.box(10, 10, 7.5, 15, 12, 8.5),
+            Block.box(7.5, 10, 10, 8.5, 12, 15),
+            Block.box(1, 10, 7.5, 6, 12, 8.5));
 
     public TeslaCoilBlock() {
         super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
-                .setValue(FACING, Direction.NORTH));
+                .setValue(FACING, Direction.NORTH)
+                .setValue(HALF, DoubleBlockHalf.LOWER));
     }
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
-        builder.add(WORKING);
+        builder.add(WORKING, HALF);
     }
 
     @Override
@@ -65,20 +92,150 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, net.minecraft.core.BlockPos pos,
-            CollisionContext context) {
-        return SHAPE;
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            return null;
+        }
+        return super.newBlockEntity(pos, state);
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, net.minecraft.core.BlockPos pos,
-            CollisionContext context) {
-        return SHAPE;
+    public BlockState getStateForPlacement(BlockPlaceContext context) {
+        BlockPos pos = context.getClickedPos();
+        BlockPos above = pos.above();
+        Level level = context.getLevel();
+        if (above.getY() >= level.getMaxBuildHeight() || !level.getBlockState(above).canBeReplaced(context)) {
+            return null;
+        }
+        BlockState state = super.getStateForPlacement(context);
+        return state == null ? null : state.setValue(HALF, DoubleBlockHalf.LOWER);
+    }
+
+    @Override
+    public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+        super.setPlacedBy(level, pos, state, placer, stack);
+        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
+            BlockState upperState = state.setValue(HALF, DoubleBlockHalf.UPPER);
+            level.setBlock(pos.above(), upperState, Block.UPDATE_ALL);
+        }
+    }
+
+    @Override
+    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? SHAPE_UPPER : SHAPE_LOWER;
+    }
+
+    @Override
+    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+        return getShape(state, level, pos, context);
+    }
+
+    @Override
+    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+        return Shapes.empty();
+    }
+
+    @Override
+    protected RenderShape getRenderShape(BlockState state) {
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? RenderShape.INVISIBLE : RenderShape.MODEL;
+    }
+
+    @Override
+    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+        return true;
+    }
+
+    @Override
+    protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            BlockState below = level.getBlockState(pos.below());
+            return below.is(this) && below.getValue(HALF) == DoubleBlockHalf.LOWER;
+        }
+        return super.canSurvive(state, level, pos);
+    }
+
+    @Override
+    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
+            LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+        DoubleBlockHalf half = state.getValue(HALF);
+        if (half == DoubleBlockHalf.LOWER && direction == Direction.UP) {
+            if (!neighborState.is(this) || neighborState.getValue(HALF) != DoubleBlockHalf.UPPER) {
+                return Blocks.AIR.defaultBlockState();
+            }
+        } else if (half == DoubleBlockHalf.UPPER && direction == Direction.DOWN) {
+            if (!neighborState.is(this) || neighborState.getValue(HALF) != DoubleBlockHalf.LOWER) {
+                return Blocks.AIR.defaultBlockState();
+            }
+        }
+        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+    }
+
+    @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        if (!level.isClientSide) {
+            if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+                BlockPos lowerPos = pos.below();
+                BlockState lowerState = level.getBlockState(lowerPos);
+                if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                    level.destroyBlock(lowerPos, !player.isCreative(), player);
+                }
+            } else {
+                BlockPos upperPos = pos.above();
+                BlockState upperState = level.getBlockState(upperPos);
+                if (upperState.is(this) && upperState.getValue(HALF) == DoubleBlockHalf.UPPER) {
+                    level.setBlock(upperPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                }
+            }
+        }
+        return super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!level.isClientSide && !state.is(newState.getBlock())) {
+            if (state.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                BlockPos upperPos = pos.above();
+                BlockState upperState = level.getBlockState(upperPos);
+                if (upperState.is(this) && upperState.getValue(HALF) == DoubleBlockHalf.UPPER) {
+                    level.setBlock(upperPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
+                }
+            } else {
+                BlockPos lowerPos = pos.below();
+                BlockState lowerState = level.getBlockState(lowerPos);
+                if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                    level.destroyBlock(lowerPos, true);
+                }
+            }
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
+
+    @Override
+    public List<ItemStack> getDrops(BlockState state, LootParams.Builder builder) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            return List.of();
+        }
+        return super.getDrops(state, builder);
+    }
+
+    @Override
+    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+        return new ItemStack(asItem());
     }
 
     @Override
     protected InteractionResult useWithoutItem(
-            BlockState state, Level level, net.minecraft.core.BlockPos pos, Player player, BlockHitResult hitResult) {
+            BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            BlockPos lowerPos = pos.below();
+            BlockState lowerState = level.getBlockState(lowerPos);
+            if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                return useWithoutItem(lowerState, level, lowerPos, player, hitResult);
+            }
+            return InteractionResult.PASS;
+        }
+
         var be = getBlockEntity(level, pos);
         if (be == null) {
             return InteractionResult.PASS;
@@ -89,5 +246,19 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
         }
 
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Override
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
+            Player player, InteractionHand hand, BlockHitResult hit) {
+        if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            BlockPos lowerPos = pos.below();
+            BlockState lowerState = level.getBlockState(lowerPos);
+            if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                return super.useItemOn(stack, lowerState, level, lowerPos, player, hand, hit);
+            }
+            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+        }
+        return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
 }
