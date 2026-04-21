@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.event;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.lightning.LightningTransformService;
 import com.moakiee.ae2lt.lightning.ProtectedItemEntityHelper;
+import com.moakiee.ae2lt.logic.research.ResearchRitualService;
 import com.moakiee.ae2lt.network.EasterEggPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -42,6 +43,7 @@ public final class LightningItemTransformationHandler {
         }
 
         data.putBoolean(TRANSFORMATION_CHECKED_TAG, true);
+        ResearchRitualService.handleLightning(serverLevel, lightningBolt);
         LightningTransformService.handleLightning(serverLevel, lightningBolt);
         checkEasterEgg(serverLevel, lightningBolt);
     }

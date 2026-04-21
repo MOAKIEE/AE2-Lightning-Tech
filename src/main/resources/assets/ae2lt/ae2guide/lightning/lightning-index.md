@@ -31,3 +31,7 @@ navigation:
 ## 闪电的消耗
 
 [加工机器](../machines/machines-index.md)中的闪电模拟室、闪电装配室、过载处理工厂在加工时都会从 ME 网络中提取闪电。
+
+## 闪电的释放
+
+* [过载 TNT](overload-tnt.md) — 一枚可控的小型天灾：先爆炸，再淋一场人工闪电

@@ -1,7 +1,5 @@
 package com.moakiee.ae2lt.me.cell;
 
-import java.util.UUID;
-
 import org.jetbrains.annotations.Nullable;
 
 import appeng.api.storage.cells.ICellHandler;
@@ -35,16 +33,11 @@ public final class InfiniteCellHandler implements ICellHandler {
                     cell.getIdleDrain());
         }
         if (is.getItem() instanceof FixedInfiniteCellItem) {
-            if (!FixedInfiniteCellItem.hasType(is)) {
-                ensureSeed(is);
+            if (FixedInfiniteCellItem.isOuterCell(is)) {
+                FixedInfiniteCellItem.initializeOuterCell(is);
             }
-            return new FixedInfiniteCellInventory(is, 32);
+            return new FixedInfiniteCellInventory(is, 32, host);
         }
         return null;
-    }
-
-    private static void ensureSeed(ItemStack stack) {
-        if (FixedInfiniteCellItem.hasSeed(stack)) return;
-        FixedInfiniteCellItem.setSeed(stack, UUID.randomUUID());
     }
 }

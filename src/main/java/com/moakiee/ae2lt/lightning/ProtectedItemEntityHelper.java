@@ -28,6 +28,8 @@ public final class ProtectedItemEntityHelper {
                     ModItems.OVERLOAD_CRYSTAL.get(),
                     ModItems.OVERLOAD_ALLOY.get(),
                     ModItems.OVERLOAD_CIRCUIT_BOARD.get(),
+                    ModItems.RESEARCH_NOTE.get(),
+                    ModItems.CHARRED_RITUAL_FRAGMENT.get(),
                     ModBlocks.OVERLOAD_CRYSTAL_BLOCK.get().asItem(),
                     ModItems.OVERLOAD_SINGULARITY.get(),
                     ModItems.LIGHTNING_COLLAPSE_MATRIX.get());

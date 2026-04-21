@@ -30,11 +30,14 @@ public final class FixedInfiniteCellItem extends Item {
 
     private static final String TAG_SEED = "CellSeed";
     private static final String TAG_TYPE = "CellType";
+    private static final String TAG_RESULT_CONSUMED = "ResultConsumed";
 
     public enum CellOutcome {
         LIGHTNING_ROD((byte) 0, "lightning_rod"),
         HIGH_VOLTAGE((byte) 1, "high_voltage"),
-        EXTREME_HIGH_VOLTAGE((byte) 2, "extreme_high_voltage");
+        EXTREME_HIGH_VOLTAGE((byte) 2, "extreme_high_voltage"),
+        LIGHTNING_COLLAPSE_MATRIX((byte) 3, "lightning_collapse_matrix"),
+        RESEARCH_NOTE((byte) 4, "research_note");
 
         private final byte typeId;
         private final String suffix;
@@ -56,6 +59,8 @@ public final class FixedInfiniteCellItem extends Item {
             return switch (id) {
                 case 1 -> HIGH_VOLTAGE;
                 case 2 -> EXTREME_HIGH_VOLTAGE;
+                case 3 -> LIGHTNING_COLLAPSE_MATRIX;
+                case 4 -> RESEARCH_NOTE;
                 default -> LIGHTNING_ROD;
             };
         }
@@ -65,6 +70,8 @@ public final class FixedInfiniteCellItem extends Item {
                 case LIGHTNING_ROD -> AEItemKey.of(Items.LIGHTNING_ROD);
                 case HIGH_VOLTAGE -> LightningKey.HIGH_VOLTAGE;
                 case EXTREME_HIGH_VOLTAGE -> LightningKey.EXTREME_HIGH_VOLTAGE;
+                case LIGHTNING_COLLAPSE_MATRIX -> AEItemKey.of(ModItems.LIGHTNING_COLLAPSE_MATRIX.get());
+                case RESEARCH_NOTE -> AEItemKey.of(ModItems.RESEARCH_NOTE.get());
             };
         }
     }
@@ -79,6 +86,15 @@ public final class FixedInfiniteCellItem extends Item {
         CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putUUID(TAG_SEED, seed));
     }
 
+    public static void initializeOuterCell(ItemStack stack) {
+        if (hasType(stack)) {
+            return;
+        }
+        if (!hasSeed(stack)) {
+            setSeed(stack, UUID.randomUUID());
+        }
+    }
+
     @Nullable
     public static UUID getSeed(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
@@ -89,26 +105,47 @@ public final class FixedInfiniteCellItem extends Item {
         return getSeed(stack) != null;
     }
 
+    public static boolean isOuterCell(ItemStack stack) {
+        return !hasType(stack);
+    }
+
+    public static boolean isResultConsumed(ItemStack stack) {
+        if (!isOuterCell(stack)) {
+            return false;
+        }
+        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return tag.getBoolean(TAG_RESULT_CONSUMED);
+    }
+
+    public static void setResultConsumed(ItemStack stack, boolean consumed) {
+        if (!isOuterCell(stack)) {
+            return;
+        }
+        initializeOuterCell(stack);
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(TAG_RESULT_CONSUMED, consumed));
+    }
+
     /**
-     * Mix seed with world seed, then roll. 10000 possible outcomes:
+     * 按 seed + 世界种子 hash 出 10000 个 roll 区间，再映射到一个 outcome：
      * <ul>
-     *   <li>roll == 0 → EXTREME_HIGH_VOLTAGE (1/10000)</li>
-     *   <li>roll 1..9 → HIGH_VOLTAGE (9/10000)</li>
-     *   <li>roll 10..9999 → LIGHTNING_ROD (9990/10000)</li>
+     *   <li>roll 0..2 → RESEARCH_NOTE (3/10000, UR 暗门,引导进入仪式玩法)</li>
+     *   <li>roll 3..11 → HIGH_VOLTAGE (9/10000, SR)</li>
+     *   <li>roll 12..9999 → LIGHTNING_ROD (9988/10000, R)</li>
      * </ul>
+     * EXTREME_HIGH_VOLTAGE 与 LIGHTNING_COLLAPSE_MATRIX 仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
      */
     public static CellOutcome resolveOutcome(UUID seed, long worldSeed) {
         long mixed = (seed.getLeastSignificantBits() ^ worldSeed)
                    ^ (seed.getMostSignificantBits() ^ Long.reverseBytes(worldSeed));
         int roll = Math.floorMod(mixed, 10000);
-        if (roll == 0) return CellOutcome.EXTREME_HIGH_VOLTAGE;
-        if (roll <= 9) return CellOutcome.HIGH_VOLTAGE;
+        if (roll <= 2) return CellOutcome.RESEARCH_NOTE;
+        if (roll <= 11) return CellOutcome.HIGH_VOLTAGE;
         return CellOutcome.LIGHTNING_ROD;
     }
 
     public static CellOutcome getOutcomeFromSeed(ItemStack stack) {
         UUID seed = getSeed(stack);
-        if (seed == null) return CellOutcome.EXTREME_HIGH_VOLTAGE;
+        if (seed == null) return CellOutcome.LIGHTNING_ROD;
         long worldSeed = 0L;
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) {
@@ -143,10 +180,21 @@ public final class FixedInfiniteCellItem extends Item {
         if (hasType(stack)) {
             return CellOutcome.fromTypeId(getType(stack)).displayKey();
         }
-        CellOutcome outcome = getOutcomeFromSeed(stack);
+        return AEItemKey.of(createDisplayedResultStack(stack));
+    }
+
+    public static ItemStack createDisplayedResultStack(ItemStack stack) {
+        return createDisplayedResultStack(getOutcomeFromSeed(stack));
+    }
+
+    public static ItemStack createDisplayedResultStack(CellOutcome outcome) {
+        if (outcome == CellOutcome.RESEARCH_NOTE) {
+            return new ItemStack(ModItems.RESEARCH_NOTE.get());
+        }
+
         ItemStack innerStack = new ItemStack(ModItems.MYSTERIOUS_CELL.get());
         setType(innerStack, outcome.typeId());
-        return AEItemKey.of(innerStack);
+        return innerStack;
     }
 
     // ── Display ──
@@ -170,10 +218,32 @@ public final class FixedInfiniteCellItem extends Item {
             String suffix = CellOutcome.fromTypeId(getType(stack)).suffix();
             tooltipComponents.add(Component.translatable(TOOLTIP_KEY + "." + suffix)
                     .withStyle(ChatFormatting.GREEN));
-        } else {
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".from_mysterious")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
+        if (!hasSeed(stack)) {
             tooltipComponents.add(Component.translatable(TOOLTIP_KEY)
                     .withStyle(ChatFormatting.GREEN));
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".hint.once")
+                    .withStyle(ChatFormatting.GRAY));
+            return;
         }
+
+        if (isResultConsumed(stack)) {
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".consumed")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".consumed.hint")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
+        }
+
+        String suffix = getOutcomeFromSeed(stack).suffix();
+        tooltipComponents.add(Component.translatable(TOOLTIP_KEY + "." + suffix)
+                .withStyle(ChatFormatting.GREEN));
+        tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".hint.once")
+                .withStyle(ChatFormatting.GRAY));
     }
 
     @Override
@@ -181,8 +251,13 @@ public final class FixedInfiniteCellItem extends Item {
         if (!hasType(stack) && !hasSeed(stack)) {
             return Optional.empty();
         }
+        if (isResultConsumed(stack)) {
+            return Optional.empty();
+        }
         AEKey key = getEffectiveKey(stack);
-        long amount = (long) Integer.MAX_VALUE * key.getAmountPerUnit();
+        long amount = hasType(stack)
+                ? (long) Integer.MAX_VALUE * key.getAmountPerUnit()
+                : key.getAmountPerUnit();
         var content = Collections.singletonList(new GenericStack(key, amount));
         return Optional.of(new StorageCellTooltipComponent(List.of(), content, false, true));
     }

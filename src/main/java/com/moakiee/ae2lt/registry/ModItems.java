@@ -13,6 +13,7 @@ import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.resources.ResourceLocation;
@@ -121,6 +122,12 @@ public final class ModItems {
     public static final DeferredItem<FixedInfiniteCellItem> MYSTERIOUS_CELL =
             ITEMS.register("mysterious_cell",
                     () -> new FixedInfiniteCellItem(new Item.Properties()));
+
+    public static final DeferredItem<ResearchNoteItem> RESEARCH_NOTE =
+            ITEMS.registerItem("research_note", ResearchNoteItem::new, new Item.Properties().stacksTo(16));
+
+    public static final DeferredItem<Item> CHARRED_RITUAL_FRAGMENT =
+            ITEMS.registerSimpleItem("charred_ritual_fragment", new Item.Properties());
 
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",

@@ -7,12 +7,15 @@ import java.util.Set;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 public class LightningBlastTask {
@@ -33,6 +36,8 @@ public class LightningBlastTask {
     public static final int DEFAULT_SHORT_THUNDERSTORM_TICKS = 160;
     public static final int DEFAULT_LIGHTNING_HORIZONTAL_RADIUS = 24;
     public static final int DEFAULT_SHELLS_PER_TICK = 3;
+    private static final float INITIAL_BLAST_DAMAGE_CORE = 100.0F;
+    private static final float INITIAL_BLAST_DAMAGE_EDGE = 50.0F;
     private static final double CORE_RADIUS_RATIO = 0.28D;
     private static final double INNER_BLAST_SCORE = 24.0D;
     private static final double OUTER_BLAST_SCORE = 3.5D;
@@ -225,7 +230,28 @@ public class LightningBlastTask {
         this.remainingAftershockTicks = DEFAULT_AFTERSHOCK_TICKS;
         this.pendingLightningStrikes = DEFAULT_INITIAL_LIGHTNING_COUNT;
 
+        applyInitialBlastDamage();
         tryStartShortThunderstorm();
+    }
+
+    private void applyInitialBlastDamage() {
+        double r = Math.max(1, this.radius);
+        AABB aabb = new AABB(
+                this.center.getX() - r, this.center.getY() - r, this.center.getZ() - r,
+                this.center.getX() + r + 1, this.center.getY() + r + 1, this.center.getZ() + r + 1);
+        Vec3 centerVec = Vec3.atCenterOf(this.center);
+        double radiusSq = r * r;
+        DamageSource source = this.level.damageSources().lightningBolt();
+        for (LivingEntity entity : this.level.getEntitiesOfClass(LivingEntity.class, aabb)) {
+            double dSq = entity.position().distanceToSqr(centerVec);
+            if (dSq > radiusSq) {
+                continue;
+            }
+            double falloff = 1.0D - Math.sqrt(dSq) / r;
+            float damage = (float) (INITIAL_BLAST_DAMAGE_EDGE
+                    + (INITIAL_BLAST_DAMAGE_CORE - INITIAL_BLAST_DAMAGE_EDGE) * falloff);
+            entity.hurt(source, damage);
+        }
     }
 
     private void queueAftershockBurst() {
