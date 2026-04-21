@@ -20,21 +20,9 @@ item_ids:
 
 ## 合成
 
-工作台 3×3 配方：四角 **火药**、四条边 **过载水晶粉**、中心一枚 **过载奇点**。
+<RecipeFor id="ae2lt:overload_tnt" />
 
-<ItemGrid>
-  <ItemIcon id="minecraft:gunpowder" />
-  <ItemIcon id="ae2lt:overload_crystal_dust" />
-  <ItemIcon id="ae2lt:overload_singularity" />
-</ItemGrid>
-
-| 槽位 | 材料 | 数量 |
-|------|------|------|
-| 四角 | <ItemLink id="minecraft:gunpowder" /> | 4 |
-| 四边 | <ItemLink id="ae2lt:overload_crystal_dust" /> | 4 |
-| 中心 | <ItemLink id="ae2lt:overload_singularity" /> | 1 |
-
-中心那枚 <ItemLink id="ae2lt:overload_singularity" /> 才是真正在做功的部件，四角的火药只是给它一个发作的借口。
+中心那枚**过载奇点**才是真正在做功的部件，四角的火药只是给它一个发作的借口。
 
 ## 引爆行为
 
