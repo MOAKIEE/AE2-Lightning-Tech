@@ -44,6 +44,10 @@
     "energyBar": {
       "left": 141,
       "top": 40
+    },
+    "lightningStatus": {
+      "left": 156,
+      "top": 4
     }
   }
 }

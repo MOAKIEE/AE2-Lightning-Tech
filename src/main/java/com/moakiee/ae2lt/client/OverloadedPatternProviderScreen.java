@@ -139,16 +139,10 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
 
         this.modeButton.setState(this.menu.isWirelessMode());
 
-        int rm = this.menu.getReturnModeOrdinal();
-        this.autoReturnButton.setState(rm != ReturnMode.OFF.ordinal());
-        if (rm == ReturnMode.OFF.ordinal()) {
-            this.autoReturnButton.setTooltipOff(RETURN_TIP_OFF);
-            this.autoReturnButton.setTooltipOn(RETURN_TIP_AUTO);
-        } else if (rm == ReturnMode.AUTO.ordinal()) {
-            this.autoReturnButton.setTooltipOn(RETURN_TIP_AUTO);
-        } else {
-            this.autoReturnButton.setTooltipOn(RETURN_TIP_EJECT);
-        }
+        this.autoReturnButton.setTooltipAt(ReturnMode.OFF.ordinal(), RETURN_TIP_OFF);
+        this.autoReturnButton.setTooltipAt(ReturnMode.AUTO.ordinal(), RETURN_TIP_AUTO);
+        this.autoReturnButton.setTooltipAt(ReturnMode.EJECT.ordinal(), RETURN_TIP_EJECT);
+        this.autoReturnButton.setStateIndex(this.menu.getReturnModeOrdinal());
 
         this.filteredImportButton.setState(this.menu.isFilteredImport());
         this.filteredImportButton.setVisibility(true);

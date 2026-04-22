@@ -13,15 +13,11 @@ import appeng.client.gui.AEBaseScreen;
 import appeng.client.gui.style.ScreenStyle;
 
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
+import com.moakiee.ae2lt.client.gui.LightningStatusLines;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 
 public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
-    private static final int INFO_X = 58;
-    private static final int STATUS_Y = 64;
-    private static final int MATRIX_Y = 73;
-    private static final int HIGH_VOLTAGE_Y = 82;
-    private static final int EXTREME_HIGH_VOLTAGE_Y = 91;
-
     private final TeslaCoilEnergyBar energyBar;
     private Button modeButton;
 
@@ -30,6 +26,15 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
 
         this.energyBar = new TeslaCoilEnergyBar(menu, style.getImage("energyBar"));
         widgets.add("energyBar", energyBar);
+
+        widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
+                LightningStatusLines.title(),
+                menu.getStatusMessage(),
+                LightningStatusLines.progress(menu.getProgress()),
+                LightningStatusLines.energy(menu.getStoredEnergy(), menu.getEnergyCapacity()),
+                LightningStatusLines.highVoltage(menu.getHighVoltageAvailable()),
+                LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()),
+                menu.getMatrixMessage())));
     }
 
     @Override
@@ -50,16 +55,6 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
             modeButton.active = !menu.isModeLocked();
             modeButton.setMessage(menu.getModeButtonMessage());
         }
-    }
-
-    @Override
-    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
-        super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
-
-        guiGraphics.drawString(font, menu.getStatusMessage(), INFO_X, STATUS_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getMatrixMessage(), INFO_X, MATRIX_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HIGH_VOLTAGE_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EXTREME_HIGH_VOLTAGE_Y, 0x404040, false);
     }
 
     @Override

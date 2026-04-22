@@ -1,9 +1,9 @@
 {
   "parent": "block/block",
   "textures": {
-    "block": "ae2lt:block/overloaded_controller/controller_column_h_powered",
-    "lights": "ae2lt:block/overloaded_controller/controller_column_h_conflict",
-    "particle": "ae2lt:block/overloaded_controller/controller"
+    "block": "ae2lt:block/overload_controller/controller_column_h_powered",
+    "lights": "ae2lt:block/overload_controller/controller_column_h_conflict",
+    "particle": "ae2lt:block/overload_controller/controller"
   },
   "render_type": "cutout",
   "elements": [

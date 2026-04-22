@@ -28,11 +28,12 @@ public class CrystalCatalyzerEnergyBar extends AbstractWidget implements IToolti
         fill.copy().opacity(0.2f).dest(getX(), getY(), width, height).blit(guiGraphics);
 
         long capacity = Math.max(1L, menu.getEnergyCapacity());
-        long stored = Math.min(menu.getStoredEnergy(), capacity);
+        long stored = Math.min(Math.max(0L, menu.getStoredEnergy()), capacity);
         int filled = (int) Math.round(height * (double) stored / (double) capacity);
         if (filled <= 0) {
             return;
         }
+        filled = Math.min(filled, height);
 
         int srcY = fill.getSrcY() + height - filled;
         int destY = getY() + height - filled;

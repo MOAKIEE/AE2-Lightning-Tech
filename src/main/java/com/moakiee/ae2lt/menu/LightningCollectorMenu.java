@@ -50,6 +50,7 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
         this.crystalSlot = addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningCollectorInventory.SLOT_CRYSTAL),
                 Ae2ltSlotSemantics.LIGHTNING_COLLECTOR_CRYSTAL);
+        Ae2ltSlotBackgrounds.withBackground(this.crystalSlot, Ae2ltSlotBackgrounds.ELECTRO_CHIME_CRYSTAL);
         createPlayerInventorySlots(playerInventory);
     }
 

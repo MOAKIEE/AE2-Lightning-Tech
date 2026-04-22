@@ -74,6 +74,7 @@ public class TeslaCoilMenu extends AEBaseMenu {
         this.matrixSlot = addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), TeslaCoilInventory.SLOT_MATRIX),
                 Ae2ltSlotSemantics.TESLA_COIL_MATRIX);
+        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
 
         createPlayerInventorySlots(playerInventory);
 
@@ -211,12 +212,20 @@ public class TeslaCoilMenu extends AEBaseMenu {
                         : "ae2lt.gui.tesla_coil.matrix.missing"));
     }
 
+    public long getHighVoltageAvailable() {
+        return highVoltageAvailable;
+    }
+
+    public long getExtremeHighVoltageAvailable() {
+        return extremeHighVoltageAvailable;
+    }
+
     public Component getHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.tesla_coil.stock.high_voltage", highVoltageAvailable);
+        return Component.translatable("ae2lt.gui.lightning_status.high_voltage", highVoltageAvailable);
     }
 
     public Component getExtremeHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.tesla_coil.stock.extreme_high_voltage", extremeHighVoltageAvailable);
+        return Component.translatable("ae2lt.gui.lightning_status.extreme_high_voltage", extremeHighVoltageAvailable);
     }
 
     public void clientCycleMode() {

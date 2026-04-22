@@ -21,6 +21,8 @@ import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
 
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
+import com.moakiee.ae2lt.client.gui.LightningStatusLines;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 
 public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemblyChamberMenu> {
@@ -34,7 +36,7 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
             LightningAssemblyChamberMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
         this.imageWidth = 176;
-        this.imageHeight = 178;
+        this.imageHeight = 198;
 
         widgets.add("upgrades", new UpgradesPanel(
                 menu.getSlots(SlotSemantics.UPGRADE),
@@ -64,14 +66,14 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
         this.configureOutputButton.setMessage(
                 Component.translatable("ae2lt.gui.lightning_assembly.configure_output"));
         addToLeftToolbar(this.configureOutputButton);
-    }
 
-    @Override
-    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTicks) {
-        guiGraphics.fill(offsetX, offsetY, offsetX + imageWidth, offsetY + imageHeight, 0xFF1B1F24);
-        guiGraphics.fill(offsetX + 1, offsetY + 1, offsetX + imageWidth - 1, offsetY + imageHeight - 1, 0xFF222831);
-        guiGraphics.fill(offsetX + 7, offsetY + 17, offsetX + 63, offsetY + 73, 0xFF181C22);
-        guiGraphics.fill(offsetX + 129, offsetY + 35, offsetX + 149, offsetY + 55, 0xFF181C22);
+        widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
+                LightningStatusLines.title(),
+                LightningStatusLines.status(menu.isWorking()),
+                LightningStatusLines.progress(menu.getProgress()),
+                LightningStatusLines.energy(menu.getStoredEnergy(), menu.getEnergyCapacity()),
+                LightningStatusLines.highVoltage(menu.getHighVoltageAvailable()),
+                LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()))));
     }
 
     @Override

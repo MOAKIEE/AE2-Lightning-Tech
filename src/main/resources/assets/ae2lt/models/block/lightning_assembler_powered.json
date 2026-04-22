@@ -2,21 +2,21 @@
 	"loader":"neoforge:composite",
 	"parent":"block/block",
 	"textures": {
-		"particle": "ae2lt:block/lightning_assembly_chamber/base"
+		"particle": "ae2lt:block/lightning_assembler/base"
 	},
 	"children": {
         "base": {
-            "parent": "ae2lt:block/lightning_assembly_chamber",
+            "parent": "ae2lt:block/lightning_assembler",
 			"render_type": "cutout",
 			"textures": {
-				"particle": "ae2lt:block/lightning_assembly_chamber/base"
+				"particle": "ae2lt:block/lightning_assembler/base"
 			}
         },
 		"light": {
 			"render_type": "translucent",
 			"textures": {
-				"all": "ae2lt:block/lightning_assembly_chamber/lights",
-				"particle": "ae2lt:block/lightning_assembly_chamber/lights"
+				"all": "ae2lt:block/lightning_assembler/lights",
+				"particle": "ae2lt:block/lightning_assembler/lights"
 			},
 			"elements": [
 				{

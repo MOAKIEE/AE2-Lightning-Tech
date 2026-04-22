@@ -21,17 +21,11 @@ import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
 
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
+import com.moakiee.ae2lt.client.gui.LightningStatusLines;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
 
 public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimulationChamberMenu> {
-    private static final int INFO_X = 8;
-    private static final int STATUS_Y = 55;
-    private static final int HIGH_VOLTAGE_Y = 64;
-    private static final int EXTREME_HIGH_VOLTAGE_Y = 73;
-    private static final int DEMAND_Y = 82;
-    private static final int MATRIX_Y = 91;
-    private static final int SUBSTITUTION_Y = 100;
-
     private final LightningSimulationEnergyBar energyBar;
     private final LightningSimulationProcessWidget processWidget;
     private final ToggleButton autoExportButton;
@@ -50,6 +44,17 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
 
         this.energyBar = new LightningSimulationEnergyBar(menu, style.getImage("energyBar"));
         widgets.add("energyBar", energyBar);
+
+        widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
+                LightningStatusLines.title(),
+                LightningStatusLines.status(menu.isWorking()),
+                LightningStatusLines.progress(menu.getProgress()),
+                LightningStatusLines.energy(menu.getStoredEnergy(), menu.getEnergyCapacity()),
+                LightningStatusLines.highVoltage(menu.getHighVoltageAvailable()),
+                LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()),
+                menu.getMatrixMessage(),
+                menu.getLightningDemandMessage(),
+                menu.getSubstitutionMessage())));
 
         this.autoExportButton = new ToggleButton(
                 Icon.AUTO_EXPORT_ON,
@@ -97,18 +102,6 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
 
         this.autoExportButton.setState(menu.isAutoExportEnabled());
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
-    }
-
-    @Override
-    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY) {
-        super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
-
-        guiGraphics.drawString(font, menu.getStatusMessage(), INFO_X, STATUS_Y, menu.isLightningInsufficient() ? 0xC84B4B : 0x404040, false);
-        guiGraphics.drawString(font, menu.getHighVoltageMessage(), INFO_X, HIGH_VOLTAGE_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getExtremeHighVoltageMessage(), INFO_X, EXTREME_HIGH_VOLTAGE_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getLightningDemandMessage(), INFO_X, DEMAND_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getMatrixMessage(), INFO_X, MATRIX_Y, 0x404040, false);
-        guiGraphics.drawString(font, menu.getSubstitutionMessage(), INFO_X, SUBSTITUTION_Y, 0x404040, false);
     }
 
 }

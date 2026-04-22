@@ -109,6 +109,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         this.matrixSlot = addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), OverloadProcessingFactoryInventory.SLOT_MATRIX),
                 Ae2ltSlotSemantics.OVERLOAD_FACTORY_MATRIX);
+        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         setupUpgrades(host.getUpgrades());
         createPlayerInventorySlots(playerInventory);
 
@@ -302,6 +303,22 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
             return 0.0D;
         }
         return Math.min(1.0D, (double) consumedEnergy / (double) totalEnergy);
+    }
+
+    public long getHighVoltageAvailable() {
+        return highVoltageAvailable;
+    }
+
+    public long getExtremeHighVoltageAvailable() {
+        return extremeHighVoltageAvailable;
+    }
+
+    public Component getHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.high_voltage", highVoltageAvailable);
+    }
+
+    public Component getExtremeHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.extreme_high_voltage", extremeHighVoltageAvailable);
     }
 
     public FluidStack getInputFluid() {

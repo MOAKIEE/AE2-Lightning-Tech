@@ -5,7 +5,7 @@
         "facing": "north"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer", 
+        "model": "ae2lt:block/atmospheric_ionizer_off", 
         "x": 90 
       }
     },
@@ -14,7 +14,7 @@
         "facing": "south"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer", 
+        "model": "ae2lt:block/atmospheric_ionizer_off", 
         "x": 270 
       }
     },
@@ -23,7 +23,7 @@
         "facing": "east"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer", 
+        "model": "ae2lt:block/atmospheric_ionizer_off", 
         "x": 90, 
         "y": 90 
       }
@@ -33,7 +33,7 @@
         "facing": "west"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer", 
+        "model": "ae2lt:block/atmospheric_ionizer_off", 
         "x": 90, 
         "y": 270 
       }
@@ -43,7 +43,7 @@
         "facing": "up"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer"
+        "model": "ae2lt:block/atmospheric_ionizer_off"
       }
     },
     {
@@ -51,7 +51,7 @@
         "facing": "down"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer", 
+        "model": "ae2lt:block/atmospheric_ionizer_off", 
         "x": 180 
       }
     },
@@ -61,7 +61,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "model": "ae2lt:block/atmospheric_ionizer_on", 
         "x": 90 
       }
     },
@@ -71,7 +71,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "model": "ae2lt:block/atmospheric_ionizer_on", 
         "x": 270 
       }
     },
@@ -81,7 +81,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "model": "ae2lt:block/atmospheric_ionizer_on", 
         "x": 90, 
         "y": 90 
       }
@@ -92,7 +92,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "model": "ae2lt:block/atmospheric_ionizer_on", 
         "x": 90, 
         "y": 270 
       }
@@ -103,7 +103,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work"
+        "model": "ae2lt:block/atmospheric_ionizer_on"
       }
     },
     {
@@ -112,7 +112,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "model": "ae2lt:block/atmospheric_ionizer_on", 
         "x": 180 
       }
     }

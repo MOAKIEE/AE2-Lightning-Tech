@@ -74,6 +74,10 @@
     "processArea": {
       "left": 84,
       "top": 46
+    },
+    "lightningStatus": {
+      "left": 156,
+      "top": 4
     }
   }
 }

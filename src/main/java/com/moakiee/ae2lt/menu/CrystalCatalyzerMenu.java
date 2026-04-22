@@ -71,6 +71,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
         this.matrixSlot = addSlot(
                 new AppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_MATRIX),
                 Ae2ltSlotSemantics.CRYSTAL_CATALYZER_MATRIX);
+        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         this.outputSlot = addSlot(
                 new LargeStackAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);
