@@ -532,14 +532,19 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int bx = tabButtonX(x0, tab, i);
             int by = y0 - TAB_HEIGHT;
 
-            Icon icon = iconFor(tab);
+            // customIcon takes priority: we hand AE2 {@code null} for the
+            // base Icon so its renderWidget skips the icon blit entirely
+            // (short-circuits on `icon == null`), leaving the surface clean
+            // for our PNG overlay. Only TAB_SETTING has customIcon == null
+            // and falls back to the AE2 sprite.
             ResourceLocation customIcon = customIconFor(tab);
+            Icon baseIcon = customIcon != null ? null : iconFor(tab);
             Component tooltip = Component.translatable(tab.getTranslationKey());
             Button.OnPress onPress = popup
                     ? btn -> { closePopup(); switchTab(tab); }
                     : btn -> switchTab(tab);
 
-            HoverableTabButton button = new HoverableTabButton(icon, customIcon, tooltip, onPress);
+            HoverableTabButton button = new HoverableTabButton(baseIcon, customIcon, tooltip, onPress);
             // BOX renders TAB_BUTTON_BACKGROUND — a fully-framed 22×22
             // sprite with a 1-px border on all four sides, matching AE2's
             // ME Interface / Pattern Access tab style. CORNER uses the
@@ -587,33 +592,39 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
 
         @Override
         public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            // Super paints the BOX background sprite and — only when
+            // the super icon field is non-null — the AE2 glyph. Passing
+            // {@code null} for tabs that have a custom PNG means super
+            // leaves the icon surface untouched, so we can overlay our
+            // own 16×16 without the AE2 glyph bleeding through the
+            // transparent pixels of the overlay.
             super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
             if (customIcon != null) {
-                // AE2 TabButton paints its Icon at the top-left of the
-                // 22×22 frame with a 3-px inset. Our PNGs are 16×16, so
-                // overlaying at (x+3, y+3) fully covers the placeholder
-                // Icon underneath and sits within the button's border.
+                // Match AE2's own (+2, +1) icon offset used by
+                // TabButton for the BOX style — see its renderWidget
+                // bytecode: it draws the Icon at (getX()+offset, getY()+offset-1)
+                // where offset=2 for BOX. Using the same position keeps
+                // our custom PNG visually aligned with the AE2 COG that
+                // TAB_SETTING still renders through the base class.
                 guiGraphics.blit(customIcon,
-                        getX() + 3, getY() + 3,
+                        getX() + 2, getY() + 1,
                         0, 0, 16, 16, 16, 16);
             }
         }
     }
 
     /**
-     * Fallback {@link Icon} from AE2's atlas — drawn underneath our
-     * custom PNG overlay (if any). TAB_SETTING is the only tab that
-     * reads this directly as the visible icon; the rest have a custom
-     * PNG in {@link #customIconFor} that fully covers this sprite.
+     * Fallback {@link Icon} from AE2's atlas — used only when
+     * {@link #customIconFor} returns {@code null} for the same tab.
+     * TAB_SETTING is currently the sole consumer (keeps AE2's cog);
+     * the other tabs short-circuit to their custom PNG and pass
+     * {@code null} to the super constructor, so their entry here is
+     * unused at runtime.
      */
     private static Icon iconFor(FrequencyNavigationTab tab) {
         return switch (tab) {
-            case TAB_HOME       -> Icon.S_TERMINAL;
-            case TAB_SELECTION  -> Icon.VIEW_MODE_ALL;
-            case TAB_CONNECTION -> Icon.S_MACHINE;
-            case TAB_MEMBER     -> Icon.ACCESS_READ_WRITE;
-            case TAB_SETTING    -> Icon.COG;
-            case TAB_CREATE     -> Icon.ENTER;
+            case TAB_SETTING -> Icon.COG;
+            default -> null;
         };
     }
 

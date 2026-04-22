@@ -215,19 +215,16 @@ public final class FixedInfiniteCellItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         if (hasType(stack)) {
-            String suffix = CellOutcome.fromTypeId(getType(stack)).suffix();
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + "." + suffix)
-                    .withStyle(ChatFormatting.GREEN));
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".from_mysterious")
-                    .withStyle(ChatFormatting.DARK_GRAY));
+            // 内核 cell(扭蛋解析完的成品,或创造栏里直接拿的变体)不再画任何
+            // flavor 文案 —— 物品名已经说明它是什么,tooltip 重复一遍既啰嗦
+            // 又会把创造栏里的变体身份完全暴露给路过的玩家。
             return;
         }
 
         if (!hasSeed(stack)) {
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY)
-                    .withStyle(ChatFormatting.GREEN));
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".hint.once")
-                    .withStyle(ChatFormatting.GRAY));
+            // 创造物品栏/JEI 里显示的是无 seed 的 "空壳"。保持 tooltip 静默,
+            // 避免在这些地方泄露扭蛋的内部提示。seed 会在被玩家取出或直接
+            // 使用时由 initializeOuterCell() 填充,那时再正常画 tooltip。
             return;
         }
 
