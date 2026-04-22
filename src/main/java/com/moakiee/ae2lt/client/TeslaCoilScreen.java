@@ -3,7 +3,6 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -19,7 +18,7 @@ import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 
 public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
     private final TeslaCoilEnergyBar energyBar;
-    private Button modeButton;
+    private TeslaCoilModeButton modeButton;
 
     public TeslaCoilScreen(TeslaCoilMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
@@ -35,16 +34,9 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
                 LightningStatusLines.highVoltage(menu.getHighVoltageAvailable()),
                 LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()),
                 menu.getMatrixMessage())));
-    }
 
-    @Override
-    protected void init() {
-        super.init();
-
-        this.modeButton = Button.builder(Component.empty(), button -> menu.clientCycleMode())
-                .bounds(leftPos + 56, topPos + 4, 86, 16)
-                .build();
-        addRenderableWidget(modeButton);
+        this.modeButton = new TeslaCoilModeButton(btn -> menu.clientCycleMode());
+        addToLeftToolbar(this.modeButton);
     }
 
     @Override
@@ -52,8 +44,8 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
         super.updateBeforeRender();
 
         if (modeButton != null) {
-            modeButton.active = !menu.isModeLocked();
-            modeButton.setMessage(menu.getModeButtonMessage());
+            modeButton.setMode(menu.getMode());
+            modeButton.setLocked(menu.isModeLocked());
         }
     }
 

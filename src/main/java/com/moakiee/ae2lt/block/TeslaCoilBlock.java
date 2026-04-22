@@ -172,20 +172,13 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide) {
-            if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-                BlockPos lowerPos = pos.below();
-                BlockState lowerState = level.getBlockState(lowerPos);
-                if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
-                    level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                    level.destroyBlock(lowerPos, !player.isCreative(), player);
-                }
-            } else {
-                BlockPos upperPos = pos.above();
-                BlockState upperState = level.getBlockState(upperPos);
-                if (upperState.is(this) && upperState.getValue(HALF) == DoubleBlockHalf.UPPER) {
-                    level.setBlock(upperPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                }
+        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+            BlockPos lowerPos = pos.below();
+            BlockState lowerState = level.getBlockState(lowerPos);
+            if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
+                // 掉落统一交给 LOWER 一侧(带 BlockEntity),按 player.isCreative() 决定是否出物。
+                // UPPER 会被 LOWER 的 onRemove 链式清成空气,不需要在这里手动 setBlock。
+                level.destroyBlock(lowerPos, !player.isCreative(), player);
             }
         }
         return super.playerWillDestroy(level, pos, state, player);
@@ -194,18 +187,16 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && !state.is(newState.getBlock())) {
-            if (state.getValue(HALF) == DoubleBlockHalf.LOWER) {
-                BlockPos upperPos = pos.above();
-                BlockState upperState = level.getBlockState(upperPos);
-                if (upperState.is(this) && upperState.getValue(HALF) == DoubleBlockHalf.UPPER) {
-                    level.setBlock(upperPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-                }
-            } else {
-                BlockPos lowerPos = pos.below();
-                BlockState lowerState = level.getBlockState(lowerPos);
-                if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
-                    level.destroyBlock(lowerPos, true);
-                }
+            // 两半之间的联动清理只应把另一半静默设为 AIR,
+            // 不要调用 destroyBlock(..., true) —— 那会强制让另一半按"正常破坏"流程掉落物品,
+            // 破坏时 playerWillDestroy 已经按 player.isCreative() 正确处理过了,此处不能再额外掉落。
+            BlockPos otherPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
+            DoubleBlockHalf otherHalf = state.getValue(HALF) == DoubleBlockHalf.LOWER
+                    ? DoubleBlockHalf.UPPER
+                    : DoubleBlockHalf.LOWER;
+            BlockState otherState = level.getBlockState(otherPos);
+            if (otherState.is(this) && otherState.getValue(HALF) == otherHalf) {
+                level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
             }
         }
         super.onRemove(state, level, pos, newState, movedByPiston);

@@ -533,12 +533,13 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int by = y0 - TAB_HEIGHT;
 
             Icon icon = iconFor(tab);
+            ResourceLocation customIcon = customIconFor(tab);
             Component tooltip = Component.translatable(tab.getTranslationKey());
             Button.OnPress onPress = popup
                     ? btn -> { closePopup(); switchTab(tab); }
                     : btn -> switchTab(tab);
 
-            HoverableTabButton button = new HoverableTabButton(icon, tooltip, onPress);
+            HoverableTabButton button = new HoverableTabButton(icon, customIcon, tooltip, onPress);
             // BOX renders TAB_BUTTON_BACKGROUND — a fully-framed 22×22
             // sprite with a 1-px border on all four sides, matching AE2's
             // ME Interface / Pattern Access tab style. CORNER uses the
@@ -563,32 +564,47 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * "hover fills the whole tab with light cyan" effect for free —
      * no custom overlay drawing needed, and the selected tab's appearance
      * is left unchanged (only the tab the mouse is over lights up).
+     *
+     * <p>Also supports a custom 16×16 icon overlay drawn on top of the
+     * AE2 icon sprite. When {@code customIcon} is non-null the base AE2
+     * {@link Icon} passed to super is treated as a placeholder — AE2 will
+     * still blit it, but we paint our own texture directly on top at the
+     * same (3, 3) offset used by the AE2 atlas icon.</p>
      */
     private static final class HoverableTabButton extends TabButton {
-        HoverableTabButton(Icon icon, Component tooltip, Button.OnPress onPress) {
+        private final ResourceLocation customIcon;
+
+        HoverableTabButton(Icon icon, ResourceLocation customIcon,
+                Component tooltip, Button.OnPress onPress) {
             super(icon, tooltip, onPress);
+            this.customIcon = customIcon;
         }
 
         @Override
         public boolean isFocused() {
             return super.isFocused() || this.isHovered();
         }
+
+        @Override
+        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+            if (customIcon != null) {
+                // AE2 TabButton paints its Icon at the top-left of the
+                // 22×22 frame with a 3-px inset. Our PNGs are 16×16, so
+                // overlaying at (x+3, y+3) fully covers the placeholder
+                // Icon underneath and sits within the button's border.
+                guiGraphics.blit(customIcon,
+                        getX() + 3, getY() + 3,
+                        0, 0, 16, 16, 16, 16);
+            }
+        }
     }
 
     /**
-     * Maps our six navigation tabs to an {@link Icon} from AE2's sprite
-     * sheet. Choices follow AE2's own visual grammar:
-     * <ul>
-     *   <li>Home → {@code S_TERMINAL} (generic terminal readout)</li>
-     *   <li>Selection → {@code VIEW_MODE_ALL} (eye glyph — "show all
-     *       available frequencies"). Previously used {@code SEARCH_DEFAULT}
-     *       which has a blank/missing region on the Icon atlas and shows
-     *       up as the magenta fallback texture.</li>
-     *   <li>Connection → {@code S_MACHINE} (linked devices)</li>
-     *   <li>Member → {@code ACCESS_READ_WRITE} (permission management)</li>
-     *   <li>Setting → {@code COG} (the classic gear)</li>
-     *   <li>Create → {@code ENTER} (commit a new frequency)</li>
-     * </ul>
+     * Fallback {@link Icon} from AE2's atlas — drawn underneath our
+     * custom PNG overlay (if any). TAB_SETTING is the only tab that
+     * reads this directly as the visible icon; the rest have a custom
+     * PNG in {@link #customIconFor} that fully covers this sprite.
      */
     private static Icon iconFor(FrequencyNavigationTab tab) {
         return switch (tab) {
@@ -600,6 +616,33 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             case TAB_CREATE     -> Icon.ENTER;
         };
     }
+
+    /**
+     * Custom 16×16 PNG overlay for each tab. Returns {@code null} when
+     * the AE2 {@link Icon} from {@link #iconFor} should be the visible
+     * sprite — currently only TAB_SETTING keeps the AE2 cog.
+     */
+    private static ResourceLocation customIconFor(FrequencyNavigationTab tab) {
+        return switch (tab) {
+            case TAB_HOME       -> TAB_ICON_HOME;
+            case TAB_SELECTION  -> TAB_ICON_SELECTION;
+            case TAB_CONNECTION -> TAB_ICON_CONNECTION;
+            case TAB_MEMBER     -> TAB_ICON_MEMBER;
+            case TAB_CREATE     -> TAB_ICON_CREATE;
+            case TAB_SETTING    -> null;
+        };
+    }
+
+    private static final ResourceLocation TAB_ICON_HOME = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/menu.png");
+    private static final ResourceLocation TAB_ICON_SELECTION = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/frequency_select.png");
+    private static final ResourceLocation TAB_ICON_CONNECTION = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/frequency_connect.png");
+    private static final ResourceLocation TAB_ICON_MEMBER = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/frequency_member.png");
+    private static final ResourceLocation TAB_ICON_CREATE = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/frequency_add.png");
 
     private void switchTab(FrequencyNavigationTab tab) {
         currentTab = tab;

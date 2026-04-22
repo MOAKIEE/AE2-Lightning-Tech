@@ -1,56 +1,220 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
-import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.registry.ModBlocks;
+import java.util.Arrays;
+import java.util.List;
 
-import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
-import mezz.jei.api.gui.placement.HorizontalAlignment;
-import mezz.jei.api.gui.placement.VerticalAlignment;
-import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
-import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.recipe.IFocusGroup;
-import mezz.jei.api.recipe.RecipeType;
-import mezz.jei.api.recipe.category.AbstractRecipeCategory;
+import net.minecraft.Util;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
 
-/**
- * 水晶催化器的 JEI 占位页面。
- * 过载水晶成长机制仍可在 {@link OverloadGrowthCategory} 中查看;这里只是给
- * TODO 留一个入口,等后续确认催化器专属的加速/配方表后再补齐。
- */
-public class CrystalCatalyzerCategory extends AbstractRecipeCategory<CrystalCatalyzerCategory.Page> {
-    public static final RecipeType<Page> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "crystal_catalyzer", Page.class);
+import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
+import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
+import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModItems;
 
-    private static final int WIDTH = 150;
-    private static final int HEIGHT = 60;
-    private static final int BODY_COLOR = 0xFF404040;
+import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
+import mezz.jei.api.gui.drawable.IDrawable;
+import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+import mezz.jei.api.helpers.IGuiHelper;
+import mezz.jei.api.neoforge.NeoForgeTypes;
+import mezz.jei.api.recipe.IFocusGroup;
+import mezz.jei.api.recipe.RecipeIngredientRole;
+import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.category.IRecipeCategory;
+
+public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyzerRecipe> {
+    public static final RecipeType<CrystalCatalyzerRecipe> TYPE =
+            RecipeType.create(AE2LightningTech.MODID, "crystal_catalyzer", CrystalCatalyzerRecipe.class);
+
+    private static final ResourceLocation BACKGROUND_TEXTURE =
+            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+
+    // 机器 GUI 坐标:流体腔 (26,18)+16×53,催化剂槽 (56,30),矩阵槽 (84,54),
+    // 进度条 (74,33)+22×16,产物槽 (117,30),能量条 (140,30)+6×18。
+    // 从 (22,14) 起裁剪 128×62,保留水箱/电池外框的 1~2px 装饰边。
+    private static final int BACKGROUND_U = 22;
+    private static final int BACKGROUND_V = 14;
+    private static final int BACKGROUND_WIDTH = 128;
+    private static final int BACKGROUND_HEIGHT = 62;
+    private static final int WIDTH = BACKGROUND_WIDTH;
+
+    private static final int TEXTURE_WIDTH = 256;
+    private static final int TEXTURE_HEIGHT = 256;
+
+    // category 坐标 = GUI 坐标 − 背景偏移
+    private static final int FLUID_X = 26 - BACKGROUND_U;   // 4
+    private static final int FLUID_Y = 18 - BACKGROUND_V;   // 4
+    private static final int FLUID_WIDTH = 16;
+    private static final int FLUID_HEIGHT = 53;
+
+    private static final int CATALYST_X = 56 - BACKGROUND_U; // 34
+    private static final int CATALYST_Y = 30 - BACKGROUND_V; // 16
+    private static final int MATRIX_X = 84 - BACKGROUND_U;   // 62
+    private static final int MATRIX_Y = 54 - BACKGROUND_V;   // 40
+    private static final int OUTPUT_X = 117 - BACKGROUND_U;  // 95
+    private static final int OUTPUT_Y = 30 - BACKGROUND_V;   // 16
+
+    private static final int PROCESS_X = 74 - BACKGROUND_U;  // 52
+    private static final int PROCESS_Y = 33 - BACKGROUND_V;  // 19
+    private static final int PROCESS_OVERLAY_U = 176;
+    private static final int PROCESS_OVERLAY_V = 18;
+    private static final int PROCESS_OVERLAY_WIDTH = 35;
+    private static final int PROCESS_OVERLAY_HEIGHT = 10;
+    private static final long PROCESS_CYCLE_MS = 1_500L;
+
+    private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;      // 64
+    private static final int MATRIX_TEXT_Y = BACKGROUND_HEIGHT + 12;     // 74
+    private static final int HEIGHT = MATRIX_TEXT_Y + 10;                // 84
+
+    private final IDrawable icon;
+    private final IDrawable background;
 
     public CrystalCatalyzerCategory(IGuiHelper guiHelper) {
-        super(
-                TYPE,
-                Component.translatable("jei.ae2lt.crystal_catalyzer.title"),
-                guiHelper.createDrawableItemStack(new ItemStack(ModBlocks.CRYSTAL_CATALYZER.get())),
-                WIDTH,
-                HEIGHT);
+        this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModBlocks.CRYSTAL_CATALYZER.get()));
+        this.background = guiHelper.createDrawable(
+                BACKGROUND_TEXTURE, BACKGROUND_U, BACKGROUND_V, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, Page recipe, IFocusGroup focuses) {
+    public RecipeType<CrystalCatalyzerRecipe> getRecipeType() {
+        return TYPE;
     }
 
     @Override
-    public void createRecipeExtras(IRecipeExtrasBuilder builder, Page recipe, IFocusGroup focuses) {
-        builder.addText(Component.translatable("jei.ae2lt.crystal_catalyzer.todo"), WIDTH, HEIGHT)
-                .setPosition(0, 0)
-                .setTextAlignment(HorizontalAlignment.CENTER)
-                .setTextAlignment(VerticalAlignment.CENTER)
-                .setLineSpacing(2)
-                .setColor(BODY_COLOR);
+    public int getWidth() {
+        return WIDTH;
     }
 
-    public enum Page {
-        PLACEHOLDER
+    @Override
+    public int getHeight() {
+        return HEIGHT;
+    }
+
+    @Override
+    public Component getTitle() {
+        return Component.translatable("jei.ae2lt.crystal_catalyzer.title");
+    }
+
+    @Override
+    public IDrawable getIcon() {
+        return icon;
+    }
+
+    @Override
+    public void setRecipe(IRecipeLayoutBuilder builder, CrystalCatalyzerRecipe recipe, IFocusGroup focuses) {
+        var fluid = recipe.fluid();
+        int fluidDisplayCapacity = Math.max(1, fluid.getAmount());
+        builder.addSlot(RecipeIngredientRole.INPUT, FLUID_X, FLUID_Y)
+                .setFluidRenderer(fluidDisplayCapacity, false, FLUID_WIDTH, FLUID_HEIGHT)
+                .addIngredient(NeoForgeTypes.FLUID_STACK, fluid);
+
+        recipe.catalyst().ifPresent(catalyst -> {
+            int count = Math.max(1, recipe.catalystCount());
+            builder.addSlot(RecipeIngredientRole.INPUT, CATALYST_X, CATALYST_Y)
+                    .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
+                    .addItemStacks(expandIngredient(catalyst, count))
+                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
+                        LargeStackCountRenderer.appendCountTooltip(tooltip, count);
+                        tooltip.add(Component.translatable("jei.ae2lt.crystal_catalyzer.catalyst_kept"));
+                    });
+        });
+
+        builder.addSlot(RecipeIngredientRole.CATALYST, MATRIX_X, MATRIX_Y)
+                .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()))
+                .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(
+                        Component.translatable(
+                                "jei.ae2lt.crystal_catalyzer.matrix_boost",
+                                CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER)));
+
+        var baseOutput = recipe.getOutputTemplate();
+        int multiplier = CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER;
+        long boostedCount = (long) baseOutput.getCount() * multiplier;
+        int displayCount = (int) Math.min(boostedCount, Integer.MAX_VALUE);
+        var boostedOutput = baseOutput.copyWithCount(Math.max(1, displayCount));
+        int baseCount = baseOutput.getCount();
+        builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
+                .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
+                .addItemStack(boostedOutput)
+                .addRichTooltipCallback((recipeSlotView, tooltip) -> {
+                    LargeStackCountRenderer.appendCountTooltip(tooltip, displayCount);
+                    tooltip.add(Component.translatable(
+                            "jei.ae2lt.crystal_catalyzer.output_base", baseCount, multiplier));
+                });
+    }
+
+    @Override
+    public void draw(
+            CrystalCatalyzerRecipe recipe,
+            IRecipeSlotsView recipeSlotsView,
+            GuiGraphics guiGraphics,
+            double mouseX,
+            double mouseY) {
+        background.draw(guiGraphics);
+        drawProcessOverlay(guiGraphics);
+
+        var font = Minecraft.getInstance().font;
+        var energyText = Component.translatable(
+                "jei.ae2lt.crystal_catalyzer.energy",
+                formatCompactEnergy(recipe.energyPerCycle()));
+        int energyX = (WIDTH - font.width(energyText)) / 2;
+        guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+
+        var matrixText = Component.translatable(
+                "jei.ae2lt.crystal_catalyzer.matrix_note",
+                CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER);
+        int matrixX = (WIDTH - font.width(matrixText)) / 2;
+        guiGraphics.drawString(font, matrixText, matrixX, MATRIX_TEXT_Y, 0x404040, false);
+    }
+
+    private void drawProcessOverlay(GuiGraphics guiGraphics) {
+        long elapsed = Util.getMillis() % PROCESS_CYCLE_MS;
+        double progress = elapsed / (double) PROCESS_CYCLE_MS;
+        int width = Mth.clamp((int) Math.ceil(progress * PROCESS_OVERLAY_WIDTH), 0, PROCESS_OVERLAY_WIDTH);
+        if (width <= 0) {
+            return;
+        }
+        guiGraphics.blit(
+                BACKGROUND_TEXTURE,
+                PROCESS_X,
+                PROCESS_Y,
+                PROCESS_OVERLAY_U,
+                PROCESS_OVERLAY_V,
+                width,
+                PROCESS_OVERLAY_HEIGHT,
+                TEXTURE_WIDTH,
+                TEXTURE_HEIGHT);
+    }
+
+    private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
+        return Arrays.stream(ingredient.getItems())
+                .map(stack -> stack.copyWithCount(count))
+                .toList();
+    }
+
+    private static String formatCompactEnergy(long energy) {
+        if (energy >= 1_000_000L) {
+            return formatCompactValue(energy / 1_000_000D, "m");
+        }
+        if (energy >= 1_000L) {
+            return formatCompactValue(energy / 1_000D, "k");
+        }
+        return Long.toString(energy);
+    }
+
+    private static String formatCompactValue(double value, String suffix) {
+        double rounded = Math.round(value * 10.0D) / 10.0D;
+        if (Math.abs(rounded - Math.rint(rounded)) < 0.0001D) {
+            return Long.toString(Math.round(rounded)) + suffix;
+        }
+        return rounded + suffix;
     }
 }

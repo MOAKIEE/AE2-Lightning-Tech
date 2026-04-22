@@ -58,13 +58,19 @@ public class JEIPlugin implements IModPlugin {
     public void registerRecipes(IRecipeRegistration registration) {
         registration.addRecipes(OverloadGrowthCategory.TYPE, List.of(OverloadGrowthCategory.Page.values()));
         registration.addRecipes(TeslaCoilCategory.TYPE, List.of(TeslaCoilCategory.Page.values()));
-        registration.addRecipes(CrystalCatalyzerCategory.TYPE, List.of(CrystalCatalyzerCategory.Page.values()));
 
         var level = Minecraft.getInstance().level;
         if (level == null) {
             return;
         }
 
+        registration.addRecipes(
+                CrystalCatalyzerCategory.TYPE,
+                level.getRecipeManager()
+                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
+                        .stream()
+                        .map(RecipeHolder::value)
+                        .toList());
         registration.addRecipes(
                 LightningAssemblyCategory.TYPE,
                 level.getRecipeManager()
@@ -108,15 +114,15 @@ public class JEIPlugin implements IModPlugin {
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
         registration.addGuiContainerHandler(LightningAssemblyChamberScreen.class,
-                clickableAreaHandler(83, 22, 50, 46, LightningAssemblyCategory.TYPE));
+                clickableAreaHandler(83, 22, 42, 46, LightningAssemblyCategory.TYPE));
         registration.addGuiContainerHandler(LightningSimulationChamberScreen.class,
-                clickableAreaHandler(58, 25, 50, 46, LightningSimulationCategory.TYPE));
+                clickableAreaHandler(82, 25, 35, 46, LightningSimulationCategory.TYPE));
         registration.addGuiContainerHandler(OverloadProcessingFactoryScreen.class,
                 clickableAreaHandler(84, 46, 31, 10, OverloadProcessingCategory.TYPE));
         registration.addGuiContainerHandler(TeslaCoilScreen.class,
-                clickableAreaHandler(58, 25, 50, 46, TeslaCoilCategory.TYPE));
+                clickableAreaHandler(43, 22, 36, 40, TeslaCoilCategory.TYPE));
         registration.addGuiContainerHandler(CrystalCatalyzerScreen.class,
-                clickableAreaHandler(74, 33, 22, 16, CrystalCatalyzerCategory.TYPE));
+                clickableAreaHandler(74, 33, 35, 10, CrystalCatalyzerCategory.TYPE));
     }
 
     private static <T extends AbstractContainerScreen<?>> IGuiContainerHandler<T> clickableAreaHandler(
