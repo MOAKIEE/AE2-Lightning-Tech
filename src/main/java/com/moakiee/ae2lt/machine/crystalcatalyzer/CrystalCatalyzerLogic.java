@@ -44,7 +44,7 @@ public final class CrystalCatalyzerLogic extends AbstractGridRecipeMachineLogic<
         return CrystalCatalyzerRecipeService.findRecipeById(host.getLevel(), lockedRecipe.recipeId())
                 .filter(candidate -> candidate.recipe().value().matches(
                         com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeInput
-                                .fromMachine(host.getInventory(), host.getFluid()),
+                                .fromMachine(host.getInventory()),
                         host.getLevel()));
     }
 

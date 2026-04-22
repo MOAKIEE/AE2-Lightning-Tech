@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModItems;
@@ -111,20 +112,28 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, CrystalCatalyzerRecipe recipe, IFocusGroup focuses) {
-        var fluid = recipe.fluid();
+        // 水现在是机器级固定开销,所有配方共用一份 1000 mB 的 water。
+        var fluid = CrystalCatalyzerBlockEntity.getFixedFluidPerCycle();
         int fluidDisplayCapacity = Math.max(1, fluid.getAmount());
         builder.addSlot(RecipeIngredientRole.INPUT, FLUID_X, FLUID_Y)
                 .setFluidRenderer(fluidDisplayCapacity, false, FLUID_WIDTH, FLUID_HEIGHT)
-                .addIngredient(NeoForgeTypes.FLUID_STACK, fluid);
+                .addIngredient(NeoForgeTypes.FLUID_STACK, fluid)
+                .addRichTooltipCallback((slotView, tooltip) -> tooltip.add(
+                        Component.translatable(
+                                "jei.ae2lt.crystal_catalyzer.fluid_fixed",
+                                fluid.getAmount())));
 
         recipe.catalyst().ifPresent(catalyst -> {
-            int count = Math.max(1, recipe.catalystCount());
+            int perInstance = Math.max(1, recipe.catalystCount());
             builder.addSlot(RecipeIngredientRole.INPUT, CATALYST_X, CATALYST_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                    .addItemStacks(expandIngredient(catalyst, count))
+                    .addItemStacks(expandIngredient(catalyst, perInstance))
                     .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                        LargeStackCountRenderer.appendCountTooltip(tooltip, count);
-                        tooltip.add(Component.translatable("jei.ae2lt.crystal_catalyzer.catalyst_kept"));
+                        LargeStackCountRenderer.appendCountTooltip(tooltip, perInstance);
+                        tooltip.add(Component.translatable(
+                                "jei.ae2lt.crystal_catalyzer.catalyst_parallel",
+                                perInstance,
+                                CrystalCatalyzerInventory.CATALYST_SLOT_LIMIT));
                     });
         });
 
@@ -136,18 +145,21 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
                                 CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER)));
 
         var baseOutput = recipe.getOutputTemplate();
-        int multiplier = CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER;
-        long boostedCount = (long) baseOutput.getCount() * multiplier;
+        int matrixMultiplier = CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER;
+        long boostedCount = (long) baseOutput.getCount() * matrixMultiplier;
         int displayCount = (int) Math.min(boostedCount, Integer.MAX_VALUE);
         var boostedOutput = baseOutput.copyWithCount(Math.max(1, displayCount));
         int baseCount = baseOutput.getCount();
+        int catalystPerInstance = Math.max(1, recipe.catalystCount());
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(boostedOutput)
                 .addRichTooltipCallback((recipeSlotView, tooltip) -> {
                     LargeStackCountRenderer.appendCountTooltip(tooltip, displayCount);
                     tooltip.add(Component.translatable(
-                            "jei.ae2lt.crystal_catalyzer.output_base", baseCount, multiplier));
+                            "jei.ae2lt.crystal_catalyzer.output_base", baseCount, matrixMultiplier));
+                    tooltip.add(Component.translatable(
+                            "jei.ae2lt.crystal_catalyzer.output_parallel", catalystPerInstance));
                 });
     }
 

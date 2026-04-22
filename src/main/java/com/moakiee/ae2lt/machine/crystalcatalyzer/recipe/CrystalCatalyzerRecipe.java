@@ -19,7 +19,6 @@ import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
@@ -31,10 +30,13 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
  *     <li>{@code catalyst}: optional. When absent, the catalyst slot must be empty;
  *         when present, the slot content must match the ingredient and have at least
  *         {@code catalystCount} items (the stack is <em>not</em> consumed).</li>
- *     <li>{@code fluid}: mandatory; the tank must contain this fluid with at least {@code fluid.amount}.</li>
  *     <li>{@code output}: base per-cycle item output (final count = {@code output.count} × matrix multiplier).</li>
  *     <li>{@code energyPerCycle}: total energy (AE) consumed per cycle.</li>
  * </ul>
+ *
+ * <p>Fluid cost is <strong>not</strong> part of the recipe anymore — the machine always
+ * drains a fixed amount of water per cycle regardless of which recipe runs (see
+ * {@code CrystalCatalyzerBlockEntity.FIXED_FLUID_PER_CYCLE}).</p>
  */
 public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerRecipeInput> {
     public static final int MIN_ENERGY_PER_CYCLE = 1;
@@ -53,28 +55,18 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return DataResult.success(count);
     });
 
-    private static final Codec<FluidStack> FLUID_CODEC = FluidStack.CODEC.validate(stack -> {
-        if (stack.isEmpty()) {
-            return DataResult.error(() -> "fluid cannot be empty");
-        }
-        return DataResult.success(stack);
-    });
-
     private final Optional<Ingredient> catalyst;
     private final int catalystCount;
-    private final FluidStack fluid;
     private final ItemStack output;
     private final int energyPerCycle;
 
     public CrystalCatalyzerRecipe(
             Optional<Ingredient> catalyst,
             int catalystCount,
-            FluidStack fluid,
             ItemStack output,
             int energyPerCycle) {
         this.catalyst = Objects.requireNonNull(catalyst, "catalyst");
         this.catalystCount = catalystCount;
-        this.fluid = Objects.requireNonNull(fluid, "fluid").copy();
         this.output = Objects.requireNonNull(output, "output").copy();
         this.energyPerCycle = energyPerCycle;
         if (catalyst.isPresent() && catalystCount <= 0) {
@@ -96,10 +88,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return catalystCount;
     }
 
-    public FluidStack fluid() {
-        return fluid.copy();
-    }
-
     public ItemStack getOutputTemplate() {
         return output.copy();
     }
@@ -118,17 +106,9 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return stack.getCount() >= catalystCount;
     }
 
-    public boolean fluidMatches(FluidStack tankFluid) {
-        if (tankFluid.isEmpty()) {
-            return false;
-        }
-        return FluidStack.isSameFluidSameComponents(fluid, tankFluid)
-                && tankFluid.getAmount() >= fluid.getAmount();
-    }
-
     @Override
     public boolean matches(CrystalCatalyzerRecipeInput input, Level level) {
-        return catalystMatches(input.catalyst()) && fluidMatches(input.fluid());
+        return catalystMatches(input.catalyst());
     }
 
     @Override
@@ -166,7 +146,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     @Override
     public boolean isIncomplete() {
         return output.isEmpty()
-                || fluid.isEmpty()
                 || energyPerCycle < MIN_ENERGY_PER_CYCLE
                 || (catalyst.isPresent() && catalystCount <= 0);
     }
@@ -175,15 +154,10 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return output;
     }
 
-    private FluidStack rawFluid() {
-        return fluid;
-    }
-
     public static final class Serializer implements RecipeSerializer<CrystalCatalyzerRecipe> {
         private static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Ingredient.CODEC_NONEMPTY.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
                         NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
-                        FLUID_CODEC.fieldOf("fluid").forGetter(CrystalCatalyzerRecipe::rawFluid),
                         ItemStack.STRICT_CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::rawOutput),
                         POSITIVE_ENERGY_CODEC.fieldOf("energyPerCycle").forGetter(CrystalCatalyzerRecipe::energyPerCycle))
                 .apply(instance, CrystalCatalyzerRecipe::new));
@@ -197,7 +171,6 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         private static void encode(RegistryFriendlyByteBuf buf, CrystalCatalyzerRecipe recipe) {
             OPTIONAL_INGREDIENT_STREAM_CODEC.encode(buf, recipe.catalyst);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.catalystCount);
-            FluidStack.STREAM_CODEC.encode(buf, recipe.fluid);
             ItemStack.STREAM_CODEC.encode(buf, recipe.output);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.energyPerCycle);
         }
@@ -205,10 +178,9 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         private static CrystalCatalyzerRecipe decode(RegistryFriendlyByteBuf buf) {
             Optional<Ingredient> catalyst = OPTIONAL_INGREDIENT_STREAM_CODEC.decode(buf);
             int catalystCount = ByteBufCodecs.VAR_INT.decode(buf);
-            FluidStack fluid = FluidStack.STREAM_CODEC.decode(buf);
             ItemStack output = ItemStack.STREAM_CODEC.decode(buf);
             int energyPerCycle = ByteBufCodecs.VAR_INT.decode(buf);
-            return new CrystalCatalyzerRecipe(catalyst, catalystCount, fluid, output, energyPerCycle);
+            return new CrystalCatalyzerRecipe(catalyst, catalystCount, output, energyPerCycle);
         }
 
         @Override
