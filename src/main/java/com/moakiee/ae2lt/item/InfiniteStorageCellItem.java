@@ -35,6 +35,11 @@ public final class InfiniteStorageCellItem extends Item {
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        // 空壳(创造物品栏里的初始 cell)上显示 "0 types / 0 B" 只是噪音,
+        // 完全没带 ae2lt:types / ae2lt:bytes 数据时直接不画 tooltip。
+        if (!tag.contains("ae2lt:types") && !tag.contains("ae2lt:bytes")) {
+            return;
+        }
         int types = tag.getInt("ae2lt:types");
         long bytes = tag.getLong("ae2lt:bytes");
 

@@ -22,6 +22,8 @@ import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
+import com.moakiee.ae2lt.item.FixedInfiniteCellItem.CellOutcome;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -53,6 +55,7 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -142,8 +145,8 @@ public class AE2LightningTech {
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_V);
                         // 无限存储单元
                         output.accept(ModItems.INFINITE_STORAGE_CELL);
-                        output.accept(ModItems.INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
-                        output.accept(ModItems.INFINITE_INFINITE_HIGH_VOLTAGE_LIGHTNING_CELL);
+                        output.accept(FixedInfiniteCellItem.createDisplayedResultStack(CellOutcome.HIGH_VOLTAGE));
+                        output.accept(FixedInfiniteCellItem.createDisplayedResultStack(CellOutcome.EXTREME_HIGH_VOLTAGE));
                         // 工具
                         output.accept(ModItems.OVERLOAD_PATTERN);
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
@@ -535,11 +538,13 @@ public class AE2LightningTech {
     private void onServerStarting(ServerStartingEvent event) {
         EjectModeRegistry.onServerStart(event.getServer());
         WirelessFrequencyManager.onServerStart(event.getServer());
+        ResearchNoteGenerator.onServerStarting();
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
+        ResearchNoteGenerator.onServerStopped();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

@@ -9,7 +9,6 @@ item_ids:
   - ae2lt:lightning_storage_component_iii
   - ae2lt:lightning_storage_component_iv
   - ae2lt:lightning_storage_component_v
-  - ae2lt:infinite_high_voltage_lightning_cell
   - ae2lt:infinite_storage_cell
   - ae2lt:lightning_cell_component_i
   - ae2lt:lightning_cell_component_ii
@@ -43,14 +42,12 @@ item_ids:
 | 闪电存储元件 IV | 8,192 | 2,048 AE/t |
 | 闪电存储元件 V | 32,768 | 8,192 AE/t |
 
-## 无限高压闪电元件
-
-<ItemImage id="ae2lt:infinite_high_voltage_lightning_cell" scale="2" float="left" />
-
-**无限高压闪电元件**是一种终极型存储介质。放入 <ItemLink id="ae2:drive" /> 后，网络中高压闪电的数量将按无限处理，适用于大规模自动化产线。
-
 ## 无限存储元件
 
 <ItemImage id="ae2lt:infinite_storage_cell" scale="2" float="left" />
 
 **无限存储元件**没有容量上限，内部允许任意数量、任意类型的物品共存。受合成成本与工艺限制，**无法量产**。
+
+## 附录
+
+> 扫描日志末尾夹着一条旁注：“有一枚元件不在登记库中——读一次就空，其余一切正常。”来源与解读均未记录。

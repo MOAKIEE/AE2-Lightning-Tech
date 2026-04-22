@@ -9,7 +9,6 @@ item_ids:
   - ae2lt:lightning_storage_component_iii
   - ae2lt:lightning_storage_component_iv
   - ae2lt:lightning_storage_component_v
-  - ae2lt:infinite_high_voltage_lightning_cell
   - ae2lt:infinite_storage_cell
   - ae2lt:lightning_cell_component_i
   - ae2lt:lightning_cell_component_ii
@@ -43,14 +42,12 @@ Lightning Storage Cells come in five tiers with progressively larger capacity. A
 | Lightning Storage Cell IV | 8,192 | 2,048 AE/t |
 | Lightning Storage Cell V | 32,768 | 8,192 AE/t |
 
-## Infinite High Voltage Lightning Cell
-
-<ItemImage id="ae2lt:infinite_high_voltage_lightning_cell" scale="2" float="left" />
-
-The **Infinite High Voltage Lightning Cell** is an end-tier storage medium. Once it is in a <ItemLink id="ae2:drive" />, High Voltage Lightning in the network is treated as effectively unlimited — ideal for large-scale automated production.
-
 ## Infinite Storage Cell
 
 <ItemImage id="ae2lt:infinite_storage_cell" scale="2" float="left" />
 
 The **Infinite Storage Cell** has no capacity limit and can hold any amount of any type of item at once. Due to its crafting cost and the technology required, it **cannot be mass-produced**.
+
+## Appendix
+
+> Tucked into the tail of a scan log: "One cell isn't in the registry — read it once and it goes blank, otherwise everything reads normal." Source and interpretation are unrecorded.

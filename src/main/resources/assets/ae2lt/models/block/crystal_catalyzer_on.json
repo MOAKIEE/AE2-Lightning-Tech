@@ -5,9 +5,9 @@
 	"render_type": "cutout",
 	"texture_size": [32, 32],
 	"textures": {
-		"1": "ae2lt:block/crystal_catalyzer_off",
-		"2": "ae2:block/generics/bottom",
-		"3": "ae2:block/generics/top",
+		"1": "ae2lt:block/crystal_catalyzer_on",
+		"2": "ae2lt:block/generics/bottom",
+		"3": "ae2lt:block/generics/top",
 		"4": "ae2lt:block/generics/bottom",
 		"particle": "ae2lt:block/generics/back"
 	},

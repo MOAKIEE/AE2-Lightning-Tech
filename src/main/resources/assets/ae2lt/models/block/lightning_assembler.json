@@ -4,8 +4,8 @@
 	"parent": "block/block",
 	"render_type": "cutout",
 	"textures": {
-		"0": "ae2lt:block/lightning_assembly_chamber/base",
-		"particle": "ae2lt:block/lightning_assembly_chamber/base"
+		"0": "ae2lt:block/lightning_assembler/base",
+		"particle": "ae2lt:block/lightning_assembler/base"
 	},
 	"elements": [
 		{

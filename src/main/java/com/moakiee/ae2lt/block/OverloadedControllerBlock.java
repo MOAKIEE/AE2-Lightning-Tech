@@ -83,7 +83,7 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
     }
 
     private boolean isOverloadedController(LevelAccessor level, int x, int y, int z) {
-        return level.getBlockState(new BlockPos(x, y, z)).is(this);
+        return level.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof OverloadedControllerBlock;
     }
 
     @Override

@@ -145,6 +145,7 @@ public class WirelessConnectorRenderer {
                                 && bePos.equals(selectedPos);
                         renderInterfaceHost(poseStack, buffer, mc.level, bePos, iface, isSelected);
                         selectedRendered |= isSelected;
+                        continue;
                     }
                 }
             }

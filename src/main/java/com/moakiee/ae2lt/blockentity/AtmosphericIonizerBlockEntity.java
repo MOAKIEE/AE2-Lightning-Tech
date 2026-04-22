@@ -4,6 +4,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
+
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGridNode;
@@ -29,16 +32,22 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+    private static final Logger LOG = LogUtils.getLogger();
     public static final int PROCESS_TICKS = 100;
     private static final double POWER_EPSILON = 0.01D;
+    /** 雷暴凝核成功后,在 BE 正上方第 N 格召雷,使其落在研究反应场里。 */
+    private static final int RITUAL_STRIKE_HEIGHT_OFFSET = 2;
 
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
@@ -204,9 +213,16 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
             return false;
         }
 
-        if (!lockedType.apply(serverLevel, serverLevel.random)) {
+        WeatherCondensateItem.Type committedType = lockedType;
+        if (!committedType.apply(serverLevel, serverLevel.random)) {
+            LOG.debug("[ae2lt/ionizer] commit aborted: apply() failed for type={} at {}", committedType, worldPosition);
             inventory.insertItem(AtmosphericIonizerInventory.SLOT_CONDENSATE, extracted, false);
             return false;
+        }
+        LOG.debug("[ae2lt/ionizer] commit OK: type={} at {}", committedType, worldPosition);
+
+        if (committedType == WeatherCondensateItem.Type.THUNDERSTORM) {
+            summonRitualLightning(serverLevel);
         }
 
         lockedType = null;
@@ -245,6 +261,26 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     public void onReady() {
         super.onReady();
         setWorking(lockedType != null);
+    }
+
+    /**
+     * 雷暴凝核成功的一瞬间,立即在 BE 正上方召唤一束原版闪电。
+     * 研究仪式是否成立,交由 {@code LightningItemTransformationHandler}
+     * + {@code ResearchRitualService} 按反应场内的物品判定,这里只负责"触发点"。
+     */
+    private void summonRitualLightning(ServerLevel serverLevel) {
+        LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(serverLevel);
+        if (bolt == null) {
+            LOG.warn("[ae2lt/ionizer] summonRitualLightning: EntityType.LIGHTNING_BOLT.create returned null at {}",
+                    worldPosition);
+            return;
+        }
+        BlockPos strikePos = worldPosition.above(RITUAL_STRIKE_HEIGHT_OFFSET);
+        bolt.moveTo(Vec3.atBottomCenterOf(strikePos));
+        bolt.setVisualOnly(false);
+        serverLevel.addFreshEntity(bolt);
+        LOG.info("[ae2lt/ionizer] thunderstorm nucleation -> spawn lightning at {} (ionizer={})", strikePos,
+                worldPosition);
     }
 
     @Override

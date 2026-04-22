@@ -33,7 +33,10 @@ public final class InfiniteCellHandler implements ICellHandler {
                     cell.getIdleDrain());
         }
         if (is.getItem() instanceof FixedInfiniteCellItem) {
-            return new FixedInfiniteCellInventory(is, 32);
+            if (FixedInfiniteCellItem.isOuterCell(is)) {
+                FixedInfiniteCellItem.initializeOuterCell(is);
+            }
+            return new FixedInfiniteCellInventory(is, 32, host);
         }
         return null;
     }

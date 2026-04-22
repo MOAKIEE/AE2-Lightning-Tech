@@ -62,7 +62,6 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        // Keep the controller-side connection type aligned with vanilla controller behavior for now.
         return AECableType.DENSE_SMART;
     }
 

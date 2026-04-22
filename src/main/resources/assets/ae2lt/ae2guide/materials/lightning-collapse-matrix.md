@@ -35,3 +35,9 @@ The Lightning Collapse Matrix is **not consumed** during processing, but it must
 * [Tesla Coil](../lightning/tesla-coil.md) — Extreme High Voltage mode requires a matrix in the slot; without one, HV cannot be upconverted to EHV.
 * [Crystal Catalyzer](../machines/crystal-catalyzer.md) — with a matrix installed, per-operation output is increased to **4×**.
 * [Overload Processing Factory](../machines/overload-processing-factory.md) — multi-matrix parallelism: each additional matrix unlocks another tier of parallelism (up to 64 matrices in the slot, 4 parallel operations per matrix by default).
+
+## Field Notes
+
+> A field team filed a thin follow-up report: when the matrix is **not constrained inside any container**, an unintended reaction can occur; the case where that reaction was deliberately ignited is logged on the [Overload TNT](../lightning/overload-tnt.md) page.
+
+The product is an unregistered cell that resolves the moment it enters an <ItemLink id="ae2:drive" />. Internal residue can be **read only once**; it is empty afterwards. As for what gets read out — the report only attaches one line: "Sample distribution is extremely uneven; the rarest one is not a cell, it is a notebook with nothing written in it yet."

@@ -14,10 +14,13 @@ public final class NetworkInit {
     @SubscribeEvent
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(AE2LightningTech.MODID);
+
         registrar.playToServer(
                 WirelessConnectorUsePacket.TYPE,
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
+
+        // frequency system: C→S
         registrar.playToServer(
                 CreateFrequencyPacket.TYPE,
                 CreateFrequencyPacket.STREAM_CODEC,
@@ -38,6 +41,8 @@ public final class NetworkInit {
                 ChangeMemberPacket.TYPE,
                 ChangeMemberPacket.STREAM_CODEC,
                 ChangeMemberPacket::handle);
+
+        // S→C
         registrar.playToClient(
                 EasterEggPacket.TYPE,
                 EasterEggPacket.STREAM_CODEC,

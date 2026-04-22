@@ -5,7 +5,7 @@
         "powered": "false"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber",
+        "model": "ae2lt:block/lightning_assembler",
         "y": 90
       }
     },
@@ -14,7 +14,7 @@
         "powered": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_powered",
+        "model": "ae2lt:block/lightning_assembler_powered",
         "y": 90
       }
     },
@@ -24,7 +24,7 @@
         "working": "true"
       },
       "apply": {
-        "model": "ae2lt:block/lightning_assembly_chamber_lightnings"
+        "model": "ae2lt:block/lightning_assembler_lightnings"
       }
     }
   ]

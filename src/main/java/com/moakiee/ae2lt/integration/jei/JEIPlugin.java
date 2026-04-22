@@ -133,26 +133,21 @@ public class JEIPlugin implements IModPlugin {
 
     @Override
     public void registerGuiHandlers(IGuiHandlerRegistration registration) {
-        registration.addGuiContainerHandler(
-                LightningAssemblyChamberScreen.class,
+        registration.addGuiContainerHandler(LightningAssemblyChamberScreen.class,
                 clickableAreaHandler(83, 22, 42, 46, LightningAssemblyCategory.TYPE));
-        registration.addGuiContainerHandler(
-                LightningSimulationChamberScreen.class,
+        registration.addGuiContainerHandler(LightningSimulationChamberScreen.class,
                 clickableAreaHandler(82, 25, 35, 46, LightningSimulationCategory.TYPE));
-        registration.addGuiContainerHandler(
-                OverloadProcessingFactoryScreen.class,
+        registration.addGuiContainerHandler(OverloadProcessingFactoryScreen.class,
                 clickableAreaHandler(84, 46, 31, 10, OverloadProcessingCategory.TYPE));
-        registration.addGuiContainerHandler(
-                TeslaCoilScreen.class,
+        registration.addGuiContainerHandler(TeslaCoilScreen.class,
                 clickableAreaHandler(43, 22, 36, 40, TeslaCoilCategory.TYPE));
-        registration.addGuiContainerHandler(
-                CrystalCatalyzerScreen.class,
+        registration.addGuiContainerHandler(CrystalCatalyzerScreen.class,
                 clickableAreaHandler(74, 33, 35, 10, CrystalCatalyzerCategory.TYPE));
     }
 
     private static <T extends AbstractContainerScreen<?>> IGuiContainerHandler<T> clickableAreaHandler(
             int x, int y, int width, int height, RecipeType<?> recipeType) {
-        return new IGuiContainerHandler<>() {
+        return new IGuiContainerHandler<T>() {
             @Override
             public Collection<IGuiClickableArea> getGuiClickableAreas(T screen, double mouseX, double mouseY) {
                 return List.of(IGuiClickableArea.createBasic(x, y, width, height, recipeType));

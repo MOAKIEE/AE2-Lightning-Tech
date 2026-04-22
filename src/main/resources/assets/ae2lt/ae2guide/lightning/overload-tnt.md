@@ -50,3 +50,9 @@ The config option `overloadTnt.enableTerrainDamage` in `ae2lt-common.toml` (defa
 * Place it on top of a **solid block**, give yourself plenty of distance, and prefer using it in open terrain. The blast radius is large enough that standing on the same map can still get you caught up in it.
 * Used in low-altitude open ground, it lets a <ItemLink id="ae2lt:lightning_collector" /> absorb a huge amount of artificial lightning at once — much faster than relying on the regular [Tesla Coil](tesla-coil.md) cycle.
 * If you only want it to break terrain and not wipe nearby mobs, move anything you want to keep away first.
+
+## Field Log: An Anomalous Drop
+
+> **Trial 7.** Conditions matched the previous six; observed curve diverged. At detonation, a [Lightning Collapse Matrix](../materials/lightning-collapse-matrix.md) was lying on the ground near the impact point — no scorch crater, just a few bolts and a cell that wasn't on the manifest.
+
+> Reproduction failed. Controlling for every variable points to the same conclusion: **the matrix has to be out in the open.**

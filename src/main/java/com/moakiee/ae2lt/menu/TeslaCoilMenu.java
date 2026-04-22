@@ -220,6 +220,14 @@ public class TeslaCoilMenu extends AEBaseMenu {
         return extremeHighVoltageAvailable;
     }
 
+    public Component getHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.high_voltage", highVoltageAvailable);
+    }
+
+    public Component getExtremeHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.extreme_high_voltage", extremeHighVoltageAvailable);
+    }
+
     public void clientCycleMode() {
         sendClientAction("cycleMode");
     }
