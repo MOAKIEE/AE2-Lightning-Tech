@@ -250,6 +250,11 @@ public class AE2LightningTech {
                 ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.OVERLOADED_CONTROLLER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,

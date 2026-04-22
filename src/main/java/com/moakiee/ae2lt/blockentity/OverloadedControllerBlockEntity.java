@@ -9,6 +9,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.energy.IEnergyStorage;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
@@ -37,6 +38,10 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
         }
 
         be.injectAEPower(AE2LTCommonConfig.overloadedControllerPassiveAePerTick(), Actionable.MODULATE);
+    }
+
+    public IEnergyStorage getEnergyStorageCapability(Direction side) {
+        return this.getEnergyStorage(side);
     }
 
     @Override
