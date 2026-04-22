@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.part;
 
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
+import com.moakiee.ae2lt.registry.ModItems;
 import net.minecraft.world.entity.player.Player;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IManagedGridNode;
@@ -62,6 +63,21 @@ public class OverloadedCablePart extends CoveredDenseCablePart
 
     @Override
     public boolean changeColor(AEColor newColor, Player who) {
-        return false;
+        if (this.getCableColor() == newColor) {
+            return false;
+        }
+
+        var newPart = ModItems.getOverloadedCable(newColor);
+
+        if (isClientSide()) {
+            return true;
+        }
+
+        setPartItem(newPart);
+        getMainNode().setGridColor(getCableColor());
+        getHost().partChanged();
+        getHost().markForUpdate();
+        getHost().markForSave();
+        return true;
     }
 }

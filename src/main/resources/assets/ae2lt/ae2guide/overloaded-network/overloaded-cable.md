@@ -1,54 +1,54 @@
 ---
 navigation:
-  title: 过载线缆
+  title: Overloaded Cable
   icon: ae2lt:overloaded_cable
   parent: overloaded-network/overloaded-network-index.md
 item_ids:
   - ae2lt:overloaded_cable
 ---
 
-# 过载线缆
+# Overloaded Cable
 
-**过载线缆**是原版 AE2 密集线缆的增强版本，本身不设频道上限。
+The **Overloaded Cable** is the upgraded version of the vanilla AE2 Dense Cable, with no per-cable channel limit.
 
-## 核心特性
+## Core Features
 
-* **无频道上限**：单根过载线缆本身无频道瓶颈，可承载任意数量的频道
-* **由控制器决定网络总频道**：整个过载网络的频道总量取决于网络中**过载 ME 控制器**的数量——每个过载控制器为网络提供 128 频道（默认值，可配置）
-* **智能频道分配**：过载网络使用**最大流算法**替代原版 AE2 的 BFS 频道分配，在复杂拓扑下能更高效地利用总频道容量
-* **密集线缆外观**：视觉上与原版密集线缆一致
-* **支持染色**：共有 17 种颜色变体，不同颜色互不连接（与原版 AE2 线缆染色机制一致）
+* **No per-cable channel limit**: a single Overloaded Cable has no channel bottleneck; it can carry any number of channels
+* **Network channel total determined by controllers**: the total channels available on an Overloaded network depend on the number of **Overloaded ME Controllers** — each Overloaded controller supplies 128 channels (default, configurable)
+* **Smart channel allocation**: the Overloaded network uses a **max-flow algorithm** in place of vanilla AE2's BFS, using the total channel budget more efficiently on complex layouts
+* **Dense cable appearance**: visually identical to the vanilla Dense Cable
+* **Color variants**: 17 color variants are available; different colors do not connect to each other (same coloring rule as vanilla AE2 cables)
 
-## 频道机制
+## Channel Mechanics
 
-与原版 AE2 线缆的固定频道上限（普通线缆 8 频道、密集线缆 32 频道）不同，过载线缆采用以下规则：
+Unlike the fixed per-cable channel caps in vanilla AE2 (8 for smart cable, 32 for dense smart cable), Overloaded Cable follows these rules:
 
-1. **线缆本身无频道瓶颈**：每根过载线缆都可以承载任意数量的频道
-2. **网络总频道 = 过载控制器数 × 128**：整个网络可用的频道总量由过载 ME 控制器的数量决定
-3. **最大流分配**：可用频道在网络中按最大流算法智能分配，而非沿路径逐段扣减
+1. **No per-cable bottleneck**: every Overloaded Cable can carry any number of channels
+2. **Network total channels = Overloaded controllers × 128**: the total channels available on the network are determined by the number of Overloaded ME Controllers
+3. **Max-flow allocation**: channels are allocated across the network using a max-flow algorithm, not deducted segment-by-segment along a path
 
-对玩家而言意味着：
+What this means for the player:
 
-* 不再需要担心某条主干线缆的频道被用完
-* 只要网络总频道足够，所有设备都能获得频道
-* 增加过载 ME 控制器即可扩展网络的频道总量
+* You no longer have to worry about a backbone cable running out of channels
+* As long as the network total channels are sufficient, every device gets its channel
+* Add more Overloaded ME Controllers to scale the network's total channel budget
 
-> **重要**：过载线缆只有在**两端都是过载设备**（过载线缆、过载 ME 控制器等）时才能发挥完整的无限容量特性。如果过载线缆与原版 AE2 设备直接相连，该连接仍会按原版规则计入频道上限。
+> **Important**: Overloaded Cable only delivers its full unlimited-capacity behavior when **both ends are Overloaded devices** (Overloaded Cable, Overloaded ME Controller, etc.). If an Overloaded Cable is directly connected to a vanilla AE2 device, that connection still counts toward the vanilla channel limits.
 
-## 颜色变体
+## Color Variants
 
-过载线缆共有 17 种颜色变体，包括福鲁伊克斯色（默认）以及全部 16 种 Minecraft 染料颜色：
+Overloaded Cable has 17 color variants: the default Fluix color, plus all 16 Minecraft dye colors:
 
-白色、橙色、品红色、淡蓝色、黄色、黄绿色、粉色、灰色、淡灰色、青色、紫色、蓝色、棕色、绿色、红色、黑色。
+White, Orange, Magenta, Light Blue, Yellow, Lime, Pink, Gray, Light Gray, Cyan, Purple, Blue, Brown, Green, Red, Black.
 
-不同颜色的过载线缆互不连接（与原版 AE2 线缆染色机制一致）。
+Different colors of Overloaded Cable do not connect to each other (same rule as vanilla AE2 cable coloring).
 
-## 使用方式
+## How to Use
 
-过载线缆的使用方式与原版密集线缆一致。直接放置在方块侧面即可接入网络。
+Overloaded Cable is used the same way as vanilla Dense Smart Cable — just place it on the side of a block to connect to the network.
 
-## 适用场景
+## Good Places to Use It
 
-* 大型基地主干线路，一根过载线缆可承担多根密集线缆的频道负载
-* 以过载 ME 控制器为核心的高容量网络
-* 简化网络拓扑，不再需要针对频道瓶颈进行布线设计
+* Main trunk lines in a large base, where a single Overloaded Cable can absorb the channel load of many dense cables
+* High-capacity networks built around Overloaded ME Controllers
+* Simplifying network layouts — you no longer need to route specifically around channel bottlenecks

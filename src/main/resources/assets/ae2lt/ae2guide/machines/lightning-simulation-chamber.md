@@ -1,51 +1,51 @@
 ---
 navigation:
-  title: 闪电模拟室
+  title: Lightning Simulation Room
   icon: ae2lt:lightning_simulation_room
   parent: machines/machines-index.md
 item_ids:
   - ae2lt:lightning_simulation_room
 ---
 
-# 闪电模拟室
+# Lightning Simulation Room
 
 <Row>
   <BlockImage id="ae2lt:lightning_simulation_room" scale="4" />
 </Row>
 
-**闪电模拟室**是本模组最核心的加工机器之一，适用于 1~3 种输入的材料转化。大多数中期材料的合成都会通过闪电模拟室完成。
+The **Lightning Simulation Room** is one of the core processing machines of this mod, suited to conversions with 1~3 inputs. Most mid-game recipes are crafted here.
 
-## 槽位与容量
+## Slots and Capacity
 
-| 槽位 | 容量 | 说明 |
-|------|------|------|
-| 输入槽 ×3 | 8,192 | 放入待加工的材料，不区分槽位顺序 |
-| 矩阵槽 ×1 | 1 | 可选安装闪电坍缩矩阵 |
-| 输出槽 ×1 | 8,192 | 加工产物；仅允许机器写入 |
-| 速度卡槽 | — | 最多安装 4 张 AE2 速度卡 |
+| Slot | Capacity | Notes |
+|------|----------|-------|
+| Input × 3 | 8,192 | Feed in the materials; slot order does not matter |
+| Matrix × 1 | 1 | Optional Lightning Collapse Matrix |
+| Output × 1 | 8,192 | Processed output; written by the machine only |
+| Speed Card Slots | — | Up to 4 AE2 Speed Cards |
 
-## 工作流程
+## Operating Flow
 
-1. 将原料分别放入 3 个输入槽（配方可能只需要 1~2 种）
-2. 机器根据当前输入匹配已注册的配方
-3. 配方匹配且 ME 网络中的闪电与 FE 能量满足要求后，机器锁定配方并开始加工
-4. 加工过程中同时消耗闪电与 FE 能量
-5. 加工完成后，产物进入输出槽
+1. Put up to 3 different ingredients into the input slots (recipes may only need 1~2)
+2. The machine matches the current inputs against registered recipes
+3. Once a recipe is matched and the ME network has enough Lightning and FE, the machine locks in the recipe and starts processing
+4. Lightning and FE are consumed during processing
+5. The output goes to the output slot when processing finishes
 
-## 闪电消耗
+## Lightning Consumption
 
-每个配方都定义了所需的闪电类型（高压或极高压）和数量。闪电会在加工开始时从 ME 网络中一次性扣除。当 ME 网络中闪电数量不足时，GUI 显示「闪电不足」，加工暂停直至补足。
+Every recipe defines the required Lightning type (HV or EHV) and amount. Lightning is pulled from the ME network in one shot at the start of processing. If the network does not have enough Lightning, the GUI shows "Lightning insufficient" and processing pauses until supply recovers.
 
-## 矩阵代偿
+## Matrix Substitution
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-安装**闪电坍缩矩阵**后，部分原本要求**极高压闪电**的配方可以使用数倍量的**高压闪电**进行代偿。代偿比例由配方自身决定，GUI 会显示代偿状态：
+With a **Lightning Collapse Matrix** installed, some recipes that would normally require **Extreme High Voltage Lightning** can be fulfilled by consuming several times the amount of **High Voltage Lightning** instead. The ratio is defined per recipe. The GUI shows the current substitution state:
 
-* **代偿：已生效** — 当前配方正在使用高压闪电替代极高压
-* **代偿：可替代** — 当前配方支持代偿但尚未触发
-* **代偿：无** — 当前配方不支持代偿
+* **Substitution: Active** — the current recipe is using HV Lightning to substitute for EHV
+* **Substitution: Available** — the current recipe supports substitution but has not triggered it
+* **Substitution: None** — the current recipe does not support substitution
 
-## 自动弹出
+## Auto Export
 
-启用自动弹出后，加工完成的产物会自动推送到允许方向的相邻容器。具体方向在 GUI 的「配置输出面」界面中设置。
+With Auto Export enabled, finished outputs are automatically pushed to adjacent containers on the allowed sides. The sides are configured in the "Configure Output Sides" screen of the GUI.

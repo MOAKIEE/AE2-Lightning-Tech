@@ -1,6 +1,6 @@
 ---
 navigation:
-  title: 闪电存储元件
+  title: Lightning Storage Cells
   icon: ae2lt:lightning_storage_component_i
   parent: lightning/lightning-index.md
 item_ids:
@@ -12,13 +12,13 @@ item_ids:
   - ae2lt:infinite_storage_cell
 ---
 
-# 闪电存储元件
+# Lightning Storage Cells
 
-闪电存储元件是专用于在 ME 网络中存放闪电的存储介质。与普通物品 / 流体存储元件一样，只需放入 <ItemLink id="ae2:drive" /> 即可使用。
+Lightning Storage Cells are the storage medium dedicated to holding Lightning in an ME network. Just like regular item / fluid storage cells, simply drop one into an <ItemLink id="ae2:drive" /> to start using it.
 
-## 元件等级
+## Tiers
 
-闪电存储元件共有五档，容量逐级递增。每枚元件可以同时存放**高压闪电**与**极高压闪电**两种类型。
+Lightning Storage Cells come in five tiers with progressively larger capacity. A single cell stores **both** High Voltage and Extreme High Voltage Lightning at the same time.
 
 <ItemGrid>
   <ItemIcon id="ae2lt:lightning_storage_component_i" />
@@ -28,20 +28,20 @@ item_ids:
   <ItemIcon id="ae2lt:lightning_storage_component_v" />
 </ItemGrid>
 
-| 元件等级 | 有效容量 | 空闲耗电 |
-|---------|---------|---------|
-| 闪电存储元件 I | 128 | 32 AE/t |
-| 闪电存储元件 II | 512 | 128 AE/t |
-| 闪电存储元件 III | 2,048 | 512 AE/t |
-| 闪电存储元件 IV | 8,192 | 2,048 AE/t |
-| 闪电存储元件 V | 32,768 | 8,192 AE/t |
+| Tier | Effective Capacity | Idle Drain |
+|------|--------------------|------------|
+| Lightning Storage Cell I | 128 | 32 AE/t |
+| Lightning Storage Cell II | 512 | 128 AE/t |
+| Lightning Storage Cell III | 2,048 | 512 AE/t |
+| Lightning Storage Cell IV | 8,192 | 2,048 AE/t |
+| Lightning Storage Cell V | 32,768 | 8,192 AE/t |
 
-## 无限存储元件
+## Infinite Storage Cell
 
 <ItemImage id="ae2lt:infinite_storage_cell" scale="2" float="left" />
 
-**无限存储元件**没有容量上限，内部允许任意数量、任意类型的物品共存。受合成成本与工艺限制,**无法量产**。
+The **Infinite Storage Cell** has no capacity limit and can hold any amount of any type of item at once. Due to its crafting cost and the technology required, it **cannot be mass-produced**.
 
-## 附录
+## Appendix
 
-> 扫描日志末尾夹着一条旁注:"有一枚元件不在登记库中——读一次就空,其余一切正常。"来源与解读均未记录。
+> Tucked into the tail of a scan log: "One cell isn't in the registry — read it once and it goes blank, otherwise everything reads normal." Source and interpretation are unrecorded.

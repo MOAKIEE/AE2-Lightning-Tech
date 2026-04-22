@@ -1,0 +1,33 @@
+{
+  "type": "ae2lt:overload_processing",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "minecraft:gold_block"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "minecraft:redstone_block"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "tag": "c:storage_blocks/silicon"
+      },
+      "count": 1
+    }
+  ],
+  "results": [
+    {
+      "id": "ae2:logic_processor",
+      "count": 9
+    }
+  ],
+  "totalEnergy": 100000,
+  "lightningCost": 1,
+  "lightningTier": "high_voltage"
+}

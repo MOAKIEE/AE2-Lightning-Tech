@@ -5,31 +5,37 @@ import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.inventory.InventoryMenu;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.fml.ModList;
 
+import appeng.client.gui.style.Blitter;
 import appeng.core.localization.Tooltips;
 import appeng.client.gui.widgets.ITooltip;
 
 public class OverloadProcessingFactoryFluidWidget extends AbstractWidget implements ITooltip {
     private final Supplier<FluidStack> fluidSupplier;
     private final IntSupplier capacitySupplier;
-    private final int color;
+
+    private Fluid cachedFluid;
+    private TextureAtlasSprite cachedSprite;
 
     public OverloadProcessingFactoryFluidWidget(
             Supplier<FluidStack> fluidSupplier,
-            IntSupplier capacitySupplier,
-            int color) {
+            IntSupplier capacitySupplier) {
         super(0, 0, 16, 54, Component.empty());
         this.fluidSupplier = fluidSupplier;
         this.capacitySupplier = capacitySupplier;
-        this.color = color;
     }
 
     @Override
@@ -44,13 +50,38 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
         if (filled <= 0) {
             return;
         }
+        filled = Math.min(filled, height);
 
-        guiGraphics.fill(
-                getX(),
-                getY() + height - filled,
-                getX() + width,
-                getY() + height,
-                color);
+        TextureAtlasSprite sprite = resolveSprite(fluid);
+        if (sprite == null) {
+            return;
+        }
+
+        var attributes = IClientFluidTypeExtensions.of(fluid.getFluid());
+        Blitter blitter = Blitter.sprite(sprite)
+                .colorRgb(attributes.getTintColor(fluid))
+                .blending(true);
+
+        int x = getX();
+        int yBottom = getY() + height;
+        int drawn = 0;
+        while (drawn < filled) {
+            int sliceH = Math.min(width, filled - drawn);
+            blitter.dest(x, yBottom - drawn - sliceH, width, sliceH).blit(guiGraphics);
+            drawn += sliceH;
+        }
+    }
+
+    private TextureAtlasSprite resolveSprite(FluidStack stack) {
+        Fluid fluid = stack.getFluid();
+        if (fluid != cachedFluid) {
+            cachedFluid = fluid;
+            var attributes = IClientFluidTypeExtensions.of(fluid);
+            cachedSprite = Minecraft.getInstance()
+                    .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
+                    .apply(attributes.getStillTexture(stack));
+        }
+        return cachedSprite;
     }
 
     @Override

@@ -2,6 +2,7 @@
   "multipart": [
     {
       "when": {
+        "half": "lower",
         "facing": "north"
       },
       "apply": {
@@ -10,6 +11,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "east"
       },
       "apply": {
@@ -19,6 +21,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "south"
       },
       "apply": {
@@ -28,6 +31,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "west"
       },
       "apply": {
@@ -37,6 +41,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "north",
         "working": "true"
       },
@@ -46,6 +51,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "east",
         "working": "true"
       },
@@ -56,6 +62,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "south",
         "working": "true"
       },
@@ -66,6 +73,7 @@
     },
     {
       "when": {
+        "half": "lower",
         "facing": "west",
         "working": "true"
       },

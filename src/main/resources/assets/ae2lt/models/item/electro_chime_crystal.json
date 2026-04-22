@@ -1,7 +1,7 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "ae2lt:item/overload_crystal"
+    "layer0": "ae2lt:item/electro_chime_crystal_stage_0"
   },
   "overrides": [
     { "predicate": { "ae2lt:catalysis_stage": 0.00 }, "model": "ae2lt:item/electro_chime_crystal_stage_0" },

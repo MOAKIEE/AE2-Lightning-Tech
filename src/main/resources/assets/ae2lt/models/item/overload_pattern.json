@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "ae2lt:item/processing_pattern"
+    "layer0": "ae2lt:item/overload_pattern"
   }
 }

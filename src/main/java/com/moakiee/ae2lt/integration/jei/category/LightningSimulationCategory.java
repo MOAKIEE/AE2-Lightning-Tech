@@ -39,8 +39,10 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
 
     private static final int BACKGROUND_U = 5;
     private static final int BACKGROUND_V = 15;
+    private static final int BACKGROUND_WIDTH = 168;
+    private static final int BACKGROUND_HEIGHT = 60;
     private static final int WIDTH = 168;
-    private static final int HEIGHT = 75;
+    private static final int HEIGHT = 92;
     private static final int TEXTURE_WIDTH = 256;
     private static final int TEXTURE_HEIGHT = 256;
 
@@ -51,9 +53,9 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     private static final int SLOT_OUTPUT_Y = 26;
     private static final int PROCESS_X = 53;
     private static final int PROCESS_Y = 10;
-    private static final int ENERGY_TEXT_Y = 58;
-    private static final int LIGHTNING_TEXT_Y = 68;
-    private static final int SUBSTITUTION_TEXT_Y = 78;
+    private static final int ENERGY_TEXT_Y = 62;
+    private static final int LIGHTNING_TEXT_Y = 72;
+    private static final int SUBSTITUTION_TEXT_Y = 82;
     private static final int PROCESS_WIDTH = 50;
     private static final int PROCESS_HEIGHT = 46;
     private static final int PROCESS_STAGE_COUNT = 20;
@@ -66,7 +68,8 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
 
     public LightningSimulationCategory(IGuiHelper guiHelper) {
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get()));
-        this.background = guiHelper.createDrawable(BACKGROUND_TEXTURE, BACKGROUND_U, BACKGROUND_V, WIDTH, HEIGHT);
+        this.background = guiHelper.createDrawable(
+                BACKGROUND_TEXTURE, BACKGROUND_U, BACKGROUND_V, BACKGROUND_WIDTH, BACKGROUND_HEIGHT);
     }
 
     @Override

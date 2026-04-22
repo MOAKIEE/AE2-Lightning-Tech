@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.logic;
 
+import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -11,12 +12,17 @@ import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.common.util.FakePlayer;
+import net.neoforged.neoforge.event.level.BlockEvent;
 
 public class LightningBlastTask {
     public record TickResult(int consumedBlocks, int consumedLightning) {}
@@ -65,6 +71,8 @@ public class LightningBlastTask {
     private final int shellsPerTick;
 
     private final PriorityQueue<BlastCandidate> pendingBlastBlocks;
+    private final Long2BooleanOpenHashMap chunkProtectionCache = new Long2BooleanOpenHashMap();
+    private FakePlayer breakerPlayer;
     private int nextShellRadiusToQueue;
     private boolean scanFinished;
     private int destroyedBlocks;
@@ -193,6 +201,9 @@ public class LightningBlastTask {
             }
 
             BlockState state = this.level.getBlockState(pos);
+            if (isBreakProtected(pos, state)) {
+                continue;
+            }
             if (!shouldDestroy(pos, state, this.level, this.center, this.radius)) {
                 continue;
             }
@@ -409,4 +420,30 @@ public class LightningBlastTask {
     private static double clampDouble(double value, double min, double max) {
         return Math.max(min, Math.min(max, value));
     }
+
+    private boolean isBreakProtected(BlockPos pos, BlockState state) {
+        long key = ChunkPos.asLong(pos.getX() >> 4, pos.getZ() >> 4);
+        if (this.chunkProtectionCache.containsKey(key)) {
+            return this.chunkProtectionCache.get(key);
+        }
+        Player breaker = getBreakerPlayer();
+        boolean cancelled;
+        try {
+            BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(this.level, pos, state, breaker);
+            NeoForge.EVENT_BUS.post(event);
+            cancelled = event.isCanceled();
+        } catch (Throwable ignored) {
+            cancelled = false;
+        }
+        this.chunkProtectionCache.put(key, cancelled);
+        return cancelled;
+    }
+
+    private Player getBreakerPlayer() {
+        if (this.breakerPlayer == null) {
+            this.breakerPlayer = OverloadBlastFakePlayer.get(this.level);
+        }
+        return this.breakerPlayer;
+    }
+
 }

@@ -1,60 +1,60 @@
 ---
 navigation:
-  title: 特斯拉线圈
+  title: Tesla Coil
   icon: ae2lt:tesla_coil
   parent: lightning/lightning-index.md
 item_ids:
   - ae2lt:tesla_coil
 ---
 
-# 特斯拉线圈
+# Tesla Coil
 
 <Row>
   <BlockImage id="ae2lt:tesla_coil" scale="4" />
 </Row>
 
-**特斯拉线圈**是可控、稳定量产闪电的核心设备。它不依赖天气，通过消耗 FE 能量与材料主动产出闪电。
+The **Tesla Coil** is the core device for controlled, stable Lightning production. It does not depend on the weather — it produces Lightning on demand by consuming FE and materials.
 
-## 两个工作模式
+## Two Operating Modes
 
-特斯拉线圈在 GUI 中可以切换两种模式。
+The Tesla Coil GUI lets you switch between two modes.
 
-### 高压模式
+### High Voltage Mode
 
-* **输入**：过载水晶粉 + FE 能量
-* **输出**：高压闪电（注入 ME 网络）
-* **默认成本**：每产出 1 高压闪电消耗 2 过载水晶粉 + 25,000 FE
+* **Input**: Overload Crystal Dust + FE
+* **Output**: High Voltage Lightning (injected into the ME network)
+* **Default cost**: 2 Overload Crystal Dust + 25,000 FE per 1 HV Lightning produced
 
-高压模式支持批量处理。线圈会将当前水晶粉槽中可用的全部材料与 ME 网络可接收的高压闪电上限进行锁定，然后在一次充能周期内一次性产出全部闪电。
+High Voltage mode supports batch processing. The coil locks in the full amount of available crystal dust in its input slot and the HV Lightning headroom left in the ME network, then produces that entire batch in one charge cycle.
 
-### 极高压模式
+### Extreme High Voltage Mode
 
-* **输入**：高压闪电（从 ME 网络提取）+ FE 能量，同时必须安装**闪电坍缩矩阵**
-* **输出**：极高压闪电（注入 ME 网络）
-* **默认成本**：每产出 1 极高压闪电消耗 8 高压闪电 + 500,000 FE
-* 每次充能固定产出 1 极高压闪电，矩阵不会被消耗
+* **Input**: High Voltage Lightning (pulled from the ME network) + FE, and a **Lightning Collapse Matrix** must be installed
+* **Output**: Extreme High Voltage Lightning (injected into the ME network)
+* **Default cost**: 8 HV Lightning + 500,000 FE per 1 EHV Lightning produced
+* Each charge cycle produces exactly 1 EHV Lightning. The matrix is not consumed.
 
-## 运作流程
+## Operating Flow
 
-1. 通过 GUI 按钮选择模式
-2. 准备材料——高压模式放入过载水晶粉；极高压模式确认矩阵已安装且网络中有足够的高压闪电
-3. 接入 FE 能量（线圈内部 FE 缓存 16,000,000 FE，最高接受速率 200,000 FE/tick）
-4. 线圈锁定当前模式并开始充能（约 5 tick）
-5. 充能完成后，产物一次性注入 ME 网络
+1. Select a mode from the GUI
+2. Prepare materials — HV mode: put Overload Crystal Dust into the slot; EHV mode: verify the matrix is installed and the network has enough HV Lightning
+3. Supply FE (the coil has a 16,000,000 FE internal buffer and accepts up to 200,000 FE/tick)
+4. The coil locks in the mode and starts charging (about 5 ticks)
+5. When the charge completes, the output is injected into the ME network in one batch
 
-## GUI 状态
+## GUI Status
 
-| 状态 | 含义 |
-|------|------|
-| 待机 | 模式未锁定，等待输入或网络就绪 |
-| 充能中 | 正在消耗 FE |
-| 等待 FE | FE 不足以支撑当前 tick 的消耗 |
-| 等待输入 | 缺少水晶粉 / 矩阵 / 高压闪电 |
-| 等待 ME 网络 | 网络中无法接收产出，或缺少待消耗的高压闪电 |
-| 准备提交 | 充能完成，下一 tick 提交产物 |
+| Status | Meaning |
+|--------|---------|
+| Idle | Mode not locked in, waiting for inputs or the network to become ready |
+| Charging | Consuming FE |
+| Waiting for FE | FE is insufficient for the current tick's consumption |
+| Waiting for inputs | Missing crystal dust / matrix / HV Lightning |
+| Waiting for ME network | The network cannot accept the output, or does not have enough HV Lightning to consume |
+| Ready to commit | Charge complete; the output commits next tick |
 
-## 闪电坍缩矩阵
+## Lightning Collapse Matrix
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-极高压模式必须在线圈的矩阵槽中安装一枚**闪电坍缩矩阵**。矩阵**不会**在加工过程中被消耗，但必须始终留在槽中。
+Extreme High Voltage mode requires a **Lightning Collapse Matrix** in the coil's matrix slot. The matrix is **not consumed** during processing, but it must stay in the slot.

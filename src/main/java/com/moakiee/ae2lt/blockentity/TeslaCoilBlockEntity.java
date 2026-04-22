@@ -10,6 +10,7 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
+import appeng.api.orientation.RelativeSide;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -368,7 +369,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
 
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
-        return EnumSet.allOf(Direction.class);
+        return EnumSet.of(orientation.getSide(RelativeSide.BOTTOM));
     }
 
     private boolean hasLocalPrerequisites(TeslaCoilMode mode, long batchSize) {

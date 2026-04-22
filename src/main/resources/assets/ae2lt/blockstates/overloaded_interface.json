@@ -1,7 +1,7 @@
 {
   "variants": {
     "": {
-      "model": "ae2:block/interface"
+      "model": "ae2lt:block/overloaded_interface"
     }
   }
 }

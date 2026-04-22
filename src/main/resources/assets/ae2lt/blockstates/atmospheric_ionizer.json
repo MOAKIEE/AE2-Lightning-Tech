@@ -1,52 +1,119 @@
 {
   "multipart": [
     {
-      "when": { "facing": "north" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer" }
+      "when": {
+        "facing": "north"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer", 
+        "x": 90 
+      }
     },
     {
-      "when": { "facing": "east" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "y": 90 }
+      "when": {
+        "facing": "south"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer", 
+        "x": 270 
+      }
     },
     {
-      "when": { "facing": "south" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "y": 180 }
+      "when": {
+        "facing": "east"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer", 
+        "x": 90, 
+        "y": 90 
+      }
     },
     {
-      "when": { "facing": "west" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "y": 270 }
+      "when": {
+        "facing": "west"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer", 
+        "x": 90, 
+        "y": 270 
+      }
     },
     {
-      "when": { "facing": "up" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "x": 270 }
+      "when": {
+        "facing": "up"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer"
+      }
     },
     {
-      "when": { "facing": "down" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer", "x": 90 }
+      "when": {
+        "facing": "down"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer", 
+        "x": 180 
+      }
     },
     {
-      "when": { "facing": "north", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work" }
+      "when": {
+        "facing": "north",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "x": 90 
+      }
     },
     {
-      "when": { "facing": "east", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "y": 90 }
+      "when": {
+        "facing": "south",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "x": 270 
+      }
     },
     {
-      "when": { "facing": "south", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "y": 180 }
+      "when": {
+        "facing": "east",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "x": 90, 
+        "y": 90 
+      }
     },
     {
-      "when": { "facing": "west", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "y": 270 }
+      "when": {
+        "facing": "west",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "x": 90, 
+        "y": 270 
+      }
     },
     {
-      "when": { "facing": "up", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "x": 270 }
+      "when": {
+        "facing": "up",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work"
+      }
     },
     {
-      "when": { "facing": "down", "working": "true" },
-      "apply": { "model": "ae2lt:block/atmospheric_ionizer_work", "x": 90 }
+      "when": {
+        "facing": "down",
+        "working": "true"
+      },
+      "apply": {
+        "model": "ae2lt:block/atmospheric_ionizer_work", 
+        "x": 180 
+      }
     }
-  ]
-}
+]}

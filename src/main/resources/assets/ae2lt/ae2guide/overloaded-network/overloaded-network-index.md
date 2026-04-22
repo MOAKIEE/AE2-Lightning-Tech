@@ -1,24 +1,24 @@
 ---
 navigation:
-  title: 过载网络
+  title: Overloaded Network
   icon: ae2lt:overloaded_controller
   parent: index.md
   position: 60
 ---
 
-# 过载网络
+# Overloaded Network
 
-AE2 闪电科技提供了一套「过载」网络设备，用于在大型基地中突破原版 AE2 的频道与容量限制。
+AE2 Lightning Tech provides a family of "Overloaded" network devices that let large bases break past vanilla AE2's channel and capacity limits.
 
-相较原版：
+Compared to vanilla:
 
-* 每个**过载 ME 控制器**为网络额外提供 128 频道
-* 过载线缆本身不存在频道上限，整个过载网络按控制器总数全局分配频道
-* 过载样板供应器与过载 ME 接口拥有 36 个槽位，并支持跨距离的无线连接
+* Each **Overloaded ME Controller** adds 128 channels to the network
+* Overloaded Cable has no per-cable channel limit; the whole Overloaded network allocates channels globally based on the total controller count
+* The Overloaded Pattern Provider and Overloaded ME Interface have 36 slots each and support wireless connections across a distance
 
-## 过载网络设备
+## Overloaded Network Devices
 
-* [过载 ME 控制器](overloaded-controller.md) — 更高能量与频道供给的网络控制器
-* [过载线缆](overloaded-cable.md) — 无频道上限的超级线缆
-* [过载样板供应器](overloaded-pattern-provider.md) — 大容量 + 无线模式的样板供应器
-* [过载 ME 接口](overloaded-interface.md) — 36 槽位 + 无线 I/O 的增强接口
+* [Overloaded ME Controller](overloaded-controller.md) — a controller that supplies more energy and more channels
+* [Overloaded Cable](overloaded-cable.md) — a super cable with no per-cable channel limit
+* [Overloaded Pattern Provider](overloaded-pattern-provider.md) — high-capacity pattern provider with a wireless mode
+* [Overloaded ME Interface](overloaded-interface.md) — upgraded interface with 36 slots and wireless I/O

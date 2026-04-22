@@ -1,0 +1,39 @@
+{
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "megacells"
+    }
+  ],
+  "type": "ae2lt:overload_processing",
+  "priority": 0,
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "megacells:sky_steel_block"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "item": "ae2:fluix_block"
+      },
+      "count": 1
+    },
+    {
+      "ingredient": {
+        "tag": "c:storage_blocks/silicon"
+      },
+      "count": 1
+    }
+  ],
+  "results": [
+    {
+      "id": "megacells:accumulation_processor",
+      "count": 9
+    }
+  ],
+  "totalEnergy": 100000,
+  "lightningCost": 1,
+  "lightningTier": "high_voltage"
+}

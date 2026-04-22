@@ -1,86 +1,86 @@
 ---
 navigation:
-  title: 过载ME接口
+  title: Overloaded ME Interface
   icon: ae2lt:overloaded_interface
   parent: overloaded-network/overloaded-network-index.md
 item_ids:
   - ae2lt:overloaded_interface
 ---
 
-# 过载 ME 接口
+# Overloaded ME Interface
 
 <Row>
   <BlockImage id="ae2lt:overloaded_interface" scale="4" />
 </Row>
 
-**过载 ME 接口**是原版 <ItemLink id="ae2:interface" /> 的增强版本，拥有 **36 个配置槽位**，并支持**无线模式**以完成远程物品传输与能量分发。
+The **Overloaded ME Interface** is the upgraded version of the vanilla <ItemLink id="ae2:interface" />, with **36 configuration slots** and a **wireless mode** for long-distance item transfer and energy distribution.
 
-## 核心特性
+## Core Features
 
-* **36 个配置槽位**（原版为 9 个）
-* **两种工作模式**：普通模式与无线模式
-* **无限模式槽位**：可将单个槽位切换为无限供应
-* **两档 I/O 速度**：普通与快速（探针）
-* **能量传输**：支持将 ME 网络中的 FE 能量输出给相邻或无线连接的机器
-* **输入过滤**：通过过载过滤元件限制允许导入的物品种类
+* **36 configuration slots** (vanilla has 9)
+* **Two operating modes**: Normal and Wireless
+* **Unlimited-mode slots**: individual slots can be switched to unlimited supply
+* **Two I/O speeds**: Normal and Fast (Probe)
+* **Energy transfer**: can route FE stored in the ME network to adjacent or wireless-connected machines
+* **Import filtering**: uses the Overloaded Filter Component to restrict which items can be imported
 
-## 工作模式
+## Operating Modes
 
-### 普通模式
+### Normal Mode
 
-普通模式下，过载 ME 接口的行为与原版接口类似——根据配置自动补货并将物品输出到物理相邻的容器。主要区别是拥有更多配置槽位和更大传输带宽。
+In Normal Mode, the Overloaded ME Interface behaves like the vanilla interface — it keeps stocked according to the configuration and outputs items to a physically adjacent container. The differences are more configuration slots and higher transfer bandwidth.
 
-若设置了能量输出方向，普通模式也可以将 ME 网络中的 FE 能量输出到指定方向的相邻设备。
+If an energy output direction is configured, Normal Mode can also route FE from the ME network to an adjacent device on that side.
 
-### 无线模式
+### Wireless Mode
 
-无线模式下，过载 ME 接口可以远程管理多台机器的输入、输出与能量供应。
+In Wireless Mode, the Overloaded ME Interface can manage input, output, and energy supply for multiple machines remotely.
 
-使用**过载无线连接工具**建立无线连接：
+Use the **Overloaded Wireless Connect Tool** to establish wireless connections:
 
-1. 手持工具并对过载 ME 接口进行 **Shift + 右击**以完成选中
-2. 再对目标机器的特定面进行**右击**以建立连接
-3. 同一台接口可以绑定多台远程机器
+1. Hold the tool and **Shift + right-click** the Overloaded ME Interface to select it
+2. Right-click a specific face of a target machine to connect
+3. One interface can bind to multiple remote machines
 
-## 输入 / 输出模式
+## Import / Export Modes
 
-| 模式 | 说明 |
-|------|------|
-| 输出：关 | 不向远程机器输出物品 |
-| 输出：自动 | 根据配置槽位自动向远程机器输出物品 |
-| 输入：关 | 不从远程机器导入物品 |
-| 输入：自动 | 从远程机器持续导入物品到 ME 网络 |
-| 输入：弹出 | 远程机器将物品弹入虚拟输入口；接口被动接收 |
+| Mode | Description |
+|------|-------------|
+| Export: OFF | Does not export items to remote machines |
+| Export: AUTO | Automatically exports items to remote machines according to the slot configuration |
+| Import: OFF | Does not import items from remote machines |
+| Import: AUTO | Continuously imports items from remote machines into the ME network |
+| Import: EJECT | Remote machines push items into the virtual input slot; the interface accepts them passively |
 
-## I/O 速度
+## I/O Speed
 
-| 速度档 | 自适应冷却范围 | 说明 |
-|-------|--------------|------|
-| 普通 | 5 ~ 80 tick | 适合一般场景 |
-| 快速（探针） | 1 ~ 40 tick | 使用探针机制提前检测就绪状态；安装速度卡后可用 |
+| Speed Tier | Adaptive Cooldown Range | Description |
+|------------|-------------------------|-------------|
+| Normal | 5 ~ 80 ticks | Suitable for general use |
+| Fast (Probe) | 1 ~ 40 ticks | Uses a probe mechanic to detect readiness early; requires a Speed Card |
 
-接口使用自适应冷却——当有物品可以传输时冷却时间自动缩短，当暂无工作时冷却时间自动延长，在性能和响应之间取得平衡。
+The interface uses an adaptive cooldown — the cooldown shortens when items are available to move, and lengthens when there is nothing to do, balancing performance and responsiveness.
 
-## 无限模式
+## Unlimited Mode
 
-对配置槽位进行 Shift + 点击可将其切换为**无限模式**。在无限模式下，该槽位会向远程机器以无限量持续供应所配置的物品。
+Shift-clicking a configuration slot switches it to **Unlimited Mode**. In this mode, the slot continuously supplies the configured item to remote machines in unlimited quantity.
 
-## 输入过滤
+## Import Filter
 
 <ItemImage id="ae2lt:overloaded_filter_component" scale="2" float="left" />
 
-过载 ME 接口支持安装**过载过滤元件**来限制允许导入 ME 网络的物品种类。过滤元件的配置方式与 AE2 元件工作台类似。
+The Overloaded ME Interface accepts an **Overloaded Filter Component** to restrict which items may be imported into the ME network. The filter component is configured the same way as an AE2 Cell Workbench configuration.
 
-## 能量传输
+## Energy Transfer
 
-在安装了感应卡（需要 AppFlux 模组支持）后，过载 ME 接口可以将 ME 网络中存储的 FE 能量输出给目标机器。
+With an AppFlux Induction Card installed (requires AppFlux), the Overloaded ME Interface can send FE stored in the ME network to target machines.
 
-* **普通模式**：向指定方向的相邻方块输出能量
-* **无线模式**：向所有无线连接的机器分发能量，由时间轮调度器自动分配
+* **Normal Mode**: routes energy to the adjacent block on the configured side
+* **Wireless Mode**: distributes energy across all wireless-connected machines via a round-robin scheduler
 
-## 自动化建议
+## Automation Tips
 
-* 单台接口即可无线管理多台机器的输入 / 输出，能够替代大量管道
-* 配合无限模式槽位，可持续向远程机器提供特定材料
-* 结合能量传输功能，可省去独立的能量管线
-* 启用探针速度档以获得更低的加工响应延迟
+* A single interface can manage I/O for many machines wirelessly, replacing a lot of pipework
+* Combined with unlimited-mode slots, it can keep a remote machine continuously supplied with a specific material
+* With energy transfer, you can drop dedicated power lines
+* Enable the Fast probe tier to reduce processing response latency

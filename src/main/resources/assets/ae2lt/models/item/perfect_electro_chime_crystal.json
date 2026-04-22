@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "ae2lt:item/overload_crystal"
+    "layer0": "ae2lt:item/perfect_electro_chime_crystal"
   }
 }

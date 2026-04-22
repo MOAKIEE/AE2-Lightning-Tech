@@ -19,13 +19,11 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.item.PrimedTnt;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.Level.ExplosionInteraction;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 
 public class OverloadTntEntity extends PrimedTnt {
     private static final String TAG_OWNER = "Owner";
-    private static final float COMPATIBILITY_EXPLOSION_POWER = 4.0F;
     private static final double EASTER_EGG_SCAN_RADIUS = 4.0D;
     private static final int EASTER_EGG_LIGHTNING_COUNT = 8;
     private static final double EASTER_EGG_LIGHTNING_SPREAD = 3.5D;
@@ -90,14 +88,6 @@ public class OverloadTntEntity extends PrimedTnt {
             if (tryTriggerEasterEgg(serverLevel)) {
                 return;
             }
-            serverLevel.explode(
-                    this,
-                    this.getX(),
-                    this.getY(0.0625D),
-                    this.getZ(),
-                    COMPATIBILITY_EXPLOSION_POWER,
-                    false,
-                    ExplosionInteraction.TNT);
             if (AE2LTCommonConfig.overloadTntEnableTerrainDamage()) {
                 LightningBlastTaskManager.schedule(new LightningBlastTask(serverLevel, this.blockPosition()));
             }

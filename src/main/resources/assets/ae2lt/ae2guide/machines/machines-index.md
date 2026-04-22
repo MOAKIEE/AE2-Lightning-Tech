@@ -1,35 +1,35 @@
 ---
 navigation:
-  title: 加工机器
+  title: Processing Machines
   icon: ae2lt:lightning_simulation_room
   parent: index.md
   position: 30
 ---
 
-# 加工机器
+# Processing Machines
 
-AE2 闪电科技提供了多种加工机器，分别应对不同类型的材料合成需求。除大气电离仪消耗 AE 能量之外，其余机器均接入 ME 网络同时使用外部 FE 能量，并在加工时从 ME 网络中提取闪电。
+AE2 Lightning Tech provides several processing machines that cover different material production needs. Except for the Atmospheric Ionizer (which consumes AE energy from the ME network), every machine connects to the ME network while also using external FE, and pulls Lightning from the ME network during processing.
 
-## 机器一览
+## Machine Overview
 
-| 机器 | 核心用途 | 主要消耗 |
-|------|---------|---------|
-| [闪电模拟室](lightning-simulation-chamber.md) | 1~3 种输入的简单转化 | 闪电 + FE |
-| [闪电装配室](lightning-assembly-chamber.md) | 最多 9 种输入的复杂装配 | 闪电 + FE |
-| [过载处理工厂](overload-processing-factory.md) | 物品 + 流体的多并行加工 | 闪电 + FE |
-| [水晶催化器](crystal-catalyzer.md) | 流体 + 催化剂的水晶培育 | FE |
-| [大气电离仪](atmospheric-ionizer.md) | 天气控制 | AE 能量 |
+| Machine | Core Use | Main Cost |
+|---------|----------|-----------|
+| [Lightning Simulation Room](lightning-simulation-chamber.md) | Simple conversion with 1~3 inputs | Lightning + FE |
+| [Lightning Assembly Chamber](lightning-assembly-chamber.md) | Complex assembly with up to 9 inputs | Lightning + FE |
+| [Overload Processing Factory](overload-processing-factory.md) | Item + fluid parallel processing | Lightning + FE |
+| [Crystal Catalyzer](crystal-catalyzer.md) | Fluid + catalyst crystal growth | FE |
+| [Atmospheric Ionizer](atmospheric-ionizer.md) | Weather control | AE energy |
 
-## 通用特性
+## Shared Features
 
-### 自动弹出
+### Auto Export
 
-多数机器支持**自动弹出**。启用后，机器完成加工时会将产物推送到允许方向的相邻容器。具体方向可在机器 GUI 的「配置输出面」界面中设置。
+Most machines support **Auto Export**. When enabled, a machine pushes its outputs to adjacent containers on the allowed sides once processing finishes. The allowed sides are set in the "Configure Output Sides" screen of the machine GUI.
 
-### 速度卡
+### Speed Cards
 
-除水晶催化器外，其余加工机器均支持安装 AE2 原版的**速度卡**以提升加工速度，最多可安装 4 张。
+Except for the Crystal Catalyzer, every processing machine accepts vanilla AE2 **Speed Cards** to increase processing speed, up to 4 cards.
 
-### 闪电代偿
+### Lightning Substitution
 
-部分需要极高压闪电的配方支持**矩阵代偿**机制：当机器内安装了**闪电坍缩矩阵**时，可以使用数倍量的高压闪电替代极高压闪电完成加工。具体代偿比例取决于配方本身。
+Some recipes that require Extreme High Voltage Lightning support a **matrix substitution** mechanic: when a **Lightning Collapse Matrix** is installed in the machine, the recipe can be fulfilled by consuming several times the amount of High Voltage Lightning instead. The substitution ratio is defined per recipe.

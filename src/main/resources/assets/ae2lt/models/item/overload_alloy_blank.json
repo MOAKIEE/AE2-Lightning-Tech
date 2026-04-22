@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:item/generated",
-  "textures": {
+    "parent": "minecraft:item/generated",
+    "textures": {
     "layer0": "ae2lt:item/overload_alloy_blank"
-  }
+    }
 }

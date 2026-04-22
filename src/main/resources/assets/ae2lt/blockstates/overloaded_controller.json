@@ -29,7 +29,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_offline",
+        "model": "ae2lt:block/controller/controller_column_h_offline",
         "x": 90,
         "y": 90
       },
@@ -49,7 +49,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_offline",
+        "model": "ae2lt:block/controller/controller_column_h_offline",
         "x": 90
       },
       "when": {
@@ -59,7 +59,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_online",
+        "model": "ae2lt:block/controller/controller_column_h_online",
         "x": 90,
         "y": 90
       },
@@ -79,7 +79,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_online",
+        "model": "ae2lt:block/controller/controller_column_h_online",
         "x": 90
       },
       "when": {
@@ -89,7 +89,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_conflicted",
+        "model": "ae2lt:block/controller/controller_column_h_conflicted",
         "x": 90,
         "y": 90
       },
@@ -109,7 +109,7 @@
     },
     {
       "apply": {
-        "model": "ae2lt:block/controller/controller_column_conflicted",
+        "model": "ae2lt:block/controller/controller_column_h_conflicted",
         "x": 90
       },
       "when": {

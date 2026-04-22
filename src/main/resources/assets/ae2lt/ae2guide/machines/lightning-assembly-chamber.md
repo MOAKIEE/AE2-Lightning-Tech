@@ -1,53 +1,53 @@
 ---
 navigation:
-  title: 闪电装配室
+  title: Lightning Assembly Chamber
   icon: ae2lt:lightning_assembly_chamber
   parent: machines/machines-index.md
 item_ids:
   - ae2lt:lightning_assembly_chamber
 ---
 
-# 闪电装配室
+# Lightning Assembly Chamber
 
 <Row>
   <BlockImage id="ae2lt:lightning_assembly_chamber" scale="4" />
 </Row>
 
-**闪电装配室**用于处理输入数量较多的高级配方。相比闪电模拟室的 3 个输入槽，闪电装配室拥有 9 个输入槽，适合需要多种不同材料组合的复杂装配任务。
+The **Lightning Assembly Chamber** handles advanced recipes with larger input counts. Where the Lightning Simulation Room has 3 input slots, the Assembly Chamber has 9 — which makes it well-suited to complex assembly tasks that need many different materials at once.
 
-## 槽位与容量
+## Slots and Capacity
 
-| 槽位 | 容量 | 说明 |
-|------|------|------|
-| 输入槽 ×9 | 8,192 | 放入各种原料，不区分槽位顺序 |
-| 矩阵槽 ×1 | 1 | 可选安装闪电坍缩矩阵 |
-| 输出槽 ×1 | 8,192 | 加工产物；仅允许机器写入 |
-| 速度卡槽 | — | 最多安装 4 张 AE2 速度卡 |
+| Slot | Capacity | Notes |
+|------|----------|-------|
+| Input × 9 | 8,192 | Feed in the materials; slot order does not matter |
+| Matrix × 1 | 1 | Optional Lightning Collapse Matrix |
+| Output × 1 | 8,192 | Processed output; written by the machine only |
+| Speed Card Slots | — | Up to 4 AE2 Speed Cards |
 
-## 工作流程
+## Operating Flow
 
-1. 将原料分别放入 9 个输入槽
-2. 机器根据当前输入匹配可用配方
-3. 配方匹配且 ME 网络中闪电与 FE 能量充足后，机器锁定配方并开始加工
-4. 加工过程中同时消耗闪电（高压或极高压，取决于配方）与 FE 能量
-5. 加工完成后，产物进入输出槽
+1. Put the ingredients into the 9 input slots
+2. The machine matches the current inputs against registered recipes
+3. Once a recipe is matched and the ME network has enough Lightning and FE, the machine locks in the recipe and starts processing
+4. Lightning (HV or EHV, depending on the recipe) and FE are consumed during processing
+5. The output goes to the output slot when processing finishes
 
-## 与闪电模拟室的对比
+## Compared to the Lightning Simulation Room
 
-| 特性 | 闪电模拟室 | 闪电装配室 |
-|------|-----------|-----------|
-| 输入槽数量 | 3 | 9 |
-| 单槽最大堆叠 | 8,192 | 8,192 |
-| 适用场景 | 简单材料转化 | 复杂多材料装配 |
-| 矩阵代偿 | 支持 | 支持 |
-| 速度卡 | 最多 4 张 | 最多 4 张 |
+| Feature | Simulation Room | Assembly Chamber |
+|---------|-----------------|------------------|
+| Input slots | 3 | 9 |
+| Max stack per slot | 8,192 | 8,192 |
+| Intended use | Simple conversion | Complex multi-material assembly |
+| Matrix substitution | Supported | Supported |
+| Speed Cards | Up to 4 | Up to 4 |
 
-## 矩阵代偿
+## Matrix Substitution
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-与闪电模拟室相同，闪电装配室也支持**矩阵代偿**。安装**闪电坍缩矩阵**后，部分原本要求**极高压闪电**的配方可以使用数倍量的**高压闪电**作为替代。
+Like the Simulation Room, the Assembly Chamber supports **matrix substitution**. With a **Lightning Collapse Matrix** installed, some recipes that would normally require **Extreme High Voltage Lightning** can be fulfilled by consuming several times the amount of **High Voltage Lightning** instead.
 
-## 自动弹出
+## Auto Export
 
-启用自动弹出后，加工完成的产物会自动推送到允许方向的相邻容器。具体方向在 GUI 的「配置输出面」界面中设置。
+With Auto Export enabled, finished outputs are automatically pushed to adjacent containers on the allowed sides. The sides are configured in the "Configure Output Sides" screen of the GUI.

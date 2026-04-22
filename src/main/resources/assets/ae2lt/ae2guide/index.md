@@ -1,25 +1,25 @@
 ---
 navigation:
-  title: AE2 闪电科技
+  title: AE2 Lightning Tech
   icon: ae2lt:overload_crystal
   position: 1000
 ---
 
-# AE2 闪电科技
+# AE2 Lightning Tech
 
-AE2 闪电科技（AE2 Lightning Tech）是 Applied Energistics 2 的扩展模组。它为 ME 网络引入了一种全新的存储类型——**闪电**，并围绕闪电提供了完整的材料链、加工机器，以及突破原版频道上限的「过载」网络设备。
+AE2 Lightning Tech is an extension for Applied Energistics 2. It introduces a brand-new storage type to the ME network — **Lightning** — along with a full material chain, dedicated processing machines, and an "Overloaded" family of network devices that break past the vanilla channel limits.
 
-主要特性：
+Main features:
 
-* 将自然或设备产生的雷电收集为**闪电能量**，与物品、流体一样在 ME 网络中存放
-* 使用闪电驱动多种高级加工机器，生产过载合金、过载处理器、闪电坍缩矩阵等新材料
-* 通过过载控制器、过载线缆、过载样板供应器与过载 ME 接口，扩展 ME 网络的频道容量与管理范围
+* Collect natural or machine-generated lightning as **Lightning energy** and store it in your ME network alongside items and fluids
+* Use Lightning to power advanced processing machines that produce Overload Alloy, Overload Processors, the Lightning Collapse Matrix and other new materials
+* Expand the channel capacity and reach of your ME network with the Overloaded ME Controller, Overloaded Cable, Overloaded Pattern Provider and Overloaded ME Interface
 
-## 内容导航
+## Table of Contents
 
-* [入门指南](getting-started.md) — 从第一块过载水晶到第一条闪电产线
-* [闪电系统](lightning/lightning-index.md) — 闪电的产生、存储与消耗
-* [加工机器](machines/machines-index.md) — 闪电模拟室、闪电装配室、过载处理工厂等
-* [过载水晶](materials/overload-crystal.md) — 过载水晶母岩的培育与衰减
-* [材料与物品](materials/materials-index.md) — 关键材料速查
-* [过载网络](overloaded-network/overloaded-network-index.md) — 过载控制器、线缆、接口、样板供应器
+* [Getting Started](getting-started.md) — From your first Overload Crystal to your first Lightning production line
+* [Lightning System](lightning/lightning-index.md) — Producing, storing and consuming Lightning
+* [Processing Machines](machines/machines-index.md) — Lightning Simulation Room, Lightning Assembly Chamber, Overload Processing Factory and more
+* [Overload Crystal](materials/overload-crystal.md) — Growing and decaying budding Overload Crystal
+* [Materials & Items](materials/materials-index.md) — Quick reference for key materials
+* [Overloaded Network](overloaded-network/overloaded-network-index.md) — Overloaded ME Controller, Cable, Interface and Pattern Provider

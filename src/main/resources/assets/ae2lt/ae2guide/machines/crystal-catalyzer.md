@@ -1,47 +1,47 @@
 ---
 navigation:
-  title: 水晶催化器
+  title: Crystal Catalyzer
   icon: ae2lt:crystal_catalyzer
   parent: machines/machines-index.md
 item_ids:
   - ae2lt:crystal_catalyzer
 ---
 
-# 水晶催化器
+# Crystal Catalyzer
 
 <Row>
   <BlockImage id="ae2lt:crystal_catalyzer" scale="4" />
 </Row>
 
-**水晶催化器**用于以流体和催化剂为输入的专项加工，常见用途包括培育特殊水晶与合成对应材料。
+The **Crystal Catalyzer** is a specialty processing machine that uses a fluid plus a catalyst as its inputs. Typical uses include growing specialty crystals and their related materials.
 
-## 槽位与容量
+## Slots and Capacity
 
-| 槽位 | 容量 | 说明 |
-|------|------|------|
-| 催化剂槽 | 1,024 | 放入催化剂物品；催化剂**不会**在加工中消耗 |
-| 矩阵槽 | 1 | 可选安装闪电坍缩矩阵以提升产量 |
-| 输出槽 | 1,024 | 加工产物；仅允许机器写入，不接受外部输入 |
-| 流体槽 | 16,000 mB | 通过管道输入加工所需的流体 |
-| FE 能量缓冲 | 1,000,000 FE | 内置能量缓存 |
+| Slot | Capacity | Notes |
+|------|----------|-------|
+| Catalyst slot | 1,024 | Holds the catalyst item; the catalyst is **not consumed** during processing |
+| Matrix slot | 1 | Optional Lightning Collapse Matrix for a yield bonus |
+| Output slot | 1,024 | Processed output; written by the machine only, no external input accepted |
+| Fluid slot | 16,000 mB | Fed through fluid pipes |
+| FE Buffer | 1,000,000 FE | Built-in energy buffer |
 
-## 工作流程
+## Operating Flow
 
-1. 通过流体管道向流体槽注入目标流体
-2. 将催化剂物品放入催化剂槽
-3. 接入 FE 能量
-4. 机器匹配可用配方后自动加工
-5. 完成的产物会进入输出槽
+1. Feed the target fluid into the fluid slot through pipes
+2. Put the catalyst item into the catalyst slot
+3. Supply FE
+4. Once a recipe matches, the machine processes automatically
+5. Finished output goes into the output slot
 
-## 闪电坍缩矩阵加成
+## Lightning Collapse Matrix Bonus
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-当矩阵槽中安装了**闪电坍缩矩阵**时，水晶催化器的单次产出数量将提升至 **4 倍**。矩阵不会在加工中消耗。
+With a **Lightning Collapse Matrix** installed in the matrix slot, the Crystal Catalyzer's per-operation output is increased to **4×**. The matrix is not consumed during processing.
 
-## 其他说明
+## Notes
 
-* 水晶催化器通过**外部 FE 能量输入**供能，而非从 ME 网络直接提取 AE 能量
-* 机器本体也是 ME 网络设备，需接入网络才能通过 AE2 接口或样板供应器自动供料
-* 支持自动弹出功能，产物方向可在 GUI 中配置
-* 水晶催化器**不支持**速度卡
+* The Crystal Catalyzer is powered by **external FE** on its sides, not by AE from the ME network
+* The machine itself is also an ME network device — connecting it to the network lets you feed it through AE2 Interfaces or Pattern Providers
+* Supports Auto Export; output sides can be configured in the GUI
+* The Crystal Catalyzer **does not** support Speed Cards

@@ -1,92 +1,92 @@
 ---
 navigation:
-  title: 过载样板供应器
+  title: Overloaded Pattern Provider
   icon: ae2lt:overloaded_pattern_provider
   parent: overloaded-network/overloaded-network-index.md
 item_ids:
   - ae2lt:overloaded_pattern_provider
 ---
 
-# 过载样板供应器
+# Overloaded Pattern Provider
 
 <Row>
   <BlockImage id="ae2lt:overloaded_pattern_provider" scale="4" />
 </Row>
 
-**过载样板供应器**是原版 <ItemLink id="ae2:pattern_provider" /> 的增强版本，拥有 **36 个样板槽位**，并支持**无线模式**，可跨距离向远程机器派发加工材料。
+The **Overloaded Pattern Provider** is the upgraded version of the vanilla <ItemLink id="ae2:pattern_provider" />, with **36 pattern slots** and a **wireless mode** for dispatching materials to remote machines across a distance.
 
-## 核心特性
+## Core Features
 
-* **36 个样板槽位**（原版为 9 个）
-* **两种工作模式**：普通模式与无线模式
-* **支持过载样板**：除原版样板外，还支持本模组的过载样板
-* **自动回收**：从远程机器自动取回加工产物
-* **输入过滤**：仅允许样板配方定义的产物返回 ME 网络
+* **36 pattern slots** (vanilla has 9)
+* **Two operating modes**: Normal and Wireless
+* **Overload Pattern support**: works with vanilla patterns, plus this mod's Overload Patterns
+* **Auto return**: automatically pulls processed outputs back from remote machines
+* **Import filter**: only allows results defined by the pattern back into the ME network
 
-## 工作模式
+## Operating Modes
 
-### 普通模式
+### Normal Mode
 
-普通模式下，过载样板供应器将材料推送到**物理相邻**的机器中，行为与原版样板供应器一致。主要差异是拥有更多样板槽位。
+In Normal Mode, the Overloaded Pattern Provider pushes materials into **physically adjacent** machines, identical to the vanilla Pattern Provider. The main difference is the larger number of pattern slots.
 
-### 无线模式
+### Wireless Mode
 
 <ItemImage id="ae2lt:overloaded_wireless_connect_tool" scale="2" float="left" />
 
-无线模式下，过载样板供应器可以跨距离将材料派发到远程机器。建立无线连接需要使用**过载无线连接工具**：
+In Wireless Mode, the Overloaded Pattern Provider can dispatch materials to remote machines across a distance. Use the **Overloaded Wireless Connect Tool** to establish wireless connections:
 
-1. 手持过载无线连接工具，**Shift + 右击**过载样板供应器以完成选中
-2. 再对目标机器的特定面**右击**以建立连接
-3. 同一台供应器可以绑定多台远程机器
+1. Hold the Overloaded Wireless Connect Tool and **Shift + right-click** the Overloaded Pattern Provider to select it
+2. Right-click a specific face of a target machine to connect
+3. One provider can bind to multiple remote machines
 
-连接完成后，供应器将按所选分配策略向远程机器派发材料。
+Once connections are in place, the provider dispatches materials to the remote machines according to the selected distribution strategy.
 
-### 分配策略
+### Distribution Strategies
 
-| 策略 | 说明 |
-|------|------|
-| 逐台发配 | 按顺序逐一向每台远程机器派发 |
-| 均分发配 | 将材料均匀分配给所有连接的远程机器 |
+| Strategy | Description |
+|----------|-------------|
+| Round Robin | Dispatches to one remote machine at a time, in order |
+| Balanced Distribution | Distributes materials evenly across all connected remote machines |
 
-## 回收模式
+## Return Mode
 
-回收模式决定了加工完成后产物如何从远程机器取回：
+The return mode determines how processed output is recovered from remote machines:
 
-| 模式 | 说明 |
-|------|------|
-| 关 | 不进行自动回收 |
-| 自动 | 主动从远程机器中提取产物 |
-| 弹出 | 远程机器将产物弹入虚拟输出口；供应器被动接收 |
+| Mode | Description |
+|------|-------------|
+| OFF | No auto return |
+| AUTO | Actively pulls output back from the remote machines |
+| EJECT | Remote machines push output into the virtual output slot; the provider accepts it passively |
 
-## 速度模式
+## Speed Tier
 
-| 速度档 | 说明 |
-|-------|------|
-| 普通 | 标准冷却时间（5 ~ 80 tick） |
-| 快速（探针） | 自适应冷却，使用探针机制提前检测就绪状态（1 ~ 40 tick） |
+| Speed | Description |
+|-------|-------------|
+| Normal | Standard cooldown (5 ~ 80 ticks) |
+| Fast (Probe) | Adaptive cooldown; uses a probe mechanic to detect readiness early (1 ~ 40 ticks) |
 
-## 输入过滤
+## Import Filter
 
-启用「输入过滤」后，供应器在回收产物时只接收当前样板已定义的输出物品，防止错误的物品进入网络。
+With "Filtered Import" enabled, the provider only accepts items listed as outputs on the current pattern when returning products — this prevents unrelated items from entering the network.
 
-## 过载样板与过载样板编码器
+## Overload Pattern and Overload Pattern Encoder
 
 <Row>
   <ItemImage id="ae2lt:overload_pattern" scale="2" />
   <ItemImage id="ae2lt:overload_pattern_encoder" scale="2" />
 </Row>
 
-**过载样板**是一种专用样板，**仅可在过载样板供应器中使用**。使用**过载样板编码器**进行编码。
+The **Overload Pattern** is a specialty pattern, **only usable in the Overloaded Pattern Provider**. Use the **Overload Pattern Encoder** to encode it.
 
-过载样板编码器支持：
+The Overload Pattern Encoder supports:
 
-* 设置主输入与主输出
-* 设置副产物
-* **忽略 NBT** 开关：启用后匹配物品时忽略 NBT 数据
+* Setting primary input and primary output
+* Setting byproducts
+* An **Ignore NBT** switch: when enabled, item matching ignores NBT data
 
-## 自动化建议
+## Automation Tips
 
-* 大规模自动合成系统中，无线模式可大幅减少布线复杂度
-* 配合「均分发配」策略与多台加工机器，可实现并行加工
-* 建议启用「快速」速度档以提升响应性
-* 根据自动化场景选择合适的回收模式
+* In large automated crafting systems, Wireless Mode can dramatically reduce pipe complexity
+* Combined with the Balanced Distribution strategy and multiple processing machines, you get parallel crafting for free
+* Enable the Fast speed tier for better responsiveness
+* Pick the return mode that matches the specific automation scenario

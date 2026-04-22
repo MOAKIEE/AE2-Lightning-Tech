@@ -1,6 +1,6 @@
 ---
 navigation:
-  title: 闪电坍缩矩阵
+  title: Lightning Collapse Matrix
   icon: ae2lt:lightning_collapse_matrix
   parent: materials/materials-index.md
   position: 60
@@ -8,36 +8,36 @@ item_ids:
   - ae2lt:lightning_collapse_matrix
 ---
 
-# 闪电坍缩矩阵
+# Lightning Collapse Matrix
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
 
-**闪电坍缩矩阵**是 AE2 闪电科技中最核心的一个终末级配件。它在机器中不作为消耗品，而是作为**代偿 / 并行的催化元件**——在多种机器的矩阵槽中保留一枚矩阵，就能解锁该机器的高阶运行模式。
+The **Lightning Collapse Matrix** is one of the key end-tier components in AE2 Lightning Tech. It is not a consumable — instead, it acts as a **substitution / parallelism catalyst**. Keeping a matrix in a machine's matrix slot unlocks the machine's higher-tier operating mode.
 
-## 获取方式
+## How to Obtain
 
-### 在闪电模拟室里合成
+### Crafting in the Lightning Simulation Room
 
-| 材料 | 数量 |
-|------|------|
-| <ItemLink id="ae2lt:perfect_electro_chime_crystal" /> | 1 |
-| <ItemLink id="ae2lt:ultimate_overload_core" /> | 16 |
-| **极高压闪电** | 256 |
-| 能量 | 500,000,000 AE |
+| Material | Amount |
+|----------|--------|
+| Perfect Electro-Chime Crystal | 1 |
+| Ultimate Overload Core | 16 |
+| **Extreme High Voltage Lightning** | 256 |
+| Energy | 500,000,000 AE |
 
-把以上材料投进已经安装了**闪电坍缩矩阵**的 [闪电模拟室](../machines/lightning-simulation-chamber.md) 里即可生产;由于成本本身非常重,通常会与过载处理工厂、闪电装配室一起统筹排产。
+Put the above materials into a [Lightning Simulation Room](../machines/lightning-simulation-chamber.md) that already has a **Lightning Collapse Matrix** installed to craft one. Because the cost is already steep, you typically schedule this alongside your Overload Processing Factory and Lightning Assembly Chamber work.
 
-## 作为机器催化剂
+## As a Machine Catalyst
 
-闪电坍缩矩阵**不会**在加工中被消耗,但必须始终留在矩阵槽中:
+The Lightning Collapse Matrix is **not consumed** during processing, but it must stay in the matrix slot:
 
-* [闪电模拟室](../machines/lightning-simulation-chamber.md) / [闪电装配室](../machines/lightning-assembly-chamber.md) — 安装矩阵后,部分原本要求**极高压闪电**的配方可以用数倍量的**高压闪电**进行代偿。
-* [特斯拉线圈](../lightning/tesla-coil.md) — 极高压模式必须挂一枚矩阵在槽中,否则无法从高压闪电升压到极高压。
-* [水晶催化器](../machines/crystal-catalyzer.md) — 矩阵在位时单次产出提升至 **4 倍**。
-* [过载处理工厂](../machines/overload-processing-factory.md) — 多矩阵并行:每多一枚矩阵,解锁一档并行上限(槽位最多 64 枚,默认每枚 4 并行)。
+* [Lightning Simulation Room](../machines/lightning-simulation-chamber.md) / [Lightning Assembly Chamber](../machines/lightning-assembly-chamber.md) — with a matrix installed, some recipes that would normally require **Extreme High Voltage Lightning** can be fulfilled by consuming several times the amount of **High Voltage Lightning** instead.
+* [Tesla Coil](../lightning/tesla-coil.md) — Extreme High Voltage mode requires a matrix in the slot; without one, HV cannot be upconverted to EHV.
+* [Crystal Catalyzer](../machines/crystal-catalyzer.md) — with a matrix installed, per-operation output is increased to **4×**.
+* [Overload Processing Factory](../machines/overload-processing-factory.md) — multi-matrix parallelism: each additional matrix unlocks another tier of parallelism (up to 64 matrices in the slot, 4 parallel operations per matrix by default).
 
-## 观测备忘
+## Field Notes
 
-> 外场小组提交过一份很薄的复核报告:矩阵在**不被任何容器约束**时会出现一种非预期反应;反应被点燃的场景记在 [过载 TNT](../lightning/overload-tnt.md) 那一页。
+> A field team filed a thin follow-up report: when the matrix is **not constrained inside any container**, an unintended reaction can occur; the case where that reaction was deliberately ignited is logged on the [Overload TNT](../lightning/overload-tnt.md) page.
 
-产物是一枚未登记元件,接进 <ItemLink id="ae2:drive" /> 即可解析;内部残余**只读一次**,读完空置。至于会读出什么——报告只附了一句:"样本分布极不均匀,最稀有的那份不是元件,是一本还没写字的册子。"
+The product is an unregistered cell that resolves the moment it enters an <ItemLink id="ae2:drive" />. Internal residue can be **read only once**; it is empty afterwards. As for what gets read out — the report only attaches one line: "Sample distribution is extremely uneven; the rarest one is not a cell, it is a notebook with nothing written in it yet."
