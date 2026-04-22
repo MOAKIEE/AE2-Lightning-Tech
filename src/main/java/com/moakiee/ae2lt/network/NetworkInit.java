@@ -18,10 +18,46 @@ public final class NetworkInit {
                 WirelessConnectorUsePacket.TYPE,
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
+        registrar.playToServer(
+                CreateFrequencyPacket.TYPE,
+                CreateFrequencyPacket.STREAM_CODEC,
+                CreateFrequencyPacket::handle);
+        registrar.playToServer(
+                DeleteFrequencyPacket.TYPE,
+                DeleteFrequencyPacket.STREAM_CODEC,
+                DeleteFrequencyPacket::handle);
+        registrar.playToServer(
+                EditFrequencyPacket.TYPE,
+                EditFrequencyPacket.STREAM_CODEC,
+                EditFrequencyPacket::handle);
+        registrar.playToServer(
+                SelectFrequencyPacket.TYPE,
+                SelectFrequencyPacket.STREAM_CODEC,
+                SelectFrequencyPacket::handle);
+        registrar.playToServer(
+                ChangeMemberPacket.TYPE,
+                ChangeMemberPacket.STREAM_CODEC,
+                ChangeMemberPacket::handle);
         registrar.playToClient(
                 EasterEggPacket.TYPE,
                 EasterEggPacket.STREAM_CODEC,
                 EasterEggPacket::handle);
+        registrar.playToClient(
+                SyncFrequencyListPacket.TYPE,
+                SyncFrequencyListPacket.STREAM_CODEC,
+                SyncFrequencyListPacket::handle);
+        registrar.playToClient(
+                SyncFrequencyDetailPacket.TYPE,
+                SyncFrequencyDetailPacket.STREAM_CODEC,
+                SyncFrequencyDetailPacket::handle);
+        registrar.playToClient(
+                UpdateFrequencyBasicPacket.TYPE,
+                UpdateFrequencyBasicPacket.STREAM_CODEC,
+                UpdateFrequencyBasicPacket::handle);
+        registrar.playToClient(
+                FrequencyResponsePacket.TYPE,
+                FrequencyResponsePacket.STREAM_CODEC,
+                FrequencyResponsePacket::handle);
     }
 
     public static ResourceLocation id(String path) {

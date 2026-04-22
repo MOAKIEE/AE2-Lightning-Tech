@@ -19,12 +19,16 @@ import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -40,8 +44,11 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
+import appeng.block.AEBaseEntityBlock;
+import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
 
+import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
@@ -82,6 +89,9 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
+                        output.accept(ModBlocks.WIRELESS_RECEIVER);
+                        output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
+                        output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
                         // 线缆
                         output.accept(ModItems.OVERLOADED_CABLE);
                         output.accept(ModItems.OVERLOADED_CABLE_WHITE);
@@ -302,6 +312,21 @@ public class AE2LightningTech {
                 ModBlockEntities.OVERLOADED_INTERFACE.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.WIRELESS_RECEIVER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
         event.registerBlock(
                 AECapabilities.GENERIC_INTERNAL_INV,
                 (level, pos, state, blockEntity, context) -> {
@@ -447,6 +472,35 @@ public class AE2LightningTech {
                     crystalCatalyzerBeType,
                     crystalCatalyzerBlock.asItem());
 
+            setupWirelessControllerBlock(
+                    ModBlocks.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    WirelessOverloadedControllerBlockEntity.class,
+                    (level, pos, state, be) -> WirelessOverloadedControllerBlockEntity.wirelessServerTick(
+                            level, pos, state, (WirelessOverloadedControllerBlockEntity) be));
+
+            setupWirelessControllerBlock(
+                    ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
+                    AdvancedWirelessOverloadedControllerBlockEntity.class,
+                    (level, pos, state, be) ->
+                            AdvancedWirelessOverloadedControllerBlockEntity.advancedWirelessServerTick(
+                                    level,
+                                    pos,
+                                    state,
+                                    (AdvancedWirelessOverloadedControllerBlockEntity) be));
+
+            var wirelessReceiverBlock = ModBlocks.WIRELESS_RECEIVER.get();
+            var wirelessReceiverBeType = ModBlockEntities.WIRELESS_RECEIVER.get();
+            wirelessReceiverBlock.setBlockEntity(
+                    WirelessReceiverBlockEntity.class,
+                    wirelessReceiverBeType,
+                    null,
+                    (level, pos, state, be) -> ((WirelessReceiverBlockEntity) be).serverTick());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    wirelessReceiverBeType,
+                    wirelessReceiverBlock.asItem());
+
             MachineAdapterRegistry.init();
             PatternDetailsHelper.registerDecoder(OverloadPatternDecoder.INSTANCE);
             StorageCells.addCellHandler(InfiniteCellHandler.INSTANCE);
@@ -480,9 +534,21 @@ public class AE2LightningTech {
 
     private void onServerStarting(ServerStartingEvent event) {
         EjectModeRegistry.onServerStart(event.getServer());
+        WirelessFrequencyManager.onServerStart(event.getServer());
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
+        WirelessFrequencyManager.onServerStop();
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void setupWirelessControllerBlock(
+            AEBaseEntityBlock block,
+            BlockEntityType beType,
+            Class beClass,
+            net.minecraft.world.level.block.entity.BlockEntityTicker serverTicker) {
+        block.setBlockEntity(beClass, beType, null, serverTicker);
+        AEBaseBlockEntity.registerBlockEntityItem(beType, block.asItem());
     }
 }

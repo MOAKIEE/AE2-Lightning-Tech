@@ -10,8 +10,10 @@ import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 import appeng.client.gui.style.StyleManager;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.client.gui.FrequencyScreen;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
+import com.moakiee.ae2lt.menu.FrequencyMenu;
 import com.moakiee.ae2lt.menu.LightningAssemblyChamberMenu;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
 import com.moakiee.ae2lt.menu.LightningSimulationChamberMenu;
@@ -38,6 +40,7 @@ public class ModScreens {
         event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
         event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
         event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
+        event.register(FrequencyMenu.TYPE, FrequencyScreen::new);
         event.register(CrystalCatalyzerMenu.TYPE, ModScreens::createCrystalCatalyzerScreen);
     }
 
