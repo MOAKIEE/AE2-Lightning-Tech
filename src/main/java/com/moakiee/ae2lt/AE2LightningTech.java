@@ -5,6 +5,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
+import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
@@ -149,10 +150,16 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
+                        // Fumo
+                        if (ModFumos.isEnabled()) {
+                            output.accept(ModFumos.MOAKIEE_FUMO_ITEM.get());
+                            output.accept(ModFumos.CYSTRYSU_FUMO_ITEM.get());
+                        }
                     })
                     .build());
 
     public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
+        ModFumos.register();
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);

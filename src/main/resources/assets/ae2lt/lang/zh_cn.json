@@ -267,5 +267,7 @@
   "tooltip.ae2lt.infinite_cell.types": "已存储类型: %s",
   "tooltip.ae2lt.infinite_cell.bytes": "已使用字节: %s",
   "tooltip.ae2lt.fixed_infinite_cell.infinite": "无限供应",
-  "ae2lt.gui.slot_count": "数量：%s"
+  "ae2lt.gui.slot_count": "数量：%s",
+  "block.ae2lt.moakiee_fumo": "Moakiee Fumo",
+  "block.ae2lt.cystrysu_fumo": "Cystrysu Fumo"
 }
