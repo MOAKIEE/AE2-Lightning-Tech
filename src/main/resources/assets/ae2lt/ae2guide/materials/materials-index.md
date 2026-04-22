@@ -35,12 +35,7 @@ AE2 Lightning Tech introduces a large set of new materials. Below is a quick ref
   <ItemIcon id="ae2lt:overload_inscriber_press" />
 </ItemGrid>
 
-| Item | Notes |
-|------|-------|
-| Overload Processor | Advanced processor used to craft Overload machines |
-| Overload Circuit Board | Produced by the AE2 Inscriber using the Overload Inscriber Press |
-| Unoverloaded Circuit Board | Intermediate step toward the Overload Circuit Board |
-| Overload Inscriber Press | Used in the AE2 Inscriber to make Overload Circuit Boards |
+The Overload Processor and its components form the processing chain for crafting most machines. See [Overload Processor](overload-processor.md) for details.
 
 ## Alloys and Plates
 
@@ -50,11 +45,7 @@ AE2 Lightning Tech introduces a large set of new materials. Below is a quick ref
   <ItemIcon id="ae2lt:overload_alloy_plate" />
 </ItemGrid>
 
-| Item | Notes |
-|------|-------|
-| Overload Alloy | Advanced alloy used for machine crafting and many high-tier recipes |
-| Overload Alloy Blank | Intermediate step toward the Overload Alloy |
-| Overload Alloy Plate | Pressed from the Overload Alloy |
+An advanced alloy material used across many high-tier recipes. See [Overload Alloy](overload-alloy.md) for details.
 
 ## Advanced Materials
 
@@ -66,8 +57,8 @@ AE2 Lightning Tech introduces a large set of new materials. Below is a quick ref
 
 | Item | Notes |
 |------|-------|
-| Overload Singularity | High-tier crafting material used to build end-tier devices |
-| Ultimate Overload Core | End-tier core component |
+| [Overload Singularity](overload-singularity.md) | High-tier crafting material used to build end-tier devices |
+| [Ultimate Overload Core](overload-singularity.md) | End-tier core component |
 | <ItemLink id="ae2lt:lightning_collapse_matrix" /> | Goes into a machine's matrix slot to enable matrix substitution or boost output; see [Lightning Collapse Matrix](lightning-collapse-matrix.md) |
 
 ## Weather Condensate
@@ -91,15 +82,6 @@ See [Atmospheric Ionizer](../machines/atmospheric-ionizer.md).
 | Block | Notes |
 |-------|-------|
 | Overload Crystal Block | Decorative block, also used as a building material for the Flawless Budding Overload Crystal multiblock |
-| Block of Silicon | Storage block for silicon |
-| Overload Machine Frame | Shared base frame used by most Overload machines |
+| [Block of Silicon](overload-machine-frame.md) | Storage block for silicon |
+| [Overload Machine Frame](overload-machine-frame.md) | Shared base frame used by most Overload machines |
 | <ItemLink id="ae2lt:overload_tnt" /> | Explosive block with a large blast radius; see [Overload TNT](../lightning/overload-tnt.md); use with care |
-
-## Special Items
-
-| Item | Notes |
-|------|-------|
-| Overload Pattern | Specialty pattern, usable only in the Overloaded Pattern Provider |
-| Overload Pattern Encoder | Encodes Overload Patterns; supports byproducts and NBT-ignoring |
-| Overloaded Wireless Connect Tool | Used to bind Overloaded Pattern Providers / Overloaded ME Interfaces to remote machines wirelessly |
-| Overloaded Filter Component | Configures which items the Overloaded ME Interface is allowed to import |

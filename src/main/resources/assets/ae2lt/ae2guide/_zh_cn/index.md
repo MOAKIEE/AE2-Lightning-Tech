@@ -1,7 +1,6 @@
 ---
 navigation:
   title: AE2 闪电科技
-  icon: ae2lt:overload_crystal
   position: 1000
 ---
 

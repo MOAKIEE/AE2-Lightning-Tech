@@ -1,7 +1,6 @@
 ---
 navigation:
   title: AE2 Lightning Tech
-  icon: ae2lt:overload_crystal
   position: 1000
 ---
 

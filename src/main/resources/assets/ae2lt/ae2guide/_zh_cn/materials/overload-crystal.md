@@ -8,6 +8,14 @@ item_ids:
   - ae2lt:overload_crystal
   - ae2lt:overload_crystal_dust
   - ae2lt:overload_crystal_block
+  - ae2lt:flawless_budding_overload_crystal
+  - ae2lt:flawed_budding_overload_crystal
+  - ae2lt:cracked_budding_overload_crystal
+  - ae2lt:damaged_budding_overload_crystal
+  - ae2lt:small_overload_crystal_bud
+  - ae2lt:medium_overload_crystal_bud
+  - ae2lt:large_overload_crystal_bud
+  - ae2lt:overload_crystal_cluster
 ---
 
 # 过载水晶
