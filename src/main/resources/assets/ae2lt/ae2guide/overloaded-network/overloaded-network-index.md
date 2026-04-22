@@ -22,3 +22,4 @@ Compared to vanilla:
 * [Overloaded Cable](overloaded-cable.md) — a super cable with no per-cable channel limit
 * [Overloaded Pattern Provider](overloaded-pattern-provider.md) — high-capacity pattern provider with a wireless mode
 * [Overloaded ME Interface](overloaded-interface.md) — upgraded interface with 36 slots and wireless I/O
+* [Wireless Network](wireless-network.md) — extend your Overloaded network wirelessly, even across dimensions
