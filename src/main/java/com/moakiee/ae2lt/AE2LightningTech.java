@@ -26,12 +26,10 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModList;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
-import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -175,8 +173,6 @@ public class AE2LightningTech {
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
-
-        registerOptionalClientIntegrations();
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -488,18 +484,5 @@ public class AE2LightningTech {
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
-    }
-
-    private static void registerOptionalClientIntegrations() {
-        if (!FMLEnvironment.dist.isClient() || !ModList.get().isLoaded("ponder")) {
-            return;
-        }
-
-        try {
-            Class.forName("com.moakiee.ae2lt.integration.ponder.PonderCompat")
-                    .getMethod("register")
-                    .invoke(null);
-        } catch (ReflectiveOperationException ignored) {
-        }
     }
 }

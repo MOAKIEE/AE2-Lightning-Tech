@@ -115,7 +115,6 @@ dependencies {
     runtimeOnly "curse.maven:jei-238222:7391682"
     compileOnly "curse.maven:jade-324717:5427817"
     runtimeOnly "curse.maven:jade-324717:5427817"
-    implementation "net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}"
     runtimeOnly "curse.maven:mekanism-268560:7621971"
     runtimeOnly "curse.maven:mekanism-generators-268566:7621974"
     compileOnly "curse.maven:extendedae-892005:7727948"
