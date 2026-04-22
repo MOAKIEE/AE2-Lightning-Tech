@@ -13,7 +13,7 @@ import com.moakiee.ae2lt.registry.ModItems;
  * Crystal Catalyzer machine inventory.
  *
  * <p>Slot layout:
- * 0 = catalyst (1024)
+ * 0 = catalyst (256) —— parallel = amount / catalystCount
  * 1 = lightning collapse matrix (1)
  * 2 = output (1024, machine-write only)</p>
  */
@@ -23,7 +23,8 @@ public class CrystalCatalyzerInventory extends LargeStackItemHandler {
     public static final int SLOT_OUTPUT = 2;
     public static final int SLOT_COUNT = 3;
 
-    public static final int LARGE_SLOT_LIMIT = 1024;
+    public static final int CATALYST_SLOT_LIMIT = 256;
+    public static final int OUTPUT_SLOT_LIMIT = 1024;
     public static final int MATRIX_SLOT_LIMIT = 1;
 
     @Nullable
@@ -40,7 +41,12 @@ public class CrystalCatalyzerInventory extends LargeStackItemHandler {
     @Override
     public int getSlotLimit(int slot) {
         validateSlotIndex(slot);
-        return slot == SLOT_MATRIX ? MATRIX_SLOT_LIMIT : LARGE_SLOT_LIMIT;
+        return switch (slot) {
+            case SLOT_CATALYST -> CATALYST_SLOT_LIMIT;
+            case SLOT_MATRIX -> MATRIX_SLOT_LIMIT;
+            case SLOT_OUTPUT -> OUTPUT_SLOT_LIMIT;
+            default -> OUTPUT_SLOT_LIMIT;
+        };
     }
 
     @Override

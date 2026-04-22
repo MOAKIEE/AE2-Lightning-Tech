@@ -16,6 +16,8 @@ import appeng.client.gui.widgets.ActionButton;
 import appeng.client.gui.widgets.ToggleButton;
 
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
+import com.moakiee.ae2lt.client.gui.LightningStatusLines;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 
 public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
@@ -31,8 +33,7 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         widgets.add("energyBar", new CrystalCatalyzerEnergyBar(menu, style.getImage("energyBar")));
         widgets.add("fluidBar", new CrystalCatalyzerFluidWidget(
                 menu::getFluid,
-                menu::getFluidCapacity,
-                0xCC2E86DE));
+                menu::getFluidCapacity));
         widgets.add("processArea", new CrystalCatalyzerProgressWidget(menu, style.getImage("processOverlay")));
 
         this.autoExportButton = new ToggleButton(
@@ -53,6 +54,12 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         this.configureOutputButton.setMessage(
                 Component.translatable("ae2lt.gui.crystal_catalyzer.configure_output"));
         addToLeftToolbar(this.configureOutputButton);
+
+        widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
+                LightningStatusLines.title(),
+                LightningStatusLines.status(menu.isWorking()),
+                LightningStatusLines.progress(menu.getProgress()),
+                LightningStatusLines.energy(menu.getStoredEnergy(), menu.getEnergyCapacity()))));
     }
 
     @Override

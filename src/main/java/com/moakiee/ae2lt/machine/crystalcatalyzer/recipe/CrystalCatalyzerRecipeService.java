@@ -6,10 +6,9 @@ import java.util.Optional;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.fluids.FluidStack;
 
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
@@ -20,13 +19,12 @@ public final class CrystalCatalyzerRecipeService {
 
     public static Optional<CrystalCatalyzerRecipeCandidate> findRecipe(
             @Nullable Level level,
-            CrystalCatalyzerInventory inventory,
-            FluidStack fluid) {
+            CrystalCatalyzerInventory inventory) {
         if (level == null) {
             return Optional.empty();
         }
 
-        CrystalCatalyzerRecipeInput input = CrystalCatalyzerRecipeInput.fromMachine(inventory, fluid);
+        CrystalCatalyzerRecipeInput input = CrystalCatalyzerRecipeInput.fromMachine(inventory);
         for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
             if (holder.value().matches(input, level)) {
                 return Optional.of(new CrystalCatalyzerRecipeCandidate(holder));

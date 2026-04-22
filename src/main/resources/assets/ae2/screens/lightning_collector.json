@@ -21,6 +21,10 @@
     "progressBar": {
       "left": 99,
       "top": 36
+    },
+    "lightningStatus": {
+      "left": 156,
+      "top": 4
     }
   },
   "text": {

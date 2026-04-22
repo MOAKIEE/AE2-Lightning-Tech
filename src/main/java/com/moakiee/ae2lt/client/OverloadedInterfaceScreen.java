@@ -141,26 +141,15 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
         this.exportModeButton.setState(menu.exportMode == OverloadedInterfaceBlockEntity.ExportMode.AUTO.ordinal());
         this.speedButton.setState(menu.ioSpeedMode == 1);
 
-        int importModeIndex = Math.max(0,
-                Math.min(menu.importMode, OverloadedInterfaceBlockEntity.ImportMode.values().length - 1));
-        var impMode = OverloadedInterfaceBlockEntity.ImportMode.values()[importModeIndex];
-        switch (impMode) {
-            case OFF -> {
-                importModeButton.setState(false);
-                importModeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.import_mode.off")));
-                importModeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.import_mode.off")));
-            }
-            case AUTO -> {
-                importModeButton.setState(true);
-                importModeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.import_mode.auto")));
-                importModeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.import_mode.auto")));
-            }
-            case EJECT -> {
-                importModeButton.setState(true);
-                importModeButton.setTooltipOn(List.of(Component.translatable("ae2lt.gui.import_mode.eject")));
-                importModeButton.setTooltipOff(List.of(Component.translatable("ae2lt.gui.import_mode.eject")));
-            }
-        }
+        var impModes = OverloadedInterfaceBlockEntity.ImportMode.values();
+        int importModeIndex = Math.max(0, Math.min(menu.importMode, impModes.length - 1));
+        importModeButton.setTooltipAt(impModes[0].ordinal(),
+                List.of(Component.translatable("ae2lt.gui.import_mode.off")));
+        importModeButton.setTooltipAt(impModes[1].ordinal(),
+                List.of(Component.translatable("ae2lt.gui.import_mode.auto")));
+        importModeButton.setTooltipAt(impModes[2].ordinal(),
+                List.of(Component.translatable("ae2lt.gui.import_mode.eject")));
+        importModeButton.setStateIndex(importModeIndex);
 
         if (menu.currentPage != lastKnownPage) {
             lastKnownPage = menu.currentPage;

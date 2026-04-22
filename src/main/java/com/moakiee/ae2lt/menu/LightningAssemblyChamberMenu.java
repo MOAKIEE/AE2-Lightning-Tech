@@ -51,6 +51,12 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu {
     @GuiSync(25)
     public int outputSideMask;
 
+    @GuiSync(26)
+    public long highVoltageAvailable;
+
+    @GuiSync(27)
+    public long extremeHighVoltageAvailable;
+
     private final LightningAssemblyChamberBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(9);
     private final Slot catalystSlot;
@@ -63,6 +69,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu {
         this.catalystSlot = addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningAssemblyChamberInventory.SLOT_CATALYST),
                 Ae2ltSlotSemantics.LIGHTNING_ASSEMBLY_CATALYST);
+        Ae2ltSlotBackgrounds.withBackground(this.catalystSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningAssemblyChamberInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);
@@ -114,6 +121,8 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu {
             working = host.isWorking();
             autoExport = host.isAutoExportEnabled();
             outputSideMask = toOutputSideMask(host.getAllowedOutputs());
+            highVoltageAvailable = host.getAvailableHighVoltage();
+            extremeHighVoltageAvailable = host.getAvailableExtremeHighVoltage();
         }
 
         super.broadcastChanges();
@@ -200,6 +209,22 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu {
 
     public boolean isOutputSideEnabled(RelativeSide side) {
         return (outputSideMask & (1 << side.ordinal())) != 0;
+    }
+
+    public long getHighVoltageAvailable() {
+        return highVoltageAvailable;
+    }
+
+    public long getExtremeHighVoltageAvailable() {
+        return extremeHighVoltageAvailable;
+    }
+
+    public Component getHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.high_voltage", highVoltageAvailable);
+    }
+
+    public Component getExtremeHighVoltageMessage() {
+        return Component.translatable("ae2lt.gui.lightning_status.extreme_high_voltage", extremeHighVoltageAvailable);
     }
 
     public double getProgress() {

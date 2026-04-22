@@ -19,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.material.Fluids;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -70,6 +71,12 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     public static final int FLUID_TANK_CAPACITY_MB = 16_000;
     public static final int CYCLE_TICKS = 5;
     public static final int MATRIX_OUTPUT_MULTIPLIER = 4;
+    /** 每轮固定消耗 1B (1000 mB) 水 —— 配方里已经不再带 fluid 字段,所有配方共用此常量。 */
+    public static final int FIXED_FLUID_PER_CYCLE_MB = 1_000;
+
+    public static FluidStack getFixedFluidPerCycle() {
+        return new FluidStack(Fluids.WATER, FIXED_FLUID_PER_CYCLE_MB);
+    }
 
     private final CrystalCatalyzerInventory inventory =
             new CrystalCatalyzerInventory(this::onInventoryChanged);
@@ -162,21 +169,32 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     public Optional<CrystalCatalyzerRecipeCandidate> findProcessableRecipe() {
-        FluidStack currentFluid = tank.getFluid();
-        if (currentFluid.isEmpty()) {
+        if (!hasEnoughFixedFluid()) {
             return Optional.empty();
         }
 
         Optional<CrystalCatalyzerRecipeCandidate> candidate = CrystalCatalyzerRecipeService.findRecipe(
-                level, inventory, currentFluid);
+                level, inventory);
         if (candidate.isEmpty()) {
             return Optional.empty();
         }
         return canAcceptRecipeOutput(candidate.get()) ? candidate : Optional.empty();
     }
 
+    private boolean hasEnoughFixedFluid() {
+        FluidStack required = getFixedFluidPerCycle();
+        FluidStack current = tank.getFluid();
+        if (current.isEmpty()) {
+            return false;
+        }
+        return FluidStack.isSameFluidSameComponents(current, required)
+                && current.getAmount() >= required.getAmount();
+    }
+
     private boolean canAcceptRecipeOutput(CrystalCatalyzerRecipeCandidate candidate) {
-        return canAcceptRecipeOutput(candidate.recipe().value().getOutputTemplate(), getCurrentOutputMultiplier());
+        return canAcceptRecipeOutput(
+                candidate.recipe().value().getOutputTemplate(),
+                getCurrentOutputMultiplier(candidate));
     }
 
     public boolean canAcceptLockedRecipeOutput(CrystalCatalyzerLockedRecipe lockedRecipe) {
@@ -202,8 +220,40 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         return inventory.canAcceptRecipeOutput(resultStack) ? resultStack : ItemStack.EMPTY;
     }
 
+    /**
+     * Matrix-only multiplier (no parallel). Used as a fallback when we don't yet know
+     * which candidate will run (e.g. restoring a locked recipe from NBT at load time).
+     */
     private int getCurrentOutputMultiplier() {
         return inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
+    }
+
+    /**
+     * Full multiplier = parallel × matrix. Parallel is {@code amount / catalystCount},
+     * where {@code amount} is the current catalyst stack size and {@code catalystCount}
+     * is the per-instance input declared by the recipe. Catalyst is <em>not</em>
+     * consumed, so an existing parallel factor is snapshotted at lock time via
+     * {@link CrystalCatalyzerLockedRecipe#outputMultiplier()} and stays stable across
+     * the whole processing cycle.
+     */
+    private int getCurrentOutputMultiplier(CrystalCatalyzerRecipeCandidate candidate) {
+        int matrix = inventory.hasLightningCollapseMatrix() ? MATRIX_OUTPUT_MULTIPLIER : 1;
+        int parallel = computeParallel(candidate);
+        long multiplier = (long) Math.max(1, parallel) * matrix;
+        return (int) Math.min(multiplier, Integer.MAX_VALUE);
+    }
+
+    private int computeParallel(CrystalCatalyzerRecipeCandidate candidate) {
+        if (candidate == null) {
+            return 1;
+        }
+        var recipe = candidate.recipe().value();
+        int perInstance = recipe.catalystCount();
+        if (perInstance <= 0) {
+            return 1;
+        }
+        int amount = inventory.getStackInSlot(CrystalCatalyzerInventory.SLOT_CATALYST).getCount();
+        return Math.max(1, amount / perInstance);
     }
 
     @Override
@@ -227,7 +277,8 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             return Optional.empty();
         }
 
-        lockedRecipe = CrystalCatalyzerLockedRecipe.fromCandidate(candidate.get(), getCurrentOutputMultiplier());
+        lockedRecipe = CrystalCatalyzerLockedRecipe.fromCandidate(
+                candidate.get(), getCurrentOutputMultiplier(candidate.get()));
         saveChanges();
         return Optional.of(lockedRecipe);
     }
@@ -377,7 +428,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             return false;
         }
 
-        FluidStack requiredFluid = lockedRecipe.fluid();
+        FluidStack requiredFluid = getFixedFluidPerCycle();
         FluidStack currentFluid = tank.getFluid();
         if (currentFluid.isEmpty()
                 || !FluidStack.isSameFluidSameComponents(currentFluid, requiredFluid)

@@ -36,7 +36,6 @@ import appeng.menu.implementations.InterfaceMenu;
 import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.menu.implementations.SetStockAmountMenu;
 import appeng.api.inventories.InternalInventory;
-import appeng.client.gui.Icon;
 import appeng.menu.slot.AppEngSlot;
 
 public class OverloadedInterfaceMenu extends InterfaceMenu {
@@ -107,6 +106,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
             var filterSlot = new OverloadedFilterSlot(be.getFilterInv(), 0);
             filterSlot.setNotDraggable();
             this.filterSlot = this.addSlot(filterSlot, SlotSemantics.UPGRADE);
+            Ae2ltSlotBackgrounds.withBackground(this.filterSlot, Ae2ltSlotBackgrounds.FILTER_COMPONENT);
         }
 
         var logic = host.getInterfaceLogic();
@@ -564,7 +564,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
     private static final class OverloadedFilterSlot extends AppEngSlot {
         private OverloadedFilterSlot(InternalInventory inv, int invSlot) {
             super(inv, invSlot);
-            setIcon(Icon.BACKGROUND_STORAGE_CELL);
         }
 
         @Override

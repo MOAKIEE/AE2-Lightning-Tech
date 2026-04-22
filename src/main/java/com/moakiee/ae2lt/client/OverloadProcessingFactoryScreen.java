@@ -18,6 +18,8 @@ import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.menu.SlotSemantics;
 
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
+import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
+import com.moakiee.ae2lt.client.gui.LightningStatusLines;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 
 public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProcessingFactoryMenu> {
@@ -60,6 +62,14 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
         this.configureOutputButton.setMessage(
                 Component.translatable("ae2lt.gui.overload_factory.configure_output"));
         addToLeftToolbar(this.configureOutputButton);
+
+        widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
+                LightningStatusLines.title(),
+                LightningStatusLines.status(menu.isWorking()),
+                LightningStatusLines.progress(menu.getProgress()),
+                LightningStatusLines.energy(menu.getStoredEnergy(), menu.getEnergyCapacity()),
+                LightningStatusLines.highVoltage(menu.getHighVoltageAvailable()),
+                LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()))));
     }
 
     @Override

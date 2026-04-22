@@ -89,6 +89,7 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
         this.catalystSlot = addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_CATALYST),
                 Ae2ltSlotSemantics.LIGHTNING_SIMULATION_CATALYST);
+        Ae2ltSlotBackgrounds.withBackground(this.catalystSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);
@@ -249,12 +250,20 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
         return (outputSideMask & (1 << side.ordinal())) != 0;
     }
 
+    public long getHighVoltageAvailable() {
+        return highVoltageAvailable;
+    }
+
+    public long getExtremeHighVoltageAvailable() {
+        return extremeHighVoltageAvailable;
+    }
+
     public Component getHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.lightning_simulation.stock.high_voltage", highVoltageAvailable);
+        return Component.translatable("ae2lt.gui.lightning_status.high_voltage", highVoltageAvailable);
     }
 
     public Component getExtremeHighVoltageMessage() {
-        return Component.translatable("ae2lt.gui.lightning_simulation.stock.extreme_high_voltage", extremeHighVoltageAvailable);
+        return Component.translatable("ae2lt.gui.lightning_status.extreme_high_voltage", extremeHighVoltageAvailable);
     }
 
     public Component getLightningDemandMessage() {

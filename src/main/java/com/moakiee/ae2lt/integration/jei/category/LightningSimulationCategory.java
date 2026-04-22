@@ -5,10 +5,8 @@ import java.util.List;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.Util;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -19,6 +17,7 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationReci
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModItems;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -37,31 +36,25 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     private static final ResourceLocation BACKGROUND_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
 
+    // 裁剪到 (5,14) 起 168x64,保证左侧输入列三格与中央反应腔体的下边框都不被咬
     private static final int BACKGROUND_U = 5;
-    private static final int BACKGROUND_V = 15;
+    private static final int BACKGROUND_V = 14;
     private static final int BACKGROUND_WIDTH = 168;
-    private static final int BACKGROUND_HEIGHT = 60;
-    private static final int WIDTH = 168;
-    private static final int HEIGHT = 92;
-    private static final int TEXTURE_WIDTH = 256;
-    private static final int TEXTURE_HEIGHT = 256;
+    private static final int BACKGROUND_HEIGHT = 64;
+    private static final int WIDTH = BACKGROUND_WIDTH;
 
-    private static final int SLOT_INPUT_X = 34;
-    private static final int SLOT_INPUT_Y = 7;
+    private static final int SLOT_INPUT_X = 39 - BACKGROUND_U;    // 34
+    private static final int SLOT_INPUT_Y = 22 - BACKGROUND_V;    // 8
     private static final int SLOT_INPUT_SPACING = 18;
-    private static final int SLOT_OUTPUT_X = 114;
-    private static final int SLOT_OUTPUT_Y = 26;
-    private static final int PROCESS_X = 53;
-    private static final int PROCESS_Y = 10;
-    private static final int ENERGY_TEXT_Y = 62;
-    private static final int LIGHTNING_TEXT_Y = 72;
-    private static final int SUBSTITUTION_TEXT_Y = 82;
-    private static final int PROCESS_WIDTH = 50;
-    private static final int PROCESS_HEIGHT = 46;
-    private static final int PROCESS_STAGE_COUNT = 20;
-    private static final long PROCESS_CYCLE_MS = 2_000L;
-    private static final int PROCESS_OVERLAY_U = 177;
-    private static final int PROCESS_OVERLAY_V = 48;
+    private static final int SLOT_CATALYST_X = 65 - BACKGROUND_U; // 60
+    private static final int SLOT_CATALYST_Y = 40 - BACKGROUND_V; // 26
+    private static final int SLOT_OUTPUT_X = 119 - BACKGROUND_U;  // 114
+    private static final int SLOT_OUTPUT_Y = 41 - BACKGROUND_V;   // 27
+
+    private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;     // 66
+    private static final int LIGHTNING_TEXT_Y = BACKGROUND_HEIGHT + 12; // 76
+    private static final int SUBSTITUTION_TEXT_Y = BACKGROUND_HEIGHT + 22; // 86
+    private static final int HEIGHT = SUBSTITUTION_TEXT_Y + 10;         // 96(留 10px 给最后一行文字)
 
     private final IDrawable icon;
     private final IDrawable background;
@@ -108,6 +101,9 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
+        builder.addSlot(RecipeIngredientRole.CATALYST, SLOT_CATALYST_X, SLOT_CATALYST_Y)
+                .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()));
+
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(recipe.getResultStack())
@@ -123,7 +119,9 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
             double mouseX,
             double mouseY) {
         background.draw(guiGraphics);
-        drawProcessOverlay(guiGraphics);
+        // JEI 页面不再叠加运行态 process overlay:它是为机器界面的按进度揭示动画
+        // 设计的,在静态展示里叠加整张会把中央反应区画得乱糟糟(和机器内槽位/道具重叠)。
+        // 背景贴图里已经包含了静态的反应腔体与连接走线,已经足够表达含义。
 
         var font = Minecraft.getInstance().font;
         var energyText = Component.translatable(
@@ -154,49 +152,6 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
         return Arrays.stream(ingredient.getItems())
                 .map(stack -> stack.copyWithCount(count))
                 .toList();
-    }
-
-    private void drawProcessOverlay(GuiGraphics guiGraphics) {
-        long elapsed = Util.getMillis() % PROCESS_CYCLE_MS;
-        double progress = elapsed / (double) PROCESS_CYCLE_MS;
-        int stage = progress <= 0.0D
-                ? 0
-                : Mth.clamp((int) Math.ceil(progress * PROCESS_STAGE_COUNT), 1, PROCESS_STAGE_COUNT);
-        if (stage <= 0) {
-            return;
-        }
-
-        int rows = Mth.clamp(Mth.ceil(PROCESS_HEIGHT * stage / (float) PROCESS_STAGE_COUNT), 0, PROCESS_HEIGHT);
-        int topRows = rows / 2;
-        int bottomRows = rows - topRows;
-
-        if (topRows > 0) {
-            guiGraphics.blit(
-                    BACKGROUND_TEXTURE,
-                    PROCESS_X,
-                    PROCESS_Y,
-                    PROCESS_OVERLAY_U,
-                    PROCESS_OVERLAY_V,
-                    PROCESS_WIDTH,
-                    topRows,
-                    TEXTURE_WIDTH,
-                    TEXTURE_HEIGHT);
-        }
-
-        if (bottomRows > 0) {
-            int srcY = PROCESS_OVERLAY_V + PROCESS_HEIGHT - bottomRows;
-            int destY = PROCESS_Y + PROCESS_HEIGHT - bottomRows;
-            guiGraphics.blit(
-                    BACKGROUND_TEXTURE,
-                    PROCESS_X,
-                    destY,
-                    PROCESS_OVERLAY_U,
-                    srcY,
-                    PROCESS_WIDTH,
-                    bottomRows,
-                    TEXTURE_WIDTH,
-                    TEXTURE_HEIGHT);
-        }
     }
 
     private static String formatCompactEnergy(long energy) {
