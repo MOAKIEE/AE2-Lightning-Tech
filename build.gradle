@@ -125,6 +125,7 @@ dependencies {
     runtimeOnly "curse.maven:advancedae-1084104:7668664"
     runtimeOnly "curse.maven:geckolib-388172:7707149"
     runtimeOnly "curse.maven:applied-flux-965012:7429565"
+    compileOnly "curse.maven:ae2-jei-integration-1074338:7727898"
     runtimeOnly "curse.maven:ae2-jei-integration-1074338:7727898"
     runtimeOnly "curse.maven:applied-mekanistics-574300:7096962"
     runtimeOnly "curse.maven:mekanism-extras-1026040:7628313"
