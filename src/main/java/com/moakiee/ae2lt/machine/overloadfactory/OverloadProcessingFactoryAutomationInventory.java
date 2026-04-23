@@ -37,6 +37,9 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
+        if (inventory.isOutputSlot(slot)) {
+            return stack;
+        }
 
         if (inventory.isLightningCollapseMatrix(stack)) {
             return inventory.insertItem(OverloadProcessingFactoryInventory.SLOT_MATRIX, stack, simulate);
@@ -74,6 +77,12 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
 
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
+        if (!inventory.isOutputSlot(slot)) {
+            if (slot < 0 || slot >= inventory.getSlots()) {
+                throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+            }
+            return ItemStack.EMPTY;
+        }
         return inventory.extractItem(slot, amount, simulate);
     }
 
@@ -84,6 +93,9 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+        }
         if (stack.isEmpty()) {
             return false;
         }

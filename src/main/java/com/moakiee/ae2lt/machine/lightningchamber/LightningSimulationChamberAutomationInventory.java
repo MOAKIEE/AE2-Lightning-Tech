@@ -42,6 +42,9 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
+        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT) {
+            return stack;
+        }
 
         if (inventory.isCatalystItem(stack)) {
             return inventory.insertItem(LightningSimulationChamberInventory.SLOT_CATALYST, stack, simulate);
@@ -83,6 +86,10 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
 
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
+        if (slot != LightningSimulationChamberInventory.SLOT_OUTPUT) {
+            inventory.validateSlotIndex(slot);
+            return ItemStack.EMPTY;
+        }
         return inventory.extractItem(slot, amount, simulate);
     }
 
@@ -93,12 +100,16 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
+        inventory.validateSlotIndex(slot);
         if (stack.isEmpty()) {
+            return false;
+        }
+        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT) {
             return false;
         }
 
         if (inventory.isCatalystItem(stack)) {
-            return slot != LightningSimulationChamberInventory.SLOT_OUTPUT;
+            return true;
         }
 
         return inventory.isInputSlot(slot);

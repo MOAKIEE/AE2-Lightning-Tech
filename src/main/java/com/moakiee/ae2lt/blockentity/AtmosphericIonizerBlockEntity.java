@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.logic.WeatherControlHelper;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerLogic;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
+import com.moakiee.ae2lt.machine.common.InsertOnlyAutomationInventory;
 import com.moakiee.ae2lt.menu.AtmosphericIonizerMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -55,6 +56,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     private static final String TAG_LOCKED_TYPE = "LockedType";
 
     private final AtmosphericIonizerInventory inventory = new AtmosphericIonizerInventory(this::onInventoryChanged);
+    private final IItemHandlerModifiable automationInventory = new InsertOnlyAutomationInventory(inventory);
     private final AtmosphericIonizerLogic logic;
 
     private WeatherCondensateItem.Type lockedType;
@@ -75,7 +77,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     }
 
     public IItemHandlerModifiable getAutomationInventory() {
-        return inventory;
+        return automationInventory;
     }
 
     public WeatherCondensateItem.Type getSelectedType() {

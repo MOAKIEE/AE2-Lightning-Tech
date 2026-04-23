@@ -18,6 +18,7 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
+import com.moakiee.ae2lt.machine.common.InsertOnlyAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningcollector.LightningCollectorInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.menu.LightningCollectorMenu;
@@ -50,6 +51,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     private static boolean warnedInvalidExtremeVoltageBaseRange;
 
     private final LightningCollectorInventory inventory = new LightningCollectorInventory(this::onInventoryChanged);
+    private final IItemHandlerModifiable automationInventory = new InsertOnlyAutomationInventory(inventory);
 
     private int cooldownTicks;
     private int workingTicks;
@@ -82,7 +84,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     }
 
     public IItemHandlerModifiable getAutomationInventory() {
-        return inventory;
+        return automationInventory;
     }
 
     public LightningCollectorInventory getInventory() {

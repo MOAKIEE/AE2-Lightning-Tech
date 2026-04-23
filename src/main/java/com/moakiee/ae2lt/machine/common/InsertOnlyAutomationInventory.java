@@ -1,14 +1,17 @@
-package com.moakiee.ae2lt.machine.teslacoil;
+package com.moakiee.ae2lt.machine.common;
 
 import java.util.Objects;
 
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
-    private final TeslaCoilInventory inventory;
+/**
+ * Capability-facing item wrapper for machines whose exposed slots are inputs.
+ */
+public class InsertOnlyAutomationInventory implements IItemHandlerModifiable {
+    private final IItemHandlerModifiable inventory;
 
-    public TeslaCoilAutomationInventory(TeslaCoilInventory inventory) {
+    public InsertOnlyAutomationInventory(IItemHandlerModifiable inventory) {
         this.inventory = Objects.requireNonNull(inventory, "inventory");
     }
 
@@ -29,24 +32,12 @@ public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
 
     @Override
     public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
-        Objects.requireNonNull(stack, "stack");
-
-        if (stack.isEmpty()) {
-            return ItemStack.EMPTY;
-        }
-
-        if (!inventory.isItemValid(slot, stack)) {
-            return stack;
-        }
-
         return inventory.insertItem(slot, stack, simulate);
     }
 
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
-        if (slot < 0 || slot >= inventory.getSlots()) {
-            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
-        }
+        validateSlotIndex(slot);
         return ItemStack.EMPTY;
     }
 
@@ -58,5 +49,12 @@ public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
         return inventory.isItemValid(slot, stack);
+    }
+
+    private void validateSlotIndex(int slot) {
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException(
+                    "Slot " + slot + " not in valid range - [0," + inventory.getSlots() + ")");
+        }
     }
 }

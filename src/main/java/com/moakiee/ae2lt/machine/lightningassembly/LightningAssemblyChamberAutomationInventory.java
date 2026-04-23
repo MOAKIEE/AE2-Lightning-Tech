@@ -45,6 +45,9 @@ public class LightningAssemblyChamberAutomationInventory implements IItemHandler
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
+        if (slot == LightningAssemblyChamberInventory.SLOT_OUTPUT) {
+            return stack;
+        }
 
         if (inventory.isCatalystItem(stack)) {
             return inventory.insertItem(LightningAssemblyChamberInventory.SLOT_CATALYST, stack, simulate);
@@ -86,6 +89,13 @@ public class LightningAssemblyChamberAutomationInventory implements IItemHandler
 
     @Override
     public ItemStack extractItem(int slot, int amount, boolean simulate) {
+        if (slot != LightningAssemblyChamberInventory.SLOT_OUTPUT) {
+            if (slot < 0 || slot >= inventory.getSlots()) {
+                throw new IllegalArgumentException(
+                        "Slot " + slot + " not in valid range - [0," + inventory.getSlots() + ")");
+            }
+            return ItemStack.EMPTY;
+        }
         return inventory.extractItem(slot, amount, simulate);
     }
 
@@ -96,12 +106,19 @@ public class LightningAssemblyChamberAutomationInventory implements IItemHandler
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException(
+                    "Slot " + slot + " not in valid range - [0," + inventory.getSlots() + ")");
+        }
         if (stack.isEmpty()) {
+            return false;
+        }
+        if (slot == LightningAssemblyChamberInventory.SLOT_OUTPUT) {
             return false;
         }
 
         if (inventory.isCatalystItem(stack)) {
-            return slot != LightningAssemblyChamberInventory.SLOT_OUTPUT;
+            return true;
         }
 
         return inventory.isInputSlot(slot);
