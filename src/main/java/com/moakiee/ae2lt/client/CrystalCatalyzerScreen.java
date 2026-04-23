@@ -23,6 +23,7 @@ import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
     private final ToggleButton autoExportButton;
     private final ActionButton configureOutputButton;
+    private final CrystalCatalyzerFluidWidget fluidWidget;
 
     public CrystalCatalyzerScreen(
             CrystalCatalyzerMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
@@ -31,10 +32,11 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         this.imageHeight = 190;
 
         widgets.add("energyBar", new CrystalCatalyzerEnergyBar(menu, style.getImage("energyBar")));
-        widgets.add("fluidBar", new CrystalCatalyzerFluidWidget(
+        this.fluidWidget = new CrystalCatalyzerFluidWidget(
                 menu,
                 menu::getFluid,
-                menu::getFluidCapacity));
+                menu::getFluidCapacity);
+        widgets.add("fluidBar", this.fluidWidget);
         widgets.add("processArea", new CrystalCatalyzerProgressWidget(menu, style.getImage("processOverlay")));
 
         this.autoExportButton = new ToggleButton(
@@ -68,6 +70,18 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         super.updateBeforeRender();
         this.autoExportButton.setState(menu.isAutoExportEnabled());
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        // AE2 的 WidgetContainer 会吞掉非左键事件;在此抢先拦截 tank 区域的右键/中键
+        // 用于"右键倒入 / shift+右键清空"等 Adv AE 风格交互。
+        if (fluidWidget != null && fluidWidget.isMouseOver(mouseX, mouseY)) {
+            if (fluidWidget.handleClick(button)) {
+                return true;
+            }
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

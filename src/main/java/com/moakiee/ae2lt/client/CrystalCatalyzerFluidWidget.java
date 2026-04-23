@@ -75,23 +75,31 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY)) {
+        // AE2 WidgetContainer 只分发 button=0;真正的处理由 Screen 层的
+        // mouseClicked 预拦截后调用 {@link #handleClick(int)} 完成。这里给
+        // AE2 分发链一个稳妥的 fallback(纯左键语义),不处理 shift / 右键。
+        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY) || button != 0) {
             return false;
         }
-        // shift + 任意键 = 清空(仅对非空 tank 有意义,但 server 侧也会兜底校验)
+        return handleClick(button);
+    }
+
+    /** 由 Screen 层拦截后调用,支持左键/右键/中键/shift,统一返回是否处理了。 */
+    public boolean handleClick(int button) {
+        if (!this.active || !this.visible) {
+            return false;
+        }
         if (Screen.hasShiftDown()) {
             menu.clientClearFluidTank();
             playClickSound();
             return true;
         }
         if (button == 0) {
-            // 左键 = 从 tank 抽出到光标容器
             menu.clientExtractFluid();
             playClickSound();
             return true;
         }
         if (button == 1) {
-            // 右键 = 把光标容器里的流体倒入 tank
             menu.clientInsertFluid();
             playClickSound();
             return true;

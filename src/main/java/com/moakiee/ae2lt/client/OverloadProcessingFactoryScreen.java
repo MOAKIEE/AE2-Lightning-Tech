@@ -25,6 +25,8 @@ import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProcessingFactoryMenu> {
     private final ToggleButton autoExportButton;
     private final ActionButton configureOutputButton;
+    private final OverloadProcessingFactoryFluidWidget inputFluidWidget;
+    private final OverloadProcessingFactoryFluidWidget outputFluidWidget;
 
     public OverloadProcessingFactoryScreen(
             OverloadProcessingFactoryMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
@@ -37,16 +39,18 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
                 menu::getCompatibleUpgradeLines));
         widgets.add("processArea", new OverloadProcessingFactoryProgressWidget(menu, style.getImage("processOverlay")));
         widgets.add("energyBar", new OverloadProcessingFactoryEnergyBar(menu, style.getImage("energyBar")));
-        widgets.add("inputFluidBar", new OverloadProcessingFactoryFluidWidget(
+        this.inputFluidWidget = new OverloadProcessingFactoryFluidWidget(
                 menu,
                 0,
                 menu::getInputFluid,
-                menu::getInputTankCapacity));
-        widgets.add("outputFluidBar", new OverloadProcessingFactoryFluidWidget(
+                menu::getInputTankCapacity);
+        widgets.add("inputFluidBar", this.inputFluidWidget);
+        this.outputFluidWidget = new OverloadProcessingFactoryFluidWidget(
                 menu,
                 1,
                 menu::getOutputFluid,
-                menu::getOutputTankCapacity));
+                menu::getOutputTankCapacity);
+        widgets.add("outputFluidBar", this.outputFluidWidget);
 
         this.autoExportButton = new ToggleButton(
                 Icon.AUTO_EXPORT_ON,
@@ -82,6 +86,19 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
 
         this.autoExportButton.setState(menu.isAutoExportEnabled());
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (inputFluidWidget != null && inputFluidWidget.isMouseOver(mouseX, mouseY)
+                && inputFluidWidget.handleClick(button)) {
+            return true;
+        }
+        if (outputFluidWidget != null && outputFluidWidget.isMouseOver(mouseX, mouseY)
+                && outputFluidWidget.handleClick(button)) {
+            return true;
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
     }
 
     @Override

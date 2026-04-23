@@ -52,7 +52,17 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY)) {
+        // AE2 WidgetContainer 只分发 button=0;右键/中键由 Screen 层的 mouseClicked
+        // 拦截后调用 {@link #handleClick(int)}。
+        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY) || button != 0) {
+            return false;
+        }
+        return handleClick(button);
+    }
+
+    /** 由 Screen 层拦截后调用,支持左键/右键/shift。 */
+    public boolean handleClick(int button) {
+        if (!this.active || !this.visible) {
             return false;
         }
         if (Screen.hasShiftDown()) {
