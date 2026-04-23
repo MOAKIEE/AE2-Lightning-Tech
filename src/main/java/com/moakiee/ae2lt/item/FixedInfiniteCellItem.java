@@ -24,6 +24,7 @@ import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
+import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModItems;
 
 public final class FixedInfiniteCellItem extends Item {
@@ -37,7 +38,9 @@ public final class FixedInfiniteCellItem extends Item {
         HIGH_VOLTAGE((byte) 1, "high_voltage"),
         EXTREME_HIGH_VOLTAGE((byte) 2, "extreme_high_voltage"),
         LIGHTNING_COLLAPSE_MATRIX((byte) 3, "lightning_collapse_matrix"),
-        RESEARCH_NOTE((byte) 4, "research_note");
+        RESEARCH_NOTE((byte) 4, "research_note"),
+        MOAKIEE_FUMO((byte) 5, "moakiee_fumo"),
+        CYSTRYSU_FUMO((byte) 6, "cystrysu_fumo");
 
         private final byte typeId;
         private final String suffix;
@@ -61,6 +64,8 @@ public final class FixedInfiniteCellItem extends Item {
                 case 2 -> EXTREME_HIGH_VOLTAGE;
                 case 3 -> LIGHTNING_COLLAPSE_MATRIX;
                 case 4 -> RESEARCH_NOTE;
+                case 5 -> MOAKIEE_FUMO;
+                case 6 -> CYSTRYSU_FUMO;
                 default -> LIGHTNING_ROD;
             };
         }
@@ -72,6 +77,12 @@ public final class FixedInfiniteCellItem extends Item {
                 case EXTREME_HIGH_VOLTAGE -> LightningKey.EXTREME_HIGH_VOLTAGE;
                 case LIGHTNING_COLLAPSE_MATRIX -> AEItemKey.of(ModItems.LIGHTNING_COLLAPSE_MATRIX.get());
                 case RESEARCH_NOTE -> AEItemKey.of(ModItems.RESEARCH_NOTE.get());
+                case MOAKIEE_FUMO -> ModFumos.isEnabled()
+                        ? AEItemKey.of(ModFumos.MOAKIEE_FUMO_ITEM.get())
+                        : AEItemKey.of(Items.LIGHTNING_ROD);
+                case CYSTRYSU_FUMO -> ModFumos.isEnabled()
+                        ? AEItemKey.of(ModFumos.CYSTRYSU_FUMO_ITEM.get())
+                        : AEItemKey.of(Items.LIGHTNING_ROD);
             };
         }
     }
@@ -126,13 +137,17 @@ public final class FixedInfiniteCellItem extends Item {
     }
 
     /**
-     * 按 seed + 世界种子 hash 出 10000 个 roll 区间，再映射到一个 outcome：
+     * 按 seed + 世界种子 hash 出 10000 个 roll 区间,再映射到一个 outcome:
      * <ul>
      *   <li>roll 0..2 → RESEARCH_NOTE (3/10000, UR 暗门,引导进入仪式玩法)</li>
      *   <li>roll 3..11 → HIGH_VOLTAGE (9/10000, SR)</li>
-     *   <li>roll 12..9999 → LIGHTNING_ROD (9988/10000, R)</li>
+     *   <li>roll 12..1011 → MOAKIEE_FUMO (1000/10000, 10%, 彩蛋收藏)</li>
+     *   <li>roll 1012..2011 → CYSTRYSU_FUMO (1000/10000, 10%, 彩蛋收藏)</li>
+     *   <li>roll 2012..9999 → LIGHTNING_ROD (7988/10000, R)</li>
      * </ul>
      * EXTREME_HIGH_VOLTAGE 与 LIGHTNING_COLLAPSE_MATRIX 仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
+     * 若 Fumo 方块未启用(meplacementtool 已加载),对应档位会在 displayKey 兜底回 LIGHTNING_ROD,
+     * 不在 roll 表里特意剔除——玩家在这种存档里抽到的 Fumo cell 会显示为避雷针,是可接受的降级。
      */
     public static CellOutcome resolveOutcome(UUID seed, long worldSeed) {
         long mixed = (seed.getLeastSignificantBits() ^ worldSeed)
@@ -140,6 +155,8 @@ public final class FixedInfiniteCellItem extends Item {
         int roll = Math.floorMod(mixed, 10000);
         if (roll <= 2) return CellOutcome.RESEARCH_NOTE;
         if (roll <= 11) return CellOutcome.HIGH_VOLTAGE;
+        if (roll <= 1011) return CellOutcome.MOAKIEE_FUMO;
+        if (roll <= 2011) return CellOutcome.CYSTRYSU_FUMO;
         return CellOutcome.LIGHTNING_ROD;
     }
 
