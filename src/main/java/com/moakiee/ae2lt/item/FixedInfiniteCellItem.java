@@ -139,11 +139,11 @@ public final class FixedInfiniteCellItem extends Item {
     /**
      * 按 seed + 世界种子 hash 出 10000 个 roll 区间,再映射到一个 outcome:
      * <ul>
-     *   <li>roll 0..2 → RESEARCH_NOTE (3/10000, 0.03%, UR 暗门;是 HV/EHV/矩阵/无限存储
+     *   <li>roll 0..49 → RESEARCH_NOTE (50/10000, 0.5%, UR 暗门;是 HV/EHV/矩阵/无限存储
      *       仪式的唯一入口)</li>
-     *   <li>roll 3..2002 → MOAKIEE_FUMO (2000/10000, 20%, 作者彩蛋)</li>
-     *   <li>roll 2003..4002 → CYSTRYSU_FUMO (2000/10000, 20%, 作者彩蛋)</li>
-     *   <li>roll 4003..9999 → LIGHTNING_ROD (5997/10000, ≈59.97%, R)</li>
+     *   <li>roll 50..2049 → MOAKIEE_FUMO (2000/10000, 20%, 作者彩蛋)</li>
+     *   <li>roll 2050..4049 → CYSTRYSU_FUMO (2000/10000, 20%, 作者彩蛋)</li>
+     *   <li>roll 4050..9999 → LIGHTNING_ROD (5950/10000, 59.5%, R)</li>
      * </ul>
      * HIGH_VOLTAGE / EXTREME_HIGH_VOLTAGE / LIGHTNING_COLLAPSE_MATRIX /
      * INFINITE_STORAGE_CELL 全部仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
@@ -154,9 +154,9 @@ public final class FixedInfiniteCellItem extends Item {
         long mixed = (seed.getLeastSignificantBits() ^ worldSeed)
                    ^ (seed.getMostSignificantBits() ^ Long.reverseBytes(worldSeed));
         int roll = Math.floorMod(mixed, 10000);
-        if (roll <= 2) return CellOutcome.RESEARCH_NOTE;
-        if (roll <= 2002) return CellOutcome.MOAKIEE_FUMO;
-        if (roll <= 4002) return CellOutcome.CYSTRYSU_FUMO;
+        if (roll <= 49) return CellOutcome.RESEARCH_NOTE;
+        if (roll <= 2049) return CellOutcome.MOAKIEE_FUMO;
+        if (roll <= 4049) return CellOutcome.CYSTRYSU_FUMO;
         return CellOutcome.LIGHTNING_ROD;
     }
 
