@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 
 import appeng.api.config.Actionable;
+import appeng.api.config.Settings;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionSource;
@@ -112,8 +113,10 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         proxiedStorage.useRegisteredCapacities();
         proxiedStorage.setCapacity(AEKeyType.items(), OVERLOADED_CAP);
 
-        var newUpgrades = UpgradeInventories.forMachine(is, 4,
-                () -> invokeQuietly(M_ON_UPGRADES_CHANGED, this));
+        var newUpgrades = UpgradeInventories.forMachine(is, 4, () -> {
+            invokeQuietly(M_ON_UPGRADES_CHANGED, this);
+            host.invalidateInductionCardCache();
+        });
         setField(F_UPGRADES, newUpgrades);
         this.ourUpgrades = newUpgrades;
 
@@ -168,7 +171,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     private boolean invokeCrafting(int slot, AEKey what, long amount) {
         var grid = mainNode.getGrid();
         if (grid == null || what == null) return false;
-        if (!ourUpgrades.isInstalled(AEItems.CRAFTING_CARD)) return false;
         return craftingTrackerRef.handleCrafting(slot, what, amount,
                 host.getBlockEntity().getLevel(),
                 grid.getCraftingService(), actionSource);
@@ -228,9 +230,10 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             if (grid == null) return TickRateModulation.IDLE;
 
             var cache = grid.getStorageService().getCachedInventory();
+            var cfg = getConfig();
             boolean didWork = false;
             for (int i = 0; i < slotCount; i++) {
-                var cfgStack = getConfig().getStack(i);
+                var cfgStack = cfg.getStack(i);
                 if (cfgStack == null) continue;
                 long cap = owner.isSlotUnlimited(i) ? Long.MAX_VALUE : cfgStack.amount();
                 if (cap == Long.MAX_VALUE) {
@@ -286,13 +289,15 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     //      limited    → min(configAmount, networkQuantity)
     //  • extract() proxies to the ME network (capped per config)
     //  • insert()  proxies to the ME network (crafted items, pipe input)
-    //  • getAvailableStacks() returns empty to avoid grid cache inflation
+    //  • getAvailableStacks() exposes only configured keys to avoid grid cache inflation
     //  • Re-entrancy guard prevents recursion through InterfaceInventory
     // ══════════════════════════════════════════════════════════════════════
 
     public static class ProxiedStorageInv extends OverloadedConfigInv {
         private final OverloadedInterfaceLogic logic;
         private boolean proxying = false;
+        private final KeyCounter availableStacksCache = new KeyCounter();
+        private long availableStacksCacheTick = Long.MIN_VALUE;
 
         ProxiedStorageInv(OverloadedInterfaceLogic logic,
                           Set<AEKeyType> supportedTypes,
@@ -333,6 +338,32 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             long netAmt = networkAmount(key);
             long cap = capForSlot(slot);
             return (cap == Long.MAX_VALUE) ? netAmt : Math.min(cap, netAmt);
+        }
+
+        private boolean matchesConfiguredSlot(int slot, AEKey what) {
+            var configured = cfg().getKey(slot);
+            if (configured == null) return false;
+            if (configured.equals(what)) return true;
+            if (!logic.ourUpgrades.isInstalled(AEItems.FUZZY_CARD)) return false;
+            if (!configured.supportsFuzzyRangeSearch()) return false;
+            var fuzzyMode = logic.getConfigManager().getSetting(Settings.FUZZY_MODE);
+            return configured.fuzzyEquals(what, fuzzyMode);
+        }
+
+        private long exposedAmount(AEKey what) {
+            var grid = logic.mainNode.getGrid();
+            if (grid == null) return 0;
+            var cache = grid.getStorageService().getCachedInventory();
+            long total = 0;
+            for (int i = 0; i < size(); i++) {
+                if (!matchesConfiguredSlot(i, what)) continue;
+                long netAmt = cache.get(what);
+                long cap = capForSlot(i);
+                long amount = (cap == Long.MAX_VALUE) ? netAmt : Math.min(cap, netAmt);
+                if (Long.MAX_VALUE - total < amount) return Long.MAX_VALUE;
+                total += amount;
+            }
+            return total;
         }
 
         // ── Display: server queries ME network & syncs stacks[]; client uses synced stacks[] ─
@@ -409,7 +440,9 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         @Override
         public long extract(AEKey what, long amount, Actionable mode, IActionSource source) {
             if (what == null || amount <= 0) return 0;
-            long extracted = proxyExtract(what, amount, mode);
+            long exposed = exposedAmount(what);
+            if (exposed <= 0) return 0;
+            long extracted = proxyExtract(what, Math.min(amount, exposed), mode);
             if (extracted > 0 && mode == Actionable.MODULATE) {
                 logic.onExtractDeficit(what);
             }
@@ -452,7 +485,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             stacks[slot] = stack;
         }
 
-        // ── Grid cache: direct pass-through to ME network ────────────────
+        // ── Grid cache: expose a configured view of the ME network ───────
         // InterfaceInventory (registered on our grid) iterates stacks[] via
         // per-slot getStack(), so this override only affects external MEStorage
         // callers (e.g. storage bus from another network). The proxying guard
@@ -463,9 +496,40 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             if (proxying) return;
             var grid = logic.mainNode.getGrid();
             if (grid == null) return;
+            var be = logic.host.getBlockEntity();
+            var level = be != null ? be.getLevel() : null;
+            long now = level != null ? level.getGameTime() : Long.MIN_VALUE;
+            if (level != null && now == availableStacksCacheTick) {
+                for (var entry : availableStacksCache) {
+                    out.add(entry.getKey(), entry.getLongValue());
+                }
+                return;
+            }
             proxying = true;
             try {
-                for (var entry : grid.getStorageService().getCachedInventory()) {
+                availableStacksCache.reset();
+                var cache = grid.getStorageService().getCachedInventory();
+                boolean fuzzy = logic.ourUpgrades.isInstalled(AEItems.FUZZY_CARD);
+                var fuzzyMode = fuzzy ? logic.getConfigManager().getSetting(Settings.FUZZY_MODE) : null;
+                for (int slot = 0; slot < size(); slot++) {
+                    var key = cfg().getKey(slot);
+                    if (key == null) continue;
+
+                    long cap = capForSlot(slot);
+                    if (fuzzy && key.supportsFuzzyRangeSearch()) {
+                        for (var entry : cache.findFuzzy(key, fuzzyMode)) {
+                            long amount = cap == Long.MAX_VALUE
+                                    ? entry.getLongValue()
+                                    : Math.min(cap, entry.getLongValue());
+                            if (amount > 0) availableStacksCache.add(entry.getKey(), amount);
+                        }
+                    } else {
+                        long amount = displayAmount(slot, key);
+                        if (amount > 0) availableStacksCache.add(key, amount);
+                    }
+                }
+                availableStacksCacheTick = now;
+                for (var entry : availableStacksCache) {
                     out.add(entry.getKey(), entry.getLongValue());
                 }
             } finally {

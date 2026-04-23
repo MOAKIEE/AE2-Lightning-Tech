@@ -4,9 +4,12 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -112,6 +115,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     /** Reusable scan buffer for import — safe because server tick is single-threaded. */
     private final KeyCounter scanBuffer = new KeyCounter();
+    private final List<ExtractedShare> extractedShares = new ArrayList<>();
 
     // ── WirelessConnection ───────────────────────────────────────────────
 
@@ -358,6 +362,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     };
     private @Nullable DirectMEInsertInventory directInsertInv;
+    private @Nullable Set<AEKey> importFilterKeys;
+    private @Nullable FuzzyMode importFilterFuzzyMode;
+    private boolean inductionCardCacheDirty = true;
+    private boolean inductionCardInstalledCache = false;
     private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
@@ -422,31 +430,43 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     public void rebuildFilter() {
-        if (directInsertInv == null) return;
         ItemStack filterStack = filterInv.getStackInSlot(0);
         if (filterStack.isEmpty()
                 || !(filterStack.getItem() instanceof ICellWorkbenchItem cwi)) {
-            directInsertInv.setFilter(null); return;
+            importFilterKeys = null;
+            importFilterFuzzyMode = null;
+            if (directInsertInv != null) directInsertInv.setFilter(null);
+            return;
         }
         var config = cwi.getConfigInventory(filterStack);
-        var keys = new java.util.HashSet<AEKey>();
+        var keys = new HashSet<AEKey>();
         for (int i = 0; i < config.size(); i++) {
             var k = config.getKey(i); if (k != null) keys.add(k);
         }
-        if (keys.isEmpty()) { directInsertInv.setFilter(null); return; }
+        if (keys.isEmpty()) {
+            importFilterKeys = null;
+            importFilterFuzzyMode = null;
+            if (directInsertInv != null) directInsertInv.setFilter(null);
+            return;
+        }
 
         boolean hasFuzzy = cwi.getUpgrades(filterStack)
                 .getInstalledUpgrades(AEItems.FUZZY_CARD) > 0;
         FuzzyMode fm = hasFuzzy ? cwi.getFuzzyMode(filterStack) : null;
+        importFilterKeys = Set.copyOf(keys);
+        importFilterFuzzyMode = fm;
+
+        Predicate<AEKey> predicate;
         if (fm != null) {
-            directInsertInv.setFilter(w -> {
+            predicate = w -> {
                 for (var fk : keys)
                     if (w.equals(fk) || w.fuzzyEquals(fk, fm)) return true;
                 return false;
-            });
+            };
         } else {
-            directInsertInv.setFilter(keys::contains);
+            predicate = keys::contains;
         }
+        if (directInsertInv != null) directInsertInv.setFilter(predicate);
     }
 
     // ── Mode accessors ───────────────────────────────────────────────────
@@ -490,6 +510,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public void setEnergyOutputDir(@Nullable Direction d) {
         if (energyOutputDir == d) return; energyOutputDir = d;
         saveChanges(); markForUpdate();
+    }
+
+    public void invalidateInductionCardCache() {
+        inductionCardCacheDirty = true;
     }
 
     // ── Wireless connections ─────────────────────────────────────────────
@@ -559,8 +583,20 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                    OverloadedInterfaceBlockEntity be) {
         if (level == null || level.isClientSide()) return;
         if (!(level instanceof ServerLevel sl)) return;
+        if (!be.hasServerTickWork()) return;
         be.tickWirelessIO(sl);
         be.tickEnergyTransfer(sl);
+    }
+
+    private boolean hasServerTickWork() {
+        if (interfaceMode == InterfaceMode.WIRELESS
+                && (importMode == ImportMode.AUTO || exportMode == ExportMode.AUTO)) {
+            return true;
+        }
+        if (interfaceMode == InterfaceMode.WIRELESS || energyOutputDir != null) {
+            return AppFluxHelper.FE_KEY != null && hasInductionCard();
+        }
+        return false;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -570,7 +606,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     private void tickWirelessIO(ServerLevel sl) {
         if (interfaceMode != InterfaceMode.WIRELESS) return;
-        if (importMode == ImportMode.OFF && exportMode == ExportMode.OFF) return;
+        boolean activeImport = importMode == ImportMode.AUTO;
+        boolean activeExport = exportMode == ExportMode.AUTO;
+        if (!activeImport && !activeExport) return;
         var grid = getMainNode().getGrid();
         if (grid == null) return;
 
@@ -590,6 +628,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         var meStorage = grid.getStorageService().getInventory();
         var source    = IActionSource.ofMachine(this);
+        int transferBudget = fast
+                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
+                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
 
         for (int i = 0; i < toProcess; i++) {
             int idx = ioRobinIndex % total;
@@ -612,10 +653,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
             boolean importOk = false, exportOk = false;
 
-            if (importMode != ImportMode.OFF)
-                importOk = doImport(cst, targetLevel, conn, meStorage, source) > 0;
-            if (exportMode == ExportMode.AUTO)
-                exportOk = doExport(cst, targetLevel, conn, meStorage, source) > 0;
+            if (activeImport)
+                importOk = doImport(cst, targetLevel, conn, meStorage, source, transferBudget) > 0;
+            if (activeExport)
+                exportOk = doExport(cst, targetLevel, conn, meStorage, source, transferBudget) > 0;
 
             reportIO(cd, importOk || exportOk, probing, gameTick);
         }
@@ -624,76 +665,105 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ── Import: remote wrapper.extract → ME.insert ────────────────────
 
     private int doImport(ConnectionState cst, ServerLevel targetLevel,
-                          WirelessConnection conn, MEStorage me, IActionSource src) {
+                          WirelessConnection conn, MEStorage me, IActionSource src,
+                          int transferBudget) {
         var wrappers = cst.resolveWrappers(targetLevel, conn);
         if (wrappers == null) return 0;
 
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
-                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
-                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget = transferBudget;
         int moved  = 0;
 
-        // Merge available stacks across all wrappers to batch ME ops per unique key
-        scanBuffer.reset();
-        for (var wrapper : wrappers.values()) {
-            wrapper.getAvailableStacks(scanBuffer);
-        }
-
-        for (var entry : scanBuffer) {
-            if (budget <= 0) break;
-            var key    = entry.getKey();
-            long totalAvail = entry.getLongValue();
-            if (totalAvail <= 0) continue;
-
-            if (directInsertInv != null && !directInsertInv.isAllowedIn(0, key))
-                continue;
-
-            long toTransfer = Math.min(totalAvail, budget);
-            long meCanAccept = me.insert(key, toTransfer, Actionable.SIMULATE, src);
-            if (meCanAccept <= 0) continue;
-
-            long extractBudget = Math.min(toTransfer, meCanAccept);
-            long totalExtracted = 0;
-            var extractedShares = new ArrayList<ExtractedShare>();
-
+        var exactFilterKeys = getExactImportFilterKeys();
+        if (exactFilterKeys != null) {
+            for (var key : exactFilterKeys) {
+                if (budget <= 0) break;
+                long inserted = importKeyFromWrappers(key, budget, budget, wrappers, me, src);
+                moved += (int) inserted;
+                budget -= (int) inserted;
+            }
+        } else {
+            // Merge available stacks across all wrappers to batch ME ops per unique key.
+            scanBuffer.reset();
             for (var wrapper : wrappers.values()) {
-                if (totalExtracted >= extractBudget) break;
-                long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
-                if (extracted > 0) {
-                    totalExtracted += extracted;
-                    extractedShares.add(new ExtractedShare(wrapper, extracted));
-                }
+                wrapper.getAvailableStacks(scanBuffer);
             }
 
-            if (totalExtracted <= 0) continue;
+            for (var entry : scanBuffer) {
+                if (budget <= 0) break;
+                var key    = entry.getKey();
+                long totalAvail = entry.getLongValue();
+                if (totalAvail <= 0 || !isImportAllowed(key)) continue;
 
-            long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
-            long rollback = totalExtracted - actualInserted;
-            for (int i = extractedShares.size() - 1; i >= 0 && rollback > 0; i--) {
-                var share = extractedShares.get(i);
-                long toReturn = Math.min(rollback, share.amount());
-                long restored = share.storage().insert(key, toReturn, Actionable.MODULATE, src);
-                rollback -= restored;
+                long inserted = importKeyFromWrappers(key, totalAvail, budget, wrappers, me, src);
+                moved += (int) inserted;
+                budget -= (int) inserted;
             }
-            moved  += (int) actualInserted;
-            budget -= (int) actualInserted;
         }
         return moved;
+    }
+
+    @Nullable
+    private Set<AEKey> getExactImportFilterKeys() {
+        return importFilterFuzzyMode == null ? importFilterKeys : null;
+    }
+
+    private boolean isImportAllowed(AEKey key) {
+        var keys = importFilterKeys;
+        if (keys == null || keys.isEmpty()) return true;
+        var fuzzyMode = importFilterFuzzyMode;
+        if (fuzzyMode == null) return keys.contains(key);
+        for (var filterKey : keys) {
+            if (key.equals(filterKey) || key.fuzzyEquals(filterKey, fuzzyMode)) return true;
+        }
+        return false;
+    }
+
+    private long importKeyFromWrappers(AEKey key, long totalAvail, int budget,
+                                       Map<AEKeyType, MEStorage> wrappers,
+                                       MEStorage me, IActionSource src) {
+        if (totalAvail <= 0 || budget <= 0) return 0;
+
+        long toTransfer = Math.min(totalAvail, budget);
+        long meCanAccept = me.insert(key, toTransfer, Actionable.SIMULATE, src);
+        if (meCanAccept <= 0) return 0;
+
+        long extractBudget = Math.min(toTransfer, meCanAccept);
+        long totalExtracted = 0;
+        extractedShares.clear();
+
+        for (var wrapper : wrappers.values()) {
+            if (totalExtracted >= extractBudget) break;
+            long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
+            if (extracted > 0) {
+                totalExtracted += extracted;
+                extractedShares.add(new ExtractedShare(wrapper, extracted));
+            }
+        }
+
+        if (totalExtracted <= 0) return 0;
+
+        long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
+        long rollback = totalExtracted - actualInserted;
+        for (int i = extractedShares.size() - 1; i >= 0 && rollback > 0; i--) {
+            var share = extractedShares.get(i);
+            long toReturn = Math.min(rollback, share.amount());
+            long restored = share.storage().insert(key, toReturn, Actionable.MODULATE, src);
+            rollback -= restored;
+        }
+        extractedShares.clear();
+        return actualInserted;
     }
 
     // ── Export: ME.extract → remote wrapper.insert ────────────────────────
 
     private int doExport(ConnectionState cst, ServerLevel targetLevel,
-                          WirelessConnection conn, MEStorage me, IActionSource src) {
+                          WirelessConnection conn, MEStorage me, IActionSource src,
+                          int transferBudget) {
         var wrappers = cst.resolveWrappers(targetLevel, conn);
         if (wrappers == null) return 0;
 
         var config     = getInterfaceLogic().getConfig();
         int configSize = config.size();
-        int transferBudget = ioSpeedMode == IOSpeedMode.FAST
-                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
-                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
         int budget     = transferBudget;
         int moved      = 0;
 
@@ -758,10 +828,18 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     private boolean hasInductionCard() {
         if (!AppFluxHelper.isAvailable()) return false;
+        if (!inductionCardCacheDirty) return inductionCardInstalledCache;
         var u = getInterfaceLogic().getUpgrades();
-        for (int i = 0; i < u.size(); i++)
-            if (AppFluxHelper.isInductionCard(u.getStackInSlot(i).getItem())) return true;
-        return false;
+        boolean installed = false;
+        for (int i = 0; i < u.size(); i++) {
+            if (AppFluxHelper.isInductionCard(u.getStackInSlot(i).getItem())) {
+                installed = true;
+                break;
+            }
+        }
+        inductionCardInstalledCache = installed;
+        inductionCardCacheDirty = false;
+        return installed;
     }
 
     private void tickEnergyTransfer(ServerLevel sl) {
@@ -831,11 +909,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         long[] canReceive   = new long[cnt];
         int[]  maxCapacity  = new int[cnt];
         long[] storedEnergy = new long[cnt];
+        IEnergyStorage[] storages = new IEnergyStorage[cnt];
 
         for (int i = 0; i < cnt; i++) {
             var entry = batch.get(i);
             var targetLevel = resolveTargetLevel(sl, entry.conn);
             var storage = targetLevel != null ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
+            storages[i] = storage;
             if (storage != null) {
                 canReceive[i]   = AppFluxHelper.simulateReceivable(storage);
                 maxCapacity[i]  = storage.getMaxEnergyStored();
@@ -879,9 +959,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             var entry = batch.get(i);
             if (canReceive[i] > 0 && remaining > 0) {
                 long share = Math.min(canReceive[i], remaining);
-                var targetLevel = resolveTargetLevel(sl, entry.conn);
-                var storage = targetLevel != null
-                        ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
+                var storage = storages[i];
                 long accepted = storage != null
                         ? storage.receiveEnergy((int) Math.min(share, Integer.MAX_VALUE), false) : 0;
                 remaining -= accepted;
