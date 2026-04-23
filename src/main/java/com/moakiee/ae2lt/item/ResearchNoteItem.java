@@ -44,57 +44,44 @@ public class ResearchNoteItem extends Item {
         }
 
         ServerLevel serverLevel = (ServerLevel) level;
-        ResearchNoteData existingData = ResearchNoteData.read(heldStack);
-        ResearchNoteData data = existingData;
-        ItemStack stackToOpen = heldStack;
+        ResearchNoteData data = ResearchNoteData.read(heldStack);
+
         if (data == null) {
+            // 空白笔记:只负责"消耗 1 张、产出 1 张已生成笔记",不打开书。
+            // 避免整叠处理带来的 merge/复制问题,也让玩家单独右键新笔记再查看。
             if (!ResearchNoteGenerator.hasValidPool()) {
                 player.displayClientMessage(Component.translatable("ae2lt.research_note.error.invalid_pool")
                         .withStyle(ChatFormatting.RED), true);
                 return InteractionResultHolder.fail(heldStack);
             }
 
-            data = ResearchNoteGenerator.generate(serverLevel);
-            if (heldStack.getCount() > 1) {
-                // 先生成,再拆叠:否则 addItem(blankRemainder) 会把剩余空白笔记 merge
-                // 回手持槽(两边都是空白,组件兼容),applyGeneratedState 一次性把整叠
-                // 全部盖上相同数据,造成复制/数据污染。
-                stackToOpen = heldStack.copyWithCount(1);
-                applyGeneratedState(stackToOpen, data);
-                ItemStack blankRemainder = heldStack.copyWithCount(heldStack.getCount() - 1);
-                player.setItemInHand(hand, stackToOpen);
-                if (!blankRemainder.isEmpty() && !player.addItem(blankRemainder)) {
-                    player.drop(blankRemainder, false);
-                }
-            } else {
-                applyGeneratedState(stackToOpen, data);
+            ResearchNoteData generated = ResearchNoteGenerator.generate(serverLevel);
+            ItemStack generatedStack = new ItemStack(this);
+            applyGeneratedState(generatedStack, generated);
+
+            heldStack.shrink(1);
+            if (!player.addItem(generatedStack)) {
+                player.drop(generatedStack, false);
             }
-        } else if (heldStack.getCount() > 1) {
-            // 已生成笔记正常情况下因组件差异不会堆叠,但创造模式/mod 工具可能强行堆成多份。
-            // 为避免整叠共享同一份 data(当前数据已被污染),只把手中留 1 张打开,其余落到
-            // 背包,防止一次 consume/复制多张。
-            stackToOpen = heldStack.copyWithCount(1);
-            ItemStack extraRemainder = heldStack.copyWithCount(heldStack.getCount() - 1);
-            player.setItemInHand(hand, stackToOpen);
-            if (!extraRemainder.isEmpty() && !player.addItem(extraRemainder)) {
-                player.drop(extraRemainder, false);
-            }
-            applyGeneratedState(stackToOpen, data);
-        } else {
-            applyGeneratedState(stackToOpen, data);
+            player.awardStat(Stats.ITEM_USED.get(this));
+            return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), false);
         }
 
-        // ServerPlayer#openItemGui 只认 vanilla Items.WRITTEN_BOOK，碰到我们这种"挂着
+        // 已生成笔记:直接打开书,不动堆叠(生成笔记因组件差异天然不可堆叠;
+        // 即便被强行堆,也不在此处处理)。
+        applyGeneratedState(heldStack, data);
+
+        // ServerPlayer#openItemGui 只认 vanilla Items.WRITTEN_BOOK,碰到我们这种"挂着
         // WRITTEN_BOOK_CONTENT 组件的自定义物品"会直接 return。所以这里手动走一遍
-        // 官方那套：先 resolve 书页里的动态组件（实体选择器之类），再把
+        // 官方那套:先 resolve 书页里的动态组件(实体选择器之类),再把
         // ClientboundOpenBookPacket 直接发给客户端。客户端 handleOpenBook 会用玩家
         // 当前手持物 + WRITTEN_BOOK_CONTENT 组件构造 BookViewScreen。
         if (player instanceof ServerPlayer serverPlayer) {
-            WrittenBookItem.resolveBookComponents(stackToOpen, serverPlayer.createCommandSourceStack(), serverPlayer);
+            WrittenBookItem.resolveBookComponents(heldStack, serverPlayer.createCommandSourceStack(), serverPlayer);
             serverPlayer.connection.send(new ClientboundOpenBookPacket(hand));
         }
         player.awardStat(Stats.ITEM_USED.get(this));
-        return InteractionResultHolder.sidedSuccess(player.getItemInHand(hand), false);
+        return InteractionResultHolder.sidedSuccess(heldStack, false);
     }
 
     @Override
