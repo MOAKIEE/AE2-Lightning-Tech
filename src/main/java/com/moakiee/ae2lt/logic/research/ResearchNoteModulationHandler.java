@@ -29,6 +29,10 @@ public final class ResearchNoteModulationHandler {
         if (!ResearchNoteData.isBlank(left)) {
             return;
         }
+        // 只接受单张空白笔记调制,避免一催化物一次性锁定整叠。
+        if (left.getCount() != 1) {
+            return;
+        }
 
         RitualGoal goal = NoteModulationCatalysts.findGoal(right).orElse(null);
         if (goal == null) {
@@ -40,11 +44,14 @@ public final class ResearchNoteModulationHandler {
             return;
         }
 
-        ItemStack output = left.copy();
+        ItemStack output = left.copyWithCount(1);
         ResearchNoteData.writeForcedGoal(output, goal);
 
         event.setOutput(output);
         event.setMaterialCost(1);
-        event.setCost(0);
+        // cost 必须 > 0,否则 AnvilMenu 在非创造模式下会把结果槽锁死;
+        // 同时 cost 不能 >= 40,否则会触发 "Too Expensive!" 同样锁死。
+        // 取 39 作为"最大可能值",既保证取得出又让调制成本足够显著。
+        event.setCost(39);
     }
 }
