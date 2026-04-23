@@ -371,10 +371,6 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        if (host.getInventory().isCatalystItem(stack)) {
-            return moveIntoSlots(stack, List.of(catalystSlot));
-        }
-
         var upgradeSlots = getUpgradeDestinationSlots(stack);
         if (!upgradeSlots.isEmpty()) {
             return moveIntoSlots(stack, upgradeSlots);

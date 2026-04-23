@@ -304,10 +304,6 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        if (host.getInventory().isLightningCollapseMatrix(stack)) {
-            return moveIntoSlots(stack, List.of(matrixSlot));
-        }
-
         return moveIntoSlots(stack, List.of(catalystSlot));
     }
 

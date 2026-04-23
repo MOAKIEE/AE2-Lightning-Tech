@@ -44,12 +44,11 @@ public class LightningSimulationChamberInventory extends LargeStackItemHandler {
             return false;
         }
 
-        boolean catalyst = isCatalystItem(stack);
         if (slot == SLOT_CATALYST) {
-            return catalyst;
+            return isCatalystItem(stack);
         }
 
-        return isInputSlot(slot) && !catalyst;
+        return isInputSlot(slot);
     }
 
     public boolean isInputSlot(int slot) {

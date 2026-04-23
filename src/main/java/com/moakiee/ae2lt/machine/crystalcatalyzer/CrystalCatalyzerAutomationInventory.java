@@ -8,9 +8,8 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 /**
  * Capability-facing inventory wrapper.
  *
- * <p>Automation may insert catalysts into slot 0 and may route the lightning
- * collapse matrix through either input slot into the dedicated matrix slot.
- * Extraction is restricted to the output slot.</p>
+ * <p>Automation may insert catalysts into slot 0. The dedicated matrix slot is
+ * reserved for manual GUI placement, and extraction is restricted to output.</p>
  */
 public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiable {
     private final CrystalCatalyzerInventory inventory;
@@ -44,8 +43,9 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
             return ItemStack.EMPTY;
         }
 
-        if (inventory.isLightningCollapseMatrix(stack) && slot != CrystalCatalyzerInventory.SLOT_OUTPUT) {
-            return inventory.insertItem(CrystalCatalyzerInventory.SLOT_MATRIX, stack, simulate);
+        if (slot == CrystalCatalyzerInventory.SLOT_MATRIX
+                || slot == CrystalCatalyzerInventory.SLOT_OUTPUT) {
+            return stack;
         }
 
         if (slot == CrystalCatalyzerInventory.SLOT_CATALYST
@@ -78,8 +78,9 @@ public class CrystalCatalyzerAutomationInventory implements IItemHandlerModifiab
             return false;
         }
 
-        if (inventory.isLightningCollapseMatrix(stack)) {
-            return slot != CrystalCatalyzerInventory.SLOT_OUTPUT;
+        if (slot == CrystalCatalyzerInventory.SLOT_MATRIX
+                || slot == CrystalCatalyzerInventory.SLOT_OUTPUT) {
+            return false;
         }
 
         return slot == CrystalCatalyzerInventory.SLOT_CATALYST

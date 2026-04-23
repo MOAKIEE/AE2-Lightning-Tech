@@ -249,10 +249,6 @@ public class TeslaCoilMenu extends AEBaseMenu {
             return moveIntoSlots(stack, List.of(dustSlot));
         }
 
-        if (host.getInventory().isLightningCollapseMatrix(stack)) {
-            return moveIntoSlots(stack, List.of(matrixSlot));
-        }
-
         return stack;
     }
 

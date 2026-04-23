@@ -8,9 +8,8 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 /**
  * Capability-facing inventory wrapper.
  *
- * <p>Important behavior:
- * catalyst matrices are always routed to slot 3 first, even when an
- * automation helper starts probing slots from 0 upward.</p>
+ * <p>External automation only inserts into recipe input slots. The dedicated
+ * catalyst matrix slot is reserved for manual GUI placement.</p>
  */
 public class LightningSimulationChamberAutomationInventory implements IItemHandlerModifiable {
     private final LightningSimulationChamberInventory inventory;
@@ -42,12 +41,9 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT) {
+        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT
+                || slot == LightningSimulationChamberInventory.SLOT_CATALYST) {
             return stack;
-        }
-
-        if (inventory.isCatalystItem(stack)) {
-            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_CATALYST, stack, simulate);
         }
 
         if (inventory.isInputSlot(slot)) {
@@ -65,10 +61,6 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
         Objects.requireNonNull(stack, "stack");
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
-        }
-
-        if (inventory.isCatalystItem(stack)) {
-            return inventory.insertItem(LightningSimulationChamberInventory.SLOT_CATALYST, stack, simulate);
         }
 
         ItemStack remainder = stack;
@@ -104,12 +96,9 @@ public class LightningSimulationChamberAutomationInventory implements IItemHandl
         if (stack.isEmpty()) {
             return false;
         }
-        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT) {
+        if (slot == LightningSimulationChamberInventory.SLOT_OUTPUT
+                || slot == LightningSimulationChamberInventory.SLOT_CATALYST) {
             return false;
-        }
-
-        if (inventory.isCatalystItem(stack)) {
-            return true;
         }
 
         return inventory.isInputSlot(slot);

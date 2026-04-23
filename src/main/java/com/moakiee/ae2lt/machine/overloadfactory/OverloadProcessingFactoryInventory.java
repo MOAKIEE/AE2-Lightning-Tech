@@ -41,12 +41,11 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
             return false;
         }
 
-        boolean matrix = isLightningCollapseMatrix(stack);
         if (slot == SLOT_MATRIX) {
-            return matrix;
+            return isLightningCollapseMatrix(stack);
         }
 
-        return isInputSlot(slot) && !matrix;
+        return isInputSlot(slot);
     }
 
     public boolean isInputSlot(int slot) {

@@ -417,10 +417,6 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        if (host.getInventory().isLightningCollapseMatrix(stack)) {
-            return moveIntoSlots(stack, List.of(matrixSlot));
-        }
-
         var upgradeSlots = getUpgradeDestinationSlots(stack);
         if (!upgradeSlots.isEmpty()) {
             return moveIntoSlots(stack, upgradeSlots);

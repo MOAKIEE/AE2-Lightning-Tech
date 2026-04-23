@@ -37,12 +37,8 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
         }
-        if (inventory.isOutputSlot(slot)) {
+        if (inventory.isOutputSlot(slot) || slot == OverloadProcessingFactoryInventory.SLOT_MATRIX) {
             return stack;
-        }
-
-        if (inventory.isLightningCollapseMatrix(stack)) {
-            return inventory.insertItem(OverloadProcessingFactoryInventory.SLOT_MATRIX, stack, simulate);
         }
 
         if (inventory.isInputSlot(slot)) {
@@ -56,10 +52,6 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
         Objects.requireNonNull(stack, "stack");
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
-        }
-
-        if (inventory.isLightningCollapseMatrix(stack)) {
-            return inventory.insertItem(OverloadProcessingFactoryInventory.SLOT_MATRIX, stack, simulate);
         }
 
         ItemStack remainder = stack;
@@ -99,9 +91,7 @@ public class OverloadProcessingFactoryAutomationInventory implements IItemHandle
         if (stack.isEmpty()) {
             return false;
         }
-        if (inventory.isLightningCollapseMatrix(stack)) {
-            return slot == OverloadProcessingFactoryInventory.SLOT_MATRIX;
-        }
-        return inventory.isInputSlot(slot);
+        return slot != OverloadProcessingFactoryInventory.SLOT_MATRIX
+                && inventory.isInputSlot(slot);
     }
 }

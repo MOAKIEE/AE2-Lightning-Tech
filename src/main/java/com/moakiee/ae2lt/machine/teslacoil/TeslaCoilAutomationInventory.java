@@ -30,9 +30,16 @@ public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
     @Override
     public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) {
         Objects.requireNonNull(stack, "stack");
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+        }
 
         if (stack.isEmpty()) {
             return ItemStack.EMPTY;
+        }
+
+        if (slot == TeslaCoilInventory.SLOT_MATRIX) {
+            return stack;
         }
 
         if (!inventory.isItemValid(slot, stack)) {
@@ -57,6 +64,15 @@ public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
 
     @Override
     public boolean isItemValid(int slot, ItemStack stack) {
+        if (slot < 0 || slot >= inventory.getSlots()) {
+            throw new IllegalArgumentException("Slot " + slot + " not in valid range");
+        }
+        if (stack.isEmpty()) {
+            return false;
+        }
+        if (slot == TeslaCoilInventory.SLOT_MATRIX) {
+            return false;
+        }
         return inventory.isItemValid(slot, stack);
     }
 }
