@@ -54,16 +54,31 @@ public class ResearchNoteItem extends Item {
                 return InteractionResultHolder.fail(heldStack);
             }
 
+            data = ResearchNoteGenerator.generate(serverLevel);
             if (heldStack.getCount() > 1) {
+                // 先生成,再拆叠:否则 addItem(blankRemainder) 会把剩余空白笔记 merge
+                // 回手持槽(两边都是空白,组件兼容),applyGeneratedState 一次性把整叠
+                // 全部盖上相同数据,造成复制/数据污染。
                 stackToOpen = heldStack.copyWithCount(1);
+                applyGeneratedState(stackToOpen, data);
                 ItemStack blankRemainder = heldStack.copyWithCount(heldStack.getCount() - 1);
                 player.setItemInHand(hand, stackToOpen);
                 if (!blankRemainder.isEmpty() && !player.addItem(blankRemainder)) {
                     player.drop(blankRemainder, false);
                 }
+            } else {
+                applyGeneratedState(stackToOpen, data);
             }
-
-            data = ResearchNoteGenerator.generate(serverLevel);
+        } else if (heldStack.getCount() > 1) {
+            // 已生成笔记正常情况下因组件差异不会堆叠,但创造模式/mod 工具可能强行堆成多份。
+            // 为避免整叠共享同一份 data(当前数据已被污染),只把手中留 1 张打开,其余落到
+            // 背包,防止一次 consume/复制多张。
+            stackToOpen = heldStack.copyWithCount(1);
+            ItemStack extraRemainder = heldStack.copyWithCount(heldStack.getCount() - 1);
+            player.setItemInHand(hand, stackToOpen);
+            if (!extraRemainder.isEmpty() && !player.addItem(extraRemainder)) {
+                player.drop(extraRemainder, false);
+            }
             applyGeneratedState(stackToOpen, data);
         } else {
             applyGeneratedState(stackToOpen, data);
