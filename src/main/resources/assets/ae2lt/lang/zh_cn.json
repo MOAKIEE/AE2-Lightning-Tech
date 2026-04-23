@@ -419,6 +419,8 @@
   "ae2lt.research_note.tooltip.goal": "目标物：%s",
   "ae2lt.research_note.tooltip.generated": "仪式顺序已经写定。",
   "ae2lt.research_note.tooltip.completed": "这场仪式已经完成过了。",
+  "ae2lt.research_note.tooltip.modulation_hint": "铁砧 + 催化物可预先锁定目标:",
+  "ae2lt.research_note.tooltip.modulated": "锁定目标：%s",
   "ae2lt.research_note.error.invalid_pool": "当前加载到的候选物不足，研究笔记池无效。",
   "ae2lt.research_note.book.title": "研究札记 #%s",
   "ae2lt.research_note.book.author": "佚名研究员",

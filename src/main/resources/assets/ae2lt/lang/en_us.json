@@ -419,6 +419,8 @@
   "ae2lt.research_note.tooltip.goal": "Target: %s",
   "ae2lt.research_note.tooltip.generated": "The ritual order has been fixed.",
   "ae2lt.research_note.tooltip.completed": "This ritual has already been fulfilled.",
+  "ae2lt.research_note.tooltip.modulation_hint": "Anvil + catalyst to pre-tune the goal:",
+  "ae2lt.research_note.tooltip.modulated": "Tuned target: %s",
   "ae2lt.research_note.error.invalid_pool": "The research pool is invalid right now; not enough ritual candidates are loaded.",
   "ae2lt.research_note.book.title": "Research Note #%s",
   "ae2lt.research_note.book.author": "Anonymous Researcher",

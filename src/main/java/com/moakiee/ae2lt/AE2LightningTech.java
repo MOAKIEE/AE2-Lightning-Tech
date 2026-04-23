@@ -57,6 +57,7 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
+import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -189,6 +190,7 @@ public class AE2LightningTech {
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
+        NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {

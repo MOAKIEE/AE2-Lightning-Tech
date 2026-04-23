@@ -116,6 +116,15 @@ public final class ResearchNoteGenerator {
     }
 
     public static ResearchNoteData generate(ServerLevel level) {
+        return generate(level, null);
+    }
+
+    /**
+     * 生成一本笔记。若 {@code forcedGoal} 非空,强制使用该目标(用于铁砧调制);否则
+     * 基于 {@link RandomSource} 随机抽取。随机路径仍消费一次 rng,保证不同 forcedGoal
+     * 选择不会让玩家通过"看候选物顺序"反推世界种子/算法偏置。
+     */
+    public static ResearchNoteData generate(ServerLevel level, @org.jetbrains.annotations.Nullable RitualGoal forcedGoal) {
         CandidateCache activeCache = ensureCache();
         if (activeCache.totalEntries() < 9) {
             throw new IllegalStateException("Research note candidate pool has fewer than 9 available entries.");
@@ -124,8 +133,10 @@ public final class ResearchNoteGenerator {
         UUID ritualSeed = UUID.randomUUID();
         long mixedSeed = mixSeed(ritualSeed, level.getServer().overworld().getSeed());
         RandomSource rng = RandomSource.create(mixedSeed);
-        RitualGoal goal = RitualGoal.values()[rng.nextInt(RitualGoal.values().length)];
-        LOG.debug("[ae2lt/note] generate: ritualSeed={} mixedSeed={} goal={}", ritualSeed, mixedSeed, goal);
+        RitualGoal rolled = RitualGoal.values()[rng.nextInt(RitualGoal.values().length)];
+        RitualGoal goal = forcedGoal != null ? forcedGoal : rolled;
+        LOG.debug("[ae2lt/note] generate: ritualSeed={} mixedSeed={} goal={} forced={}", ritualSeed, mixedSeed, goal,
+                forcedGoal != null);
 
         // 统一池加权抽取:所有候选一次性参与,高档通过 tier 乘数在同池中胜出,
         // 不再出现"某档池子被一次性吃光"的退化。每次调用 rng 状态独立,物品集合与顺序都会变化。
