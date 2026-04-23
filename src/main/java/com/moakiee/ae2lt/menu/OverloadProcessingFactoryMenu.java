@@ -116,6 +116,9 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
         registerClientAction("toggleAutoExport", this::toggleAutoExport);
         registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
         registerClientAction("clearOutputSides", this::clearOutputSides);
+        registerClientAction("insertFluid", Integer.class, this::insertFluidFromCarried);
+        registerClientAction("extractFluid", Integer.class, this::extractFluidToCarried);
+        registerClientAction("clearFluidTank", Integer.class, this::clearFluidTank);
     }
 
     private void addMachineSlots() {
@@ -339,6 +342,42 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
 
     public void clientClearOutputSides() {
         sendClientAction("clearOutputSides");
+    }
+
+    public void clientInsertFluid(int tankIndex) {
+        sendClientAction("insertFluid", tankIndex);
+    }
+
+    public void clientExtractFluid(int tankIndex) {
+        sendClientAction("extractFluid", tankIndex);
+    }
+
+    public void clientClearFluidTank(int tankIndex) {
+        sendClientAction("clearFluidTank", tankIndex);
+    }
+
+    private void insertFluidFromCarried(Integer tankIndex) {
+        if (!isServerSide() || tankIndex == null) {
+            return;
+        }
+        host.tryInsertFluidFromCarried(getPlayer(), tankIndex);
+        broadcastChanges();
+    }
+
+    private void extractFluidToCarried(Integer tankIndex) {
+        if (!isServerSide() || tankIndex == null) {
+            return;
+        }
+        host.tryExtractFluidToCarried(getPlayer(), tankIndex);
+        broadcastChanges();
+    }
+
+    private void clearFluidTank(Integer tankIndex) {
+        if (!isServerSide() || tankIndex == null) {
+            return;
+        }
+        host.clearFluidTank(tankIndex);
+        broadcastChanges();
     }
 
     public List<Component> getCompatibleUpgradeLines() {

@@ -1,16 +1,21 @@
 package com.moakiee.ae2lt.client;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntSupplier;
 import java.util.function.Supplier;
 
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -21,6 +26,7 @@ import appeng.client.gui.widgets.ITooltip;
 import appeng.core.localization.Tooltips;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 
 /**
  * Vertical fluid tank widget for the Crystal Catalyzer.
@@ -55,13 +61,47 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
 
     private final Supplier<FluidStack> fluidSupplier;
     private final IntSupplier capacitySupplier;
+    private final CrystalCatalyzerMenu menu;
 
     public CrystalCatalyzerFluidWidget(
+            CrystalCatalyzerMenu menu,
             Supplier<FluidStack> fluidSupplier,
             IntSupplier capacitySupplier) {
         super(0, 0, TANK_INNER_WIDTH, TANK_INNER_HEIGHT, Component.empty());
+        this.menu = menu;
         this.fluidSupplier = fluidSupplier;
         this.capacitySupplier = capacitySupplier;
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY)) {
+            return false;
+        }
+        // shift + 任意键 = 清空(仅对非空 tank 有意义,但 server 侧也会兜底校验)
+        if (Screen.hasShiftDown()) {
+            menu.clientClearFluidTank();
+            playClickSound();
+            return true;
+        }
+        if (button == 0) {
+            // 左键 = 从 tank 抽出到光标容器
+            menu.clientExtractFluid();
+            playClickSound();
+            return true;
+        }
+        if (button == 1) {
+            // 右键 = 把光标容器里的流体倒入 tank
+            menu.clientInsertFluid();
+            playClickSound();
+            return true;
+        }
+        return false;
+    }
+
+    private void playClickSound() {
+        Minecraft.getInstance().getSoundManager().play(
+                SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
     }
 
     @Override
@@ -113,20 +153,24 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     public List<Component> getTooltipMessage() {
         FluidStack fluid = fluidSupplier.get();
         int capacity = capacitySupplier.getAsInt();
+        List<Component> lines = new ArrayList<>();
         if (fluid.isEmpty()) {
-            return List.of(
-                    Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", 0, capacity)
-                            .withStyle(Tooltips.NUMBER_TEXT));
+            lines.add(Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", 0, capacity)
+                    .withStyle(Tooltips.NUMBER_TEXT));
+        } else {
+            lines.add(fluid.getHoverName());
+            lines.add(Component.empty());
+            lines.add(Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", fluid.getAmount(), capacity)
+                    .withStyle(Tooltips.NUMBER_TEXT));
+            lines.add(Component.empty());
+            lines.add(Component.literal(getModDisplayName(fluid))
+                    .withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC));
         }
-
-        return List.of(
-                fluid.getHoverName(),
-                Component.empty(),
-                Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", fluid.getAmount(), capacity)
-                        .withStyle(Tooltips.NUMBER_TEXT),
-                Component.empty(),
-                Component.literal(getModDisplayName(fluid))
-                        .withStyle(ChatFormatting.BLUE, ChatFormatting.ITALIC));
+        lines.add(Component.empty());
+        lines.add(Component.translatable("ae2lt.gui.fluid_tank.action.insert").withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(Component.translatable("ae2lt.gui.fluid_tank.action.extract").withStyle(ChatFormatting.DARK_GRAY));
+        lines.add(Component.translatable("ae2lt.gui.fluid_tank.action.clear").withStyle(ChatFormatting.DARK_GRAY));
+        return lines;
     }
 
     @Override

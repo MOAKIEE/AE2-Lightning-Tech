@@ -140,6 +140,50 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         return outputTank.getFluid().copy();
     }
 
+    /** GUI 流体槽交互:光标容器 → 指定 tank(0=input, 1=output)。成功返回 true。 */
+    public boolean tryInsertFluidFromCarried(Player player, int tankIndex) {
+        NotifyingFluidTank target = resolveTankByIndex(tankIndex);
+        if (target == null) {
+            return false;
+        }
+        boolean changed = com.moakiee.ae2lt.logic.FluidTankInteractionHelper.insertFromCarried(player, target);
+        if (changed) {
+            saveChanges();
+        }
+        return changed;
+    }
+
+    /** GUI 流体槽交互:指定 tank → 光标容器。成功返回 true。 */
+    public boolean tryExtractFluidToCarried(Player player, int tankIndex) {
+        NotifyingFluidTank target = resolveTankByIndex(tankIndex);
+        if (target == null) {
+            return false;
+        }
+        boolean changed = com.moakiee.ae2lt.logic.FluidTankInteractionHelper.extractToCarried(player, target);
+        if (changed) {
+            saveChanges();
+        }
+        return changed;
+    }
+
+    /** GUI 清空按钮:直接清空指定 tank。 */
+    public void clearFluidTank(int tankIndex) {
+        NotifyingFluidTank target = resolveTankByIndex(tankIndex);
+        if (target == null || target.getFluid().isEmpty()) {
+            return;
+        }
+        com.moakiee.ae2lt.logic.FluidTankInteractionHelper.clear(target);
+        saveChanges();
+    }
+
+    private NotifyingFluidTank resolveTankByIndex(int tankIndex) {
+        return switch (tankIndex) {
+            case 0 -> inputTank;
+            case 1 -> outputTank;
+            default -> null;
+        };
+    }
+
     public int getInstalledMatrixCount() {
         return inventory.getInstalledMatrixCount();
     }

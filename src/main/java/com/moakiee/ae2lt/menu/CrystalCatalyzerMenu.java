@@ -81,6 +81,9 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
         registerClientAction("toggleAutoExport", this::toggleAutoExport);
         registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
         registerClientAction("clearOutputSides", this::clearOutputSides);
+        registerClientAction("insertFluid", this::insertFluidFromCarried);
+        registerClientAction("extractFluid", this::extractFluidToCarried);
+        registerClientAction("clearFluidTank", this::clearFluidTank);
     }
 
     @Override
@@ -227,6 +230,42 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
 
     public void clientClearOutputSides() {
         sendClientAction("clearOutputSides");
+    }
+
+    public void clientInsertFluid() {
+        sendClientAction("insertFluid");
+    }
+
+    public void clientExtractFluid() {
+        sendClientAction("extractFluid");
+    }
+
+    public void clientClearFluidTank() {
+        sendClientAction("clearFluidTank");
+    }
+
+    private void insertFluidFromCarried() {
+        if (!isServerSide()) {
+            return;
+        }
+        host.tryInsertFluidFromCarried(getPlayer());
+        broadcastChanges();
+    }
+
+    private void extractFluidToCarried() {
+        if (!isServerSide()) {
+            return;
+        }
+        host.tryExtractFluidToCarried(getPlayer());
+        broadcastChanges();
+    }
+
+    private void clearFluidTank() {
+        if (!isServerSide()) {
+            return;
+        }
+        host.clearFluidTank();
+        broadcastChanges();
     }
 
     private void toggleAutoExport() {

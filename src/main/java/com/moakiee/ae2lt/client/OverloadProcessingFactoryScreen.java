@@ -38,9 +38,13 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
         widgets.add("processArea", new OverloadProcessingFactoryProgressWidget(menu, style.getImage("processOverlay")));
         widgets.add("energyBar", new OverloadProcessingFactoryEnergyBar(menu, style.getImage("energyBar")));
         widgets.add("inputFluidBar", new OverloadProcessingFactoryFluidWidget(
+                menu,
+                0,
                 menu::getInputFluid,
                 menu::getInputTankCapacity));
         widgets.add("outputFluidBar", new OverloadProcessingFactoryFluidWidget(
+                menu,
+                1,
                 menu::getOutputFluid,
                 menu::getOutputTankCapacity));
 

@@ -124,6 +124,33 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         return tank.getFluid().copy();
     }
 
+    /** GUI 流体槽交互:光标容器 → tank。成功返回 true。 */
+    public boolean tryInsertFluidFromCarried(Player player) {
+        boolean changed = com.moakiee.ae2lt.logic.FluidTankInteractionHelper.insertFromCarried(player, tank);
+        if (changed) {
+            saveChanges();
+        }
+        return changed;
+    }
+
+    /** GUI 流体槽交互:tank → 光标容器。成功返回 true。 */
+    public boolean tryExtractFluidToCarried(Player player) {
+        boolean changed = com.moakiee.ae2lt.logic.FluidTankInteractionHelper.extractToCarried(player, tank);
+        if (changed) {
+            saveChanges();
+        }
+        return changed;
+    }
+
+    /** GUI 清空按钮:直接清空 tank(流体消失,不返还)。 */
+    public void clearFluidTank() {
+        if (tank.getFluid().isEmpty()) {
+            return;
+        }
+        com.moakiee.ae2lt.logic.FluidTankInteractionHelper.clear(tank);
+        saveChanges();
+    }
+
     public IFluidHandler getFluidHandlerCapability(Direction side) {
         return fluidHandler;
     }

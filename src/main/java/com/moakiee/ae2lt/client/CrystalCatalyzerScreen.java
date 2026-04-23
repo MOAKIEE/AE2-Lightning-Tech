@@ -32,6 +32,7 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
 
         widgets.add("energyBar", new CrystalCatalyzerEnergyBar(menu, style.getImage("energyBar")));
         widgets.add("fluidBar", new CrystalCatalyzerFluidWidget(
+                menu,
                 menu::getFluid,
                 menu::getFluidCapacity));
         widgets.add("processArea", new CrystalCatalyzerProgressWidget(menu, style.getImage("processOverlay")));

@@ -535,8 +535,44 @@ public class AE2LightningTech {
             Upgrades.add(AEItems.FUZZY_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
 
             registerAppliedFluxInductionCardCompat();
+            registerOverloadTntDispenseBehavior();
 
         });
+    }
+
+    private static void registerOverloadTntDispenseBehavior() {
+        net.minecraft.world.level.block.DispenserBlock.registerBehavior(
+                ModBlocks.OVERLOAD_TNT.get().asItem(),
+                new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() {
+                    @Override
+                    protected net.minecraft.world.item.ItemStack execute(
+                            net.minecraft.core.dispenser.BlockSource source,
+                            net.minecraft.world.item.ItemStack stack) {
+                        var level = source.level();
+                        var pos = source.pos().relative(
+                                source.state().getValue(
+                                        net.minecraft.world.level.block.DispenserBlock.FACING));
+                        var tnt = new com.moakiee.ae2lt.entity.OverloadTntEntity(
+                                level,
+                                pos.getX() + 0.5D,
+                                pos.getY(),
+                                pos.getZ() + 0.5D,
+                                null);
+                        level.addFreshEntity(tnt);
+                        level.playSound(
+                                null,
+                                tnt.getX(),
+                                tnt.getY(),
+                                tnt.getZ(),
+                                net.minecraft.sounds.SoundEvents.TNT_PRIMED,
+                                net.minecraft.sounds.SoundSource.BLOCKS,
+                                1.0F,
+                                1.0F);
+                        level.gameEvent(null, net.minecraft.world.level.gameevent.GameEvent.ENTITY_PLACE, pos);
+                        stack.shrink(1);
+                        return stack;
+                    }
+                });
     }
 
     private static void registerAppliedFluxInductionCardCompat() {
