@@ -12,21 +12,16 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
  */
 public final class LightningSimulationChamberEnergyStorage implements IEnergyStorage {
     private final long capacity;
-    private final long maxReceivePerOperation;
     private final Runnable changeListener;
 
     private long storedEnergy;
 
-    public LightningSimulationChamberEnergyStorage(long capacity, long maxReceivePerOperation, Runnable changeListener) {
+    public LightningSimulationChamberEnergyStorage(long capacity, Runnable changeListener) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
-        if (maxReceivePerOperation <= 0) {
-            throw new IllegalArgumentException("maxReceivePerOperation must be positive");
-        }
 
         this.capacity = capacity;
-        this.maxReceivePerOperation = maxReceivePerOperation;
         this.changeListener = Objects.requireNonNull(changeListener, "changeListener");
     }
 
@@ -37,7 +32,7 @@ public final class LightningSimulationChamberEnergyStorage implements IEnergySto
         }
 
         long accepted = Math.min(
-                Math.min(Integer.toUnsignedLong(maxReceive), maxReceivePerOperation),
+                Integer.toUnsignedLong(maxReceive),
                 capacity - storedEnergy);
         if (accepted <= 0) {
             return 0;

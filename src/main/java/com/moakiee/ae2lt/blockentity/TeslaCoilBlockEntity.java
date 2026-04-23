@@ -41,7 +41,6 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost {
     public static final int ENERGY_CAPACITY = 16_000_000;
-    public static final int MAX_RECEIVE = 200_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";
     private static final String TAG_CONSUMED_ENERGY = "ConsumedEnergy";
@@ -54,7 +53,6 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     private final TeslaCoilAutomationInventory automationInventory = new TeslaCoilAutomationInventory(inventory);
     private final TeslaCoilEnergyStorage energyStorage = new TeslaCoilEnergyStorage(
             ENERGY_CAPACITY,
-            MAX_RECEIVE,
             this::onEnergyChanged);
     private final TeslaCoilLogic logic;
 

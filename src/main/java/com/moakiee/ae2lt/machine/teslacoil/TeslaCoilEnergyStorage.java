@@ -6,21 +6,16 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 
 public final class TeslaCoilEnergyStorage implements IEnergyStorage {
     private final long capacity;
-    private final long maxReceivePerOperation;
     private final Runnable changeListener;
 
     private long storedEnergy;
 
-    public TeslaCoilEnergyStorage(long capacity, long maxReceivePerOperation, Runnable changeListener) {
+    public TeslaCoilEnergyStorage(long capacity, Runnable changeListener) {
         if (capacity <= 0L) {
             throw new IllegalArgumentException("capacity must be positive");
         }
-        if (maxReceivePerOperation <= 0L) {
-            throw new IllegalArgumentException("maxReceivePerOperation must be positive");
-        }
 
         this.capacity = capacity;
-        this.maxReceivePerOperation = maxReceivePerOperation;
         this.changeListener = Objects.requireNonNull(changeListener, "changeListener");
     }
 
@@ -31,7 +26,7 @@ public final class TeslaCoilEnergyStorage implements IEnergyStorage {
         }
 
         long accepted = Math.min(
-                Math.min(Integer.toUnsignedLong(maxReceive), maxReceivePerOperation),
+                Integer.toUnsignedLong(maxReceive),
                 capacity - storedEnergy);
         if (accepted <= 0L) {
             return 0;

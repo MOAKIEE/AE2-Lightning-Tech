@@ -67,7 +67,6 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
 
     public static final int ENERGY_CAPACITY = 1_000_000;
-    public static final int ENERGY_RECEIVE_PER_OPERATION = 200_000;
     public static final int SPEED_CARD_SLOTS = 4;
 
     private final LightningSimulationChamberInventory inventory =
@@ -75,7 +74,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private final LightningSimulationChamberAutomationInventory automationInventory =
             new LightningSimulationChamberAutomationInventory(inventory);
     private final LightningSimulationChamberEnergyStorage energyStorage =
-            new LightningSimulationChamberEnergyStorage(ENERGY_CAPACITY, ENERGY_RECEIVE_PER_OPERATION, this::onEnergyChanged);
+            new LightningSimulationChamberEnergyStorage(ENERGY_CAPACITY, this::onEnergyChanged);
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final LightningSimulationChamberLogic logic;
