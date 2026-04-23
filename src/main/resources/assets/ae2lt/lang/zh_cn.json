@@ -410,6 +410,7 @@
   "tooltip.ae2lt.mysterious_cell.from_mysterious": "——自一枚神秘元件单次读出并兑现的产物。",
   "tooltip.ae2lt.mysterious_cell.consumed": "残余已被读出。壳体内已无可检测信号。",
   "tooltip.ae2lt.mysterious_cell.consumed.hint": "——单次写入型存储，无法二次解析。",
+  "ae2lt.research_note.goal.high_voltage": "无限高压闪电元件",
   "ae2lt.research_note.goal.extreme_high_voltage": "无限极高压闪电元件",
   "ae2lt.research_note.goal.lightning_collapse_matrix": "无限闪电坍缩矩阵元件",
   "ae2lt.research_note.goal.infinite_storage_cell": "无限存储元件",

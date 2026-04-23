@@ -410,6 +410,7 @@
   "tooltip.ae2lt.mysterious_cell.from_mysterious": "- single-readout payload produced by a Mysterious Cell.",
   "tooltip.ae2lt.mysterious_cell.consumed": "The residue has been read out; no signal detectable in the shell.",
   "tooltip.ae2lt.mysterious_cell.consumed.hint": "- write-once storage: cannot be decoded a second time.",
+  "ae2lt.research_note.goal.high_voltage": "Infinite High Voltage Lightning Cell",
   "ae2lt.research_note.goal.extreme_high_voltage": "Infinite Extreme High Voltage Lightning Cell",
   "ae2lt.research_note.goal.lightning_collapse_matrix": "Infinite Lightning Collapse Matrix Cell",
   "ae2lt.research_note.goal.infinite_storage_cell": "Infinite Storage Cell",

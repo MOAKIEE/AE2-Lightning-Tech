@@ -176,6 +176,11 @@ public final class ResearchRitualService {
 
     private static ItemStack createRewardStack(RitualGoal goal) {
         return switch (goal) {
+            case HIGH_VOLTAGE -> {
+                ItemStack stack = new ItemStack(ModItems.MYSTERIOUS_CELL.get());
+                FixedInfiniteCellItem.setType(stack, FixedInfiniteCellItem.CellOutcome.HIGH_VOLTAGE.typeId());
+                yield stack;
+            }
             case EXTREME_HIGH_VOLTAGE -> {
                 ItemStack stack = new ItemStack(ModItems.MYSTERIOUS_CELL.get());
                 FixedInfiniteCellItem.setType(stack, FixedInfiniteCellItem.CellOutcome.EXTREME_HIGH_VOLTAGE.typeId());

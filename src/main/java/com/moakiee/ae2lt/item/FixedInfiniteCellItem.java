@@ -139,13 +139,14 @@ public final class FixedInfiniteCellItem extends Item {
     /**
      * 按 seed + 世界种子 hash 出 10000 个 roll 区间,再映射到一个 outcome:
      * <ul>
-     *   <li>roll 0..2 → RESEARCH_NOTE (3/10000, UR 暗门,引导进入仪式玩法)</li>
-     *   <li>roll 3..11 → HIGH_VOLTAGE (9/10000, SR)</li>
+     *   <li>roll 0..11 → RESEARCH_NOTE (12/10000, UR 暗门;是 HV/EHV/矩阵/无限存储
+     *       仪式的唯一入口)</li>
      *   <li>roll 12..1011 → MOAKIEE_FUMO (1000/10000, 10%, 彩蛋收藏)</li>
      *   <li>roll 1012..2011 → CYSTRYSU_FUMO (1000/10000, 10%, 彩蛋收藏)</li>
      *   <li>roll 2012..9999 → LIGHTNING_ROD (7988/10000, R)</li>
      * </ul>
-     * EXTREME_HIGH_VOLTAGE 与 LIGHTNING_COLLAPSE_MATRIX 仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
+     * HIGH_VOLTAGE / EXTREME_HIGH_VOLTAGE / LIGHTNING_COLLAPSE_MATRIX /
+     * INFINITE_STORAGE_CELL 全部仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
      * 若 Fumo 方块未启用(meplacementtool 已加载),对应档位会在 displayKey 兜底回 LIGHTNING_ROD,
      * 不在 roll 表里特意剔除——玩家在这种存档里抽到的 Fumo cell 会显示为避雷针,是可接受的降级。
      */
@@ -153,8 +154,7 @@ public final class FixedInfiniteCellItem extends Item {
         long mixed = (seed.getLeastSignificantBits() ^ worldSeed)
                    ^ (seed.getMostSignificantBits() ^ Long.reverseBytes(worldSeed));
         int roll = Math.floorMod(mixed, 10000);
-        if (roll <= 2) return CellOutcome.RESEARCH_NOTE;
-        if (roll <= 11) return CellOutcome.HIGH_VOLTAGE;
+        if (roll <= 11) return CellOutcome.RESEARCH_NOTE;
         if (roll <= 1011) return CellOutcome.MOAKIEE_FUMO;
         if (roll <= 2011) return CellOutcome.CYSTRYSU_FUMO;
         return CellOutcome.LIGHTNING_ROD;
