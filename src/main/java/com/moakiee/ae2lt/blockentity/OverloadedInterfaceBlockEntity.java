@@ -1188,4 +1188,72 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         refreshEjectRegistrations();
     }
 
+    // ── Memory card copy/paste (machine-specific fields only) ───────────────
+    // AE2's generic export only walks IUpgradeable / IConfigurableObject /
+    // IPriorityHost / IConfigInvHost — none of our custom mode enums, the
+    // energy output direction, or the unlimited-slot bitset live there.
+
+    @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = new CompoundTag();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_INTERFACE_MODE, interfaceMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IO_SPEED_MODE, ioSpeedMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_EXPORT_MODE, exportMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IMPORT_MODE, importMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeDirection(tag, TAG_ENERGY_DIR, energyOutputDir);
+        long bits = 0;
+        for (int i = 0; i < SLOT_COUNT; i++) {
+            if (unlimitedSlots[i]) bits |= (1L << i);
+        }
+        tag.putLong(TAG_UNLIMITED_SLOTS, bits);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
+        if (tag == null) {
+            return;
+        }
+        this.interfaceMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_INTERFACE_MODE, InterfaceMode.class, this.interfaceMode);
+        this.ioSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_IO_SPEED_MODE, IOSpeedMode.class, this.ioSpeedMode);
+        this.exportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_EXPORT_MODE, ExportMode.class, this.exportMode);
+        var newImportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_IMPORT_MODE, ImportMode.class, this.importMode);
+        if (newImportMode != this.importMode) {
+            var old = this.importMode;
+            this.importMode = newImportMode;
+            if ((old == ImportMode.EJECT) != (newImportMode == ImportMode.EJECT)) {
+                refreshEjectRegistrations();
+            }
+        }
+        if (tag.contains(TAG_ENERGY_DIR)) {
+            this.energyOutputDir = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readDirection(tag, TAG_ENERGY_DIR);
+        }
+        if (tag.contains(TAG_UNLIMITED_SLOTS)) {
+            long bits = tag.getLong(TAG_UNLIMITED_SLOTS);
+            for (int i = 0; i < SLOT_COUNT; i++) {
+                unlimitedSlots[i] = (bits & (1L << i)) != 0;
+            }
+        }
+        invalidateConnectionCache();
+        saveChanges();
+        markForUpdate();
+    }
+
 }

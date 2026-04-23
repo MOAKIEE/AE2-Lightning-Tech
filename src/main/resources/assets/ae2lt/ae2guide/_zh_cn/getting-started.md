@@ -15,8 +15,8 @@ navigation:
 开始前请确保已经具备一个可运行的 AE2 ME 网络，至少包含：
 
 * 一个 <ItemLink id="ae2:controller" /> 或一张无控制器的小型网络
-* 一台 <ItemLink id="ae2:charger" />
-* 少量 <ItemLink id="ae2:certus_quartz_crystal" /> 与 <ItemLink id="ae2:fluix_crystal" />
+* 少量 <ItemLink id="ae2:certus_quartz_crystal" />、<ItemLink id="ae2:fluix_crystal" /> 与 <ItemLink id="ae2:fluix_block" />
+* 一个 <ItemLink id="minecraft:lightning_rod" /> 与若干等级的 AE2 赛特斯石英母岩
 
 ## 第一步：获取过载水晶
 
@@ -24,11 +24,12 @@ navigation:
 
 **过载水晶**是本模组最基础的材料，几乎所有配方都需要用到它或其衍生产物。
 
-获得方式是培育**过载水晶母岩**：
+获得方式是培育**过载水晶母岩**，而母岩本身通过**多方块雷劈仪式**由 AE2 赛特斯石英母岩转化得来：
 
-1. 将 AE2 的**赛特斯石英母岩**（损坏的 / 开裂的 / 有瑕的）放入 <ItemLink id="ae2:charger" /> 中充能
-2. 取出对应等级的**过载水晶母岩**
-3. 将母岩放置在世界中，等待表面自然生长水晶芽
+1. 搭建 3×3 多方块结构：中心放置对应等级的赛特斯石英母岩；精制结构的四角放 <ItemLink id="ae2lt:overload_crystal_block" /> + 四边 <ItemLink id="ae2:fluix_block" />；简化结构的四角放 <ItemLink id="ae2:quartz_block" /> + 四边 <ItemLink id="ae2:fluix_block" />
+2. 中心正上方放置一个 <ItemLink id="minecraft:lightning_rod" />
+3. 等待雷击——精制结构需要**自然雷击**，全 fluix 的简化结构接受**任意闪电**
+4. 取出转化完成的**过载水晶母岩**，放置在世界中等待表面自然生长水晶芽
 
 过载水晶母岩的行为与赛特斯石英母岩基本一致：
 
@@ -63,7 +64,7 @@ navigation:
 
 <ItemImage id="ae2lt:flawless_budding_overload_crystal" scale="2" float="left" />
 
-**无瑕的过载水晶母岩**不会衰减，是大规模产线的基础。要获得它，需要搭建以下多方块结构并等待一次自然雷击：
+**无瑕的过载水晶母岩**不会衰减，是大规模产线的基础。只有**精制结构 + 自然雷击**能产出无瑕母岩：
 
 <GameScene zoom="4" background="transparent">
   <ImportStructure src="assets/assemblies/flawless_budding_overload.snbt" />
@@ -77,7 +78,7 @@ navigation:
 
 搭建完成后，等待**自然雷击**命中避雷针即可完成转化。雷击命中后，周围八个外围方块会被消耗，中心方块转化为无瑕的过载水晶母岩。
 
-> 结构转化只接受雷暴天气下的自然雷电。由过载水晶召唤的人工闪电不会触发结构转化。
+> 无瑕转化只接受雷暴天气下的自然雷电。由过载水晶召唤的人工闪电不会触发。较低等级的母岩另有"简化结构"可选，详见 [过载水晶](materials/overload-crystal.md) 页。
 
 ## 第四步：建立第一条闪电产线
 

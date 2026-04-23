@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.DebugLightningRodItem;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
@@ -63,6 +64,11 @@ public final class ModItems {
 
     public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
             ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
+
+    public static final DeferredItem<DebugLightningRodItem> DEBUG_LIGHTNING_ROD = ITEMS.registerItem(
+            "debug_lightning_rod",
+            DebugLightningRodItem::new,
+            new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC));
 
     public static final DeferredItem<ElectroChimeCrystalItem> ELECTRO_CHIME_CRYSTAL = ITEMS.registerItem(
             "electro_chime_crystal",

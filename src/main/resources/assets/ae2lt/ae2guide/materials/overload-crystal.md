@@ -30,7 +30,7 @@ The **Overload Crystal** is the most fundamental and most important material in 
 
 The main source of Overload Crystals is the clusters that grow naturally on the surface of a **Budding Overload Crystal** block.
 
-Budding Overload Crystal is obtained by placing an AE2 Budding Certus Quartz into a <ItemLink id="ae2:charger" /> and charging it. The tier of the input Budding Certus Quartz determines the tier of the resulting Budding Overload Crystal.
+Budding Overload Crystal is obtained by assembling a multiblock structure and triggering a **lightning strike** on the lightning rod that caps it. See the "Obtaining Budding Overload Crystal" section below for details.
 
 ### Budding Tiers
 
@@ -60,9 +60,11 @@ Overload Crystal buds grow through four stages:
 
 The <ItemLink id="ae2:growth_accelerator" /> works on Overload Crystal buds. Placing accelerators around a budding block dramatically speeds up bud growth.
 
-## Obtaining a Flawless Budding Overload Crystal
+## Obtaining Budding Overload Crystal
 
-The Flawless Budding Overload Crystal requires assembling a specific multiblock and waiting for a natural lightning strike.
+Budding Overload Crystal is produced by building a 3×3 multiblock and triggering a lightning strike on the Lightning Rod above its center. Two structures are available: a **rich** variant and a **simple** variant.
+
+### Rich Structure (Natural Lightning, Same-Tier Conversion)
 
 <GameScene zoom="4" background="transparent">
   <ImportStructure src="../assets/assemblies/flawless_budding_overload.snbt" />
@@ -71,16 +73,42 @@ The Flawless Budding Overload Crystal requires assembling a specific multiblock 
 
 Structure requirements:
 
-* Place a <ItemLink id="ae2:flawless_budding_quartz" /> (Flawless Budding Certus Quartz) in the center
+* Place the matching tier of AE2 Budding Certus Quartz in the center
 * Place a <ItemLink id="ae2:fluix_block" /> on each of the four cardinal sides (E / W / N / S) at the same height
-* Place an Overload Crystal Block on each of the four corners
+* Place an <ItemLink id="ae2lt:overload_crystal_block" /> on each of the four corners
 * Place a Lightning Rod directly above the center
 
-Once built, wait for a **natural lightning strike** to hit the Lightning Rod to complete the conversion.
+Once built, wait for a **natural lightning strike** on the Lightning Rod. The output tier matches the input:
 
-> Only natural lightning can trigger this multiblock. Artificial lightning summoned by carrying an Overload Crystal will not trigger it.
+| Input (Center) | Output |
+|----------------|--------|
+| <ItemLink id="ae2:damaged_budding_quartz" /> | <ItemLink id="ae2lt:damaged_budding_overload_crystal" /> |
+| <ItemLink id="ae2:chipped_budding_quartz" /> | <ItemLink id="ae2lt:cracked_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawed_budding_quartz" /> | <ItemLink id="ae2lt:flawed_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawless_budding_quartz" /> | <ItemLink id="ae2lt:flawless_budding_overload_crystal" /> |
 
-When the strike lands, the eight surrounding outer blocks are consumed, and the center block becomes a Flawless Budding Overload Crystal.
+> The rich structure only accepts **natural lightning**. Artificial lightning summoned by carrying an Overload Crystal will not trigger it.
+
+### Simple Structure (Any Lightning, Output Drops One Tier)
+
+If you're short on Overload Crystal Blocks, the simple structure can still produce the three non-flawless tiers:
+
+* Place the matching tier of AE2 Budding Certus Quartz in the center
+* Place a <ItemLink id="ae2:quartz_block" /> (Certus Quartz Block) on each of the four corners
+* Place a <ItemLink id="ae2:fluix_block" /> on each of the four cardinal sides (E / W / N / S) at the same height
+* Place a Lightning Rod directly above the center
+
+**Any lightning strike** on the Lightning Rod will trigger it, and the output drops one AE2 tier relative to the input:
+
+| Input (Center) | Output |
+|----------------|--------|
+| <ItemLink id="ae2:chipped_budding_quartz" /> | <ItemLink id="ae2lt:damaged_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawed_budding_quartz" /> | <ItemLink id="ae2lt:cracked_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawless_budding_quartz" /> | <ItemLink id="ae2lt:flawed_budding_overload_crystal" /> |
+
+> The Flawless tier cannot be produced through the simple structure — a Flawless Budding Overload Crystal requires the rich structure with natural lightning.
+
+When the strike lands, the eight surrounding outer blocks are consumed, and the center block becomes the matching Budding Overload Crystal.
 
 ## Derivatives
 

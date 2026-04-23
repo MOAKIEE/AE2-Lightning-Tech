@@ -603,6 +603,41 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
+            var tag = new CompoundTag();
+            tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+        }
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
+        if (tag == null) {
+            return;
+        }
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_AUTO_EXPORT, v -> this.autoExport = v);
+        var sides = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS);
+        if (!sides.isEmpty() || tag.contains(TAG_ALLOWED_OUTPUTS)) {
+            this.allowedOutputs = sides;
+        }
+        exportTargetCache.invalidate();
+        saveChanges();
+        markForClientUpdate();
+    }
+
+    @Override
     protected net.minecraft.world.item.Item getItemFromBlockEntity() {
         return ModBlocks.CRYSTAL_CATALYZER.get().asItem();
     }

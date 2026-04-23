@@ -1,7 +1,7 @@
 {
   "parent": "block/cube_column",
   "textures": {
-    "side": "ae2lt:block/overload_controller/advanced_wireless_h_column",
+    "side": "ae2lt:block/overload_controller/advanced_wireless_column_h",
     "end": "ae2lt:block/overload_controller/advanced_wireless"
   }
 }

@@ -483,6 +483,52 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         notifyLogicStateChanged();
     }
 
+    // -- Memory-card copy/paste (machine-specific fields only) --
+
+    @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = new CompoundTag();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_PROVIDER_MODE, providerMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_RETURN_MODE, returnMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode);
+        tag.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
+        if (tag == null) {
+            return;
+        }
+        this.providerMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_PROVIDER_MODE, ProviderMode.class, this.providerMode);
+        this.returnMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_RETURN_MODE, ReturnMode.class, this.returnMode);
+        this.wirelessDispatchMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_WIRELESS_DISPATCH_MODE, WirelessDispatchMode.class, this.wirelessDispatchMode);
+        this.wirelessSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_WIRELESS_SPEED_MODE, WirelessSpeedMode.class, this.wirelessSpeedMode);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_FILTERED_IMPORT,
+                v -> this.filteredImport = v);
+        notifyLogicStateChanged();
+        saveChanges();
+        markForUpdate();
+    }
+
     // -- Cleanup --
 
     private boolean unloadingChunk = false;

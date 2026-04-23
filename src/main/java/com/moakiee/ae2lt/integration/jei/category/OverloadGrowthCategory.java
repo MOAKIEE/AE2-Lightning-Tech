@@ -55,12 +55,6 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
             new ItemStack(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD.get()),
             new ItemStack(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER.get()));
 
-    private final List<ItemStack> ae2BuddingQuartzInputs = List.of(
-            AEBlocks.DAMAGED_BUDDING_QUARTZ.stack(),
-            AEBlocks.CHIPPED_BUDDING_QUARTZ.stack(),
-            AEBlocks.FLAWED_BUDDING_QUARTZ.stack(),
-            AEBlocks.FLAWLESS_BUDDING_QUARTZ.stack());
-
     private final int centerX = WIDTH / 2;
 
     public OverloadGrowthCategory(IGuiHelper guiHelper) {
@@ -88,7 +82,6 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
             case BUD_LOOT, CLUSTER_LOOT -> new LootView(page);
             case BUDDING_OVERLOAD_DECAY -> new BuddingOverloadDecayView();
             case BUDDING_OVERLOAD_MOVING -> new BuddingOverloadMovingView();
-            case GETTING_BUDDING_OVERLOAD -> new GettingBuddingOverloadView();
             case BUDDING_OVERLOAD_ACCELERATION -> new BuddingOverloadAccelerationView();
         };
     }
@@ -99,7 +92,6 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
         CLUSTER_LOOT,
         BUDDING_OVERLOAD_DECAY,
         BUDDING_OVERLOAD_MOVING,
-        GETTING_BUDDING_OVERLOAD,
         BUDDING_OVERLOAD_ACCELERATION
     }
 
@@ -236,31 +228,6 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
                     .addItemStacks(buddingOverloadDecayOrder);
 
             builder.createFocusLink(input, output);
-        }
-    }
-
-    private class GettingBuddingOverloadView implements View {
-        @Override
-        public void createRecipeExtras(IRecipeExtrasBuilder builder, IFocusGroup focuses) {
-            builder.addText(Component.translatable("jei.ae2lt.overload_growth.getting"), WIDTH - 22, HEIGHT)
-                    .setPosition(22, 0)
-                    .setTextAlignment(VerticalAlignment.CENTER)
-                    .setColor(BODY_COLOR);
-        }
-
-        @Override
-        public void buildSlots(IRecipeLayoutBuilder builder) {
-            builder.addInputSlot(1, 1)
-                    .setStandardSlotBackground()
-                    .addItemStacks(ae2BuddingQuartzInputs);
-
-            builder.addSlot(RecipeIngredientRole.CATALYST, 1, 22)
-                    .setStandardSlotBackground()
-                    .addItemLike(AEBlocks.CHARGER);
-
-            builder.addOutputSlot(1, 43)
-                    .setStandardSlotBackground()
-                    .addItemStacks(buddingOverloadDecayOrder);
         }
     }
 

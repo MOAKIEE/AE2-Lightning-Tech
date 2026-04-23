@@ -72,9 +72,21 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
             int filled = (int) Math.round((double) height * (double) fluid.getAmount() / (double) capacity);
             filled = Math.max(0, Math.min(filled, height));
             if (filled > 0) {
-                FluidBlitter.create(fluid)
-                        .dest(getX(), getY() + height - filled, width, filled)
-                        .blit(guiGraphics);
+                // FluidBlitter.dest(w, h) stretches a 16x16 fluid texture to fit the
+                // destination. Our inner tank is 53 px tall, so a single dest call
+                // would vertically stretch the fluid. Tile the texture bottom-up in
+                // 16-px chunks instead, keeping its native aspect ratio. Only the
+                // final (top) chunk gets clipped when filled is not a multiple of 16.
+                int y = getY() + height;
+                int remaining = filled;
+                while (remaining > 0) {
+                    int chunk = Math.min(16, remaining);
+                    y -= chunk;
+                    FluidBlitter.create(fluid)
+                            .dest(getX(), y, width, chunk)
+                            .blit(guiGraphics);
+                    remaining -= chunk;
+                }
             }
         }
 

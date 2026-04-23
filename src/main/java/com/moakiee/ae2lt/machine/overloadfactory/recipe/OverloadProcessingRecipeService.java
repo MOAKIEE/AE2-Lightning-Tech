@@ -53,7 +53,7 @@ public final class OverloadProcessingRecipeService {
             FluidStack outputFluid,
             long availableHighVoltage,
             long availableExtremeHighVoltage) {
-        if (level == null || inventory.getInstalledMatrixCount() <= 0) {
+        if (level == null) {
             return Optional.empty();
         }
 

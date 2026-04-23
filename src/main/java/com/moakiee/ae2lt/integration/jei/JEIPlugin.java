@@ -12,6 +12,7 @@ import com.moakiee.ae2lt.client.TeslaCoilScreen;
 import com.moakiee.ae2lt.integration.jei.category.CrystalCatalyzerCategory;
 import com.moakiee.ae2lt.integration.jei.category.LightningAssemblyCategory;
 import com.moakiee.ae2lt.integration.jei.category.LightningSimulationCategory;
+import com.moakiee.ae2lt.integration.jei.category.LightningStrikeCategory;
 import com.moakiee.ae2lt.integration.jei.category.LightningTransformCategory;
 import com.moakiee.ae2lt.integration.jei.category.OverloadGrowthCategory;
 import com.moakiee.ae2lt.integration.jei.category.OverloadProcessingCategory;
@@ -69,6 +70,7 @@ public class JEIPlugin implements IModPlugin {
                 new LightningAssemblyCategory(guiHelper),
                 new LightningSimulationCategory(guiHelper),
                 new LightningTransformCategory(guiHelper),
+                new LightningStrikeCategory(guiHelper),
                 new OverloadProcessingCategory(guiHelper),
                 new TeslaCoilCategory(guiHelper),
                 new CrystalCatalyzerCategory(guiHelper));
@@ -113,6 +115,13 @@ public class JEIPlugin implements IModPlugin {
                         .map(RecipeHolder::value)
                         .toList());
         registration.addRecipes(
+                LightningStrikeCategory.TYPE,
+                level.getRecipeManager()
+                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get())
+                        .stream()
+                        .map(RecipeHolder::value)
+                        .toList());
+        registration.addRecipes(
                 OverloadProcessingCategory.TYPE,
                 level.getRecipeManager()
                         .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get())
@@ -126,6 +135,7 @@ public class JEIPlugin implements IModPlugin {
         registration.addRecipeCatalyst(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.toStack(), LightningAssemblyCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.toStack(), LightningSimulationCategory.TYPE);
         registration.addRecipeCatalyst(net.minecraft.world.item.Items.LIGHTNING_ROD.getDefaultInstance(), LightningTransformCategory.TYPE);
+        registration.addRecipeCatalyst(net.minecraft.world.item.Items.LIGHTNING_ROD.getDefaultInstance(), LightningStrikeCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.OVERLOAD_PROCESSING_FACTORY.toStack(), OverloadProcessingCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.TESLA_COIL.toStack(), TeslaCoilCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.CRYSTAL_CATALYZER.toStack(), CrystalCatalyzerCategory.TYPE);

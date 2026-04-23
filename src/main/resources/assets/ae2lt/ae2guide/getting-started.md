@@ -15,8 +15,8 @@ This page walks you through the full path from scratch to a working first Lightn
 Before starting, make sure you already have a functioning AE2 ME network that includes at least:
 
 * An <ItemLink id="ae2:controller" />, or a small controllerless network
-* A <ItemLink id="ae2:charger" />
-* A few <ItemLink id="ae2:certus_quartz_crystal" /> and <ItemLink id="ae2:fluix_crystal" />
+* A few <ItemLink id="ae2:certus_quartz_crystal" />, <ItemLink id="ae2:fluix_crystal" /> and <ItemLink id="ae2:fluix_block" />
+* A <ItemLink id="minecraft:lightning_rod" /> and some AE2 Budding Certus Quartz of various tiers
 
 ## Step 1: Obtain Overload Crystals
 
@@ -24,11 +24,12 @@ Before starting, make sure you already have a functioning AE2 ME network that in
 
 **Overload Crystal** is the most fundamental material in this mod — nearly every recipe relies on it or one of its derivatives.
 
-You obtain it by growing **Budding Overload Crystal** blocks:
+You obtain it by growing **Budding Overload Crystal** blocks, which are produced from AE2 Budding Certus Quartz via a multiblock lightning ritual:
 
-1. Place an AE2 **Budding Certus Quartz** (Damaged / Cracked / Flawed) in a <ItemLink id="ae2:charger" /> to charge it
-2. Collect the **Budding Overload Crystal** of the matching tier
-3. Place the budding block in the world and wait for buds to grow on its surface
+1. Assemble a 3×3 structure with the budding quartz in the center. The rich variant uses <ItemLink id="ae2lt:overload_crystal_block" /> at the four corners and <ItemLink id="ae2:fluix_block" /> on the four cardinal sides; the simple variant swaps the corners for <ItemLink id="ae2:quartz_block" /> (Certus Quartz Block) while keeping fluix on the sides
+2. Place a <ItemLink id="minecraft:lightning_rod" /> directly above the center
+3. Wait for a lightning strike — natural lightning is required for the rich variant; any lightning works for the simple fluix-only variant
+4. Place the resulting **Budding Overload Crystal** in the world and wait for buds to grow on its surface
 
 Budding Overload Crystal behaves the same way as Budding Certus Quartz:
 
@@ -63,7 +64,7 @@ There are two ways to trigger lightning transmutation:
 
 <ItemImage id="ae2lt:flawless_budding_overload_crystal" scale="2" float="left" />
 
-**Flawless Budding Overload Crystal** never decays, and is the backbone of any large-scale production line. To obtain one, assemble the following multiblock and wait for a natural lightning strike:
+**Flawless Budding Overload Crystal** never decays, and is the backbone of any large-scale production line. It can only be produced through the **rich structure** variant with a **natural lightning strike**:
 
 <GameScene zoom="4" background="transparent">
   <ImportStructure src="assets/assemblies/flawless_budding_overload.snbt" />
@@ -77,7 +78,7 @@ There are two ways to trigger lightning transmutation:
 
 Once the structure is built, wait for a **natural lightning strike** to hit the Lightning Rod to complete the conversion. When the strike lands, the eight surrounding blocks are consumed, and the center block becomes a Flawless Budding Overload Crystal.
 
-> The multiblock conversion only accepts natural lightning during a thunderstorm. Artificial lightning summoned by carrying Overload Crystals does not trigger the conversion.
+> The Flawless conversion only accepts **natural lightning** during a thunderstorm. Artificial lightning summoned by carrying Overload Crystals will not trigger it. Lower-tier budding crystals have a cheaper "simple structure" variant described on the [Overload Crystal](materials/overload-crystal.md) page.
 
 ## Step 4: Build Your First Lightning Line
 

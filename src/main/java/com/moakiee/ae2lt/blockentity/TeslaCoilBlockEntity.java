@@ -358,6 +358,37 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
+            var tag = new CompoundTag();
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_SELECTED_MODE, selectedMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+        }
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.importSettings(mode, input, player);
+        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
+        if (tag == null) {
+            return;
+        }
+        var mode2 = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                tag, TAG_SELECTED_MODE, TeslaCoilMode.class, selectedMode);
+        this.selectedMode = mode2;
+        saveChanges();
+        markForUpdate();
+    }
+
+    @Override
     protected net.minecraft.world.item.Item getItemFromBlockEntity() {
         return ModBlocks.TESLA_COIL.get().asItem();
     }

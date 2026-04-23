@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
+import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
 import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecipe;
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
@@ -66,6 +67,17 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CrystalCatalyzerRecipe>>
             CRYSTAL_CATALYZER_SERIALIZER =
                     RECIPE_SERIALIZERS.register("crystal_catalyzer", CrystalCatalyzerRecipe.Serializer::new);
+
+    public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningStrikeRecipe>>
+            LIGHTNING_STRIKE_SERIALIZER =
+                    RECIPE_SERIALIZERS.register("lightning_strike", LightningStrikeRecipe.Serializer::new);
+
+    public static final DeferredHolder<RecipeType<?>, RecipeType<LightningStrikeRecipe>> LIGHTNING_STRIKE_TYPE =
+            RECIPE_TYPES.register(
+                    "lightning_strike",
+                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                            AE2LightningTech.MODID,
+                            "lightning_strike")));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<CrystalCatalyzerRecipe>> CRYSTAL_CATALYZER_TYPE =
             RECIPE_TYPES.register(

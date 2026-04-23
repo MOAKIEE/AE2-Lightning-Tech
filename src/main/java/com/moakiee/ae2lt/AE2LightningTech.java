@@ -2,6 +2,7 @@ package com.moakiee.ae2lt;
 
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
+import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
@@ -152,6 +153,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        output.accept(ModItems.DEBUG_LIGHTNING_ROD);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -178,6 +180,7 @@ public class AE2LightningTech {
         ModMenuTypes.MENU_TYPES.register(modEventBus);
         ModRecipeTypes.RECIPE_SERIALIZERS.register(modEventBus);
         ModRecipeTypes.RECIPE_TYPES.register(modEventBus);
+        ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
@@ -262,6 +265,16 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 Capabilities.EnergyStorage.BLOCK,
                 ModBlockEntities.OVERLOADED_CONTROLLER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
+                (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
+
+        event.registerBlockEntity(
+                Capabilities.EnergyStorage.BLOCK,
+                ModBlockEntities.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get(),
                 (blockEntity, side) -> blockEntity.getEnergyStorageCapability(side));
 
         // Expose IN_WORLD_GRID_NODE_HOST so ME cables can connect to our block entity

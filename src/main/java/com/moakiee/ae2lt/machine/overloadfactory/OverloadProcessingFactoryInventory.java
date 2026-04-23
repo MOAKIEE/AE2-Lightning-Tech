@@ -71,7 +71,14 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
     }
 
     public int getInstalledParallelCapacity() {
-        return getMaxParallelForMatrixCount(getInstalledMatrixCount());
+        int matrixCount = getInstalledMatrixCount();
+        if (matrixCount <= 0) {
+            // Without any lightning collapse matrix installed, the factory still operates at a
+            // minimum of one parallel so basic processing is always available. Matrix-specific
+            // bonuses (extra parallelism, EHV↔HV substitution) are retained in other code paths.
+            return 1;
+        }
+        return getMaxParallelForMatrixCount(matrixCount);
     }
 
     public static int getMaxParallelForMatrixCount(int matrixCount) {

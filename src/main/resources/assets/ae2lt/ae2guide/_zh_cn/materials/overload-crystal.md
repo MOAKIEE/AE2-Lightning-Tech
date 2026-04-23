@@ -30,7 +30,7 @@ item_ids:
 
 过载水晶的主要来源是**过载水晶母岩**表面自然生长的水晶簇。
 
-过载水晶母岩通过将 AE2 的赛特斯石英母岩放入 <ItemLink id="ae2:charger" /> 中充能获得。不同等级的赛特斯石英母岩将得到对应等级的过载水晶母岩。
+过载水晶母岩通过搭建多方块结构并使用**雷击**转化对应等级的 AE2 赛特斯石英母岩获得。详细配方参见下文"获取过载水晶母岩"一节。
 
 ### 母岩等级
 
@@ -60,9 +60,11 @@ item_ids:
 
 <ItemLink id="ae2:growth_accelerator" />（水晶生长加速器）对过载水晶芽同样有效。在母岩周围放置加速器可显著提升水晶的生长速率。
 
-## 获取无瑕的过载水晶母岩
+## 获取过载水晶母岩
 
-无瑕的过载水晶母岩需要通过搭建特定多方块结构并等待自然雷击获得。
+过载水晶母岩通过搭建 3×3 多方块结构并在中心正上方的避雷针处雷击触发转化。有**精制**与**简化**两种结构。
+
+### 精制结构（自然雷击，同级转化）
 
 <GameScene zoom="4" background="transparent">
   <ImportStructure src="../assets/assemblies/flawless_budding_overload.snbt" />
@@ -71,16 +73,42 @@ item_ids:
 
 结构要求：
 
-* 中心放置一个 <ItemLink id="ae2:flawless_budding_quartz" />（无瑕的赛特斯石英母岩）
+* 中心放置对应等级的 AE2 赛特斯石英母岩
 * 东 / 西 / 南 / 北四个正方向同一高度各放置一个 <ItemLink id="ae2:fluix_block" />
-* 四个对角各放置一个过载水晶块
+* 四个对角各放置一个 <ItemLink id="ae2lt:overload_crystal_block" />
 * 中心正上方放置一个避雷针
 
-搭建完成后，等待**自然雷击**命中避雷针即可完成转化。
+搭建完成后，等待**自然雷击**命中避雷针即可**同级**转化：
 
-> 只有自然雷击才能触发结构转化。由玩家携带过载水晶引来的人工闪电不会触发该结构。
+| 输入（中心） | 输出 |
+|-----------|------|
+| <ItemLink id="ae2:damaged_budding_quartz" /> | <ItemLink id="ae2lt:damaged_budding_overload_crystal" /> |
+| <ItemLink id="ae2:chipped_budding_quartz" /> | <ItemLink id="ae2lt:cracked_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawed_budding_quartz" /> | <ItemLink id="ae2lt:flawed_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawless_budding_quartz" /> | <ItemLink id="ae2lt:flawless_budding_overload_crystal" /> |
 
-雷击命中后，周围八个外围材料方块会被消耗，中心方块转化为无瑕的过载水晶母岩。
+> 精制结构只承认**自然雷击**。由玩家携带过载水晶引来的人工闪电不会触发该结构。
+
+### 简化结构（任意闪电，产物降一级）
+
+如果手头缺少过载水晶块，可以用简化结构生产除无瑕外的 3 个等级母岩：
+
+* 中心放置对应等级的 AE2 赛特斯石英母岩
+* 四个对角各放置一个 <ItemLink id="ae2:quartz_block" />（赛特斯石英块）
+* 东 / 西 / 南 / 北四个正方向同一高度各放置一个 <ItemLink id="ae2:fluix_block" />
+* 中心正上方放置一个避雷针
+
+**任意闪电**命中避雷针即可触发，产物比输入等级低一级：
+
+| 输入（中心） | 输出 |
+|-----------|------|
+| <ItemLink id="ae2:chipped_budding_quartz" /> | <ItemLink id="ae2lt:damaged_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawed_budding_quartz" /> | <ItemLink id="ae2lt:cracked_budding_overload_crystal" /> |
+| <ItemLink id="ae2:flawless_budding_quartz" /> | <ItemLink id="ae2lt:flawed_budding_overload_crystal" /> |
+
+> 无瑕母岩无法通过简化结构获取——想要无瑕只能走精制结构 + 自然雷击。
+
+雷击命中后，周围八个外围材料方块会被消耗，中心方块转化为对应等级的过载水晶母岩。
 
 ## 衍生产物
 

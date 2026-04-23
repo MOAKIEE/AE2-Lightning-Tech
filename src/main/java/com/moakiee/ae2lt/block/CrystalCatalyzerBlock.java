@@ -27,8 +27,11 @@ import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 
 public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
-    private static final VoxelShape UP_SHAPE = BlockShapeHelper.or(
+    // Horizontal-only: the model is axially symmetric around the vertical axis,
+    // and the block's output side config UI (RelativeSide.TOP) should always map
+    // to world UP so players can reason about output faces intuitively.
+    public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
+    private static final VoxelShape UPRIGHT_SHAPE = BlockShapeHelper.or(
             Block.box(0, 0, 0, 16, 3, 16),
             Block.box(0, 13, 0, 16, 16, 16),
             Block.box(0, 3, 0, 3, 13, 3),
@@ -37,7 +40,8 @@ public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlo
             Block.box(13, 3, 13, 16, 13, 16),
             Block.box(4, 3, 4, 12, 6, 12),
             Block.box(4, 10, 4, 12, 13, 12));
-    private static final EnumMap<Direction, VoxelShape> SHAPES = BlockShapeHelper.createAllFacingShapes(UP_SHAPE);
+    private static final EnumMap<Direction, VoxelShape> SHAPES =
+            BlockShapeHelper.createHorizontalFacingShapes(UPRIGHT_SHAPE);
 
     public CrystalCatalyzerBlock() {
         super(metalProps().noOcclusion().forceSolidOn());
@@ -54,7 +58,7 @@ public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlo
 
     @Override
     public IOrientationStrategy getOrientationStrategy() {
-        return OrientationStrategies.facing();
+        return OrientationStrategies.horizontalFacing();
     }
 
     @Override
