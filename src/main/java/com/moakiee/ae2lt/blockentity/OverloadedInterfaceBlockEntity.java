@@ -21,6 +21,9 @@ import com.moakiee.ae2lt.logic.AppFluxHelper;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
+import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
+import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
+import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 
@@ -46,6 +49,7 @@ import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageService;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.KeyCounter;
@@ -362,6 +366,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     };
     private @Nullable DirectMEInsertInventory directInsertInv;
+    @Nullable
+    private IStorageService bufferedEnergyServiceDelegate;
+    @Nullable
+    private BufferedMEStorage wirelessEnergyBufferedStorage;
+    @Nullable
+    private BufferedStorageService wirelessEnergyStorageProxy;
     private @Nullable Set<AEKey> importFilterKeys;
     private @Nullable FuzzyMode importFilterFuzzyMode;
     private boolean inductionCardCacheDirty = true;
@@ -865,38 +875,58 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private void tickWirelessEnergy(ServerLevel sl, AEKey feKey) {
         long gt = sl.getGameTime();
         if (gt == lastEnergyTickGameTime) return;
-        int el = lastEnergyTickGameTime >= 0
-                ? (int) Math.min(gt - lastEnergyTickGameTime, WHEEL_SLOTS) : 1;
         lastEnergyTickGameTime = gt;
-        distributeWirelessEnergy(sl, feKey, gt, el);
+        distributeWirelessEnergy(sl, gt);
     }
 
-    private void distributeWirelessEnergy(
-            ServerLevel sl, AEKey feKey, long tick, int elapsed) {
-        var valid = getOrRefreshValidConnections(sl, tick);
-        if (valid.isEmpty()) return;
-        wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-        if (wheelDirty) rebuildEWheel(valid);
-
-        if (!deferredMachines.isEmpty()) {
-            long avail = simulateFluxExtract(feKey,
-                    (long) AppFluxHelper.TRANSFER_RATE * deferredMachines.size());
-            if (avail <= 0) return;
-            processEBatch(sl, deferredMachines, feKey, avail);
-            if (!deferredMachines.isEmpty()) return;
-        }
-        for (int s = 1; s < elapsed && energyWheel[wheelPointer].isEmpty(); s++)
-            wheelPointer = (wheelPointer + 1) % WHEEL_SLOTS;
-
-        var eligible = pollWheel();
-        if (eligible.isEmpty()) return;
-        long avail = simulateFluxExtract(feKey, (long) AppFluxHelper.TRANSFER_RATE * eligible.size());
-        if (avail <= 0) {
-            deferredMachines.addAll(eligible);
-            eligible.clear();
+    private void distributeWirelessEnergy(ServerLevel sl, long tick) {
+        var proxy = getWirelessEnergyStorageProxy();
+        var buffered = wirelessEnergyBufferedStorage;
+        if (proxy == null || buffered == null) {
             return;
         }
-        processEBatch(sl, eligible, feKey, avail);
+
+        var valid = getOrRefreshValidConnections(sl, tick);
+        if (valid.isEmpty()) return;
+
+        buffered.setBufferCapacity(0L);
+        buffered.setCostMultiplier(1);
+
+        var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
+        for (var conn : valid) {
+            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
+        }
+
+        WirelessEnergyAPI.distributeBatch(
+                sl,
+                targets,
+                buffered,
+                proxy,
+                () -> getMainNode().getGrid(),
+                IActionSource.ofMachine(this));
+    }
+
+    @Nullable
+    private BufferedStorageService getWirelessEnergyStorageProxy() {
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            bufferedEnergyServiceDelegate = null;
+            wirelessEnergyBufferedStorage = null;
+            wirelessEnergyStorageProxy = null;
+            return null;
+        }
+
+        IStorageService storageService = grid.getStorageService();
+        if (wirelessEnergyStorageProxy == null
+                || wirelessEnergyBufferedStorage == null
+                || bufferedEnergyServiceDelegate != storageService) {
+            MEStorage inventory = storageService.getInventory();
+            wirelessEnergyBufferedStorage = new BufferedMEStorage(inventory);
+            wirelessEnergyStorageProxy = new BufferedStorageService(storageService, wirelessEnergyBufferedStorage);
+            bufferedEnergyServiceDelegate = storageService;
+        }
+
+        return wirelessEnergyStorageProxy;
     }
 
     private final List<ScheduleEntry> tempEnergyDefer = new ArrayList<>();
