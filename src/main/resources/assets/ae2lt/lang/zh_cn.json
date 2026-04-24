@@ -252,7 +252,7 @@
   "ae2lt.gui.crystal_catalyzer.auto_export.on": "产物会从设定的面自动输出。",
   "ae2lt.gui.crystal_catalyzer.auto_export.off": "产物不会自动输出。",
   "ae2lt.gui.crystal_catalyzer.configure_output": "配置输出面",
-  "ae2lt.gui.crystal_catalyzer.output_config": "水晶催化器输出配置",
+  "ae2lt.gui.crystal_catalyzer.output_config": "输出面配置",
   "ae2lt.gui.crystal_catalyzer.output_side.clear": "清除所有输出面",
   "ae2lt.gui.crystal_catalyzer.output_side.enabled": "状态：已启用",
   "ae2lt.gui.crystal_catalyzer.output_side.disabled": "状态：已禁用",
