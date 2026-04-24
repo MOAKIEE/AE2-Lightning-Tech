@@ -6,21 +6,23 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
+import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
 import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
@@ -48,10 +50,12 @@ import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageService;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.ICellWorkbenchItem;
@@ -84,6 +88,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final String TAG_ENERGY_DIR     = "EnergyDir";
     private static final String TAG_UNLIMITED_SLOTS = "UnlimitedSlots";
     private static final String TAG_FILTER_INV     = "FilterInv";
+    private static final String TAG_IMPORT_BUFFER  = "ae2ltImportBuffer";
+    private static final String TAG_IMPORT_FLUSH_TICK = "ae2ltImportFlushTick";
 
     public enum InterfaceMode { NORMAL, WIRELESS }
     public enum IOSpeedMode   { NORMAL, FAST }
@@ -106,20 +112,35 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final int NORMAL_CD_INIT = 5;
     private static final int NORMAL_CD_MIN  = 5;
     private static final int NORMAL_CD_MAX  = 80;
-    private static final int NORMAL_SPREAD  = 40;
 
     private static final int FAST_CD_INIT = 5;
     private static final int FAST_CD_MIN  = 1;
     private static final int FAST_CD_MAX  = 40;
-    private static final int FAST_SPREAD  = 10;
 
-    private static final int     COOLDOWN_NEAR_BAND       = 4;
-    private static final int     COOLDOWN_STABLE_SUCCESSES = 2;
     private static final float[] PROBE_LEVELS = {5f, 3f, 2f, 1f, 0.5f, 0.3f, 0.1f};
+    private static final int IMPORT_FLUSH_INTERVAL = 5;
+    private static final int STOP_IMPORT_TTL = 20;
+    private static final double NORMAL_TARGET_FILL = 0.85;
+    private static final double RATE_EMA_ALPHA = 0.2;
+    private static final int IO_WHEEL_SLOTS = 128;
+    private static final int IMPORT_KEY_CACHE_TTL = 40;
+    private static final int IMPORT_EMPTY_KEY_CACHE_TTL = 20;
+    private static final int IMPORT_KEY_CACHE_MAX_KEYS = 256;
+    private static final int WIRELESS_ENERGY_IDLE_RETRY_TICKS = 5;
+    private static final int EXPORT_REJECT_BACKOFF_INIT = 10;
+    private static final int EXPORT_REJECT_BACKOFF_MAX = 80;
+    private static final int EXPORT_REJECT_BACKOFF_MAX_KEYS = 128;
+    private static final long IMPORT_TRANSFER_LIMIT = Long.MAX_VALUE;
 
-    /** Reusable scan buffer for import — safe because server tick is single-threaded. */
-    private final KeyCounter scanBuffer = new KeyCounter();
-    private final List<ExtractedShare> extractedShares = new ArrayList<>();
+    /** Scan buffer for import — replaced after scans to avoid large-map clear costs. */
+    private KeyCounter scanBuffer = new KeyCounter();
+    private final Map<AEKey, Long> importBuffer = new LinkedHashMap<>();
+    private final Map<AEKeyType, Long> keyTypeLockUntil = new IdentityHashMap<>();
+    private final Map<AEKeyType, List<ExportConfigEntry>> exportConfigCache = new IdentityHashMap<>();
+    private long importBufferLastFlushTick = Long.MIN_VALUE;
+    private long exportConfigCacheTick = Long.MIN_VALUE;
+    private int exportConfigCacheHash;
+    private boolean exportConfigCacheValid;
 
     // ── WirelessConnection ───────────────────────────────────────────────
 
@@ -149,72 +170,214 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  CooldownTracker — binary-search cooldown + early probe
+    //  Wireless IO model — per key type and direction
     // ══════════════════════════════════════════════════════════════════════
 
+    enum IoDirection { IMPORT, EXPORT }
+    enum IoPhase { PROBE, EXTRACT }
+
     static final class CooldownTracker {
-        final int cdMin, cdMax;
-        long cooldownUntil = -1;
-        int  cooldownN, searchLo, searchHi;
-        int  stableSuccessStreak, failStreak;
-        int  probeLevelIdx, probeSkipCounter;
-        boolean probedThisCycle;
+        private IOSpeedMode mode = IOSpeedMode.NORMAL;
+        private int cooldownN = NORMAL_CD_INIT;
+        private long cooldownUntil = -1;
+        private long lastSuccessTick = -1;
+        private long lastSuccessInterval = -1;
 
-        CooldownTracker(int cdMin, int cdMax, int cdInit) {
-            this.cdMin = cdMin; this.cdMax = cdMax;
-            this.cooldownN = cdInit; this.searchLo = cdMin; this.searchHi = cdMax;
+        long cooldownUntil() {
+            return cooldownUntil;
         }
 
-        boolean isReady(long t) { return cooldownUntil < 0 || t >= cooldownUntil; }
-
-        boolean isInProbeWindow(long t) {
-            if (cooldownUntil < 0 || t >= cooldownUntil || probedThisCycle) return false;
-            float lv = PROBE_LEVELS[probeLevelIdx];
-            if (lv >= 1.0f) return t == cooldownUntil - (int) lv;
-            int iv = Math.round(1.0f / lv);
-            return probeSkipCounter >= iv && t == cooldownUntil - 1;
-        }
-
-        private boolean nearBand() { return searchHi - searchLo <= COOLDOWN_NEAR_BAND; }
-
-        void onSuccess(long t) {
-            if (cooldownUntil < 0) return;
-            failStreak = 0;
-            if (nearBand()) {
-                if (++stableSuccessStreak >= COOLDOWN_STABLE_SUCCESSES) {
-                    cooldownN = Math.max(cdMin, cooldownN - 1);
-                    stableSuccessStreak = 0;
-                }
-            } else {
-                stableSuccessStreak = 0; searchHi = cooldownN;
-                cooldownN = Math.clamp(Math.max(searchLo, (searchLo + searchHi) / 2), cdMin, cdMax);
-            }
+        void reset(IOSpeedMode newMode) {
+            mode = newMode;
+            cooldownN = initialFor(newMode);
             cooldownUntil = -1;
+            lastSuccessTick = -1;
+            lastSuccessInterval = -1;
         }
 
-        void onFail(long t) {
-            if (cooldownUntil < 0) {
-                cooldownUntil = t + cooldownN; stableSuccessStreak = 0;
-                probedThisCycle = false; probeSkipCounter++; return;
-            }
-            stableSuccessStreak = 0;
-            if (nearBand()) {
-                failStreak++;
-                cooldownN = Math.min(cdMax, cooldownN + Math.min(2, 1 + (failStreak - 1) / 4));
+        void onSuccess(long now, IOSpeedMode newMode, @Nullable KeyModel model) {
+            ensureMode(newMode);
+            if (newMode == IOSpeedMode.FAST) {
+                if (lastSuccessTick >= 0) {
+                    lastSuccessInterval = Math.max(1, now - lastSuccessTick);
+                }
+                lastSuccessTick = now;
+                cooldownN = FAST_CD_MIN;
+            } else if (model == null) {
+                cooldownN = NORMAL_CD_MIN;
             } else {
-                failStreak = 0; searchLo = cooldownN + 1;
-                if (searchLo > searchHi) { searchLo = searchHi = cooldownN = cdMax; }
-                else cooldownN = Math.clamp((searchLo + searchHi) / 2, cdMin, cdMax);
+                cooldownN = predictNormalCooldown(model);
             }
-            cooldownUntil = t + cooldownN; probedThisCycle = false; probeSkipCounter++;
+            cooldownUntil = now + cooldownN;
         }
 
-        void onProbeSuccess() {
-            probeLevelIdx = 0; probeSkipCounter = 0; probedThisCycle = true; cooldownUntil = -1;
+        void onFail(long now, IOSpeedMode newMode) {
+            ensureMode(newMode);
+            if (newMode == IOSpeedMode.FAST) {
+                int limit = lastSuccessInterval > 0
+                        ? (int) Math.min(lastSuccessInterval, FAST_CD_MAX)
+                        : FAST_CD_MAX;
+                cooldownN = Math.min(Math.min(cooldownN + 1, limit), FAST_CD_MAX);
+                cooldownN = Math.max(cooldownN, FAST_CD_MIN);
+            } else {
+                cooldownN = Math.max(NORMAL_CD_MIN, cooldownN / 2);
+            }
+            cooldownUntil = now + cooldownN;
         }
-        void onProbeFail() {
-            probeLevelIdx = Math.min(probeLevelIdx + 1, PROBE_LEVELS.length - 1);
-            probeSkipCounter = 0; probedThisCycle = true;
+
+        private void ensureMode(IOSpeedMode newMode) {
+            if (mode != newMode) {
+                reset(newMode);
+            }
+        }
+
+        private static int initialFor(IOSpeedMode mode) {
+            return mode == IOSpeedMode.FAST ? FAST_CD_INIT : NORMAL_CD_INIT;
+        }
+
+        private static int predictNormalCooldown(@Nullable KeyModel model) {
+            if (model == null || model.effectiveMax <= 0) {
+                return NORMAL_CD_MAX;
+            }
+            long deficit = (long) (model.effectiveMax * NORMAL_TARGET_FILL) - model.lastAvail;
+            if (deficit <= 0) {
+                return NORMAL_CD_MIN;
+            }
+            if (model.rateEMA > 0) {
+                long predicted = (long) Math.ceil(deficit / model.rateEMA);
+                return (int) Math.clamp(predicted, NORMAL_CD_MIN, NORMAL_CD_MAX);
+            }
+            return NORMAL_CD_MAX;
+        }
+    }
+
+    static final class ProbeState {
+        int levelIdx;
+        int skipCounter;
+
+        void reset() {
+            levelIdx = 0;
+            skipCounter = 0;
+        }
+    }
+
+    static final class KeyModel {
+        long maxObserved;
+        long effectiveMax;
+        long lastAvail;
+        long lastTick;
+        double rateEMA;
+
+        long postExtractAvail;
+        long postExtractTick = -1;
+        long midProbeAvail;
+        long midProbeTick = -1;
+        double half1Rate;
+
+        void resetCycle() {
+            postExtractTick = -1;
+            midProbeTick = -1;
+            half1Rate = 0;
+        }
+
+        void onProbe(long avail, long now) {
+            if (postExtractTick > 0 && now > postExtractTick) {
+                double dt = now - postExtractTick;
+                half1Rate = (avail - postExtractAvail) / dt;
+            }
+            midProbeAvail = avail;
+            midProbeTick = now;
+            updateRateEMA(avail, now);
+        }
+
+        void onExtract(long totalAvail, long totalExtracted, long now) {
+            long currentAvail = Math.max(0, totalAvail - totalExtracted);
+            if (midProbeTick > 0 && postExtractTick > 0 && now > midProbeTick) {
+                double dt = now - midProbeTick;
+                double half2Rate = (currentAvail - midProbeAvail) / dt;
+                if (half1Rate > 0) {
+                    double ratio = half2Rate / half1Rate;
+                    if (ratio < 0.7) {
+                        effectiveMax = Math.max(maxObserved / 4, (long) (effectiveMax * 0.9));
+                    } else if (ratio > 1.1) {
+                        effectiveMax = Math.min(maxObserved, (long) Math.ceil(effectiveMax * 1.05));
+                    }
+                }
+            }
+
+            updateRateEMA(totalAvail, now);
+            lastAvail = currentAvail;
+            lastTick = now;
+            postExtractAvail = currentAvail;
+            postExtractTick = now;
+            midProbeTick = -1;
+        }
+
+        private void updateRateEMA(long totalAvail, long now) {
+            if (lastTick > 0 && now > lastTick) {
+                long dt = now - lastTick;
+                long da = totalAvail - lastAvail;
+                if (da >= 0) {
+                    double instant = (double) da / dt;
+                    rateEMA = RATE_EMA_ALPHA * instant + (1.0 - RATE_EMA_ALPHA) * rateEMA;
+                }
+            }
+            if (totalAvail > maxObserved) {
+                maxObserved = totalAvail;
+                if (effectiveMax < totalAvail) {
+                    effectiveMax = totalAvail;
+                }
+            }
+            if (maxObserved > 0) {
+                effectiveMax = Math.clamp(effectiveMax, maxObserved / 4, maxObserved);
+            }
+            lastAvail = totalAvail;
+            lastTick = now;
+        }
+    }
+
+    static final class ImportKeyCache {
+        final List<AEKey> keys = new ArrayList<>();
+        long lastFullScanTick = Long.MIN_VALUE;
+        int nextIndex;
+
+        boolean isScanFresh(long now) {
+            if (lastFullScanTick == Long.MIN_VALUE) return false;
+            int ttl = keys.isEmpty() ? IMPORT_EMPTY_KEY_CACHE_TTL : IMPORT_KEY_CACHE_TTL;
+            return now - lastFullScanTick < ttl;
+        }
+
+        boolean canUseKeys(long now) {
+            return !keys.isEmpty() && isScanFresh(now);
+        }
+
+        void update(List<AEKey> scannedKeys, long now) {
+            keys.clear();
+            keys.addAll(scannedKeys);
+            lastFullScanTick = now;
+            if (keys.isEmpty()) {
+                nextIndex = 0;
+            } else {
+                nextIndex %= keys.size();
+            }
+        }
+
+        void clear() {
+            keys.clear();
+            lastFullScanTick = Long.MIN_VALUE;
+            nextIndex = 0;
+        }
+    }
+
+    static final class ExportRejectState {
+        long untilTick;
+        int failures;
+
+        void reject(long now) {
+            failures = Math.min(failures + 1, 6);
+            int delay = Math.min(EXPORT_REJECT_BACKOFF_MAX,
+                    EXPORT_REJECT_BACKOFF_INIT << Math.min(failures - 1, 3));
+            untilTick = now + delay;
         }
     }
 
@@ -223,7 +386,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ══════════════════════════════════════════════════════════════════════
 
     static final class ConnectionState {
-        final CooldownTracker cd;
+        final Map<AEKeyType, CooldownTracker> importCDs = new IdentityHashMap<>();
+        final Map<AEKeyType, CooldownTracker> exportCDs = new IdentityHashMap<>();
+        final Map<AEKeyType, ProbeState> importProbeStates = new IdentityHashMap<>();
+        final Map<AEKeyType, KeyModel> keyModels = new IdentityHashMap<>();
+        final Map<AEKeyType, ImportKeyCache> importKeyCaches = new IdentityHashMap<>();
+        final Map<AEKey, ExportRejectState> exportRejects = new HashMap<>();
 
         // ── Storage: ExternalStorageStrategy wrappers (insert + extract) ──
         @Nullable WeakReference<BlockEntity> storageBERef;
@@ -234,13 +402,61 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         // ── Energy ──
         @Nullable WeakReference<BlockEntity>    energyBERef;
         @Nullable WeakReference<IEnergyStorage> energyStorageRef;
+        @Nullable WeakReference<BlockEntity>    energyCapBERef;
+        @Nullable Object energyCapCache;
         int  scheduleDelay = ENERGY_DELAY_MEAN;
         long lastCanReceive;
 
-        ConnectionState(IOSpeedMode mode) {
-            cd = mode == IOSpeedMode.FAST
-                    ? new CooldownTracker(FAST_CD_MIN, FAST_CD_MAX, FAST_CD_INIT)
-                    : new CooldownTracker(NORMAL_CD_MIN, NORMAL_CD_MAX, NORMAL_CD_INIT);
+        CooldownTracker cdFor(AEKeyType type, IoDirection direction) {
+            var cds = direction == IoDirection.IMPORT ? importCDs : exportCDs;
+            return cds.computeIfAbsent(type, ignored -> new CooldownTracker());
+        }
+
+        ProbeState probeStateFor(AEKeyType type) {
+            return importProbeStates.computeIfAbsent(type, ignored -> new ProbeState());
+        }
+
+        KeyModel modelFor(AEKeyType type) {
+            return keyModels.computeIfAbsent(type, ignored -> new KeyModel());
+        }
+
+        ImportKeyCache importKeyCacheFor(AEKeyType type) {
+            return importKeyCaches.computeIfAbsent(type, ignored -> new ImportKeyCache());
+        }
+
+        void resetWirelessIo(IOSpeedMode mode) {
+            importCDs.values().forEach(cd -> cd.reset(mode));
+            exportCDs.values().forEach(cd -> cd.reset(mode));
+            importProbeStates.values().forEach(ProbeState::reset);
+            keyModels.values().forEach(KeyModel::resetCycle);
+            importKeyCaches.values().forEach(ImportKeyCache::clear);
+            exportRejects.clear();
+        }
+
+        boolean isExportRejected(AEKey key, long now) {
+            var state = exportRejects.get(key);
+            if (state == null) return false;
+            if (now >= state.untilTick) {
+                exportRejects.remove(key);
+                return false;
+            }
+            return true;
+        }
+
+        void onExportRejected(AEKey key, long now) {
+            var state = exportRejects.get(key);
+            if (state == null) {
+                if (exportRejects.size() >= EXPORT_REJECT_BACKOFF_MAX_KEYS) {
+                    exportRejects.clear();
+                }
+                state = new ExportRejectState();
+                exportRejects.put(key, state);
+            }
+            state.reject(now);
+        }
+
+        void onExportAccepted(AEKey key) {
+            exportRejects.remove(key);
         }
 
         /**
@@ -284,7 +500,11 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         @Nullable
         IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
             BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) { energyBERef = null; energyStorageRef = null; return null; }
+            if (be == null) {
+                energyBERef = null; energyStorageRef = null;
+                energyCapBERef = null; energyCapCache = null;
+                return null;
+            }
             if (energyBERef != null && energyBERef.get() == be
                     && energyStorageRef != null) {
                 var s = energyStorageRef.get();
@@ -296,6 +516,30 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             energyBERef      = new WeakReference<>(be);
             energyStorageRef = new WeakReference<>(st);
             return st;
+        }
+
+        @Nullable
+        Object resolveEnergyCapCache(ServerLevel level, WirelessConnection conn,
+                                     Supplier<IGrid> gridSupplier) {
+            BlockEntity be = level.getBlockEntity(conn.pos());
+            if (be == null) {
+                energyCapBERef = null; energyCapCache = null;
+                return null;
+            }
+            if (energyCapBERef != null && energyCapBERef.get() == be
+                    && energyCapCache != null) {
+                return energyCapCache;
+            }
+
+            Object capCache = AppFluxBridge.createCapCache(
+                    level, conn.pos().relative(conn.boundFace()), gridSupplier);
+            if (capCache == null) {
+                energyCapBERef = null; energyCapCache = null;
+                return null;
+            }
+            energyCapBERef = new WeakReference<>(be);
+            energyCapCache = capCache;
+            return capCache;
         }
     }
 
@@ -311,7 +555,29 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         ScheduleEntry(WirelessConnection c, ConnectionState s) { conn = c; state = s; }
     }
 
-    private record ExtractedShare(MEStorage storage, long amount) {}
+    private record IoEntryKey(WirelessConnection conn, AEKeyType keyType, IoDirection direction) {}
+    private record ImportResult(long totalAvail, long moved) {}
+    private record ExportConfigEntry(AEKey key, long maxAmount) {}
+
+    static final class IoScheduledEntry {
+        final WirelessConnection conn;
+        final ConnectionState state;
+        final AEKeyType keyType;
+        final IoDirection direction;
+        final int generation;
+        IoPhase phase;
+
+        IoScheduledEntry(WirelessConnection conn, ConnectionState state,
+                         AEKeyType keyType, IoDirection direction,
+                         int generation) {
+            this.conn = conn;
+            this.state = state;
+            this.keyType = keyType;
+            this.direction = direction;
+            this.generation = generation;
+            this.phase = IoPhase.EXTRACT;
+        }
+    }
 
     @SuppressWarnings("unchecked")
     private final List<ScheduleEntry>[] energyWheel = new ArrayList[WHEEL_SLOTS];
@@ -321,6 +587,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
     private boolean wheelDirty = true;
     private long lastEnergyTickGameTime = -1;
+    private long wirelessEnergyIdleUntil = -1;
 
     // ── Connection validation cache ──────────────────────────────────────
 
@@ -331,8 +598,16 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private List<WirelessConnection> validConnectionsCache = List.of();
     private long    validConnectionsCacheTick = -1;
     private boolean connectionsDirty = true;
-    private int  ioRobinIndex;
-    private long lastIORobinTick = -1;
+
+    @SuppressWarnings("unchecked")
+    private final List<IoScheduledEntry>[] ioWheel = new ArrayList[IO_WHEEL_SLOTS];
+    { for (int i = 0; i < IO_WHEEL_SLOTS; i++) ioWheel[i] = new ArrayList<>(); }
+    private final Map<IoEntryKey, IoScheduledEntry> ioEntries = new HashMap<>();
+    private final List<IoScheduledEntry> dueIoEntries = new ArrayList<>();
+    private long lastIOWheelTick = -1;
+    private long lastIOEntryRefreshTick = Long.MIN_VALUE;
+    private int ioScheduleGeneration = 1;
+    private boolean ioWheelDirty = true;
 
     // ── Instance fields ──────────────────────────────────────────────────
 
@@ -343,6 +618,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final IActionSource machineSource = IActionSource.ofMachine(this);
     private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
         @Override
         public void saveChangedInventory(AppEngInternalInventory inv) {
@@ -429,7 +705,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public GenericInternalInventory getDirectInsertInventory() {
         if (directInsertInv == null) {
             directInsertInv = new DirectMEInsertInventory(
-                    getMainNode(), IActionSource.ofMachine(this));
+                    getMainNode(), machineSource);
             rebuildFilter();
         }
         return directInsertInv;
@@ -446,6 +722,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             importFilterKeys = null;
             importFilterFuzzyMode = null;
             if (directInsertInv != null) directInsertInv.setFilter(null);
+            wakeWirelessIo();
             return;
         }
         var config = cwi.getConfigInventory(filterStack);
@@ -457,6 +734,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             importFilterKeys = null;
             importFilterFuzzyMode = null;
             if (directInsertInv != null) directInsertInv.setFilter(null);
+            wakeWirelessIo();
             return;
         }
 
@@ -477,6 +755,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             predicate = keys::contains;
         }
         if (directInsertInv != null) directInsertInv.setFilter(predicate);
+        wakeWirelessIo();
     }
 
     // ── Mode accessors ───────────────────────────────────────────────────
@@ -491,12 +770,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public IOSpeedMode getIOSpeedMode() { return ioSpeedMode; }
     public void setIOSpeedMode(IOSpeedMode m) {
         if (ioSpeedMode == m) return; ioSpeedMode = m;
-        invalidateConnectionCache(); saveChanges(); markForUpdate();
+        wakeWirelessIo(); saveChanges(); markForUpdate();
     }
 
     public ExportMode getExportMode() { return exportMode; }
     public void setExportMode(ExportMode m) {
-        if (exportMode == m) return; exportMode = m; saveChanges(); markForUpdate();
+        if (exportMode == m) return; exportMode = m;
+        wakeWirelessIo(); saveChanges(); markForUpdate();
     }
 
     public ImportMode getImportMode() { return importMode; }
@@ -504,6 +784,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (importMode == m) return;
         var old = importMode; importMode = m;
         if ((old == ImportMode.EJECT) != (m == ImportMode.EJECT)) refreshEjectRegistrations();
+        wakeWirelessIo();
         saveChanges(); markForUpdate();
     }
 
@@ -512,7 +793,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
     public void setSlotUnlimited(int slot, boolean unlimited) {
         if (slot < 0 || slot >= SLOT_COUNT) return;
+        if (unlimitedSlots[slot] == unlimited) return;
         unlimitedSlots[slot] = unlimited;
+        invalidateExportConfigCache();
         saveChanges(); markForUpdate();
     }
 
@@ -548,16 +831,43 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ── Connection state management ──────────────────────────────────────
 
     private ConnectionState getOrCreateState(WirelessConnection conn) {
-        return connectionStates.computeIfAbsent(
-                conn, k -> new ConnectionState(ioSpeedMode));
+        return connectionStates.computeIfAbsent(conn, k -> new ConnectionState());
     }
 
     private void invalidateConnectionCache() {
         connectionsDirty = true;
         validConnectionsCache = List.of(); validConnectionsCacheTick = -1;
+        wirelessEnergyIdleUntil = -1;
         wheelDirty = true;
         for (var sl : energyWheel) sl.clear();
         deferredMachines.clear(); connectionStates.clear();
+        resetIOWheel();
+    }
+
+    private void resetIOWheel() {
+        for (var slot : ioWheel) {
+            slot.clear();
+        }
+        dueIoEntries.clear();
+        ioEntries.clear();
+        lastIOWheelTick = -1;
+        lastIOEntryRefreshTick = Long.MIN_VALUE;
+        ioScheduleGeneration++;
+        ioWheelDirty = true;
+    }
+
+    private void wakeWirelessIo() {
+        for (var state : connectionStates.values()) {
+            state.resetWirelessIo(ioSpeedMode);
+        }
+        keyTypeLockUntil.clear();
+        resetIOWheel();
+    }
+
+    private void invalidateExportConfigCache() {
+        exportConfigCache.clear();
+        exportConfigCacheTick = Long.MIN_VALUE;
+        exportConfigCacheValid = false;
     }
 
     private List<WirelessConnection> getOrRefreshValidConnections(
@@ -599,117 +909,395 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private boolean hasServerTickWork() {
+        if (interfaceMode == InterfaceMode.WIRELESS && !importBuffer.isEmpty()) {
+            return true;
+        }
         if (interfaceMode == InterfaceMode.WIRELESS
+                && !connections.isEmpty()
                 && (importMode == ImportMode.AUTO || exportMode == ExportMode.AUTO)) {
             return true;
         }
-        if (interfaceMode == InterfaceMode.WIRELESS || energyOutputDir != null) {
+        if ((interfaceMode == InterfaceMode.WIRELESS && !connections.isEmpty())
+                || energyOutputDir != null) {
             return AppFluxHelper.FE_KEY != null && hasInductionCard();
         }
         return false;
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Wireless I/O — shared cooldown, import first then export
-    //  Uses AE2 ExternalStorageStrategy wrappers for both directions.
+    //  Wireless I/O — timing wheel, per-keytype cooldown, persistent buffer
     // ══════════════════════════════════════════════════════════════════════
 
     private void tickWirelessIO(ServerLevel sl) {
         if (interfaceMode != InterfaceMode.WIRELESS) return;
-        boolean activeImport = importMode == ImportMode.AUTO;
-        boolean activeExport = exportMode == ExportMode.AUTO;
-        if (!activeImport && !activeExport) return;
         var grid = getMainNode().getGrid();
         if (grid == null) return;
 
-        long gameTick = sl.getGameTime();
-        var valid = getOrRefreshValidConnections(sl, gameTick);
-        int total = valid.size();
-        if (total == 0) return;
-
-        boolean fast = ioSpeedMode == IOSpeedMode.FAST;
-        int spread = fast ? FAST_SPREAD : NORMAL_SPREAD;
-
-        long elapsed = lastIORobinTick >= 0 ? gameTick - lastIORobinTick : 1;
-        lastIORobinTick = gameTick;
-
-        int perTick   = Math.max(1, (total + spread - 1) / spread);
-        int toProcess = (int) Math.min((long) perTick * elapsed, total);
-
+        long now = sl.getGameTime();
         var meStorage = grid.getStorageService().getInventory();
-        var source    = IActionSource.ofMachine(this);
-        int transferBudget = fast
-                ? AE2LTCommonConfig.overloadedInterfaceTransferBudgetFast()
-                : AE2LTCommonConfig.overloadedInterfaceTransferBudgetNormal();
+        var source = machineSource;
 
-        for (int i = 0; i < toProcess; i++) {
-            int idx = ioRobinIndex % total;
-            ioRobinIndex = (ioRobinIndex + 1) % total;
+        flushImportBuffer(meStorage, source, now);
 
-            var conn  = valid.get(idx);
-            var cst   = getOrCreateState(conn);
-            var cd    = cst.cd;
+        boolean activeImport = importMode == ImportMode.AUTO;
+        boolean activeExport = exportMode == ExportMode.AUTO;
+        if (!activeImport && !activeExport) return;
 
-            boolean probing = false;
-            if (!cd.isReady(gameTick)) {
-                if (fast && cd.isInProbeWindow(gameTick)) probing = true;
-                else continue;
-            }
+        var valid = getOrRefreshValidConnections(sl, now);
+        if (valid.isEmpty()) return;
 
-            var targetLevel = resolveTargetLevel(sl, conn);
+        refreshIOWheel(sl, valid, now, activeImport, activeExport);
+        pollIOWheel(now);
+
+        for (var entry : dueIoEntries) {
+            if (!isEntryStillValid(entry)) continue;
+
+            var targetLevel = resolveTargetLevel(sl, entry.conn);
             if (targetLevel == null) {
-                reportIO(cd, false, probing, gameTick); continue;
+                entry.state.cdFor(entry.keyType, entry.direction).onFail(now, ioSpeedMode);
+                rescheduleEntry(entry, now);
+                continue;
             }
 
-            boolean importOk = false, exportOk = false;
+            var wrappers = entry.state.resolveWrappers(targetLevel, entry.conn);
+            var wrapper = wrappers != null ? wrappers.get(entry.keyType) : null;
+            if (wrapper == null) {
+                entry.state.cdFor(entry.keyType, entry.direction).onFail(now, ioSpeedMode);
+                rescheduleEntry(entry, now);
+                continue;
+            }
 
-            if (activeImport)
-                importOk = doImport(cst, targetLevel, conn, meStorage, source, transferBudget) > 0;
-            if (activeExport)
-                exportOk = doExport(cst, targetLevel, conn, meStorage, source, transferBudget) > 0;
+            if (entry.direction == IoDirection.IMPORT) {
+                long lockedUntil = lockedUntil(entry.keyType, now);
+                if (lockedUntil > now) {
+                    scheduleEntryAt(entry, lockedUntil);
+                    continue;
+                }
+                if (entry.phase == IoPhase.PROBE) {
+                    runProbe(entry.state, entry.keyType, wrapper, source, now);
+                } else {
+                    runExtract(entry.state, entry.keyType, wrapper, source, now, IMPORT_TRANSFER_LIMIT);
+                }
+            } else {
+                runExport(entry.state, entry.keyType, wrapper, meStorage, source, now);
+            }
 
-            reportIO(cd, importOk || exportOk, probing, gameTick);
+            rescheduleEntry(entry, now);
+        }
+        dueIoEntries.clear();
+    }
+
+    private void refreshIOWheel(ServerLevel sl, List<WirelessConnection> valid,
+                                long now, boolean activeImport, boolean activeExport) {
+        if (!ioWheelDirty && lastIOEntryRefreshTick != Long.MIN_VALUE
+                && now - lastIOEntryRefreshTick < WRAPPER_REFRESH_TICKS) {
+            return;
+        }
+        lastIOEntryRefreshTick = now;
+        for (var conn : valid) {
+            var state = getOrCreateState(conn);
+            var targetLevel = resolveTargetLevel(sl, conn);
+            if (targetLevel == null) continue;
+            var wrappers = state.resolveWrappers(targetLevel, conn);
+            if (wrappers == null) continue;
+            for (var keyType : wrappers.keySet()) {
+                if (!isWirelessIoKeyType(keyType)) continue;
+                if (activeImport) {
+                    ensureIOEntry(conn, state, keyType, IoDirection.IMPORT, now);
+                }
+                if (activeExport) {
+                    ensureIOEntry(conn, state, keyType, IoDirection.EXPORT, now);
+                }
+            }
+        }
+        ioWheelDirty = false;
+    }
+
+    private void ensureIOEntry(WirelessConnection conn, ConnectionState state,
+                               AEKeyType keyType, IoDirection direction, long now) {
+        var key = new IoEntryKey(conn, keyType, direction);
+        if (ioEntries.containsKey(key)) return;
+        var entry = new IoScheduledEntry(conn, state, keyType, direction, ioScheduleGeneration);
+        entry.state.cdFor(keyType, direction).reset(ioSpeedMode);
+        ioEntries.put(key, entry);
+        scheduleEntryAt(entry, now + 1);
+    }
+
+    private static boolean isWirelessIoKeyType(AEKeyType keyType) {
+        if (AppFluxHelper.FE_KEY != null && keyType == AppFluxHelper.FE_KEY.getType()) {
+            return false;
+        }
+        return keyType == AEKeyType.items() || keyType == AEKeyType.fluids();
+    }
+
+    private void pollIOWheel(long now) {
+        dueIoEntries.clear();
+        long start;
+        if (lastIOWheelTick < 0) {
+            start = now;
+        } else if (now - lastIOWheelTick >= IO_WHEEL_SLOTS) {
+            start = now - IO_WHEEL_SLOTS + 1;
+        } else {
+            start = lastIOWheelTick + 1;
+        }
+        for (long tick = start; tick <= now; tick++) {
+            var slot = ioWheel[(int) (tick % IO_WHEEL_SLOTS)];
+            if (slot.isEmpty()) continue;
+            dueIoEntries.addAll(slot);
+            slot.clear();
+        }
+        lastIOWheelTick = now;
+    }
+
+    private boolean isEntryStillValid(IoScheduledEntry entry) {
+        if (entry.generation != ioScheduleGeneration) return false;
+        if (!isWirelessIoKeyType(entry.keyType)) return false;
+        if (connectionStates.get(entry.conn) != entry.state) return false;
+        if (entry.direction == IoDirection.IMPORT) return importMode == ImportMode.AUTO;
+        return exportMode == ExportMode.AUTO;
+    }
+
+    private void scheduleEntryAt(IoScheduledEntry entry, long dueTick) {
+        long target = Math.max(1, dueTick);
+        ioWheel[(int) (target % IO_WHEEL_SLOTS)].add(entry);
+    }
+
+    private void rescheduleEntry(IoScheduledEntry entry, long now) {
+        var cd = entry.state.cdFor(entry.keyType, entry.direction);
+        if (entry.direction == IoDirection.EXPORT) {
+            entry.phase = IoPhase.EXTRACT;
+            scheduleEntryAt(entry, nextCooldownTick(cd, now));
+            return;
+        }
+
+        var probe = entry.state.probeStateFor(entry.keyType);
+        if (entry.phase == IoPhase.PROBE) {
+            boolean probeHit = checkProbeSuccess(entry.state.modelFor(entry.keyType));
+            entry.phase = IoPhase.EXTRACT;
+            if (probeHit) {
+                probe.reset();
+                scheduleEntryAt(entry, now + 1);
+            } else {
+                probe.levelIdx = Math.min(probe.levelIdx + 1, PROBE_LEVELS.length - 1);
+                scheduleEntryAt(entry, nextCooldownTick(cd, now));
+            }
+            return;
+        }
+
+        long cdUntil = nextCooldownTick(cd, now);
+        long probeAt = computeProbeInsertTick(probe, cdUntil, now);
+        if (probeAt > now && probeAt < cdUntil
+                && cdUntil - now >= probeEnableThreshold(entry.keyType)) {
+            entry.phase = IoPhase.PROBE;
+            scheduleEntryAt(entry, probeAt);
+        } else {
+            entry.phase = IoPhase.EXTRACT;
+            scheduleEntryAt(entry, cdUntil);
         }
     }
 
-    // ── Import: remote wrapper.extract → ME.insert ────────────────────
+    private static long nextCooldownTick(CooldownTracker cd, long now) {
+        long until = cd.cooldownUntil();
+        return until > now ? until : now + 1;
+    }
 
-    private int doImport(ConnectionState cst, ServerLevel targetLevel,
-                          WirelessConnection conn, MEStorage me, IActionSource src,
-                          int transferBudget) {
-        var wrappers = cst.resolveWrappers(targetLevel, conn);
-        if (wrappers == null) return 0;
+    private long computeProbeInsertTick(ProbeState probe, long cdUntil, long now) {
+        float level = PROBE_LEVELS[probe.levelIdx];
+        if (level >= 1.0f) {
+            return cdUntil - (long) level;
+        }
+        int interval = Math.round(1.0f / level);
+        probe.skipCounter++;
+        if (probe.skipCounter >= interval) {
+            probe.skipCounter = 0;
+            return cdUntil - 1;
+        }
+        return -1;
+    }
 
-        int budget = transferBudget;
-        int moved  = 0;
+    private static int probeEnableThreshold(AEKeyType type) {
+        return type == AEKeyType.items() ? 10 : 5;
+    }
 
+    private static boolean checkProbeSuccess(KeyModel model) {
+        return model.effectiveMax > 0 && model.lastAvail >= (long) (model.effectiveMax * NORMAL_TARGET_FILL);
+    }
+
+    // ── Import: remote wrapper.extract → persistent import buffer ────────
+
+    private long runProbe(ConnectionState state, AEKeyType keyType, MEStorage wrapper,
+                          IActionSource src, long now) {
+        long totalAvail = observeImportAvailable(state, keyType, wrapper, src, now, IMPORT_TRANSFER_LIMIT);
+        state.modelFor(keyType).onProbe(totalAvail, now);
+        return totalAvail;
+    }
+
+    private long runExtract(ConnectionState state, AEKeyType keyType, MEStorage wrapper,
+                            IActionSource src, long now, long transferLimit) {
         var exactFilterKeys = getExactImportFilterKeys();
+        ImportResult result;
         if (exactFilterKeys != null) {
-            for (var key : exactFilterKeys) {
-                if (budget <= 0) break;
-                long inserted = importKeyFromWrappers(key, budget, budget, wrappers, me, src);
-                moved += (int) inserted;
-                budget -= (int) inserted;
-            }
+            result = extractExactImportKeys(keyType, wrapper, src, transferLimit, exactFilterKeys);
         } else {
-            // Merge available stacks across all wrappers to batch ME ops per unique key.
-            scanBuffer.reset();
-            for (var wrapper : wrappers.values()) {
-                wrapper.getAvailableStacks(scanBuffer);
-            }
-
-            for (var entry : scanBuffer) {
-                if (budget <= 0) break;
-                var key    = entry.getKey();
-                long totalAvail = entry.getLongValue();
-                if (totalAvail <= 0 || !isImportAllowed(key)) continue;
-
-                long inserted = importKeyFromWrappers(key, totalAvail, budget, wrappers, me, src);
-                moved += (int) inserted;
-                budget -= (int) inserted;
+            var cache = state.importKeyCacheFor(keyType);
+            if (cache.canUseKeys(now)) {
+                result = extractCachedImportKeys(cache, wrapper, src, transferLimit);
+                if (result.totalAvail() <= 0) {
+                    result = scanImportKeys(keyType, wrapper, src, cache, now, transferLimit, true);
+                }
+            } else if (cache.isScanFresh(now)) {
+                result = new ImportResult(0, 0);
+            } else {
+                result = scanImportKeys(keyType, wrapper, src, cache, now, transferLimit, true);
             }
         }
-        return moved;
+
+        var model = state.modelFor(keyType);
+        model.onExtract(result.totalAvail(), result.moved(), now);
+        var cd = state.cdFor(keyType, IoDirection.IMPORT);
+        if (result.moved() > 0) {
+            saveChanges();
+            cd.onSuccess(now, ioSpeedMode, model);
+        } else {
+            cd.onFail(now, ioSpeedMode);
+        }
+        return result.moved();
+    }
+
+    private long observeImportAvailable(ConnectionState state, AEKeyType keyType, MEStorage wrapper,
+                                        IActionSource src, long now, long probeLimit) {
+        var exactFilterKeys = getExactImportFilterKeys();
+        if (exactFilterKeys != null) {
+            return observeExactImportAvailable(keyType, wrapper, src, probeLimit, exactFilterKeys);
+        }
+
+        var cache = state.importKeyCacheFor(keyType);
+        if (cache.canUseKeys(now)) {
+            long cachedAvail = observeCachedImportAvailable(cache, wrapper, src, probeLimit);
+            if (cachedAvail > 0) {
+                return cachedAvail;
+            }
+            return scanImportKeys(keyType, wrapper, src, cache, now, probeLimit, false).totalAvail();
+        }
+        if (cache.isScanFresh(now)) {
+            return 0;
+        }
+        return scanImportKeys(keyType, wrapper, src, cache, now, probeLimit, false).totalAvail();
+    }
+
+    private ImportResult extractExactImportKeys(AEKeyType keyType, MEStorage wrapper,
+                                                IActionSource src, long transferLimit,
+                                                Set<AEKey> exactFilterKeys) {
+        long budget = transferLimit;
+        long totalAvail = 0;
+        long moved = 0;
+        for (var key : exactFilterKeys) {
+            if (key.getType() != keyType) continue;
+            long available = wrapper.extract(key, Math.max(1L, transferLimit),
+                    Actionable.SIMULATE, src);
+            if (available <= 0) continue;
+            totalAvail += available;
+            if (budget <= 0) continue;
+            long extracted = importExtractToBuffer(key, Math.min(available, budget), wrapper, src);
+            moved += extracted;
+            budget -= extracted;
+        }
+        return new ImportResult(totalAvail, moved);
+    }
+
+    private long observeExactImportAvailable(AEKeyType keyType, MEStorage wrapper,
+                                             IActionSource src, long probeLimit,
+                                             Set<AEKey> exactFilterKeys) {
+        long total = 0;
+        for (var key : exactFilterKeys) {
+            if (key.getType() != keyType) continue;
+            long amount = wrapper.extract(key, Math.max(1L, probeLimit), Actionable.SIMULATE, src);
+            if (amount > 0) total += amount;
+        }
+        return total;
+    }
+
+    private ImportResult extractCachedImportKeys(ImportKeyCache cache, MEStorage wrapper,
+                                                 IActionSource src, long transferLimit) {
+        int size = cache.keys.size();
+        if (size <= 0) return new ImportResult(0, 0);
+        long budget = transferLimit;
+        long totalAvail = 0;
+        long moved = 0;
+        int start = Math.floorMod(cache.nextIndex, size);
+        int visited = 0;
+
+        while (visited < size && budget > 0) {
+            var key = cache.keys.get((start + visited) % size);
+            long available = wrapper.extract(key, Math.max(1L, budget), Actionable.SIMULATE, src);
+            if (available > 0) {
+                totalAvail += available;
+                long extracted = importExtractToBuffer(key, Math.min(available, budget), wrapper, src);
+                moved += extracted;
+                budget -= extracted;
+            }
+            visited++;
+        }
+
+        cache.nextIndex = size > 0 ? (start + Math.max(visited, 1)) % size : 0;
+        return new ImportResult(totalAvail, moved);
+    }
+
+    private long observeCachedImportAvailable(ImportKeyCache cache, MEStorage wrapper,
+                                              IActionSource src, long probeLimit) {
+        long total = 0;
+        int checked = 0;
+        int size = cache.keys.size();
+        int start = size > 0 ? Math.floorMod(cache.nextIndex, size) : 0;
+        while (checked < size) {
+            var key = cache.keys.get((start + checked) % size);
+            long amount = wrapper.extract(key, Math.max(1L, probeLimit), Actionable.SIMULATE, src);
+            if (amount > 0) total += amount;
+            checked++;
+        }
+        return total;
+    }
+
+    private ImportResult scanImportKeys(AEKeyType keyType, MEStorage wrapper, IActionSource src,
+                                        ImportKeyCache cache, long now, long transferLimit,
+                                        boolean extract) {
+        var buffer = freshScanBuffer();
+        wrapper.getAvailableStacks(buffer);
+        var scannedKeys = new ArrayList<AEKey>();
+        long budget = transferLimit;
+        long total = 0;
+        long moved = 0;
+        for (var available : buffer) {
+            var key = available.getKey();
+            if (key.getType() != keyType || !isImportAllowed(key)) continue;
+            long amount = available.getLongValue();
+            if (amount <= 0) continue;
+            total += amount;
+            if (scannedKeys.size() < IMPORT_KEY_CACHE_MAX_KEYS) {
+                scannedKeys.add(key);
+            }
+            if (extract && budget > 0) {
+                long extracted = importExtractToBuffer(key, Math.min(amount, budget), wrapper, src);
+                moved += extracted;
+                budget -= extracted;
+            }
+        }
+        cache.update(scannedKeys, now);
+        return new ImportResult(total, moved);
+    }
+
+    private KeyCounter freshScanBuffer() {
+        scanBuffer = new KeyCounter();
+        return scanBuffer;
+    }
+
+    private long importExtractToBuffer(AEKey key, long amount, MEStorage wrapper, IActionSource src) {
+        if (amount <= 0) return 0;
+        long extracted = wrapper.extract(key, amount, Actionable.MODULATE, src);
+        if (extracted > 0) {
+            addToImportBuffer(key, extracted);
+        }
+        return extracted;
     }
 
     @Nullable
@@ -728,108 +1316,193 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         return false;
     }
 
-    private long importKeyFromWrappers(AEKey key, long totalAvail, int budget,
-                                       Map<AEKeyType, MEStorage> wrappers,
-                                       MEStorage me, IActionSource src) {
-        if (totalAvail <= 0 || budget <= 0) return 0;
+    // ── Export: ME.extract → remote wrapper.insert, overflow → buffer ────
 
-        long toTransfer = Math.min(totalAvail, budget);
-        long meCanAccept = me.insert(key, toTransfer, Actionable.SIMULATE, src);
-        if (meCanAccept <= 0) return 0;
+    private long runExport(ConnectionState state, AEKeyType keyType, MEStorage wrapper,
+                           MEStorage me, IActionSource src, long now) {
+        var entries = exportEntriesForType(keyType, now);
+        long moved = 0;
+        boolean overflowed = false;
 
-        long extractBudget = Math.min(toTransfer, meCanAccept);
-        long totalExtracted = 0;
-        extractedShares.clear();
+        for (var entry : entries) {
+            var key = entry.key();
+            if (state.isExportRejected(key, now)) continue;
 
-        for (var wrapper : wrappers.values()) {
-            if (totalExtracted >= extractBudget) break;
-            long extracted = wrapper.extract(key, extractBudget - totalExtracted, Actionable.MODULATE, src);
-            if (extracted > 0) {
-                totalExtracted += extracted;
-                extractedShares.add(new ExtractedShare(wrapper, extracted));
+            long toMove = entry.maxAmount();
+
+            long available = me.extract(key, toMove, Actionable.SIMULATE, src);
+            if (available <= 0) continue;
+
+            long requested = Math.min(toMove, available);
+            long canAccept = wrapper.insert(key, requested, Actionable.SIMULATE, src);
+            if (canAccept <= 0) {
+                state.onExportRejected(key, now);
+                continue;
             }
-        }
 
-        if (totalExtracted <= 0) return 0;
+            long extracted = me.extract(key, Math.min(requested, canAccept), Actionable.MODULATE, src);
+            if (extracted <= 0) continue;
 
-        long actualInserted = me.insert(key, totalExtracted, Actionable.MODULATE, src);
-        long rollback = totalExtracted - actualInserted;
-        for (int i = extractedShares.size() - 1; i >= 0 && rollback > 0; i--) {
-            var share = extractedShares.get(i);
-            long toReturn = Math.min(rollback, share.amount());
-            long restored = share.storage().insert(key, toReturn, Actionable.MODULATE, src);
-            rollback -= restored;
-        }
-        extractedShares.clear();
-        return actualInserted;
-    }
-
-    // ── Export: ME.extract → remote wrapper.insert ────────────────────────
-
-    private int doExport(ConnectionState cst, ServerLevel targetLevel,
-                          WirelessConnection conn, MEStorage me, IActionSource src,
-                          int transferBudget) {
-        var wrappers = cst.resolveWrappers(targetLevel, conn);
-        if (wrappers == null) return 0;
-
-        var config     = getInterfaceLogic().getConfig();
-        int configSize = config.size();
-        int budget     = transferBudget;
-        int moved      = 0;
-
-        for (int ci = 0; ci < configSize && budget > 0; ci++) {
-            var key = config.getKey(ci);
-            if (key == null) continue;
-
-            long maxAmount;
-            if (unlimitedSlots[ci]) {
-                maxAmount = Long.MAX_VALUE;
+            long inserted = wrapper.insert(key, extracted, Actionable.MODULATE, src);
+            if (inserted > 0) {
+                state.onExportAccepted(key);
+                moved += inserted;
             } else {
-                maxAmount = config.getAmount(ci);
-                if (maxAmount <= 0) maxAmount = Long.MAX_VALUE;
+                state.onExportRejected(key, now);
             }
 
-            long toMove = Math.min(Math.min(maxAmount, budget), transferBudget);
-
-            // Simulate both sides to get a rough transfer estimate
-            long meAvail = me.extract(key, toMove, Actionable.SIMULATE, src);
-            if (meAvail <= 0) continue;
-            long canAccept = 0;
-            for (var wrapper : wrappers.values()) {
-                long remaining = meAvail - canAccept;
-                if (remaining <= 0) break;
-                canAccept += wrapper.insert(key, remaining, Actionable.SIMULATE, src);
+            long overflow = extracted - inserted;
+            if (overflow > 0) {
+                addToImportBuffer(key, overflow);
+                overflowed = true;
             }
-            if (canAccept <= 0) continue;
+        }
 
-            // Extract from ME first — authoritative source, prevents duplication
-            long actualExtracted = me.extract(key, Math.min(meAvail, canAccept),
-                    Actionable.MODULATE, src);
-            if (actualExtracted <= 0) continue;
-
-            long totalInserted = 0;
-            for (var wrapper : wrappers.values()) {
-                long remaining = actualExtracted - totalInserted;
-                if (remaining <= 0) break;
-                long ins = wrapper.insert(key, remaining, Actionable.MODULATE, src);
-                totalInserted += ins;
-            }
-
-            // Return excess to ME if wrappers accepted less than extracted
-            if (actualExtracted > totalInserted) {
-                me.insert(key, actualExtracted - totalInserted, Actionable.MODULATE, src);
-            }
-
-            moved  += (int) totalInserted;
-            budget -= (int) totalInserted;
+        var cd = state.cdFor(keyType, IoDirection.EXPORT);
+        if (moved > 0) {
+            cd.onSuccess(now, ioSpeedMode, null);
+        } else {
+            cd.onFail(now, ioSpeedMode);
+        }
+        if (overflowed) {
+            saveChanges();
         }
         return moved;
     }
 
-    private static void reportIO(CooldownTracker cd, boolean ok,
-                                  boolean probing, long t) {
-        if (probing) { if (ok) cd.onProbeSuccess(); else cd.onProbeFail(); }
-        else         { if (ok) cd.onSuccess(t);     else cd.onFail(t);     }
+    private List<ExportConfigEntry> exportEntriesForType(AEKeyType keyType, long now) {
+        refreshExportConfigCache(now);
+        var entries = exportConfigCache.get(keyType);
+        return entries != null ? entries : List.of();
+    }
+
+    private void refreshExportConfigCache(long now) {
+        if (exportConfigCacheTick == now) {
+            return;
+        }
+        exportConfigCacheTick = now;
+
+        int hash = computeExportConfigHash();
+        if (exportConfigCacheValid && hash == exportConfigCacheHash) {
+            return;
+        }
+
+        exportConfigCacheHash = hash;
+        exportConfigCacheValid = true;
+        exportConfigCache.clear();
+
+        var config = getInterfaceLogic().getConfig();
+        for (int ci = 0; ci < config.size(); ci++) {
+            var key = config.getKey(ci);
+            if (key == null || !isWirelessIoKeyType(key.getType())) continue;
+
+            long maxAmount = unlimitedSlots[ci] ? Long.MAX_VALUE : config.getAmount(ci);
+            if (maxAmount <= 0) maxAmount = Long.MAX_VALUE;
+            exportConfigCache
+                    .computeIfAbsent(key.getType(), ignored -> new ArrayList<>())
+                    .add(new ExportConfigEntry(key, maxAmount));
+        }
+        exportConfigCache.replaceAll((ignored, entries) -> List.copyOf(entries));
+    }
+
+    private int computeExportConfigHash() {
+        var config = getInterfaceLogic().getConfig();
+        int hash = config.size();
+        for (int ci = 0; ci < config.size(); ci++) {
+            var key = config.getKey(ci);
+            hash = 31 * hash + (key != null ? key.hashCode() : 0);
+            hash = 31 * hash + (unlimitedSlots[ci] ? 1 : 0);
+            if (key != null && !unlimitedSlots[ci]) {
+                hash = 31 * hash + Long.hashCode(config.getAmount(ci));
+            }
+        }
+        return hash;
+    }
+
+    // ── Persistent import buffer ─────────────────────────────────────────
+
+    private void addToImportBuffer(AEKey key, long amount) {
+        if (amount <= 0) return;
+        importBuffer.merge(key, amount, (oldAmount, added) ->
+                oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
+    }
+
+    private void flushImportBuffer(MEStorage me, IActionSource src, long now) {
+        if (importBuffer.isEmpty()) return;
+        if (importBufferLastFlushTick != Long.MIN_VALUE
+                && now - importBufferLastFlushTick < IMPORT_FLUSH_INTERVAL) {
+            return;
+        }
+        importBufferLastFlushTick = now;
+
+        var typeProgressed = new IdentityHashMap<AEKeyType, Boolean>();
+        var typeFullyRejected = new IdentityHashMap<AEKeyType, Boolean>();
+        boolean changed = false;
+
+        var it = importBuffer.entrySet().iterator();
+        while (it.hasNext()) {
+            var buffered = it.next();
+            var key = buffered.getKey();
+            long amount = buffered.getValue();
+            if (amount <= 0) {
+                it.remove();
+                changed = true;
+                continue;
+            }
+
+            long inserted = me.insert(key, amount, Actionable.MODULATE, src);
+            var type = key.getType();
+            if (inserted >= amount) {
+                it.remove();
+                typeProgressed.put(type, true);
+                changed = true;
+            } else if (inserted > 0) {
+                buffered.setValue(amount - inserted);
+                typeProgressed.put(type, true);
+                changed = true;
+            } else {
+                typeFullyRejected.putIfAbsent(type, true);
+            }
+        }
+
+        for (var type : typeProgressed.keySet()) {
+            if (keyTypeLockUntil.remove(type) != null) {
+                changed = true;
+            }
+        }
+        for (var type : typeFullyRejected.keySet()) {
+            if (!typeProgressed.getOrDefault(type, false)) {
+                keyTypeLockUntil.put(type, now + STOP_IMPORT_TTL);
+            }
+        }
+
+        if (changed) {
+            saveChanges();
+        }
+    }
+
+    private long lockedUntil(AEKeyType type, long now) {
+        long until = keyTypeLockUntil.getOrDefault(type, 0L);
+        if (until <= 0) return 0;
+        if (now >= until) {
+            keyTypeLockUntil.remove(type);
+            return 0;
+        }
+        return until;
+    }
+
+    public void addImportBufferDrops(List<ItemStack> drops) {
+        if (importBuffer.isEmpty()) return;
+        for (var buffered : importBuffer.entrySet()) {
+            buffered.getKey().addDrops(buffered.getValue(), drops, getLevel(), getBlockPos());
+        }
+        importBuffer.clear();
+    }
+
+    public void clearImportBuffer() {
+        importBuffer.clear();
+        keyTypeLockUntil.clear();
+        importBufferLastFlushTick = Long.MIN_VALUE;
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -866,8 +1539,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 tp, energyOutputDir.getOpposite());
         if (st == null) return;
         var mes = getMainNode().getGrid().getStorageService().getInventory();
-        var src = IActionSource.ofMachine(this);
-        AppFluxHelper.pullPowerFromNetwork(mes, st, src);
+        AppFluxHelper.pullPowerFromNetwork(mes, st, machineSource);
     }
 
     // ── Wireless energy: timing-wheel scheduler ──────────────────────────
@@ -876,34 +1548,68 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         long gt = sl.getGameTime();
         if (gt == lastEnergyTickGameTime) return;
         lastEnergyTickGameTime = gt;
-        distributeWirelessEnergy(sl, gt);
+        distributeWirelessEnergy(sl, gt, feKey);
     }
 
-    private void distributeWirelessEnergy(ServerLevel sl, long tick) {
+    private void distributeWirelessEnergy(ServerLevel sl, long tick, AEKey feKey) {
+        if (!AppFluxBridge.canUseEnergyHandler()) {
+            return;
+        }
+        if (wirelessEnergyIdleUntil > tick) {
+            return;
+        }
+        var valid = getOrRefreshValidConnections(sl, tick);
+        if (valid.isEmpty()) return;
+
         var proxy = getWirelessEnergyStorageProxy();
         var buffered = wirelessEnergyBufferedStorage;
         if (proxy == null || buffered == null) {
             return;
         }
 
-        var valid = getOrRefreshValidConnections(sl, tick);
-        if (valid.isEmpty()) return;
-
         buffered.setBufferCapacity(0L);
         buffered.setCostMultiplier(1);
 
-        var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
-        for (var conn : valid) {
-            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
+        Supplier<IGrid> gridSupplier = () -> getMainNode().getGrid();
+        boolean useBatchBuffer = buffered.getBufferCapacity() > 0L;
+        if (useBatchBuffer) {
+            buffered.preload(feKey, transferHintForTargets(valid.size()), machineSource);
         }
 
-        WirelessEnergyAPI.distributeBatch(
-                sl,
-                targets,
-                buffered,
-                proxy,
-                () -> getMainNode().getGrid(),
-                IActionSource.ofMachine(this));
+        long totalPushed = 0L;
+        try {
+            for (var conn : valid) {
+                var targetLevel = resolveTargetLevel(sl, conn);
+                if (targetLevel == null) {
+                    continue;
+                }
+                var connectionState = getOrCreateState(conn);
+                var energyStorage = connectionState.resolveEnergy(targetLevel, conn);
+                if (energyStorage == null || AppFluxHelper.simulateReceivable(energyStorage) <= 0) {
+                    continue;
+                }
+                var capCache = connectionState.resolveEnergyCapCache(targetLevel, conn, gridSupplier);
+                totalPushed += WirelessEnergyAPI.send(capCache, conn.boundFace(), proxy, machineSource);
+            }
+        } finally {
+            if (useBatchBuffer) {
+                buffered.flush(feKey, machineSource);
+            }
+        }
+
+        wirelessEnergyIdleUntil = totalPushed > 0L
+                ? -1
+                : tick + WIRELESS_ENERGY_IDLE_RETRY_TICKS;
+    }
+
+    private static long transferHintForTargets(int targetCount) {
+        if (targetCount <= 0 || AppFluxBridge.TRANSFER_RATE <= 0L) {
+            return 0L;
+        }
+        if (AppFluxBridge.TRANSFER_RATE > Long.MAX_VALUE / targetCount) {
+            return Long.MAX_VALUE;
+        }
+        return AppFluxBridge.TRANSFER_RATE * targetCount;
     }
 
     @Nullable
@@ -1072,7 +1778,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var grid = getMainNode().getGrid();
         if (grid == null) return 0;
         return grid.getStorageService().getInventory()
-                .extract(key, max, Actionable.SIMULATE, IActionSource.ofMachine(this));
+                .extract(key, max, Actionable.SIMULATE, machineSource);
     }
 
     private long extractFlux(AEKey key, long amount) {
@@ -1080,7 +1786,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var grid = getMainNode().getGrid();
         if (grid == null) return 0;
         return grid.getStorageService().getInventory()
-                .extract(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
+                .extract(key, amount, Actionable.MODULATE, machineSource);
     }
 
     private void insertFlux(AEKey key, long amount) {
@@ -1088,7 +1794,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var grid = getMainNode().getGrid();
         if (grid == null) return;
         grid.getStorageService().getInventory()
-                .insert(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
+                .insert(key, amount, Actionable.MODULATE, machineSource);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1237,6 +1943,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             importMode = newImportMode;
             energyOutputDir = newEnergyDir;
             System.arraycopy(newUnlimitedSlots, 0, unlimitedSlots, 0, SLOT_COUNT);
+            invalidateExportConfigCache();
             connections.clear();
             connections.addAll(newConnections);
             changed = true;
@@ -1260,6 +1967,14 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         for (var c : connections) cl.add(c.toTag());
         d.put(TAG_CONNECTIONS, cl);
         filterInv.writeToNBT(d, TAG_FILTER_INV, r);
+        if (!importBuffer.isEmpty()) {
+            var buffered = new ListTag();
+            for (var entry : importBuffer.entrySet()) {
+                buffered.add(GenericStack.writeTag(r, new GenericStack(entry.getKey(), entry.getValue())));
+            }
+            d.put(TAG_IMPORT_BUFFER, buffered);
+        }
+        d.putLong(TAG_IMPORT_FLUSH_TICK, importBufferLastFlushTick);
     }
 
     @Override
@@ -1292,6 +2007,21 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
         filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        importBuffer.clear();
+        if (d.contains(TAG_IMPORT_BUFFER, Tag.TAG_LIST)) {
+            var buffered = d.getList(TAG_IMPORT_BUFFER, Tag.TAG_COMPOUND);
+            for (int i = 0; i < buffered.size(); i++) {
+                var stack = GenericStack.readTag(r, buffered.getCompound(i));
+                if (stack != null && stack.amount() > 0) {
+                    importBuffer.merge(stack.what(), stack.amount(), (oldAmount, added) ->
+                            oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
+                }
+            }
+        }
+        importBufferLastFlushTick = d.contains(TAG_IMPORT_FLUSH_TICK)
+                ? d.getLong(TAG_IMPORT_FLUSH_TICK)
+                : Long.MIN_VALUE;
+        keyTypeLockUntil.clear();
         invalidateConnectionCache();
         refreshEjectRegistrations();
     }

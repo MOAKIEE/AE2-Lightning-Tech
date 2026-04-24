@@ -157,12 +157,14 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
         var filterStack = owner.getFilterInv().getStackInSlot(0);
         if (!filterStack.isEmpty()) drops.add(filterStack);
+        owner.addImportBufferDrops(drops);
     }
 
     @Override
     public void clearContent() {
         getUpgrades().clear();
         owner.getFilterInv().setItemDirect(0, ItemStack.EMPTY);
+        owner.clearImportBuffer();
     }
 
     private static final long REACTIVE_COOLDOWN_TICKS = 5;
