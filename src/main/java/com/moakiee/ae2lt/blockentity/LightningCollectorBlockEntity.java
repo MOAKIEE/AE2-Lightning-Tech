@@ -47,6 +47,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     private static final String TAG_COOLDOWN = "CooldownTicks";
     private static final String TAG_WORKING_TICKS = "WorkingTicks";
     private static final int WORKING_DURATION_TICKS = 20;
+    private static final long NATURAL_CULTIVATION_DEBOUNCE_TICKS = 20L;
     private static boolean warnedInvalidHighVoltageBaseRange;
     private static boolean warnedInvalidExtremeVoltageBaseRange;
 
@@ -55,6 +56,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
 
     private int cooldownTicks;
     private int workingTicks;
+    private long lastNaturalCultivationGameTime = Long.MIN_VALUE;
 
     public LightningCollectorBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.LIGHTNING_COLLECTOR.get(), pos, blockState);
@@ -167,9 +169,6 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             return false;
         }
 
-        if (tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
-            cultivateCrystal(serverLevel.random);
-        }
         long amountToInsert = rolledOutput;
         long inserted = amountToInsert > 0
                 ? grid.getStorageService().getInventory().insert(
@@ -182,6 +181,12 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         boolean captured = inserted > 0;
         if (!captured) {
             return false;
+        }
+
+        if (tier == LightningKey.Tier.EXTREME_HIGH_VOLTAGE && canCultivateFromNaturalStrike(serverLevel)) {
+            if (cultivateCrystal(serverLevel.random)) {
+                lastNaturalCultivationGameTime = serverLevel.getGameTime();
+            }
         }
 
         this.cooldownTicks = AE2LTCommonConfig.lightningCollectorCooldownTicks();
@@ -267,10 +272,16 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         return EnumSet.allOf(Direction.class);
     }
 
-    private void cultivateCrystal(RandomSource random) {
+    private boolean canCultivateFromNaturalStrike(ServerLevel serverLevel) {
+        long gameTime = serverLevel.getGameTime();
+        return lastNaturalCultivationGameTime == Long.MIN_VALUE
+                || gameTime - lastNaturalCultivationGameTime >= NATURAL_CULTIVATION_DEBOUNCE_TICKS;
+    }
+
+    private boolean cultivateCrystal(RandomSource random) {
         ItemStack crystal = getInstalledCrystal();
         if (crystal.isEmpty() || crystal.is(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get())) {
-            return;
+            return false;
         }
 
         int feed = ElectroChimeCrystalItem.rollCatalysisFeed(random);
@@ -279,6 +290,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             inventory.setStackInSlot(LightningCollectorInventory.SLOT_CRYSTAL,
                     new ItemStack(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL.get()));
         }
+        return true;
     }
 
     private static void warnInvalidBaseRange(boolean extremeHighVoltage, int min, int max) {
