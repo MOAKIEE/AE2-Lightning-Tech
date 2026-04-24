@@ -61,6 +61,10 @@ neoForge {
 
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+            // TEMP: 临时开启 OverloadedInterface 能量 debug 日志(测完恢复/移除)
+            systemProperty 'ae2lt.debug.energy', '1'
+            // TEMP: 临时开启探针 debug 日志(测完恢复/移除)
+            systemProperty 'ae2lt.debug.probe', '1'
         }
 
         // Second dev client for local multiplayer testing — runs as
@@ -170,6 +174,13 @@ dependencies {
 
     runtimeOnly files("libs/observable-5.4.4.jar")
     runtimeOnly "curse.maven:kotlin-for-forge-351264:7471280"
+
+    // ── Industrial Foregoing + MIFA(水培床 + 更多 IF 插件)──
+    // 用于实测 OverloadedInterface 的自适应 IO:水培床/Plant Gatherer 都是持续吐货,
+    //   典型"远端产货"源,刚好测 packSize 学习 + cd 二分收敛。
+    runtimeOnly "curse.maven:titanium-287342:7951516"                 // IF/MIFA 前置库
+    runtimeOnly "curse.maven:industrial-foregoing-266515:7600395"     // Industrial Foregoing 3.6.38
+    runtimeOnly "curse.maven:mifa-1086142:6288756"                    // More Industrial Foregoing Addons 2.1.0
 
     // Example mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime

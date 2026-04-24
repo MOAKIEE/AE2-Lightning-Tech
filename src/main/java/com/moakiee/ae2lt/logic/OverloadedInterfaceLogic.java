@@ -25,7 +25,6 @@ import appeng.api.storage.AEKeySlotFilter;
 import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
-import appeng.core.settings.TickRates;
 import appeng.helpers.InterfaceLogic;
 import appeng.helpers.externalstorage.GenericStackInv;
 import appeng.util.ConfigInventory;
@@ -157,6 +156,13 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
         var filterStack = owner.getFilterInv().getStackInSlot(0);
         if (!filterStack.isEmpty()) drops.add(filterStack);
+
+        var level = owner.getLevel();
+        var pos = owner.getBlockPos();
+        for (var e : owner.getImportBuffer().entrySet()) {
+            e.getKey().addDrops(e.getValue(), drops, level, pos);
+        }
+        owner.getImportBuffer().clear();
     }
 
     @Override
@@ -217,9 +223,14 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     // ══════════════════════════════════════════════════════════════════════
 
     private class ProxyTicker implements IGridTickable {
+        // 自定义 1-5 tick 档:有活 URGENT → 1 tick,空转 SLOWER → 最慢 5 tick
+        // (AE2 默认 TickRates.Interface 是 5-120,空转太慢、响应滞后;这里覆盖为响应优先)
+        private static final int MIN_TICKS = 1;
+        private static final int MAX_TICKS = 5;
+
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(TickRates.Interface, false);
+            return new TickingRequest(MIN_TICKS, MAX_TICKS, false);
         }
 
         @Override
@@ -245,7 +256,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
                     }
                 }
             }
-            return didWork ? TickRateModulation.FASTER : TickRateModulation.SLOWER;
+            return didWork ? TickRateModulation.URGENT : TickRateModulation.SLOWER;
         }
     }
 

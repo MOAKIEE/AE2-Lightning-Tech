@@ -117,7 +117,8 @@ public final class WirelessEnergyAPI {
         }
 
         buffered.setCostMultiplier(1);
-        buffered.preload(AppFluxBridge.FE_KEY, (long) AppFluxBridge.TRANSFER_RATE * liveTargets.size(), source);
+        buffered.preload(AppFluxBridge.FE_KEY,
+                saturatingMul(AppFluxBridge.TRANSFER_RATE, liveTargets.size()), source);
 
         long totalPushed = 0L;
         try {
@@ -131,5 +132,12 @@ public final class WirelessEnergyAPI {
         }
 
         return totalPushed;
+    }
+
+    /** Saturating multiply: 溢出时 clamp 到 Long.MAX_VALUE(TRANSFER_RATE=unlimited 哨兵保护) */
+    private static long saturatingMul(long a, long b) {
+        if (a <= 0 || b <= 0) return 0;
+        if (a > Long.MAX_VALUE / b) return Long.MAX_VALUE;
+        return a * b;
     }
 }

@@ -44,14 +44,6 @@ public final class AE2LTCommonConfig {
         return VALUES.overloadedControllerPassiveAePerTick.get();
     }
 
-    public static int overloadedInterfaceTransferBudgetNormal() {
-        return VALUES.overloadedInterfaceTransferBudgetNormal.get();
-    }
-
-    public static int overloadedInterfaceTransferBudgetFast() {
-        return VALUES.overloadedInterfaceTransferBudgetFast.get();
-    }
-
     public static int overloadFactoryParallelPerMatrix() {
         return VALUES.overloadFactoryParallelPerMatrix.get();
     }
@@ -164,8 +156,6 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue overloadTntGlobalLightningBudgetPerTick;
         private final ModConfigSpec.IntValue overloadedControllerChannelsPerController;
         private final ModConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
-        private final ModConfigSpec.IntValue overloadedInterfaceTransferBudgetNormal;
-        private final ModConfigSpec.IntValue overloadedInterfaceTransferBudgetFast;
         private final ModConfigSpec.IntValue overloadFactoryParallelPerMatrix;
         private final ModConfigSpec.LongValue overloadFactoryEnergyCapacity;
         private final ModConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
@@ -268,15 +258,6 @@ public final class AE2LTCommonConfig {
                     .comment("Passive AE injected per tick by an overloaded controller.")
                     .defineInRange("passiveAePerTick", 100.0D, 0.0D, Double.MAX_VALUE);
             builder.pop();
-            builder.pop();
-
-            builder.push("overloadedInterface");
-            overloadedInterfaceTransferBudgetNormal = builder
-                    .comment("Transfer budget for the overloaded interface in normal mode.")
-                    .defineInRange("transferBudgetNormal", 4096, 0, Integer.MAX_VALUE);
-            overloadedInterfaceTransferBudgetFast = builder
-                    .comment("Transfer budget for the overloaded interface in fast mode.")
-                    .defineInRange("transferBudgetFast", 16384, 0, Integer.MAX_VALUE);
             builder.pop();
 
             builder.push("overloadProcessingFactory");
