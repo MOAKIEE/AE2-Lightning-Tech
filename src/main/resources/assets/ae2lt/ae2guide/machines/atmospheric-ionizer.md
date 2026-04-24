@@ -42,18 +42,6 @@ There are three types of Weather Condensate, one per weather state:
 4. Once ionization is complete, the world weather is forced to the target state
 5. The condensate is consumed
 
-## GUI Status
-
-| Status | Meaning |
-|--------|---------|
-| Idle | No condensate in the input slot |
-| Ionizing | Consuming AE energy |
-| Waiting for AE | The network does not have enough AE |
-| Waiting for condensate | No condensate in the input slot |
-| Invalid dimension | The current dimension does not support weather changes (e.g. The End, The Nether) |
-| Target weather already active | The target weather is already the current weather, no switch needed |
-| Ready | Ionization complete; about to switch weather |
-
 ## Notes
 
 * The Atmospheric Ionizer consumes **AE energy** from the ME network, not FE

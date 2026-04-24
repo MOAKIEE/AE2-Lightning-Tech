@@ -42,17 +42,6 @@ High Voltage mode supports batch processing. The coil locks in the full amount o
 4. The coil locks in the mode and starts charging (about 5 ticks)
 5. When the charge completes, the output is injected into the ME network in one batch
 
-## GUI Status
-
-| Status | Meaning |
-|--------|---------|
-| Idle | Mode not locked in, waiting for inputs or the network to become ready |
-| Charging | Consuming FE |
-| Waiting for FE | FE is insufficient for the current tick's consumption |
-| Waiting for inputs | Missing crystal dust / matrix / HV Lightning |
-| Waiting for ME network | The network cannot accept the output, or does not have enough HV Lightning to consume |
-| Ready to commit | Charge complete; the output commits next tick |
-
 ## Lightning Collapse Matrix
 
 <ItemImage id="ae2lt:lightning_collapse_matrix" scale="2" float="left" />
