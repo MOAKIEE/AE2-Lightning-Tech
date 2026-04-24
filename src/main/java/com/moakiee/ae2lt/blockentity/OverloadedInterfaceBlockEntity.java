@@ -106,7 +106,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final int WRAPPER_REFRESH_TICKS = 20;
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Cooldown / probe — per-mode parameters
+    //  Cooldown — per-mode parameters
     // ══════════════════════════════════════════════════════════════════════
 
     private static final int NORMAL_CD_INIT = 5;
@@ -393,13 +393,11 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         final Map<AEKeyType, ImportKeyCache> importKeyCaches = new IdentityHashMap<>();
         final Map<AEKey, ExportRejectState> exportRejects = new HashMap<>();
 
-        // ── Storage: ExternalStorageStrategy wrappers (insert + extract) ──
         @Nullable WeakReference<BlockEntity> storageBERef;
         @Nullable Map<AEKeyType, ExternalStorageStrategy> storageStrategies;
         @Nullable Map<AEKeyType, MEStorage> storageWrappers;
         long storageWrapperTick = -1;
 
-        // ── Energy ──
         @Nullable WeakReference<BlockEntity>    energyBERef;
         @Nullable WeakReference<IEnergyStorage> energyStorageRef;
         @Nullable WeakReference<BlockEntity>    energyCapBERef;
@@ -550,6 +548,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final int ENERGY_DELAY_MIN  = 1;
     private static final int WHEEL_SLOTS       = ENERGY_DELAY_MAX;
 
+    // ── Energy schedule entry ─────────────────────────────────────────
     static final class ScheduleEntry {
         final WirelessConnection conn; final ConnectionState state;
         ScheduleEntry(WirelessConnection c, ConnectionState s) { conn = c; state = s; }
@@ -579,6 +578,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     }
 
+    // ── Energy wheel ─────────────────────────────────────────────────
     @SuppressWarnings("unchecked")
     private final List<ScheduleEntry>[] energyWheel = new ArrayList[WHEEL_SLOTS];
     { for (int i = 0; i < WHEEL_SLOTS; i++) energyWheel[i] = new ArrayList<>(); }
@@ -716,6 +716,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     public void rebuildFilter() {
+        // 过滤器变动(无论是清空还是重填)都唤醒 IO:避免过滤器刚改完还卡在空转退避
+        wakeWirelessIo();
         ItemStack filterStack = filterInv.getStackInSlot(0);
         if (filterStack.isEmpty()
                 || !(filterStack.getItem() instanceof ICellWorkbenchItem cwi)) {
@@ -807,6 +809,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     public void invalidateInductionCardCache() {
         inductionCardCacheDirty = true;
+        wakeWirelessIo();
     }
 
     // ── Wireless connections ─────────────────────────────────────────────
@@ -868,6 +871,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         exportConfigCache.clear();
         exportConfigCacheTick = Long.MIN_VALUE;
         exportConfigCacheValid = false;
+        exportBlacklistCache = Set.of();
+        exportBlacklistTick = -1;
     }
 
     private List<WirelessConnection> getOrRefreshValidConnections(
@@ -904,8 +909,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (level == null || level.isClientSide()) return;
         if (!(level instanceof ServerLevel sl)) return;
         if (!be.hasServerTickWork()) return;
-        be.tickWirelessIO(sl);
+
+        // 能量层:每 tick 触发(内部 wheel + scheduleDelay 已经是自适应的)
         be.tickEnergyTransfer(sl);
+
+        // Wireless IO: timing-wheel driven per-connection scheduling
+        if (be.interfaceMode != InterfaceMode.WIRELESS) return;
+        be.tickWirelessIO(sl);
     }
 
     private boolean hasServerTickWork() {
@@ -1305,7 +1315,28 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         return importFilterFuzzyMode == null ? importFilterKeys : null;
     }
 
+    private Set<AEKey> exportBlacklistCache = Set.of();
+    private long exportBlacklistTick = -1;
+
+    private Set<AEKey> getExportBlacklist() {
+        if (level != null && level.getGameTime() == exportBlacklistTick) {
+            return exportBlacklistCache;
+        }
+        var config = getInterfaceLogic().getConfig();
+        var set = new HashSet<AEKey>();
+        for (int i = 0; i < config.size(); i++) {
+            var key = config.getKey(i);
+            if (key != null) set.add(key);
+        }
+        exportBlacklistCache = set;
+        if (level != null) {
+            exportBlacklistTick = level.getGameTime();
+        }
+        return set;
+    }
+
     private boolean isImportAllowed(AEKey key) {
+        if (getExportBlacklist().contains(key)) return false;
         var keys = importFilterKeys;
         if (keys == null || keys.isEmpty()) return true;
         var fuzzyMode = importFilterFuzzyMode;
@@ -1367,6 +1398,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (overflowed) {
             saveChanges();
         }
+
         return moved;
     }
 

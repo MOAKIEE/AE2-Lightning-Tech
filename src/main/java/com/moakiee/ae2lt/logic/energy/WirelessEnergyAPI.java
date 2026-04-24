@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.logic.energy;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -43,6 +44,9 @@ public final class WirelessEnergyAPI {
         public Direction hostSide() {
             return face.getOpposite();
         }
+    }
+
+    private record ResolvedTarget(ServerLevel level, Target target) {
     }
 
     @Nullable
@@ -100,31 +104,31 @@ public final class WirelessEnergyAPI {
             return 0L;
         }
 
+        List<ResolvedTarget> liveTargets = new ArrayList<>(targets.size());
+        for (Target target : targets) {
+            ServerLevel level = resolveLevel(providerLevel.getServer(), target);
+            if (level != null) {
+                liveTargets.add(new ResolvedTarget(level, target));
+            }
+        }
+
+        if (liveTargets.isEmpty()) {
+            return 0L;
+        }
+
         buffered.setCostMultiplier(1);
         boolean useBatchBuffer = buffered.getBufferCapacity() > 0L;
         if (useBatchBuffer) {
-            int liveTargets = 0;
-            for (Target target : targets) {
-                if (resolveLevel(providerLevel.getServer(), target) != null) {
-                    liveTargets++;
-                }
-            }
-            if (liveTargets <= 0) {
-                return 0L;
-            }
-            buffered.preload(AppFluxBridge.FE_KEY, transferHintForTargets(liveTargets), source);
+            buffered.preload(AppFluxBridge.FE_KEY,
+                    saturatingMul(AppFluxBridge.TRANSFER_RATE, liveTargets.size()), source);
         }
 
         long totalPushed = 0L;
         try {
-            for (Target target : targets) {
-                ServerLevel targetLevel = resolveLevel(providerLevel.getServer(), target);
-                if (targetLevel == null) {
-                    continue;
-                }
+            for (ResolvedTarget entry : liveTargets) {
                 Object capCache = AppFluxBridge.createCapCache(
-                        targetLevel, target.virtualHostPos(), gridSupplier);
-                totalPushed += send(capCache, target.face(), proxy, source);
+                        entry.level(), entry.target().virtualHostPos(), gridSupplier);
+                totalPushed += send(capCache, entry.target().face(), proxy, source);
             }
         } finally {
             if (useBatchBuffer) {
@@ -135,13 +139,10 @@ public final class WirelessEnergyAPI {
         return totalPushed;
     }
 
-    private static long transferHintForTargets(int targetCount) {
-        if (targetCount <= 0 || AppFluxBridge.TRANSFER_RATE <= 0L) {
-            return 0L;
-        }
-        if (AppFluxBridge.TRANSFER_RATE > Long.MAX_VALUE / targetCount) {
-            return Long.MAX_VALUE;
-        }
-        return AppFluxBridge.TRANSFER_RATE * targetCount;
+    /** Saturating multiply: 溢出时 clamp 到 Long.MAX_VALUE(TRANSFER_RATE=unlimited 哨兵保护) */
+    private static long saturatingMul(long a, long b) {
+        if (a <= 0 || b <= 0) return 0;
+        if (a > Long.MAX_VALUE / b) return Long.MAX_VALUE;
+        return a * b;
     }
 }
