@@ -188,10 +188,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         long nextPollTick;
         int backoffInterval = BACKOFF_MIN;
 
-        // energy schedule
-        int scheduleDelay = ENERGY_DELAY_MEAN;
-        long lastCanReceive;
-
         boolean isInProbeWindow(long gameTick) {
             if (cooldownUntil < 0 || gameTick >= cooldownUntil) return false;
             if (probedThisCycle) return false;
@@ -417,33 +413,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Cached result of induction card check; invalidated on state/upgrade change. */
     private boolean cachedInductionCardInstalled;
     private boolean inductionCardCacheDirty = true;
-
-    // ---- Timing Wheel energy scheduling -------------------------------------------
-
-    private static final int ENERGY_DELAY_MEAN = 5;
-    private static final int ENERGY_DELAY_MAX  = 20;
-    private static final int ENERGY_DELAY_MIN  = 1;
-    private static final int WHEEL_SLOTS = ENERGY_DELAY_MAX; // 20
-
-    static final class ScheduleEntry {
-        final WirelessConnection conn;
-        final ConnectionState state;
-
-        ScheduleEntry(WirelessConnection conn, ConnectionState state) {
-            this.conn = conn;
-            this.state = state;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private final List<ScheduleEntry>[] wheel = new ArrayList[WHEEL_SLOTS];
-    {
-        for (int i = 0; i < WHEEL_SLOTS; i++) wheel[i] = new ArrayList<>();
-    }
-    private List<ScheduleEntry> spareList = new ArrayList<>();
-    private int wheelPointer = 0;
-    private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
-    private boolean wheelDirty = true;
 
     // ---- construction -----------------------------------------------------------
 
@@ -1584,12 +1553,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         long gameTick = sl.getGameTime();
         if (gameTick == lastEnergyTickGameTime) return;
-        int ticksElapsed = lastEnergyTickGameTime >= 0
-                ? (int) Math.min(gameTick - lastEnergyTickGameTime, WHEEL_SLOTS)
-                : 1;
         lastEnergyTickGameTime = gameTick;
 
-        distributeWirelessEnergy(sl, feKey, gameTick, ticksElapsed);
+        distributeWirelessEnergy(sl, feKey, gameTick);
     }
 
     /**
@@ -1633,35 +1599,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         machineBackoff.keySet().retainAll(activeMachineIds);
     }
 
-    // ---- Timing Wheel scheduling operations ----------------------------------------
+    // ---- Wireless energy distribution ---------------------------------------------
 
-    private List<ScheduleEntry> pollWheel() {
-        var list = wheel[wheelPointer];
-        if (list.isEmpty()) return list;
-        wheel[wheelPointer] = spareList;
-        spareList = list;
-        return list;
-    }
-
-    private void scheduleToWheel(ScheduleEntry entry) {
-        int slot = (wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS;
-        wheel[slot].add(entry);
-    }
-
-    private void rebuildWheel(List<WirelessConnection> valid) {
-        for (var slot : wheel) slot.clear();
-        deferredMachines.clear();
-        for (var conn : valid) {
-            var entry = new ScheduleEntry(conn, getOrCreateState(conn));
-            scheduleToWheel(entry);
-        }
-        wheelDirty = false;
-    }
-
-    // ---- Wheel-based energy distribution ------------------------------------------
-
-    private void distributeWirelessEnergy(ServerLevel sl, AEKey feKey, long currentTick,
-                                          int ticksElapsed) {
+    private void distributeWirelessEnergy(ServerLevel sl, AEKey feKey, long currentTick) {
         BufferedStorageService proxy = getWirelessEnergyStorageProxy();
         BufferedMEStorage buffered = wirelessEnergyBufferedStorage;
         if (proxy == null || buffered == null) {
@@ -1673,7 +1613,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return;
         }
 
-        buffered.setBufferCapacity(0L);
         buffered.setCostMultiplier(1);
 
         var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
@@ -1690,134 +1629,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 wirelessSource);
     }
 
-    private void processBatch(ServerLevel sl, List<ScheduleEntry> machines,
-            AEKey feKey, long available) {
-        int count = machines.size();
-
-        // 1. Target SIM
-        long totalNeeded = 0;
-        long[] canReceive = new long[count];
-        int[] capacity = new int[count];
-        long[] storedEnergy = new long[count];
-        for (int i = 0; i < count; i++) {
-            var entry = machines.get(i);
-            var targetLevel = resolveTargetLevel(sl, entry.conn);
-            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
-            if (storage != null) {
-                canReceive[i] = AppFluxHelper.simulateReceivable(storage);
-                capacity[i] = storage.getMaxEnergyStored();
-                storedEnergy[i] = storage.getEnergyStored();
-                totalNeeded += canReceive[i];
-            }
-        }
-
-        if (totalNeeded <= 0) {
-            for (int i = 0; i < count; i++) {
-                adjustDelay(machines.get(i), 0, storedEnergy[i], capacity[i]);
-                scheduleToWheel(machines.get(i));
-            }
-            machines.clear();
-            return;
-        }
-
-        // 2. ME MODULATE — batch extract
-        long extracted = extractFluxEnergy(feKey, Math.min(totalNeeded, available));
-        if (extracted <= 0) {
-            var earlyDeferred = new ArrayList<ScheduleEntry>();
-            for (int i = 0; i < count; i++) {
-                var entry = machines.get(i);
-                if (canReceive[i] == 0) {
-                    adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
-                    scheduleToWheel(entry);
-                } else {
-                    earlyDeferred.add(entry);
-                }
-            }
-            machines.clear();
-            if (!earlyDeferred.isEmpty()) {
-                deferredMachines.addAll(earlyDeferred);
-            }
-            return;
-        }
-
-        // 3. Target COMMIT + delay adjustment
-        long remaining = extracted;
-        var stillDeferred = new ArrayList<ScheduleEntry>();
-        for (int i = 0; i < count; i++) {
-            var entry = machines.get(i);
-
-            if (canReceive[i] > 0 && remaining > 0) {
-                long share = Math.min(canReceive[i], remaining);
-                var targetLevel = resolveTargetLevel(sl, entry.conn);
-                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
-                long accepted = 0;
-                if (storage != null) {
-                    accepted = storage.receiveEnergy(
-                            (int) Math.min(share, Integer.MAX_VALUE), false);
-                }
-                remaining -= accepted;
-
-                boolean budgetSufficient = (share == canReceive[i]);
-                if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
-                    int ratio = (int)(canReceive[i] / accepted);
-                    var st = entry.state;
-                    st.scheduleDelay = Math.min(st.scheduleDelay * ratio, ENERGY_DELAY_MAX);
-                    st.lastCanReceive = canReceive[i];
-                } else if (budgetSufficient && accepted == 0) {
-                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
-                    entry.state.lastCanReceive = canReceive[i];
-                } else {
-                    adjustDelay(entry, canReceive[i], storedEnergy[i], capacity[i]);
-                }
-                scheduleToWheel(entry);
-
-            } else if (canReceive[i] == 0) {
-                adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
-                scheduleToWheel(entry);
-
-            } else {
-                stillDeferred.add(entry);
-            }
-        }
-
-        machines.clear();
-        if (!stillDeferred.isEmpty()) {
-            deferredMachines.addAll(stillDeferred);
-        }
-
-        // 4. Refund excess
-        if (remaining > 0) {
-            insertFluxEnergy(feKey, remaining);
-        }
-    }
-
     @Nullable
     private ServerLevel resolveTargetLevel(ServerLevel providerLevel, WirelessConnection conn) {
         var targetLevel = providerLevel.getServer().getLevel(conn.dimension());
         if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) return null;
         return targetLevel;
-    }
-
-    private void adjustDelay(ScheduleEntry entry, long canReceive,
-                             long storedEnergy, int machineCapacity) {
-        var st = entry.state;
-        int delay = st.scheduleDelay;
-
-        if (canReceive > st.lastCanReceive) {
-            delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-        } else if ((st.lastCanReceive - canReceive) << 2 < machineCapacity) {
-            if (storedEnergy * 3 <= (long) machineCapacity << 1) {
-                delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-            } else {
-                if (delay > ENERGY_DELAY_MEAN) delay--;
-                else if (delay < ENERGY_DELAY_MEAN) delay++;
-            }
-        } else {
-            delay++;
-        }
-
-        st.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
-        st.lastCanReceive = canReceive;
     }
 
     public void onHostStateChanged() {
@@ -1854,10 +1670,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private boolean shouldTickWirelessEnergyNow(long gameTick) {
         if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return false;
         if (!gridNode.isActive() || !isInductionCardInstalled()) return false;
-        if (CACHED_APPFLUX_FE_KEY == null || CACHED_APPFLUX_TRANSFER_RATE <= 0) return false;
-        if (!deferredMachines.isEmpty()) return true;
-        if (wheelDirty) return true;
-        return !wheel[(wheelPointer + 1) % WHEEL_SLOTS].isEmpty();
+        return CACHED_APPFLUX_FE_KEY != null && CACHED_APPFLUX_TRANSFER_RATE > 0;
     }
 
     private boolean shouldPollAutoReturnNow(long gameTick) {
@@ -1918,7 +1731,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         connectionsDirty = true;
         validConnectionsCache = List.of();
         validConnectionsCacheTick = -1;
-        wheelDirty = true;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();
         readyPQ.clear();
@@ -1948,30 +1760,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return upgradeableLogic.getUpgrades().isInstalled(card);
         }
         return false;
-    }
-
-    private long simulateAvailableFluxEnergy(AEKey feKey, long maxAmount) {
-        final long[] available = {0};
-        gridNode.ifPresent((grid, node) -> available[0] =
-                grid.getStorageService().getInventory()
-                        .extract(feKey, maxAmount, Actionable.SIMULATE, wirelessSource));
-        return available[0];
-    }
-
-    private long extractFluxEnergy(AEKey feKey, long amount) {
-        if (amount <= 0) return 0;
-        final long[] extracted = {0};
-        gridNode.ifPresent((grid, node) -> extracted[0] =
-                grid.getStorageService().getInventory()
-                        .extract(feKey, amount, Actionable.MODULATE, wirelessSource));
-        return extracted[0];
-    }
-
-    private void insertFluxEnergy(AEKey feKey, long amount) {
-        if (amount <= 0) return;
-        gridNode.ifPresent((grid, node) ->
-                grid.getStorageService().getInventory()
-                        .insert(feKey, amount, Actionable.MODULATE, wirelessSource));
     }
 
     @Nullable
@@ -2154,10 +1942,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         invalidateValidConnectionsCache();
         inductionCardCacheDirty = true;
         lastEnergyTickGameTime = -1;
-        for (var slot : wheel) slot.clear();
-        deferredMachines.clear();
-        wheelPointer = 0;
-        wheelDirty = true;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
@@ -2247,8 +2031,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         invalidateValidConnectionsCache();
         inductionCardCacheDirty = true;
         lastEnergyTickGameTime = -1;
-        wheelPointer = 0;
-        wheelDirty = true;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;

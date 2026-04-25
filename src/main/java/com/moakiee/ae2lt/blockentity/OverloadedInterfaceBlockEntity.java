@@ -413,8 +413,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         @Nullable WeakReference<IEnergyStorage> energyStorageRef;
         @Nullable WeakReference<BlockEntity>    energyCapBERef;
         @Nullable Object energyCapCache;
-        int  scheduleDelay = ENERGY_DELAY_MEAN;
-        long lastCanReceive;
+        @Nullable Object energyTarget;
 
         CooldownTracker cdFor(AEKeyType type, IoDirection direction) {
             var cds = direction == IoDirection.IMPORT ? importCDs : exportCDs;
@@ -511,7 +510,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             BlockEntity be = level.getBlockEntity(conn.pos());
             if (be == null) {
                 energyBERef = null; energyStorageRef = null;
-                energyCapBERef = null; energyCapCache = null;
+                energyCapBERef = null; energyCapCache = null; energyTarget = null;
                 return null;
             }
             if (energyBERef != null && energyBERef.get() == be
@@ -532,7 +531,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                      Supplier<IGrid> gridSupplier) {
             BlockEntity be = level.getBlockEntity(conn.pos());
             if (be == null) {
-                energyCapBERef = null; energyCapCache = null;
+                energyCapBERef = null; energyCapCache = null; energyTarget = null;
                 return null;
             }
             if (energyCapBERef != null && energyCapBERef.get() == be
@@ -543,27 +542,35 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             Object capCache = AppFluxBridge.createCapCache(
                     level, conn.pos().relative(conn.boundFace()), gridSupplier);
             if (capCache == null) {
-                energyCapBERef = null; energyCapCache = null;
+                energyCapBERef = null; energyCapCache = null; energyTarget = null;
                 return null;
             }
             energyCapBERef = new WeakReference<>(be);
             energyCapCache = capCache;
+            energyTarget = null;
             return capCache;
+        }
+
+        @Nullable
+        Object resolveEnergyTarget(ServerLevel level, WirelessConnection conn,
+                                   Supplier<IGrid> gridSupplier) {
+            BlockEntity be = level.getBlockEntity(conn.pos());
+            if (be == null) {
+                energyCapBERef = null; energyCapCache = null; energyTarget = null;
+                return null;
+            }
+            if (energyCapBERef != null && energyCapBERef.get() == be
+                    && energyTarget != null) {
+                return energyTarget;
+            }
+
+            Object capCache = resolveEnergyCapCache(level, conn, gridSupplier);
+            energyTarget = WirelessEnergyAPI.resolveEnergyTarget(capCache, conn.boundFace());
+            return energyTarget;
         }
     }
 
     // ── Energy timing wheel ──────────────────────────────────────────────
-
-    private static final int ENERGY_DELAY_MEAN = 5;
-    private static final int ENERGY_DELAY_MAX  = 20;
-    private static final int ENERGY_DELAY_MIN  = 1;
-    private static final int WHEEL_SLOTS       = ENERGY_DELAY_MAX;
-
-    // ── Energy schedule entry ─────────────────────────────────────────
-    static final class ScheduleEntry {
-        final WirelessConnection conn; final ConnectionState state;
-        ScheduleEntry(WirelessConnection c, ConnectionState s) { conn = c; state = s; }
-    }
 
     private record IoEntryKey(WirelessConnection conn, AEKeyType keyType, IoDirection direction) {}
     private record ImportResult(long totalAvail, long moved) {}
@@ -589,14 +596,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     }
 
-    // ── Energy wheel ─────────────────────────────────────────────────
-    @SuppressWarnings("unchecked")
-    private final List<ScheduleEntry>[] energyWheel = new ArrayList[WHEEL_SLOTS];
-    { for (int i = 0; i < WHEEL_SLOTS; i++) energyWheel[i] = new ArrayList<>(); }
-    private List<ScheduleEntry> spareList = new ArrayList<>();
-    private int  wheelPointer = 0;
-    private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
-    private boolean wheelDirty = true;
     private long lastEnergyTickGameTime = -1;
     private long wirelessEnergyIdleUntil = -1;
 
@@ -858,9 +857,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         connectionsDirty = true;
         validConnectionsCache = List.of(); validConnectionsCacheTick = -1;
         wirelessEnergyIdleUntil = -1;
-        wheelDirty = true;
-        for (var sl : energyWheel) sl.clear();
-        deferredMachines.clear(); connectionStates.clear();
+        connectionStates.clear();
         resetIOWheel();
     }
 
@@ -1595,12 +1592,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private void tickNormalEnergy(ServerLevel sl) {
-        var tp = getBlockPos().relative(energyOutputDir);
-        var st = sl.getCapability(Capabilities.EnergyStorage.BLOCK,
-                tp, energyOutputDir.getOpposite());
-        if (st == null) return;
-        var mes = getMainNode().getGrid().getStorageService().getInventory();
-        AppFluxHelper.pullPowerFromNetwork(mes, st, machineSource);
+        if (!AppFluxBridge.canUseEnergyHandler()) return;
+        var grid = getMainNode().getGrid(); if (grid == null) return;
+        var capCache = AppFluxBridge.createCapCache(sl, getBlockPos(), () -> grid);
+        var target = WirelessEnergyAPI.resolveEnergyTarget(capCache, energyOutputDir.getOpposite());
+        if (target == null) return;
+        var storage = grid.getStorageService();
+        WirelessEnergyAPI.sendToTarget(target, storage, machineSource, AppFluxBridge.TRANSFER_RATE);
     }
 
     // ── Wireless energy: timing-wheel scheduler ──────────────────────────
@@ -1628,49 +1626,29 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             return;
         }
 
-        buffered.setBufferCapacity(0L);
         buffered.setCostMultiplier(1);
 
         Supplier<IGrid> gridSupplier = () -> getMainNode().getGrid();
-        boolean useBatchBuffer = buffered.getBufferCapacity() > 0L;
-        if (useBatchBuffer) {
-            buffered.preload(feKey, transferHintForTargets(valid.size()), machineSource);
-        }
 
         long totalPushed = 0L;
-        try {
-            for (var conn : valid) {
-                var targetLevel = resolveTargetLevel(sl, conn);
-                if (targetLevel == null) {
-                    continue;
-                }
-                var connectionState = getOrCreateState(conn);
-                var energyStorage = connectionState.resolveEnergy(targetLevel, conn);
-                if (energyStorage == null || AppFluxHelper.simulateReceivable(energyStorage) <= 0) {
-                    continue;
-                }
-                var capCache = connectionState.resolveEnergyCapCache(targetLevel, conn, gridSupplier);
-                totalPushed += WirelessEnergyAPI.send(capCache, conn.boundFace(), proxy, machineSource);
+        for (var conn : valid) {
+            var targetLevel = resolveTargetLevel(sl, conn);
+            if (targetLevel == null) {
+                continue;
             }
-        } finally {
-            if (useBatchBuffer) {
-                buffered.flush(feKey, machineSource);
+            var connectionState = getOrCreateState(conn);
+            var energyTarget = connectionState.resolveEnergyTarget(targetLevel, conn, gridSupplier);
+            if (energyTarget == null
+                    || WirelessEnergyAPI.simulateTarget(energyTarget, AppFluxBridge.TRANSFER_RATE) <= 0L) {
+                continue;
             }
+            totalPushed += WirelessEnergyAPI.sendToTarget(
+                    energyTarget, proxy, machineSource, AppFluxBridge.TRANSFER_RATE);
         }
 
         wirelessEnergyIdleUntil = totalPushed > 0L
                 ? -1
                 : tick + WIRELESS_ENERGY_IDLE_RETRY_TICKS;
-    }
-
-    private static long transferHintForTargets(int targetCount) {
-        if (targetCount <= 0 || AppFluxBridge.TRANSFER_RATE <= 0L) {
-            return 0L;
-        }
-        if (AppFluxBridge.TRANSFER_RATE > Long.MAX_VALUE / targetCount) {
-            return Long.MAX_VALUE;
-        }
-        return AppFluxBridge.TRANSFER_RATE * targetCount;
     }
 
     @Nullable
@@ -1694,168 +1672,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
 
         return wirelessEnergyStorageProxy;
-    }
-
-    private final List<ScheduleEntry> tempEnergyDefer = new ArrayList<>();
-    private final List<ScheduleEntry> tempStarved     = new ArrayList<>();
-
-    private void processEBatch(ServerLevel sl, List<ScheduleEntry> batch,
-                                AEKey feKey, long avail) {
-        int cnt = batch.size();
-        long total = 0;
-        long[] canReceive   = new long[cnt];
-        int[]  maxCapacity  = new int[cnt];
-        long[] storedEnergy = new long[cnt];
-        IEnergyStorage[] storages = new IEnergyStorage[cnt];
-
-        for (int i = 0; i < cnt; i++) {
-            var entry = batch.get(i);
-            var targetLevel = resolveTargetLevel(sl, entry.conn);
-            var storage = targetLevel != null ? entry.state.resolveEnergy(targetLevel, entry.conn) : null;
-            storages[i] = storage;
-            if (storage != null) {
-                canReceive[i]   = AppFluxHelper.simulateReceivable(storage);
-                maxCapacity[i]  = storage.getMaxEnergyStored();
-                storedEnergy[i] = storage.getEnergyStored();
-                total += canReceive[i];
-            }
-        }
-
-        if (total <= 0) {
-            for (int i = 0; i < cnt; i++) {
-                adjustScheduleDelay(batch.get(i), 0, storedEnergy[i], maxCapacity[i]);
-                scheduleEnergyEntry(batch.get(i));
-            }
-            batch.clear();
-            return;
-        }
-
-        long extracted = extractFlux(feKey, Math.min(total, avail));
-        if (extracted <= 0) {
-            tempEnergyDefer.clear();
-            for (int i = 0; i < cnt; i++) {
-                if (canReceive[i] == 0) {
-                    adjustScheduleDelay(batch.get(i), 0, storedEnergy[i], maxCapacity[i]);
-                    scheduleEnergyEntry(batch.get(i));
-                } else {
-                    tempEnergyDefer.add(batch.get(i));
-                }
-            }
-            batch.clear();
-            if (!tempEnergyDefer.isEmpty()) {
-                deferredMachines.addAll(tempEnergyDefer);
-                tempEnergyDefer.clear();
-            }
-            return;
-        }
-
-        long remaining = extracted;
-        tempStarved.clear();
-
-        for (int i = 0; i < cnt; i++) {
-            var entry = batch.get(i);
-            if (canReceive[i] > 0 && remaining > 0) {
-                long share = Math.min(canReceive[i], remaining);
-                var storage = storages[i];
-                long accepted = storage != null
-                        ? storage.receiveEnergy((int) Math.min(share, Integer.MAX_VALUE), false) : 0;
-                remaining -= accepted;
-
-                boolean budgetSufficient = (share == canReceive[i]);
-                if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
-                    entry.state.scheduleDelay = Math.min(
-                            entry.state.scheduleDelay * (int) (canReceive[i] / accepted),
-                            ENERGY_DELAY_MAX);
-                    entry.state.lastCanReceive = canReceive[i];
-                } else if (budgetSufficient && accepted == 0) {
-                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
-                    entry.state.lastCanReceive = canReceive[i];
-                } else {
-                    adjustScheduleDelay(entry, canReceive[i], storedEnergy[i], maxCapacity[i]);
-                }
-                scheduleEnergyEntry(entry);
-            } else if (canReceive[i] == 0) {
-                adjustScheduleDelay(entry, 0, storedEnergy[i], maxCapacity[i]);
-                scheduleEnergyEntry(entry);
-            } else {
-                tempStarved.add(entry);
-            }
-        }
-
-        batch.clear();
-        if (!tempStarved.isEmpty()) {
-            deferredMachines.addAll(tempStarved);
-            tempStarved.clear();
-        }
-        if (remaining > 0) {
-            insertFlux(feKey, remaining);
-        }
-    }
-
-    private void adjustScheduleDelay(ScheduleEntry entry, long canReceive,
-                                      long storedEnergy, int maxCapacity) {
-        var state = entry.state;
-        int delay = state.scheduleDelay;
-
-        if (canReceive > state.lastCanReceive) {
-            delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-        } else if ((state.lastCanReceive - canReceive) << 2 < maxCapacity) {
-            if (storedEnergy * 3 <= (long) maxCapacity << 1) {
-                delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-            } else {
-                if (delay > ENERGY_DELAY_MEAN) delay--;
-                else if (delay < ENERGY_DELAY_MEAN) delay++;
-            }
-        } else {
-            delay++;
-        }
-
-        state.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
-        state.lastCanReceive = canReceive;
-    }
-
-    private List<ScheduleEntry> pollWheel() {
-        var list = energyWheel[wheelPointer];
-        if (list.isEmpty()) return list;
-        energyWheel[wheelPointer] = spareList;
-        spareList = list;
-        return list;
-    }
-
-    private void scheduleEnergyEntry(ScheduleEntry entry) {
-        energyWheel[(wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS].add(entry);
-    }
-
-    private void rebuildEWheel(List<WirelessConnection> valid) {
-        for (var sl : energyWheel) sl.clear();
-        deferredMachines.clear();
-        for (var c : valid) {
-            scheduleEnergyEntry(new ScheduleEntry(c, getOrCreateState(c)));
-        }
-        wheelDirty = false;
-    }
-
-    private long simulateFluxExtract(AEKey key, long max) {
-        var grid = getMainNode().getGrid();
-        if (grid == null) return 0;
-        return grid.getStorageService().getInventory()
-                .extract(key, max, Actionable.SIMULATE, machineSource);
-    }
-
-    private long extractFlux(AEKey key, long amount) {
-        if (amount <= 0) return 0;
-        var grid = getMainNode().getGrid();
-        if (grid == null) return 0;
-        return grid.getStorageService().getInventory()
-                .extract(key, amount, Actionable.MODULATE, machineSource);
-    }
-
-    private void insertFlux(AEKey key, long amount) {
-        if (amount <= 0) return;
-        var grid = getMainNode().getGrid();
-        if (grid == null) return;
-        grid.getStorageService().getInventory()
-                .insert(key, amount, Actionable.MODULATE, machineSource);
     }
 
     // ══════════════════════════════════════════════════════════════════════

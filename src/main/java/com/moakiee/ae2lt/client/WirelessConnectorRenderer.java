@@ -35,6 +35,7 @@ import appeng.client.render.overlay.OverlayRenderType;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 
@@ -147,6 +148,14 @@ public class WirelessConnectorRenderer {
                         selectedRendered |= isSelected;
                         continue;
                     }
+
+                    if (be instanceof OverloadedPowerSupplyBlockEntity powerSupply) {
+                        boolean isSelected = hasSelection
+                                && OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(selectedHostType)
+                                && bePos.equals(selectedPos);
+                        renderPowerSupplyHost(poseStack, buffer, mc.level, bePos, powerSupply, isSelected);
+                        selectedRendered |= isSelected;
+                    }
                 }
             }
         }
@@ -161,6 +170,9 @@ public class WirelessConnectorRenderer {
                     && selectedBe instanceof OverloadedInterfaceBlockEntity iface
                     && iface.getInterfaceMode() == OverloadedInterfaceBlockEntity.InterfaceMode.WIRELESS) {
                 renderInterfaceHost(poseStack, buffer, mc.level, selectedPos, iface, true);
+            } else if (OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedPowerSupplyBlockEntity powerSupply) {
+                renderPowerSupplyHost(poseStack, buffer, mc.level, selectedPos, powerSupply, true);
             }
         }
 
@@ -206,6 +218,31 @@ public class WirelessConnectorRenderer {
                 Direction lookFace = bhr.getDirection();
                 var existingConnections = collectConnectionsForFace(
                         selectedInterface.getConnections(),
+                        mc.level,
+                        lookFace,
+                        c -> c.dimension(),
+                        c -> c.pos(),
+                        c -> c.boundFace());
+                for (var lookPos : previewTargets) {
+                    if (!existingConnections.contains(lookPos)) {
+                        renderFaceOverlay(poseStack, buffer, lookPos, lookFace, COLOR_PREVIEW);
+                        renderLine(poseStack, buffer, selectedPos, lookPos, lookFace, COLOR_PREVIEW_LINE);
+                    }
+                }
+            } else if (OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(selectedHostType)
+                    && selectedBe instanceof OverloadedPowerSupplyBlockEntity selectedPowerSupply
+                    && mc.hitResult instanceof BlockHitResult bhr
+                    && bhr.getType() == HitResult.Type.BLOCK
+                    && !bhr.getBlockPos().equals(selectedPos)
+                    && mc.level.getBlockEntity(bhr.getBlockPos()) != null) {
+
+                var previewTargets = WirelessConnectorTargetHelper.collectTargets(
+                        mc.level,
+                        bhr.getBlockPos(),
+                        net.minecraft.client.gui.screens.Screen.hasControlDown());
+                Direction lookFace = bhr.getDirection();
+                var existingConnections = collectConnectionsForFace(
+                        selectedPowerSupply.getConnections(),
                         mc.level,
                         lookFace,
                         c -> c.dimension(),
@@ -277,6 +314,17 @@ public class WirelessConnectorRenderer {
         renderInnerCube(poseStack, buffer, hostPos, selected ? COLOR_HOST_SELECTED : COLOR_HOST);
 
         for (var conn : iface.getConnections()) {
+            if (!conn.dimension().equals(level.dimension())) continue;
+            renderFaceOverlay(poseStack, buffer, conn.pos(), conn.boundFace(), COLOR_CONNECTED);
+            renderLine(poseStack, buffer, hostPos, conn.pos(), conn.boundFace(), COLOR_LINE);
+        }
+    }
+
+    private static void renderPowerSupplyHost(PoseStack poseStack, MultiBufferSource buffer,
+            Level level, BlockPos hostPos, OverloadedPowerSupplyBlockEntity powerSupply, boolean selected) {
+        renderInnerCube(poseStack, buffer, hostPos, selected ? COLOR_HOST_SELECTED : COLOR_HOST);
+
+        for (var conn : powerSupply.getConnections()) {
             if (!conn.dimension().equals(level.dimension())) continue;
             renderFaceOverlay(poseStack, buffer, conn.pos(), conn.boundFace(), COLOR_CONNECTED);
             renderLine(poseStack, buffer, hostPos, conn.pos(), conn.boundFace(), COLOR_LINE);

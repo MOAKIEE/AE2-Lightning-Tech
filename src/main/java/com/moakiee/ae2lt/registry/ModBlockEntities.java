@@ -11,6 +11,7 @@ import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -103,6 +104,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             OverloadedInterfaceBlockEntity::new,
                             ModBlocks.OVERLOADED_INTERFACE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedPowerSupplyBlockEntity>>
+            OVERLOADED_POWER_SUPPLY = BLOCK_ENTITY_TYPES.register(
+                    "overloaded_power_supply",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadedPowerSupplyBlockEntity::new,
+                            ModBlocks.OVERLOADED_POWER_SUPPLY.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<WirelessReceiverBlockEntity>>
