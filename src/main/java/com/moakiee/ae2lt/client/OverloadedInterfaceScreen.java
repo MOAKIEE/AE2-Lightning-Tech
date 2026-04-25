@@ -24,7 +24,6 @@ import appeng.client.gui.widgets.SettingToggleButton;
 import appeng.client.gui.widgets.ToolboxPanel;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.core.definitions.AEItems;
-import appeng.core.localization.ButtonToolTips;
 import appeng.core.localization.GuiText;
 import appeng.api.upgrades.Upgrades;
 import appeng.menu.SlotSemantics;
@@ -114,7 +113,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
                 }
             });
             button.setDisableBackground(true);
-            button.setMessage(ButtonToolTips.InterfaceSetStockAmount.text());
+            button.setMessage(Component.translatable("ae2lt.gui.set_amount.message"));
             button.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.translatable("ae2lt.gui.set_amount.tooltip")));
             amountButtons.add(button);

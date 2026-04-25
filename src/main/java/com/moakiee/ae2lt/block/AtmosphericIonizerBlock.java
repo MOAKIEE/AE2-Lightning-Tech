@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.block;
 
-import java.util.EnumMap;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
@@ -24,7 +23,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
@@ -33,8 +31,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import appeng.api.orientation.IOrientationStrategy;
-import appeng.api.orientation.OrientationStrategies;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
@@ -42,10 +38,9 @@ import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 
 public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonizerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
-    public static final DirectionProperty FACING = BlockStateProperties.FACING;
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
 
-    private static final VoxelShape UP_SHAPE_LOWER = BlockShapeHelper.or(
+    private static final VoxelShape SHAPE_LOWER = BlockShapeHelper.or(
             Block.box(0, 0, 0, 16, 8, 16),
             Block.box(3, 8, 3, 13, 9, 13),
             Block.box(5, 9, 5, 11, 16, 11),
@@ -60,20 +55,14 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             Block.box(2.5, 8, 9, 4.5, 13, 11),
             Block.box(2.5, 8, 5, 4.5, 15, 7));
 
-    private static final VoxelShape UP_SHAPE_UPPER = BlockShapeHelper.or(
+    private static final VoxelShape SHAPE_UPPER = BlockShapeHelper.or(
             Block.box(6, 0, 6, 10, 4, 10),
             Block.box(6, 4, 6, 10, 8, 10));
-
-    private static final EnumMap<Direction, VoxelShape> SHAPES_LOWER =
-            BlockShapeHelper.createAllFacingShapes(UP_SHAPE_LOWER);
-    private static final EnumMap<Direction, VoxelShape> SHAPES_UPPER =
-            BlockShapeHelper.createAllFacingShapes(UP_SHAPE_UPPER);
 
     public AtmosphericIonizerBlock() {
         super(metalProps().noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
-                .setValue(FACING, Direction.NORTH)
                 .setValue(HALF, DoubleBlockHalf.LOWER));
     }
 
@@ -81,12 +70,6 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         super.createBlockStateDefinition(builder);
         builder.add(WORKING, HALF);
-    }
-
-    @Override
-    public IOrientationStrategy getOrientationStrategy() {
-        // 禁用扳手旋转:水平 FACING 会让 UPPER 占位与 LOWER 错位,导致 canSurvive 失败、方块自毁。
-        return OrientationStrategies.facingNoPlayerRotation();
     }
 
     @Override
@@ -104,15 +87,9 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             return null;
         }
 
-        // 反应场硬编码在 LOWER 正上方,大气电离仪只支持竖直放置;点击侧面时降级为朝上。
-        if (state.getValue(FACING).getAxis().isHorizontal()) {
-            state = state.setValue(FACING, Direction.UP);
-        }
-
         Level level = context.getLevel();
-        BlockPos extensionPos = context.getClickedPos().relative(getExtensionDirection(state.getValue(FACING)));
-        if (extensionPos.getY() < level.getMinBuildHeight()
-                || extensionPos.getY() >= level.getMaxBuildHeight()
+        BlockPos extensionPos = context.getClickedPos().above();
+        if (extensionPos.getY() >= level.getMaxBuildHeight()
                 || !level.getBlockState(extensionPos).canBeReplaced(context)) {
             return null;
         }
@@ -125,15 +102,13 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
         super.setPlacedBy(level, pos, state, placer, stack);
         if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
             BlockState upperState = state.setValue(HALF, DoubleBlockHalf.UPPER);
-            level.setBlock(pos.relative(getExtensionDirection(state.getValue(FACING))), upperState, Block.UPDATE_ALL);
+            level.setBlock(pos.above(), upperState, Block.UPDATE_ALL);
         }
     }
 
     @Override
     protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
-        return state.getValue(HALF) == DoubleBlockHalf.UPPER
-                ? SHAPES_UPPER.get(state.getValue(FACING))
-                : SHAPES_LOWER.get(state.getValue(FACING));
+        return state.getValue(HALF) == DoubleBlockHalf.UPPER ? SHAPE_UPPER : SHAPE_LOWER;
     }
 
     @Override
@@ -160,8 +135,8 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     @Override
     protected boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            BlockState lowerState = level.getBlockState(getLowerPos(pos, state));
-            return isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER, state.getValue(FACING));
+            BlockState lowerState = level.getBlockState(pos.below());
+            return isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER);
         }
         return super.canSurvive(state, level, pos);
     }
@@ -169,15 +144,14 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     @Override
     protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
             LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
-        Direction extensionDirection = getExtensionDirection(state.getValue(FACING));
         DoubleBlockHalf half = state.getValue(HALF);
 
-        if (half == DoubleBlockHalf.LOWER && direction == extensionDirection) {
-            if (!isSameIonizerHalf(neighborState, DoubleBlockHalf.UPPER, state.getValue(FACING))) {
+        if (half == DoubleBlockHalf.LOWER && direction == Direction.UP) {
+            if (!isSameIonizerHalf(neighborState, DoubleBlockHalf.UPPER)) {
                 return Blocks.AIR.defaultBlockState();
             }
-        } else if (half == DoubleBlockHalf.UPPER && direction == extensionDirection.getOpposite()) {
-            if (!isSameIonizerHalf(neighborState, DoubleBlockHalf.LOWER, state.getValue(FACING))) {
+        } else if (half == DoubleBlockHalf.UPPER && direction == Direction.DOWN) {
+            if (!isSameIonizerHalf(neighborState, DoubleBlockHalf.LOWER)) {
                 return Blocks.AIR.defaultBlockState();
             }
         }
@@ -188,9 +162,9 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            BlockPos lowerPos = getLowerPos(pos, state);
+            BlockPos lowerPos = pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
-            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER, state.getValue(FACING))) {
+            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER)) {
                 level.destroyBlock(lowerPos, !player.isCreative(), player);
             }
         }
@@ -200,14 +174,11 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && !state.is(newState.getBlock())) {
-            Direction extensionDirection = getExtensionDirection(state.getValue(FACING));
             boolean lower = state.getValue(HALF) == DoubleBlockHalf.LOWER;
-            BlockPos otherPos = lower
-                    ? pos.relative(extensionDirection)
-                    : pos.relative(extensionDirection.getOpposite());
+            BlockPos otherPos = lower ? pos.above() : pos.below();
             DoubleBlockHalf otherHalf = lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
             BlockState otherState = level.getBlockState(otherPos);
-            if (isSameIonizerHalf(otherState, otherHalf, state.getValue(FACING))) {
+            if (isSameIonizerHalf(otherState, otherHalf)) {
                 level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
             }
         }
@@ -235,9 +206,9 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             Player player,
             BlockHitResult hitResult) {
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            BlockPos lowerPos = getLowerPos(pos, state);
+            BlockPos lowerPos = pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
-            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER, state.getValue(FACING))) {
+            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER)) {
                 return useWithoutItem(lowerState, level, lowerPos, player, hitResult);
             }
             return InteractionResult.PASS;
@@ -259,9 +230,9 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos,
             Player player, InteractionHand hand, BlockHitResult hit) {
         if (state.getValue(HALF) == DoubleBlockHalf.UPPER) {
-            BlockPos lowerPos = getLowerPos(pos, state);
+            BlockPos lowerPos = pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
-            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER, state.getValue(FACING))) {
+            if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER)) {
                 return super.useItemOn(stack, lowerState, level, lowerPos, player, hand, hit);
             }
             return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
@@ -269,17 +240,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
 
-    private static Direction getExtensionDirection(Direction facing) {
-        return facing.getAxis().isVertical() ? facing : facing.getOpposite();
-    }
-
-    private static BlockPos getLowerPos(BlockPos upperPos, BlockState upperState) {
-        return upperPos.relative(getExtensionDirection(upperState.getValue(FACING)).getOpposite());
-    }
-
-    private boolean isSameIonizerHalf(BlockState state, DoubleBlockHalf half, Direction facing) {
-        return state.is(this)
-                && state.getValue(HALF) == half
-                && state.getValue(FACING) == facing;
+    private boolean isSameIonizerHalf(BlockState state, DoubleBlockHalf half) {
+        return state.is(this) && state.getValue(HALF) == half;
     }
 }

@@ -68,36 +68,50 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     private static final int ITEMS_PER_PAGE_LIST = 5;
     private static final int ITEMS_PER_PAGE_SEARCH = 4;
     /**
-     * Row stride inside the recessed list well — matches the 21-px row
-     * pitch baked into the new chassis textures (well y=36..142, five
-     * rows divided by 1-px shadow strips).
+     * Row pitch inside the recessed list well — 21 px per slot (1-px
+     * shadow + 20-px interior). Row 0 has an extra 1-px shadow above
+     * (y=36..37) to make the well's top edge thicker; rows 1..4 share
+     * a 1-px shadow with the row above.
      */
     private static final int LIST_ROW_HEIGHT = 21;
-    /** Button height inside a list row, vertically centred in the 21-px slot. */
-    private static final int LIST_ROW_BUTTON_HEIGHT = 16;
-    /** First row's top y (local) — well shadow at y=36, content at y=38, button centered → y=40. */
-    private static final int LIST_ROW_FIRST_Y = 40;
-    /** Left x (local) of a row button — well shadow at x=8, padded by 2 px. */
-    private static final int LIST_ROW_X = 10;
+    /** Button height inside a list row — matches the sprite height (20 px). */
+    private static final int LIST_ROW_BUTTON_HEIGHT = 20;
+    /** First row's top y (local) — slot 0 interior starts at y=38. */
+    private static final int LIST_ROW_FIRST_Y = 38;
+    /** Left x (local) of a row button — well interior left edge is x=9. */
+    private static final int LIST_ROW_X = 9;
     /**
-     * Width of a row button — fills the well between x=10 and the right
-     * margin. The chassis PNGs already bake a separate scrollbar gutter
-     * outside the well (around x=177..182), so the row well stays full-width.
+     * Width of a row button — exactly 160 px to match the row sprite
+     * baked at the bottom of the chassis PNGs (u=0, w=160). Spans the
+     * well interior x=9..168 with no gap before the scrollbar gutter.
      */
-    private static final int LIST_ROW_WIDTH = 158;
+    private static final int LIST_ROW_WIDTH = 160;
+
+    /**
+     * Row sprite source coordinates inside the chassis PNG (same in
+     * both BG_LIST and BG_SELECTION). The idle sprite is the
+     * lavender-gray strip directly below the chassis art; the hover
+     * sprite is the cyan-blue strip below that.
+     */
+    private static final int ROW_SPRITE_WIDTH = 160;
+    private static final int ROW_SPRITE_HEIGHT = 20;
+    private static final int ROW_SPRITE_IDLE_V = 158;
+    private static final int ROW_SPRITE_HOVER_V = 180;
 
     /**
      * Scrollbar handle X (local). The PNG bakes a recessed track at
-     * x=177..182 (6 px outer / 4 px inner). The 7-px AE2 small_scroller
-     * sprite at x=178 spans x=178..184 — handle sits flush inside the
-     * track's left frame line.
+     * x=178..183 (6 px). The 12-px AE2 big_scroller sprite is wider
+     * than that gutter, so we centre it on the gutter midpoint
+     * (~x=181) — the handle visually overlays the recessed track
+     * with a small overhang on each side, matching AE2's own MAC /
+     * Pattern Access screens which also use big_scroller.
      */
-    private static final int SCROLLBAR_X = 178;
+    private static final int SCROLLBAR_X = 175;
     /** Scrollbar track Y (local) — first row of the recessed well content. */
     private static final int SCROLLBAR_Y = 38;
-    /** Scrollbar handle width — AE2 small_scroller sprite is 7 px wide. */
-    private static final int SCROLLBAR_WIDTH = 7;
-    /** Scrollbar handle height — AE2 small_scroller sprite is 15 px tall. */
+    /** Scrollbar handle width — AE2 big_scroller sprite is 12 px wide. */
+    private static final int SCROLLBAR_WIDTH = 12;
+    /** Scrollbar handle height — AE2 big_scroller sprite is 15 px tall. */
     private static final int SCROLLBAR_HANDLE_HEIGHT = 15;
 
     /**
@@ -847,8 +861,10 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int by = y0 + LIST_ROW_FIRST_Y + row * LIST_ROW_HEIGHT;
 
             String label = switch (f.security()) {
-                case ENCRYPTED -> f.name() + " [E]";
-                case PRIVATE -> f.name() + " [P]";
+                case ENCRYPTED -> f.name() + " ["
+                        + Component.translatable("ae2lt.gui.security.encrypted").getString() + "]";
+                case PRIVATE -> f.name() + " ["
+                        + Component.translatable("ae2lt.gui.security.private").getString() + "]";
                 default -> f.name();
             };
             // Paint the frequency's stored RGB colour into the row label —
@@ -858,7 +874,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // default near-white colour.
             Component display = Component.literal(label)
                     .setStyle(Style.EMPTY.withColor(TextColor.fromRgb(f.color() & 0xFFFFFF)));
-            AE2Button btn = new AE2Button(
+            RowSpriteButton btn = new RowSpriteButton(
                     x0 + LIST_ROW_X, by, LIST_ROW_WIDTH, LIST_ROW_BUTTON_HEIGHT,
                     display,
                     b -> {
@@ -994,7 +1010,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                     text.append(' ')
                             .append(Component.translatable("ae2lt.gui.member.you").getString());
                 }
-                text.append(" [").append(accessShort(entry.access())).append(']');
+                text.append(" [").append(accessLabel(entry.access())).append(']');
                 Component display = Component.literal(text.toString())
                         .withStyle(entry.access().getFormatting());
                 // Self row is a read-only identity tag — every action in
@@ -1002,7 +1018,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                 // self-lock rule), so disabling the click here avoids
                 // surfacing a popup whose four buttons would all be greyed
                 // out.
-                AE2Button rowBtn = new AE2Button(
+                RowSpriteButton rowBtn = new RowSpriteButton(
                         x0 + LIST_ROW_X, by, LIST_ROW_WIDTH, LIST_ROW_BUTTON_HEIGHT,
                         display,
                         b -> openMemberPopup(entry.uuid(), entry.name(), entry.access()));
@@ -1015,7 +1031,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                 String shortCode = Component.translatable("ae2lt.gui.member.stranger_short").getString();
                 Component display = Component.literal(entry.name() + " [" + shortCode + "]")
                         .withStyle(ChatFormatting.DARK_GRAY);
-                AE2Button btn = new AE2Button(
+                RowSpriteButton btn = new RowSpriteButton(
                         x0 + LIST_ROW_X, by, LIST_ROW_WIDTH, LIST_ROW_BUTTON_HEIGHT,
                         display,
                         b -> openStrangerPopup(entry.uuid(), entry.name()));
@@ -1517,7 +1533,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                 header = Component.literal(popupMemberName)
                         .withStyle(popupMemberAccess.getFormatting())
                         .copy()
-                        .append(Component.literal(" [" + accessShort(popupMemberAccess) + "]")
+                        .append(Component.literal(" [" + accessLabel(popupMemberAccess) + "]")
                                 .withStyle(ChatFormatting.DARK_GRAY));
             }
             drawFlatCentered(g, header, imageWidth / 2, 30, AE2_TEXT_TITLE);
@@ -1686,9 +1702,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             var c = conns.get(i);
             int row = i - start;
             // Two-line layout per 21-px well row: type on top, coords below.
-            // Row 0 well content area is y=37..57; centring two 9-px text
-            // lines with a 1-px gap puts them at y=39 and y=49.
-            int yTop = LIST_ROW_FIRST_Y - 1 + row * LIST_ROW_HEIGHT;
+            // Row 0 well content area is y=38..57; centring two 9-px text
+            // lines puts the type at y=39 and the coords at y=49.
+            int yTop = LIST_ROW_FIRST_Y + 1 + row * LIST_ROW_HEIGHT;
             int yBot = yTop + 10;
 
             String typeKey = c.controller()
@@ -1849,13 +1865,53 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         return selfAccess().isOwner();
     }
 
-    private static String accessShort(FrequencyAccessLevel a) {
-        return switch (a) {
-            case OWNER -> "O";
-            case ADMIN -> "A";
-            case USER -> "U";
-            case BLOCKED -> "B";
-        };
+    private static String accessLabel(FrequencyAccessLevel a) {
+        return Component.translatable("ae2lt.gui.access." + a.name().toLowerCase()).getString();
+    }
+
+    /**
+     * List-row button that paints the row sprite baked at the bottom
+     * of the chassis PNG instead of the AE2 button background. Idle
+     * rows get the lavender-gray strip (u=0, v=158); hovered or
+     * focused rows swap in the cyan-blue strip (u=0, v=180). Disabled
+     * rows stay on the idle sprite to read as "not clickable" while
+     * keeping their access-tinted label visible.
+     *
+     * <p>Renders the message Component itself (not just its string
+     * form) so the per-row colour styles set by Selection/Members
+     * builders survive — frequency rows keep the user's stored RGB
+     * tint, member rows keep their access-level {@link ChatFormatting}.</p>
+     */
+    private final class RowSpriteButton extends Button {
+        RowSpriteButton(int x, int y, int width, int height,
+                Component message, OnPress onPress) {
+            super(Button.builder(message, onPress).bounds(x, y, width, height));
+        }
+
+        @Override
+        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+            boolean hover = active && (isHoveredOrFocused());
+            int srcV = hover ? ROW_SPRITE_HOVER_V : ROW_SPRITE_IDLE_V;
+            // BG_LIST and BG_SELECTION carry an identical sprite library
+            // below the chassis, so sourcing from BG_LIST works for every
+            // tab that uses this widget regardless of which chassis is
+            // currently bound for the panel itself.
+            g.blit(BG_LIST,
+                    getX(), getY(),
+                    0, srcV,
+                    ROW_SPRITE_WIDTH, ROW_SPRITE_HEIGHT,
+                    TEXTURE_SIZE, TEXTURE_SIZE);
+
+            // Vanilla MC's drawString honours the Component's per-style
+            // colour, so the access tint / frequency RGB baked into
+            // {@code getMessage()} flows through. The fallback colour
+            // is only used for unstyled glyphs — pick black on the
+            // light idle sprite, dark blue-gray on the disabled sprite.
+            int fallback = active ? 0x000000 : 0x404040;
+            int textY = getY() + (getHeight() - 8) / 2;
+            int textX = getX() + (getWidth() - font.width(getMessage())) / 2;
+            g.drawString(font, getMessage(), textX, textY, fallback, false);
+        }
     }
 
     /**
@@ -1920,8 +1976,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             boolean enabled = maxOffset() > 0;
             ResourceLocation sprite = enabled
-                    ? ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller")
-                    : ResourceLocation.fromNamespaceAndPath("ae2", "small_scroller_disabled");
+                    ? ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller")
+                    : ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller_disabled");
             int availH = Math.max(0, getHeight() - SCROLLBAR_HANDLE_HEIGHT);
             int handleY = enabled
                     ? getY() + scrollOffset * availH / maxOffset()
