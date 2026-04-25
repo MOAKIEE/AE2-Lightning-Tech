@@ -24,6 +24,9 @@ public final class ModEntityRenderers {
                 ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 LightningAssemblyChamberRenderer::new);
         event.registerBlockEntityRenderer(
+                ModBlockEntities.CRYSTAL_CATALYZER.get(),
+                CrystalCatalyzerRenderer::new);
+        event.registerBlockEntityRenderer(
                 ModBlockEntities.FUMO.get(),
                 FumoBlockRenderer::new);
     }
