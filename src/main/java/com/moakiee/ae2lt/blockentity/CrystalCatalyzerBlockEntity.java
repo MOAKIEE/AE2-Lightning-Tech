@@ -442,11 +442,6 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public boolean hasProcessableRecipe() {
-        return findProcessableRecipe().isPresent();
-    }
-
-    @Override
     public boolean completeLockedRecipe(
             CrystalCatalyzerLockedRecipe lockedRecipe,
             CrystalCatalyzerRecipeCandidate candidate) {

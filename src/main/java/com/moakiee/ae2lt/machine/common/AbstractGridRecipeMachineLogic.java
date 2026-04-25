@@ -25,7 +25,11 @@ public abstract class AbstractGridRecipeMachineLogic<
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(1, 20, !hasGridTickWork());
+        // 加载/grid 重组瞬间,storage/energy 等服务可能尚未稳定,此时基于
+        // 当前状态(尤其是依赖 grid 的查找)推断 sleeping 容易错判,导致机器
+        // 即便有材料也卡在 sleeping。始终以 awake 入队,首次 tick 自行评估,
+        // 无工作时通过 SLEEP 自动转 sleeping。
+        return new TickingRequest(1, 20, false);
     }
 
     @Override
@@ -72,10 +76,6 @@ public abstract class AbstractGridRecipeMachineLogic<
 
     public void onStateChanged() {
         host.getMainNode().ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
-    }
-
-    public boolean hasGridTickWork() {
-        return host.hasLockedRecipe() || host.hasAutoExportWork() || host.hasProcessableRecipe();
     }
 
     public long getCurrentMaxEnergyPerTick() {

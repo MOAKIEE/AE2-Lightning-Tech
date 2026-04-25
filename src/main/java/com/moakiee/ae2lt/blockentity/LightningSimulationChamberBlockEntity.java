@@ -588,11 +588,6 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     }
 
     @Override
-    public boolean hasProcessableRecipe() {
-        return findProcessableRecipe().isPresent();
-    }
-
-    @Override
     public long getMachineStoredEnergy() {
         return energyStorage.getStoredEnergyLong();
     }

@@ -25,8 +25,6 @@ public interface GridRecipeMachineHost<L, C> {
 
     int getProcessingTicksSpent();
 
-    boolean hasProcessableRecipe();
-
     boolean completeLockedRecipe(L lockedRecipe, C candidate);
 
     long getMachineStoredEnergy();
