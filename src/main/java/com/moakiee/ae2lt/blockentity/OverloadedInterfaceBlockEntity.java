@@ -126,6 +126,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final int IMPORT_KEY_CACHE_TTL = 40;
     private static final int IMPORT_EMPTY_KEY_CACHE_TTL = 20;
     private static final int IMPORT_KEY_CACHE_MAX_KEYS = 256;
+    private static final int IMPORT_KEY_CACHE_TRUNCATED_TTL = 5;
     private static final int WIRELESS_ENERGY_IDLE_RETRY_TICKS = 5;
     private static final int EXPORT_REJECT_BACKOFF_INIT = 10;
     private static final int EXPORT_REJECT_BACKOFF_MAX = 80;
@@ -340,10 +341,18 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         final List<AEKey> keys = new ArrayList<>();
         long lastFullScanTick = Long.MIN_VALUE;
         int nextIndex;
+        boolean truncated;
 
         boolean isScanFresh(long now) {
             if (lastFullScanTick == Long.MIN_VALUE) return false;
-            int ttl = keys.isEmpty() ? IMPORT_EMPTY_KEY_CACHE_TTL : IMPORT_KEY_CACHE_TTL;
+            int ttl;
+            if (keys.isEmpty()) {
+                ttl = IMPORT_EMPTY_KEY_CACHE_TTL;
+            } else if (truncated) {
+                ttl = IMPORT_KEY_CACHE_TRUNCATED_TTL;
+            } else {
+                ttl = IMPORT_KEY_CACHE_TTL;
+            }
             return now - lastFullScanTick < ttl;
         }
 
@@ -351,10 +360,11 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             return !keys.isEmpty() && isScanFresh(now);
         }
 
-        void update(List<AEKey> scannedKeys, long now) {
+        void update(List<AEKey> scannedKeys, boolean wasTruncated, long now) {
             keys.clear();
             keys.addAll(scannedKeys);
             lastFullScanTick = now;
+            truncated = wasTruncated;
             if (keys.isEmpty()) {
                 nextIndex = 0;
             } else {
@@ -366,6 +376,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             keys.clear();
             lastFullScanTick = Long.MIN_VALUE;
             nextIndex = 0;
+            truncated = false;
         }
     }
 
@@ -650,6 +661,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private BufferedStorageService wirelessEnergyStorageProxy;
     private @Nullable Set<AEKey> importFilterKeys;
     private @Nullable FuzzyMode importFilterFuzzyMode;
+    private boolean importFilterInverted;
     private boolean inductionCardCacheDirty = true;
     private boolean inductionCardInstalledCache = false;
     private boolean unloadingChunk = false;
@@ -723,6 +735,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 || !(filterStack.getItem() instanceof ICellWorkbenchItem cwi)) {
             importFilterKeys = null;
             importFilterFuzzyMode = null;
+            importFilterInverted = false;
             if (directInsertInv != null) directInsertInv.setFilter(null);
             wakeWirelessIo();
             return;
@@ -735,27 +748,31 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (keys.isEmpty()) {
             importFilterKeys = null;
             importFilterFuzzyMode = null;
+            importFilterInverted = false;
             if (directInsertInv != null) directInsertInv.setFilter(null);
             wakeWirelessIo();
             return;
         }
 
-        boolean hasFuzzy = cwi.getUpgrades(filterStack)
-                .getInstalledUpgrades(AEItems.FUZZY_CARD) > 0;
+        var upgrades = cwi.getUpgrades(filterStack);
+        boolean hasFuzzy = upgrades.getInstalledUpgrades(AEItems.FUZZY_CARD) > 0;
+        boolean hasInverter = upgrades.getInstalledUpgrades(AEItems.INVERTER_CARD) > 0;
         FuzzyMode fm = hasFuzzy ? cwi.getFuzzyMode(filterStack) : null;
         importFilterKeys = Set.copyOf(keys);
         importFilterFuzzyMode = fm;
+        importFilterInverted = hasInverter;
 
-        Predicate<AEKey> predicate;
+        Predicate<AEKey> matches;
         if (fm != null) {
-            predicate = w -> {
+            matches = w -> {
                 for (var fk : keys)
                     if (w.equals(fk) || w.fuzzyEquals(fk, fm)) return true;
                 return false;
             };
         } else {
-            predicate = keys::contains;
+            matches = keys::contains;
         }
+        Predicate<AEKey> predicate = hasInverter ? matches.negate() : matches;
         if (directInsertInv != null) directInsertInv.setFilter(predicate);
         wakeWirelessIo();
     }
@@ -1274,6 +1291,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var buffer = freshScanBuffer();
         wrapper.getAvailableStacks(buffer);
         var scannedKeys = new ArrayList<AEKey>();
+        boolean truncated = false;
         long budget = transferLimit;
         long total = 0;
         long moved = 0;
@@ -1285,6 +1303,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             total += amount;
             if (scannedKeys.size() < IMPORT_KEY_CACHE_MAX_KEYS) {
                 scannedKeys.add(key);
+            } else {
+                truncated = true;
             }
             if (extract && budget > 0) {
                 long extracted = importExtractToBuffer(key, Math.min(amount, budget), wrapper, src);
@@ -1292,7 +1312,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 budget -= extracted;
             }
         }
-        cache.update(scannedKeys, now);
+        cache.update(scannedKeys, truncated, now);
         return new ImportResult(total, moved);
     }
 
@@ -1312,6 +1332,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     @Nullable
     private Set<AEKey> getExactImportFilterKeys() {
+        if (importFilterInverted) return null;
         return importFilterFuzzyMode == null ? importFilterKeys : null;
     }
 
@@ -1340,11 +1361,19 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var keys = importFilterKeys;
         if (keys == null || keys.isEmpty()) return true;
         var fuzzyMode = importFilterFuzzyMode;
-        if (fuzzyMode == null) return keys.contains(key);
-        for (var filterKey : keys) {
-            if (key.equals(filterKey) || key.fuzzyEquals(filterKey, fuzzyMode)) return true;
+        boolean matches;
+        if (fuzzyMode == null) {
+            matches = keys.contains(key);
+        } else {
+            matches = false;
+            for (var filterKey : keys) {
+                if (key.equals(filterKey) || key.fuzzyEquals(filterKey, fuzzyMode)) {
+                    matches = true;
+                    break;
+                }
+            }
         }
-        return false;
+        return matches != importFilterInverted;
     }
 
     // ── Export: ME.extract → remote wrapper.insert, overflow → buffer ────

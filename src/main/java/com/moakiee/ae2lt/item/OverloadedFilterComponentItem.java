@@ -20,15 +20,15 @@ import appeng.util.ConfigInventory;
  * Configurable in AE2's Cell Workbench:
  * <ul>
  *   <li>63 filter slots (items + fluids)</li>
- *   <li>1 upgrade slot (for fuzzy card)</li>
- *   <li>Supports fuzzy matching</li>
+ *   <li>2 upgrade slots (fuzzy card + inverter card)</li>
+ *   <li>Supports fuzzy matching and whitelist/blacklist inversion</li>
  * </ul>
- * Placed into the interface's upgrade slot; only affects the input side.
+ * Placed into the interface's filter slot; only affects the input side.
  */
 public class OverloadedFilterComponentItem extends Item implements ICellWorkbenchItem {
 
     private static final int CONFIG_SLOTS = 63;
-    private static final int UPGRADE_SLOTS = 1;
+    private static final int UPGRADE_SLOTS = 2;
 
     public OverloadedFilterComponentItem(Properties properties) {
         super(properties);
