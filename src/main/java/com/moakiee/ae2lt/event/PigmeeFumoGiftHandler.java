@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.event;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.registry.ModFumos;
 
 import net.minecraft.world.entity.player.Inventory;
@@ -22,7 +23,9 @@ public final class PigmeeFumoGiftHandler {
 
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof FakePlayer || !ModFumos.isPigmeeEnabled()) {
+        if (event.getEntity() instanceof FakePlayer
+                || !ModFumos.isPigmeeEnabled()
+                || !AE2LTCommonConfig.pigmeeFumoGiftOnFirstJoin()) {
             return;
         }
 

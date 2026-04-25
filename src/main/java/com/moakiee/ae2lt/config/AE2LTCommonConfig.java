@@ -148,6 +148,10 @@ public final class AE2LTCommonConfig {
         return VALUES.teslaCoilExtremeHighVoltageFe.get();
     }
 
+    public static boolean pigmeeFumoGiftOnFirstJoin() {
+        return VALUES.pigmeeFumoGiftOnFirstJoin.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.IntValue electroChimeMaxCatalysis;
@@ -182,6 +186,7 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilHighVoltageFe;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
+        private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
@@ -308,6 +313,12 @@ public final class AE2LTCommonConfig {
                     .comment("FE cost for Extreme High Voltage mode. Range: >= 1.")
                     .defineInRange("extremeHighVoltageFe", 500000, 1, Integer.MAX_VALUE);
             builder.pop();
+            builder.pop();
+
+            builder.push("pigmeeFumo");
+            pigmeeFumoGiftOnFirstJoin = builder
+                    .comment("Controls whether players receive a Pigmee Fumo as a gift on their first login.")
+                    .define("giftOnFirstJoin", true);
             builder.pop();
         }
     }
