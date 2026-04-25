@@ -1,6 +1,6 @@
 {
-  "parent": "minecraft:block/template_lightning_rod",
+  "parent": "item/generated",
   "textures": {
-    "texture": "minecraft:block/lightning_rod"
+    "layer0": "ae2lt:block/debug_lightning_rod"
   }
 }
