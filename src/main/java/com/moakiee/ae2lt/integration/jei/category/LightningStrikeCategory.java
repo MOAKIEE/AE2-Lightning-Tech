@@ -5,9 +5,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
 import com.moakiee.ae2lt.integration.jei.MultiblockPreviewWidget;
 import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
+import com.moakiee.ae2lt.me.key.LightningKey;
 
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
@@ -50,7 +52,7 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
     private static final int CENTER_INPUT_Y = 14;
     private static final int ARROW_X = 124;
     private static final int ARROW_Y = 15;
-    private static final int CENTER_OUTPUT_X = 150;
+    private static final int CENTER_OUTPUT_X = 156;
     private static final int CENTER_OUTPUT_Y = 14;
 
     private static final int MATERIALS_LABEL_Y = 38;
@@ -66,7 +68,7 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
 
     public LightningStrikeCategory(IGuiHelper guiHelper) {
         this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
-        this.icon = guiHelper.createDrawableItemStack(new ItemStack(Blocks.LIGHTNING_ROD));
+        this.icon = guiHelper.createDrawableIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
     }
 
     @Override
