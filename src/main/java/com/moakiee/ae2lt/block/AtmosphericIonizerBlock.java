@@ -85,7 +85,8 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
     @Override
     public IOrientationStrategy getOrientationStrategy() {
-        return OrientationStrategies.facing();
+        // 禁用扳手旋转:水平 FACING 会让 UPPER 占位与 LOWER 错位,导致 canSurvive 失败、方块自毁。
+        return OrientationStrategies.facingNoPlayerRotation();
     }
 
     @Override
@@ -101,6 +102,11 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
         BlockState state = super.getStateForPlacement(context);
         if (state == null) {
             return null;
+        }
+
+        // 反应场硬编码在 LOWER 正上方,大气电离仪只支持竖直放置;点击侧面时降级为朝上。
+        if (state.getValue(FACING).getAxis().isHorizontal()) {
+            state = state.setValue(FACING, Direction.UP);
         }
 
         Level level = context.getLevel();

@@ -6,12 +6,15 @@ import java.util.List;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
+import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
+import com.moakiee.ae2lt.me.key.LightningKey;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -22,19 +25,23 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.level.block.Blocks;
 
 public class LightningTransformCategory implements IRecipeCategory<LightningTransformRecipe> {
     public static final RecipeType<LightningTransformRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "lightning_transform", LightningTransformRecipe.class);
 
-    private static final int WIDTH = 166;
-    private static final int HEIGHT = 82;
-    private static final int INPUT_X = 10;
-    private static final int INPUT_Y = 6;
-    private static final int INPUT_SPACING = 18;
-    private static final int OUTPUT_X = 138;
-    private static final int OUTPUT_Y = 30;
+    private static final int WIDTH = 130;
+    private static final int HEIGHT = 62;
+    private static final int INPUT_START_X = 5;
+    private static final int INPUT_START_Y = 5;
+    private static final int CATALYST_X = 56;
+    private static final int CATALYST_Y = 24;
+    private static final int OUTPUT_X = 106;
+    private static final int OUTPUT_Y = 24;
+    private static final int ARROW_LEFT_X = 28;
+    private static final int ARROW_RIGHT_X = 81;
+    private static final int ARROW_Y = 23;
+    private static final int LABEL_Y = 4;
     private static final int TEXT_COLOR = 0x404040;
 
     private final IDrawable background;
@@ -42,7 +49,7 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
 
     public LightningTransformCategory(IGuiHelper guiHelper) {
         this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
-        this.icon = guiHelper.createDrawableItemStack(new ItemStack(Blocks.LIGHTNING_ROD));
+        this.icon = guiHelper.createDrawableIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
     }
 
     @Override
@@ -67,21 +74,44 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, LightningTransformRecipe recipe, IFocusGroup focuses) {
-        for (int index = 0; index < recipe.inputs().size(); index++) {
+        int inputCount = recipe.inputs().size();
+        int x = INPUT_START_X;
+        int y = INPUT_START_Y;
+        if (inputCount < 3) {
+            y += (3 - inputCount) * 18 / 2;
+        }
+        for (int index = 0; index < inputCount; index++) {
             var input = recipe.inputs().get(index);
-            builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, INPUT_Y + index * INPUT_SPACING)
+            builder.addSlot(RecipeIngredientRole.INPUT, x + 1, y + 1)
+                    .setStandardSlotBackground()
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStacks(expandIngredient(input.ingredient(), input.count()))
                     .addRichTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
+            y += 18;
+            if (y >= INPUT_START_Y + 54) {
+                y -= 54;
+                x += 18;
+            }
         }
 
+        builder.addSlot(RecipeIngredientRole.CATALYST, CATALYST_X + 1, CATALYST_Y + 1)
+                .setStandardSlotBackground()
+                .addIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
+
         var resultStack = recipe.getResultItem(Minecraft.getInstance().level.registryAccess());
-        builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
+        builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X + 1, OUTPUT_Y + 1)
+                .setOutputSlotBackground()
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(resultStack)
                 .addRichTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, resultStack.getCount()));
+    }
+
+    @Override
+    public void createRecipeExtras(IRecipeExtrasBuilder builder, LightningTransformRecipe recipe, IFocusGroup focuses) {
+        builder.addRecipeArrow().setPosition(ARROW_LEFT_X, ARROW_Y);
+        builder.addRecipeArrow().setPosition(ARROW_RIGHT_X, ARROW_Y);
     }
 
     @Override
@@ -91,31 +121,10 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
             GuiGraphics guiGraphics,
             double mouseX,
             double mouseY) {
-        background.draw(guiGraphics);
-
         var font = Minecraft.getInstance().font;
-        guiGraphics.drawString(
-                font,
-                Component.translatable("jei.ae2lt.lightning_transform.step_1"),
-                34,
-                16,
-                TEXT_COLOR,
-                false);
-        guiGraphics.drawString(
-                font,
-                Component.translatable("jei.ae2lt.lightning_transform.step_2"),
-                34,
-                28,
-                TEXT_COLOR,
-                false);
-        guiGraphics.drawString(font, "===>", 96, 34, TEXT_COLOR, false);
-        guiGraphics.drawString(
-                font,
-                Component.translatable("jei.ae2lt.lightning_transform.tip"),
-                10,
-                62,
-                TEXT_COLOR,
-                false);
+        var label = Component.translatable("jei.ae2lt.lightning_transform.label");
+        int labelX = (WIDTH - font.width(label)) / 2;
+        guiGraphics.drawString(font, label, labelX, LABEL_Y, TEXT_COLOR, false);
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {

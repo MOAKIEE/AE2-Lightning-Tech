@@ -104,11 +104,6 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
                     .addItemStack(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get(), dustCount))
                     .addRichTooltipCallback((slotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, dustCount));
-        } else {
-            builder.addSlot(RecipeIngredientRole.CATALYST, INPUT_X, ROW_Y)
-                    .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()))
-                    .addRichTooltipCallback((slotView, tooltip) ->
-                            tooltip.add(Component.translatable("jei.ae2lt.tesla_coil.matrix_kept")));
         }
     }
 
