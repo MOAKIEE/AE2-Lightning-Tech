@@ -6,6 +6,7 @@ import java.util.List;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
+import com.moakiee.ae2lt.integration.jei.LightningJeiIngredientRenderer;
 import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -97,6 +98,7 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
 
         builder.addSlot(RecipeIngredientRole.CATALYST, CATALYST_X + 1, CATALYST_Y + 1)
                 .setStandardSlotBackground()
+                .setCustomRenderer(LightningJeiIngredients.TYPE, LightningJeiIngredientRenderer.NO_TOOLTIP)
                 .addIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
 
         var resultStack = recipe.getResultItem(Minecraft.getInstance().level.registryAccess());

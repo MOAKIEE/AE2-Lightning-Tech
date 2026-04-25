@@ -16,6 +16,17 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 
 public class LightningJeiIngredientRenderer implements IIngredientRenderer<LightningKey> {
+    public static final IIngredientRenderer<LightningKey> NO_TOOLTIP = new LightningJeiIngredientRenderer() {
+        @Override
+        public List<Component> getTooltip(LightningKey ingredient, TooltipFlag tooltipFlag) {
+            return List.of();
+        }
+
+        @Override
+        public void getTooltip(ITooltipBuilder tooltip, LightningKey ingredient, TooltipFlag tooltipFlag) {
+        }
+    };
+
     @Override
     public void render(GuiGraphics guiGraphics, LightningKey ingredient) {
         render(guiGraphics, ingredient, 0, 0);
