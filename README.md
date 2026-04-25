@@ -13,7 +13,7 @@ AE2 Lightning Tech turns lightning into a usable resource. Capture natural strik
 ## Features
 
 ### Lightning Energy System
-Three tiers of lightning energy — Lightning, High Voltage and Extreme High Voltage — stored, transmitted and crafted with as a first-class resource alongside FE.
+Two tiers of lightning energy — High Voltage and Extreme High Voltage — stored, transmitted and crafted with as a first-class resource alongside FE.
 
 ### Lightning Collection
 - **Lightning Collector** — catches lightning that strikes nearby rods.
