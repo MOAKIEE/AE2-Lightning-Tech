@@ -8,6 +8,7 @@ import net.minecraft.world.item.ItemStack;
 import appeng.api.config.FuzzyMode;
 import appeng.api.ids.AEComponents;
 import appeng.api.stacks.AEKeyType;
+import appeng.api.stacks.AEKeyTypes;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.UpgradeInventories;
@@ -19,7 +20,7 @@ import appeng.util.ConfigInventory;
  * <p>
  * Configurable in AE2's Cell Workbench:
  * <ul>
- *   <li>63 filter slots (items + fluids)</li>
+ *   <li>63 filter slots (all registered AE key types, including chemicals)</li>
  *   <li>2 upgrade slots (fuzzy card + inverter card)</li>
  *   <li>Supports fuzzy matching and whitelist/blacklist inversion</li>
  * </ul>
@@ -42,7 +43,7 @@ public class OverloadedFilterComponentItem extends Item implements ICellWorkbenc
     @Override
     public ConfigInventory getConfigInventory(ItemStack stack) {
         return CellConfig.create(
-                Set.of(AEKeyType.items(), AEKeyType.fluids()),
+                AEKeyTypes.getAll(),
                 stack, CONFIG_SLOTS);
     }
 
