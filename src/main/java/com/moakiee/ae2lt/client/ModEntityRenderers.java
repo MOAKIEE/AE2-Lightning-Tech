@@ -23,5 +23,8 @@ public final class ModEntityRenderers {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
                 LightningAssemblyChamberRenderer::new);
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.FUMO.get(),
+                FumoBlockRenderer::new);
     }
 }

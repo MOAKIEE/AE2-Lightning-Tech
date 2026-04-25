@@ -1,13 +1,23 @@
 package com.moakiee.ae2lt.block;
 
+import com.moakiee.ae2lt.blockentity.FumoBlockEntity;
+import com.moakiee.ae2lt.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
+import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityTicker;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -17,12 +27,13 @@ import net.minecraft.world.level.block.state.properties.DirectionProperty;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
+import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public class FumoBlock extends Block {
+public class FumoBlock extends Block implements EntityBlock {
 
     public static final DirectionProperty FACING = HorizontalDirectionalBlock.FACING;
     public static final BooleanProperty WATERLOGGED = BlockStateProperties.WATERLOGGED;
@@ -109,5 +120,36 @@ public class FumoBlock extends Block {
             case EAST -> SHAPE_EAST;
             default -> SHAPE_NORTH;
         };
+    }
+
+    @Override
+    protected @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
+        return RenderShape.ENTITYBLOCK_ANIMATED;
+    }
+
+    @Override
+    protected @NotNull InteractionResult useWithoutItem(@NotNull BlockState state, @NotNull Level level,
+                                                       @NotNull BlockPos pos, @NotNull Player player,
+                                                       @NotNull BlockHitResult hitResult) {
+        if (!level.isClientSide() && level.getBlockEntity(pos) instanceof FumoBlockEntity be) {
+            be.toggleSpinning();
+        }
+        return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
+        return new FumoBlockEntity(pos, state);
+    }
+
+    @Nullable
+    @Override
+    public <T extends BlockEntity> BlockEntityTicker<T> getTicker(@NotNull Level level, @NotNull BlockState state,
+                                                                  @NotNull BlockEntityType<T> blockEntityType) {
+        if (!level.isClientSide() || blockEntityType != ModBlockEntities.FUMO.get()) {
+            return null;
+        }
+        return (l, p, s, be) -> FumoBlockEntity.clientTick(l, p, s, (FumoBlockEntity) be);
     }
 }

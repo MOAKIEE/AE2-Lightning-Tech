@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
+import com.moakiee.ae2lt.blockentity.FumoBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
@@ -15,7 +16,10 @@ import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import java.util.ArrayList;
+import java.util.List;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -137,6 +141,28 @@ public final class ModBlockEntities {
                             (pos, state) -> new GhostOutputBlockEntity(pos),
                             Blocks.AIR)
                             .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FumoBlockEntity>>
+            FUMO = BLOCK_ENTITY_TYPES.register(
+                    "fumo",
+                    () -> BlockEntityType.Builder.of(
+                            FumoBlockEntity::new,
+                            collectFumoBlocks())
+                            .build(null));
+
+    private static Block[] collectFumoBlocks() {
+        List<Block> blocks = new ArrayList<>(3);
+        if (ModFumos.MOAKIEE_FUMO != null) {
+            blocks.add(ModFumos.MOAKIEE_FUMO.get());
+        }
+        if (ModFumos.CYSTRYSU_FUMO != null) {
+            blocks.add(ModFumos.CYSTRYSU_FUMO.get());
+        }
+        if (ModFumos.PIGMEE_FUMO != null) {
+            blocks.add(ModFumos.PIGMEE_FUMO.get());
+        }
+        return blocks.toArray(new Block[0]);
+    }
 
     private ModBlockEntities() {
     }

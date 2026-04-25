@@ -89,11 +89,10 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     /**
      * Scrollbar handle X (local). The PNG bakes a recessed track at
      * x=177..182 (6 px outer / 4 px inner). The 7-px AE2 small_scroller
-     * sprite at x=177 spans x=177..183 — handle's left edge sits flush
-     * against the track's left frame line, with the handle bleeding 1 px
-     * past the right frame line.
+     * sprite at x=178 spans x=178..184 — handle sits flush inside the
+     * track's left frame line.
      */
-    private static final int SCROLLBAR_X = 177;
+    private static final int SCROLLBAR_X = 178;
     /** Scrollbar track Y (local) — first row of the recessed well content. */
     private static final int SCROLLBAR_Y = 38;
     /** Scrollbar handle width — AE2 small_scroller sprite is 7 px wide. */
