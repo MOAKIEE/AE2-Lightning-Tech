@@ -31,13 +31,13 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
     public static final RecipeType<LightningTransformRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "lightning_transform", LightningTransformRecipe.class);
 
-    private static final int WIDTH = 130;
+    private static final int WIDTH = 134;
     private static final int HEIGHT = 62;
     private static final int INPUT_START_X = 5;
     private static final int INPUT_START_Y = 5;
     private static final int CATALYST_X = 56;
     private static final int CATALYST_Y = 24;
-    private static final int OUTPUT_X = 106;
+    private static final int OUTPUT_X = 110;
     private static final int OUTPUT_Y = 24;
     private static final int ARROW_LEFT_X = 28;
     private static final int ARROW_RIGHT_X = 81;

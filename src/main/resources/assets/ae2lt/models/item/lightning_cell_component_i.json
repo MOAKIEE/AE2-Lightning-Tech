@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "ae2lt:item/lightning_component_i"
+    "layer0": "ae2lt:item/lightning_cell_component_i"
   }
 }

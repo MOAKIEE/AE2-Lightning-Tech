@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "ae2lt:item/lightning_storage_component_v"
+    "layer0": "ae2lt:item/infinite_lightning_cell"
   }
 }
