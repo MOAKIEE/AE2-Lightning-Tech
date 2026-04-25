@@ -10,15 +10,7 @@ navigation:
 
 AE2 闪电科技提供了多种加工机器，分别应对不同类型的材料合成需求。除大气电离仪消耗 AE 能量之外，其余机器均接入 ME 网络同时使用外部 FE 能量，并在加工时从 ME 网络中提取闪电。
 
-## 机器一览
-
-| 机器 | 核心用途 | 主要消耗 |
-|------|---------|---------|
-| [闪电模拟室](lightning-simulation-chamber.md) | 1~3 种输入的简单转化 | 闪电 + FE |
-| [闪电装配室](lightning-assembly-chamber.md) | 最多 9 种输入的复杂装配 | 闪电 + FE |
-| [过载处理工厂](overload-processing-factory.md) | 物品 + 流体的多并行加工 | 闪电 + FE |
-| [水晶催化器](crystal-catalyzer.md) | 流体 + 催化剂的水晶培育 | FE |
-| [大气电离仪](atmospheric-ionizer.md) | 天气控制 | AE 能量 |
+<SubPages />
 
 ## 通用特性
 

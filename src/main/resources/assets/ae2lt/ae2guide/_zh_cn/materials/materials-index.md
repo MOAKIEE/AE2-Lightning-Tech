@@ -3,65 +3,18 @@ navigation:
   title: 材料与物品
   icon: ae2lt:overload_processor
   parent: index.md
-  position: 50
+  position: 40
 ---
 
 # 材料与物品
 
-AE2 闪电科技引入了大量新材料。以下是关键材料的速查表。
+AE2 闪电科技引入了大量新材料。以下页面分别详细介绍了各个核心材料与物品。
 
-## 基础材料
-
-<ItemGrid>
-  <ItemIcon id="ae2lt:overload_crystal" />
-  <ItemIcon id="ae2lt:overload_crystal_dust" />
-  <ItemIcon id="ae2lt:electro_chime_crystal" />
-  <ItemIcon id="ae2lt:perfect_electro_chime_crystal" />
-</ItemGrid>
-
-| 物品 | 说明 |
-|------|------|
-| 过载水晶 | 基础核心材料，从过载水晶簇采集 |
-| 过载水晶粉 | 从未完全长成的水晶芽采集，特斯拉线圈高压模式的消耗品 |
-| 电鸣水晶 | 闪电收集器的催化物，经自然雷击逐步培育 |
-| 完美电鸣水晶 | 催化值达到最大时得到的最终形态，提供固定的最大产量加成 |
-
-## 处理器与电路
-
-<ItemGrid>
-  <ItemIcon id="ae2lt:overload_processor" />
-  <ItemIcon id="ae2lt:overload_circuit_board" />
-  <ItemIcon id="ae2lt:unoverloaded_circuit_board" />
-  <ItemIcon id="ae2lt:overload_inscriber_press" />
-</ItemGrid>
-
-过载处理器及其组件构成了制作大多数机器所需的加工链。详见[过载处理器](overload-processor.md)。
-
-## 合金与板材
-
-<ItemGrid>
-  <ItemIcon id="ae2lt:overload_alloy" />
-  <ItemIcon id="ae2lt:overload_alloy_blank" />
-  <ItemIcon id="ae2lt:overload_alloy_plate" />
-</ItemGrid>
-
-高级合金材料，广泛用于各种高级配方。详见[过载合金](overload-alloy.md)。
-
-## 高级材料
-
-<ItemGrid>
-  <ItemIcon id="ae2lt:overload_singularity" />
-  <ItemIcon id="ae2lt:ultimate_overload_core" />
-  <ItemIcon id="ae2lt:lightning_collapse_matrix" />
-</ItemGrid>
-
-| 物品 | 说明 |
-|------|------|
-| [过载奇点](overload-singularity.md) | 高级合成材料，用于制造终极设备 |
-| [极限过载核心](overload-singularity.md) | 终极核心部件 |
-| <ItemLink id="ae2lt:lightning_collapse_matrix" /> | 安装在机器矩阵槽中，用于启用矩阵代偿或提升产出；详见 [闪电坍缩矩阵](lightning-collapse-matrix.md) |
+<SubPages />
 
 ## 天气凝核
+
+天气凝核由 [大气电离仪](../machines/atmospheric-ionizer.md) 消耗，用于控制世界天气。可在闪电模拟室、闪电装配室或过载处理工厂中生产。
 
 <ItemGrid>
   <ItemIcon id="ae2lt:clear_condensate" />
@@ -75,13 +28,11 @@ AE2 闪电科技引入了大量新材料。以下是关键材料的速查表。
 | 降雨凝核 | 雨天 | 1,000,000 AE |
 | 雷暴凝核 | 雷暴 | 8,000,000 AE |
 
-详见 [大气电离仪](../machines/atmospheric-ionizer.md)。
-
 ## 方块
 
 | 方块 | 说明 |
 |------|------|
-| 过载水晶块 | 装饰方块，也是搭建无瑕母岩结构的材料 |
-| [硅块](overload-machine-frame.md) | 硅的存储方块 |
-| [过载机器框架](overload-machine-frame.md) | 多数过载机器的共用基础框架 |
-| <ItemLink id="ae2lt:overload_tnt" /> | 爆炸性方块，爆炸范围较大，详见[过载 TNT](../lightning/overload-tnt.md)；请谨慎使用 |
+| 过载水晶块 | 装饰方块，也是搭建过载水晶母岩转化结构所需的材料 |
+| [硅块](overload-machine-frame.md) | 硅的压缩存储方块 |
+| [过载机器框架](overload-machine-frame.md) | 多数过载加工机器的共用基础框架 |
+| <ItemLink id="ae2lt:overload_tnt" /> | 爆炸性方块，引爆后产生持续的人工闪电轰炸；详见 [过载 TNT](../lightning/overload-tnt.md) |

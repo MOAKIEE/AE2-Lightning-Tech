@@ -10,15 +10,7 @@ navigation:
 
 AE2 Lightning Tech provides several processing machines that cover different material production needs. Except for the Atmospheric Ionizer (which consumes AE energy from the ME network), every machine connects to the ME network while also using external FE, and pulls Lightning from the ME network during processing.
 
-## Machine Overview
-
-| Machine | Core Use | Main Cost |
-|---------|----------|-----------|
-| [Lightning Simulation Room](lightning-simulation-chamber.md) | Simple conversion with 1~3 inputs | Lightning + FE |
-| [Lightning Assembly Chamber](lightning-assembly-chamber.md) | Complex assembly with up to 9 inputs | Lightning + FE |
-| [Overload Processing Factory](overload-processing-factory.md) | Item + fluid parallel processing | Lightning + FE |
-| [Crystal Catalyzer](crystal-catalyzer.md) | Fluid + catalyst crystal growth | FE |
-| [Atmospheric Ionizer](atmospheric-ionizer.md) | Weather control | AE energy |
+<SubPages />
 
 ## Shared Features
 

@@ -1,7 +1,7 @@
 ---
 navigation:
   title: AE2 Lightning Tech
-  position: 1000
+  position: 66
 ---
 
 # AE2 Lightning Tech
@@ -19,6 +19,5 @@ Main features:
 * [Getting Started](getting-started.md) — From your first Overload Crystal to your first Lightning production line
 * [Lightning System](lightning/lightning-index.md) — Producing, storing and consuming Lightning
 * [Processing Machines](machines/machines-index.md) — Lightning Simulation Room, Lightning Assembly Chamber, Overload Processing Factory and more
-* [Overload Crystal](materials/overload-crystal.md) — Growing and decaying budding Overload Crystal
-* [Materials & Items](materials/materials-index.md) — Quick reference for key materials
+* [Materials & Items](materials/materials-index.md) — Overload Crystal, alloys, processors, and other key materials
 * [Overloaded Network](overloaded-network/overloaded-network-index.md) — Overloaded ME Controller, Cable, Interface and Pattern Provider

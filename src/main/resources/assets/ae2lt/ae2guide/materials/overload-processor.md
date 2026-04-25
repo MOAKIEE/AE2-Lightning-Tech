@@ -19,21 +19,20 @@ item_ids:
   <ItemIcon id="ae2lt:overload_inscriber_press" />
 </ItemGrid>
 
-The **Overload Processor** is an advanced processor used to craft most Overload machines and high-tier devices.
+The **Overload Processor** is an advanced processor used to craft most Overload machines and high-tier devices. Its production follows a multi-step chain through the AE2 Inscriber.
 
 ## Crafting Chain
 
-The Overload Processor is assembled through a multi-step process using the AE2 Inscriber:
-
-1. Use the **Overload Inscriber Press** in the AE2 Inscriber to produce an **Unoverloaded Circuit Board**
-2. Put the Unoverloaded Circuit Board back into the Inscriber to produce an **Overload Circuit Board**
-3. Combine the Overload Circuit Board with other materials to obtain the **Overload Processor**
+1. Obtain the **Overload Inscriber Press** (via Lightning Transmutation, the Lightning Simulation Room, or the Overload Processing Factory)
+2. Use the press in the AE2 Inscriber with an Overload Alloy Blank to produce an **Unoverloaded Circuit Board**
+3. Process the Unoverloaded Circuit Board in the Inscriber again to produce the **Overload Circuit Board**
+4. Combine the Overload Circuit Board with other materials in the AE2 Molecular Assembler to craft the **Overload Processor**
 
 ## Items
 
 | Item | Role |
 |------|------|
-| Overload Inscriber Press | The press plate used in the AE2 Inscriber |
-| Unoverloaded Circuit Board | Intermediate product |
-| Overload Circuit Board | The finished circuit board |
+| Overload Inscriber Press | The press plate used in the AE2 Inscriber; obtained via Lightning Transmutation or machine processing |
+| Unoverloaded Circuit Board | Intermediate product; press Overload Alloy Blank with the Overload Inscriber Press |
+| Overload Circuit Board | The finished circuit board; processed from Unoverloaded Circuit Board in the Inscriber |
 | Overload Processor | The final processor, used in machine and device recipes |

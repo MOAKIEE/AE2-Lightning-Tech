@@ -2,8 +2,7 @@
 navigation:
   title: Overload Crystal
   icon: ae2lt:overload_crystal
-  parent: index.md
-  position: 40
+  parent: materials/materials-index.md
 item_ids:
   - ae2lt:overload_crystal
   - ae2lt:overload_crystal_dust

@@ -15,7 +15,6 @@ item_ids:
   - ae2lt:lightning_cell_component_iii
   - ae2lt:lightning_cell_component_iv
   - ae2lt:lightning_cell_component_v
-  - ae2lt:infinite_infinite_high_voltage_lightning_cell
 ---
 
 # Lightning Storage Cells

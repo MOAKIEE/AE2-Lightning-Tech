@@ -2,8 +2,7 @@
 navigation:
   title: 过载水晶
   icon: ae2lt:overload_crystal
-  parent: index.md
-  position: 40
+  parent: materials/materials-index.md
 item_ids:
   - ae2lt:overload_crystal
   - ae2lt:overload_crystal_dust

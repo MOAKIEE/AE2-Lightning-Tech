@@ -19,19 +19,4 @@ Lightning is a brand-new storage type that this mod adds to the ME network. Just
 
 Most basic recipes only need High Voltage Lightning; a few advanced recipes require Extreme High Voltage. With a **Lightning Collapse Matrix** installed, some EHV recipes can be substituted with several times the amount of HV Lightning.
 
-## Producing Lightning
-
-* [Lightning Collector](lightning-collector.md) — injects Lightning into the ME network when struck by lightning
-* [Tesla Coil](tesla-coil.md) — consumes Overload Crystal Dust / HV Lightning and FE to produce Lightning on demand
-
-## Storing Lightning
-
-* [Lightning Storage Cells](lightning-storage.md) — place one in an <ItemLink id="ae2:drive" /> to store Lightning in your ME network
-
-## Consuming Lightning
-
-The Lightning Simulation Room, Lightning Assembly Chamber, and Overload Processing Factory under [Processing Machines](../machines/machines-index.md) all pull Lightning from the ME network while working.
-
-## Releasing Lightning
-
-* [Overload TNT](overload-tnt.md) — a small, controllable disaster in a box: an explosion, followed by a rain of artificial lightning
+<SubPages />

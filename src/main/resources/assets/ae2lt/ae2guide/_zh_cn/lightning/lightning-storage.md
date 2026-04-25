@@ -15,7 +15,6 @@ item_ids:
   - ae2lt:lightning_cell_component_iii
   - ae2lt:lightning_cell_component_iv
   - ae2lt:lightning_cell_component_v
-  - ae2lt:infinite_infinite_high_voltage_lightning_cell
 ---
 
 # 闪电存储元件
@@ -50,4 +49,4 @@ item_ids:
 
 ## 附录
 
-> 扫描日志末尾夹着一条旁注：“有一枚元件不在登记库中——读一次就空，其余一切正常。”来源与解读均未记录。
+> 扫描日志末尾夹着一条旁注：”有一枚元件不在登记库中——读一次就空，其余一切正常。”来源与解读均未记录。

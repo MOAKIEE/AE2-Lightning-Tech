@@ -26,13 +26,13 @@ The **Overload Singularity** at the center is what actually does the work; the g
 
 ## Detonation Behavior
 
-After being ignited or activated, the Overload TNT has a fuse of roughly **4 seconds**. When it goes off, energy is released in this order:
+After ignition or activation, Overload TNT has a fuse of roughly **4 seconds**. On detonation, effects occur in the following sequence:
 
-1. A **lead-off lightning bolt** strikes directly above the blast center, followed by multiple bolts that fall outward in layered rings, **searing the terrain** as they go — this is the real payload of the Overload TNT, and its range is large.
-2. At the moment of detonation, **every mob in a wide area around the blast center takes heavy lightning damage**. The closer to the center, the more lethal it gets, with effectively no survival margin at the core.
-3. After the first wave, a period of **aftershocks** continues for several seconds, dropping random strikes across the area.
-4. A short burst of **thunderstorm weather** is forced into the area around the blast center, which reverts after about 8 seconds.
-5. All lightning produced during this sequence counts as **artificial lightning**, so it can be captured by the [Lightning Collector](lightning-collector.md) and converted into High Voltage Lightning in your ME network.
+1. A **lead-off lightning bolt** strikes directly above the blast center, followed by multiple bolts that fall outward in layered rings, **searing the terrain** — this is the primary destructive effect, and its range is large.
+2. At detonation, **all mobs in a wide area around the blast center take heavy lightning damage**. Damage falls off with distance, but the inner radius is lethal.
+3. After the first wave, a period of **aftershocks** continues for several seconds, dropping random additional strikes across the area.
+4. A short burst of **thunderstorm weather** is forced into the area around the blast center, reverting after about 8 seconds.
+5. All lightning produced during this sequence counts as **artificial lightning**, and can be captured by the [Lightning Collector](lightning-collector.md) to produce High Voltage Lightning in the ME network.
 
 Overload TNT has good manners when it comes to cleanup: **bedrock, barrier blocks, end portal frames, and command blocks** are not broken, and area-protected zones are respected.
 
