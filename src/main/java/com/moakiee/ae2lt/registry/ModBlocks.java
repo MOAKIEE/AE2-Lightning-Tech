@@ -25,10 +25,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
+import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModBlocks {
+    private static final String APPFLUX_MODID = "appflux";
+
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(AE2LightningTech.MODID);
 
     private static final BlockBehaviour.Properties BUDDING_PROPERTIES = BlockBehaviour.Properties.of()
@@ -141,7 +144,10 @@ public final class ModBlocks {
             registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
 
     public static final DeferredBlock<OverloadedPowerSupplyBlock> OVERLOADED_POWER_SUPPLY =
-            registerBlock("overloaded_power_supply", OverloadedPowerSupplyBlock::new);
+            registerBlock(
+                    "overloaded_power_supply",
+                    OverloadedPowerSupplyBlock::new,
+                    ModBlocks::isAppFluxLoaded);
 
     public static final DeferredBlock<WirelessReceiverBlock> WIRELESS_RECEIVER =
             registerBlock("wireless_receiver", WirelessReceiverBlock::new);
@@ -156,8 +162,37 @@ public final class ModBlocks {
     }
 
     private static <T extends Block> DeferredBlock<T> registerBlock(String name, Supplier<T> blockFactory) {
+        return registerBlock(name, blockFactory, () -> true);
+    }
+
+    private static <T extends Block> DeferredBlock<T> registerBlock(
+            String name,
+            Supplier<T> blockFactory,
+            Supplier<Boolean> shouldRegisterItem) {
+        return registerBlock(name, blockFactory, shouldRegisterItem, shouldRegisterItem);
+    }
+
+    private static <T extends Block> DeferredBlock<T> registerBlock(
+            String name,
+            Supplier<T> blockFactory,
+            Supplier<Boolean> shouldRegisterBlock,
+            Supplier<Boolean> shouldRegisterItem) {
+        if (!shouldRegisterBlock.get()) {
+            return null;
+        }
+
         var registered = BLOCKS.register(name, blockFactory);
-        ModItems.ITEMS.register(name, () -> new BlockItem(registered.get(), new Item.Properties()));
+        if (shouldRegisterItem.get()) {
+            ModItems.ITEMS.register(name, () -> new BlockItem(registered.get(), new Item.Properties()));
+        }
         return registered;
+    }
+
+    public static boolean hasOverloadedPowerSupply() {
+        return OVERLOADED_POWER_SUPPLY != null;
+    }
+
+    private static boolean isAppFluxLoaded() {
+        return ModList.get().isLoaded(APPFLUX_MODID);
     }
 }

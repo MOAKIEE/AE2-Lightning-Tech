@@ -38,9 +38,11 @@ public final class ModMenuTypes {
                     () -> OverloadedInterfaceMenu.TYPE);
 
     public static final DeferredHolder<MenuType<?>, MenuType<OverloadedPowerSupplyMenu>>
-            OVERLOADED_POWER_SUPPLY = MENU_TYPES.register(
-                    "overloaded_power_supply",
-                    () -> OverloadedPowerSupplyMenu.TYPE);
+            OVERLOADED_POWER_SUPPLY = ModBlocks.hasOverloadedPowerSupply()
+                    ? MENU_TYPES.register(
+                            "overloaded_power_supply",
+                            () -> OverloadedPowerSupplyMenu.TYPE)
+                    : null;
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningSimulationChamberMenu>>
             LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(

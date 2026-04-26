@@ -95,7 +95,9 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
-                        output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
+                        if (ModBlocks.hasOverloadedPowerSupply()) {
+                            output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
+                        }
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
                         output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
@@ -336,10 +338,12 @@ public class AE2LightningTech {
                 ModBlockEntities.OVERLOADED_INTERFACE.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
-        event.registerBlockEntity(
-                AECapabilities.IN_WORLD_GRID_NODE_HOST,
-                ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
-                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+        if (ModBlocks.hasOverloadedPowerSupply()) {
+            event.registerBlockEntity(
+                    AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                    ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
+                    (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+        }
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
@@ -470,13 +474,15 @@ public class AE2LightningTech {
                     null,
                     OverloadedInterfaceBlockEntity::serverTick);
 
-            var powerSupplyBlock = ModBlocks.OVERLOADED_POWER_SUPPLY.get();
-            var powerSupplyBeType = ModBlockEntities.OVERLOADED_POWER_SUPPLY.get();
-            powerSupplyBlock.setBlockEntity(
-                    OverloadedPowerSupplyBlockEntity.class,
-                    powerSupplyBeType,
-                    null,
-                    null);
+            if (ModBlocks.hasOverloadedPowerSupply()) {
+                var powerSupplyBlock = ModBlocks.OVERLOADED_POWER_SUPPLY.get();
+                var powerSupplyBeType = ModBlockEntities.OVERLOADED_POWER_SUPPLY.get();
+                powerSupplyBlock.setBlockEntity(
+                        OverloadedPowerSupplyBlockEntity.class,
+                        powerSupplyBeType,
+                        null,
+                        null);
+            }
 
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     lightningCollectorBeType,
@@ -490,9 +496,11 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
-            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
-                    powerSupplyBeType,
-                    powerSupplyBlock.asItem());
+            if (ModBlocks.hasOverloadedPowerSupply()) {
+                appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                        ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
+                        ModBlocks.OVERLOADED_POWER_SUPPLY.get().asItem());
+            }
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());
