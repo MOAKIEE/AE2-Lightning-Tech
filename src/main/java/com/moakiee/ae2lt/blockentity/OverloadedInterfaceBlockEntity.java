@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -23,10 +22,8 @@ import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
-import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
-import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
-import com.moakiee.ae2lt.logic.energy.TargetAccess;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
+import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 
@@ -51,9 +48,7 @@ import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
-import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageService;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
@@ -70,9 +65,6 @@ import appeng.util.inv.InternalInventoryHost;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import appeng.parts.automation.StackWorldBehaviors;
-
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 
 public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         implements OverloadedGridNodeOwner {
@@ -128,7 +120,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final int IMPORT_EMPTY_KEY_CACHE_TTL = 20;
     private static final int IMPORT_KEY_CACHE_MAX_KEYS = 256;
     private static final int IMPORT_KEY_CACHE_TRUNCATED_TTL = 5;
-    private static final int WIRELESS_ENERGY_IDLE_RETRY_TICKS = 5;
     private static final int EXPORT_REJECT_BACKOFF_INIT = 10;
     private static final int EXPORT_REJECT_BACKOFF_MAX = 80;
     private static final int EXPORT_REJECT_BACKOFF_MAX_KEYS = 128;
@@ -410,12 +401,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         @Nullable Map<AEKeyType, MEStorage> storageWrappers;
         long storageWrapperTick = -1;
 
-        @Nullable WeakReference<BlockEntity>    energyBERef;
-        @Nullable WeakReference<IEnergyStorage> energyStorageRef;
-        @Nullable WeakReference<BlockEntity>    energyCapBERef;
-        @Nullable Object energyCapCache;
-        @Nullable TargetAccess energyTarget;
-
         CooldownTracker cdFor(AEKeyType type, IoDirection direction) {
             var cds = direction == IoDirection.IMPORT ? importCDs : exportCDs;
             return cds.computeIfAbsent(type, ignored -> new CooldownTracker());
@@ -505,70 +490,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             }
             return storageWrappers;
         }
-
-        @Nullable
-        IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
-            BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) {
-                energyBERef = null; energyStorageRef = null;
-                energyCapBERef = null; energyCapCache = null; energyTarget = null;
-                return null;
-            }
-            if (energyBERef != null && energyBERef.get() == be
-                    && energyStorageRef != null) {
-                var s = energyStorageRef.get();
-                if (s != null) return s;
-            }
-            var st = level.getCapability(Capabilities.EnergyStorage.BLOCK,
-                    conn.pos(), conn.boundFace());
-            if (st == null) { energyBERef = null; energyStorageRef = null; return null; }
-            energyBERef      = new WeakReference<>(be);
-            energyStorageRef = new WeakReference<>(st);
-            return st;
-        }
-
-        @Nullable
-        Object resolveEnergyCapCache(ServerLevel level, WirelessConnection conn,
-                                     Supplier<IGrid> gridSupplier) {
-            BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) {
-                energyCapBERef = null; energyCapCache = null; energyTarget = null;
-                return null;
-            }
-            if (energyCapBERef != null && energyCapBERef.get() == be
-                    && energyCapCache != null) {
-                return energyCapCache;
-            }
-
-            Object capCache = AppFluxBridge.createCapCache(
-                    level, conn.pos().relative(conn.boundFace()), gridSupplier);
-            if (capCache == null) {
-                energyCapBERef = null; energyCapCache = null; energyTarget = null;
-                return null;
-            }
-            energyCapBERef = new WeakReference<>(be);
-            energyCapCache = capCache;
-            energyTarget = null;
-            return capCache;
-        }
-
-        @Nullable
-        TargetAccess resolveEnergyTarget(ServerLevel level, WirelessConnection conn,
-                                   Supplier<IGrid> gridSupplier) {
-            BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) {
-                energyCapBERef = null; energyCapCache = null; energyTarget = null;
-                return null;
-            }
-            if (energyCapBERef != null && energyCapBERef.get() == be
-                    && energyTarget != null) {
-                return energyTarget;
-            }
-
-            Object capCache = resolveEnergyCapCache(level, conn, gridSupplier);
-            energyTarget = WirelessEnergyAPI.resolveEnergyTarget(capCache, conn.boundFace());
-            return energyTarget;
-        }
     }
 
     // ── Energy timing wheel ──────────────────────────────────────────────
@@ -598,7 +519,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private long lastEnergyTickGameTime = -1;
-    private long wirelessEnergyIdleUntil = -1;
 
     // ── Connection validation cache ──────────────────────────────────────
 
@@ -609,6 +529,20 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private List<WirelessConnection> validConnectionsCache = List.of();
     private long    validConnectionsCacheTick = -1;
     private boolean connectionsDirty = true;
+
+    /**
+     * Snapshot of the current valid wireless connections projected as
+     * {@link WirelessEnergyAPI.Target} records. Rebuilt in lockstep with
+     * {@link #validConnectionsCache} so the shared NORMAL-mode distributor
+     * sees the exact same set the IO wheel uses.
+     */
+    private List<WirelessEnergyAPI.Target> validEnergyTargetsCache = List.of();
+    /**
+     * Monotonic stamp; bumped whenever {@link #validEnergyTargetsCache}
+     * actually changes. The distributor uses this as an O(1)
+     * cache-invalidation key (see {@link WirelessEnergyDistributor.Host}).
+     */
+    private int validEnergyTargetsVersion;
 
     @SuppressWarnings("unchecked")
     private final List<IoScheduledEntry>[] ioWheel = new ArrayList[IO_WHEEL_SLOTS];
@@ -653,12 +587,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     };
     private @Nullable DirectMEInsertInventory directInsertInv;
-    @Nullable
-    private IStorageService bufferedEnergyServiceDelegate;
-    @Nullable
-    private BufferedMEStorage wirelessEnergyBufferedStorage;
-    @Nullable
-    private BufferedStorageService wirelessEnergyStorageProxy;
+    /** Shared NORMAL-mode distributor (32-slot adaptive wheel + cap listeners). */
+    private final WirelessEnergyDistributor wirelessDistributor =
+            new WirelessEnergyDistributor(new DistributorHost());
     private @Nullable Set<AEKey> importFilterKeys;
     private @Nullable FuzzyMode importFilterFuzzyMode;
     private boolean importFilterInverted;
@@ -857,9 +788,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private void invalidateConnectionCache() {
         connectionsDirty = true;
         validConnectionsCache = List.of(); validConnectionsCacheTick = -1;
-        wirelessEnergyIdleUntil = -1;
+        if (!validEnergyTargetsCache.isEmpty()) {
+            validEnergyTargetsCache = List.of();
+        }
+        validEnergyTargetsVersion++;
         connectionStates.clear();
         resetIOWheel();
+        wirelessDistributor.clearTickState(true);
     }
 
     private void resetIOWheel() {
@@ -903,9 +838,33 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             if (tl.getBlockEntity(c.pos()) == null) continue;
             valid.add(c);
         }
-        validConnectionsCache = List.copyOf(valid);
+        var newCache = List.copyOf(valid);
+        if (!newCache.equals(validConnectionsCache)) {
+            validConnectionsCache = newCache;
+            rebuildEnergyTargets();
+        }
         validConnectionsCacheTick = gameTick; connectionsDirty = false;
         return validConnectionsCache;
+    }
+
+    /**
+     * Project the current valid wireless connections into a list of
+     * {@link WirelessEnergyAPI.Target} records and bump the version stamp so
+     * the shared distributor refreshes its per-target caches on the next
+     * tick.
+     */
+    private void rebuildEnergyTargets() {
+        if (validConnectionsCache.isEmpty()) {
+            validEnergyTargetsCache = List.of();
+        } else {
+            var snapshot = new ArrayList<WirelessEnergyAPI.Target>(validConnectionsCache.size());
+            for (var conn : validConnectionsCache) {
+                snapshot.add(new WirelessEnergyAPI.Target(
+                        conn.dimension(), conn.pos(), conn.boundFace()));
+            }
+            validEnergyTargetsCache = List.copyOf(snapshot);
+        }
+        validEnergyTargetsVersion++;
     }
 
     @Nullable
@@ -1612,67 +1571,39 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private void distributeWirelessEnergy(ServerLevel sl, long tick, AEKey feKey) {
-        if (!AppFluxBridge.canUseEnergyHandler()) {
-            return;
-        }
-        if (wirelessEnergyIdleUntil > tick) {
-            return;
-        }
-        var valid = getOrRefreshValidConnections(sl, tick);
-        if (valid.isEmpty()) return;
-
-        var proxy = getWirelessEnergyStorageProxy();
-        var buffered = wirelessEnergyBufferedStorage;
-        if (proxy == null || buffered == null) {
-            return;
-        }
-
-        buffered.setCostMultiplier(1);
-
-        Supplier<IGrid> gridSupplier = () -> getMainNode().getGrid();
-
-        long totalPushed = 0L;
-        for (var conn : valid) {
-            var targetLevel = resolveTargetLevel(sl, conn);
-            if (targetLevel == null) {
-                continue;
-            }
-            var connectionState = getOrCreateState(conn);
-            var energyTarget = connectionState.resolveEnergyTarget(targetLevel, conn, gridSupplier);
-            if (energyTarget == null
-                    || WirelessEnergyAPI.simulateTarget(energyTarget, AppFluxBridge.TRANSFER_RATE) <= 0L) {
-                continue;
-            }
-            totalPushed += WirelessEnergyAPI.sendToTarget(
-                    energyTarget, proxy, machineSource, AppFluxBridge.TRANSFER_RATE);
-        }
-
-        wirelessEnergyIdleUntil = totalPushed > 0L
-                ? -1
-                : tick + WIRELESS_ENERGY_IDLE_RETRY_TICKS;
+        // Refresh the validated connection list (host-owned: 20-tick sweep
+        // + automatic stale-connection removal). rebuildEnergyTargets()
+        // inside this call publishes the snapshot the distributor reads
+        // through DistributorHost and bumps the version stamp.
+        getOrRefreshValidConnections(sl, tick);
+        wirelessDistributor.tickNormal(sl);
     }
 
-    @Nullable
-    private BufferedStorageService getWirelessEnergyStorageProxy() {
-        var grid = getMainNode().getGrid();
-        if (grid == null) {
-            bufferedEnergyServiceDelegate = null;
-            wirelessEnergyBufferedStorage = null;
-            wirelessEnergyStorageProxy = null;
-            return null;
+    private final class DistributorHost implements WirelessEnergyDistributor.Host {
+        @Override
+        public appeng.api.networking.IManagedGridNode getMainNode() {
+            return OverloadedInterfaceBlockEntity.this.getMainNode();
         }
 
-        IStorageService storageService = grid.getStorageService();
-        if (wirelessEnergyStorageProxy == null
-                || wirelessEnergyBufferedStorage == null
-                || bufferedEnergyServiceDelegate != storageService) {
-            MEStorage inventory = storageService.getInventory();
-            wirelessEnergyBufferedStorage = new BufferedMEStorage(inventory);
-            wirelessEnergyStorageProxy = new BufferedStorageService(storageService, wirelessEnergyBufferedStorage);
-            bufferedEnergyServiceDelegate = storageService;
+        @Override
+        public IActionSource actionSource() {
+            return machineSource;
         }
 
-        return wirelessEnergyStorageProxy;
+        @Override
+        public boolean isHostRemoved() {
+            return OverloadedInterfaceBlockEntity.this.isRemoved();
+        }
+
+        @Override
+        public List<WirelessEnergyAPI.Target> getValidTargets() {
+            return validEnergyTargetsCache;
+        }
+
+        @Override
+        public int getValidTargetsVersion() {
+            return validEnergyTargetsVersion;
+        }
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1722,12 +1653,17 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (!unloadingChunk) {
             unregisterEject();
         }
+        // Flush any FE the wireless distributor still has buffered back to
+        // the ME network — there is no persistent storage on this side and
+        // BufferedMEStorage discards on GC.
+        wirelessDistributor.flushBufferToNetwork();
         super.setRemoved();
     }
 
     @Override
     public void onChunkUnloaded() {
         unloadingChunk = true;
+        wirelessDistributor.flushBufferToNetwork();
         super.onChunkUnloaded();
     }
 

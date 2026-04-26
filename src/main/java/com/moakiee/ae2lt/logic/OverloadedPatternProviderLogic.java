@@ -23,8 +23,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
@@ -34,7 +32,6 @@ import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageService;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
@@ -42,7 +39,6 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
@@ -56,9 +52,8 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
-import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
-import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
+import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -88,12 +83,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private final IActionSource wirelessSource;
     private final int totalCapacity;
 
-    @Nullable
-    private IStorageService bufferedEnergyServiceDelegate;
-    @Nullable
-    private BufferedMEStorage wirelessEnergyBufferedStorage;
-    @Nullable
-    private BufferedStorageService wirelessEnergyStorageProxy;
+    /** Shared NORMAL-mode distributor (32-slot adaptive wheel + cap listeners). */
+    private final WirelessEnergyDistributor wirelessDistributor;
+    /**
+     * Target snapshot exposed to the distributor. Rebuilt in lockstep with
+     * {@link #validConnectionsCache}. {@link #validTargetsVersion} bumps on
+     * every replacement so the distributor's per-target caches refresh
+     * exactly when the validated connection set changes.
+     */
+    private List<WirelessEnergyAPI.Target> validTargetsCache = List.of();
+    private int validTargetsVersion;
 
     /** Currently displayed page index (0-based). */
     private int currentPage = 0;
@@ -179,10 +178,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             cachedAdapter = adapter;
             return adapter;
         }
-
-        // energy cap cache
-        @Nullable WeakReference<BlockEntity> energyBERef;
-        @Nullable WeakReference<IEnergyStorage> energyStorageRef;
 
         // auto-return backoff
         long nextPollTick;
@@ -275,30 +270,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             backoffInterval = foundItems ? BACKOFF_MIN
                     : Math.min(backoffInterval * 2, BACKOFF_MAX);
             nextPollTick = gameTick + backoffInterval;
-        }
-
-        @Nullable
-        IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
-            BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) {
-                energyBERef = null;
-                energyStorageRef = null;
-                return null;
-            }
-            if (energyBERef != null && energyBERef.get() == be && energyStorageRef != null) {
-                var s = energyStorageRef.get();
-                if (s != null) return s;
-            }
-            IEnergyStorage storage = level.getCapability(
-                    Capabilities.EnergyStorage.BLOCK, conn.pos(), conn.boundFace());
-            if (storage == null) {
-                energyBERef = null;
-                energyStorageRef = null;
-                return null;
-            }
-            energyBERef = new WeakReference<>(be);
-            energyStorageRef = new WeakReference<>(storage);
-            return storage;
         }
     }
 
@@ -425,6 +396,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
         this.totalCapacity = patternInventorySize;
+        this.wirelessDistributor = new WirelessEnergyDistributor(new DistributorHost());
 
         var accessor = (PatternProviderLogicAccessor) this;
         IAEItemFilter patternFilter = new IAEItemFilter() {
@@ -1547,15 +1519,18 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return;
 
-        var feKey = CACHED_APPFLUX_FE_KEY;
-        if (feKey == null) return;
+        if (CACHED_APPFLUX_FE_KEY == null) return;
         if (CACHED_APPFLUX_TRANSFER_RATE <= 0) return;
 
         long gameTick = sl.getGameTime();
         if (gameTick == lastEnergyTickGameTime) return;
         lastEnergyTickGameTime = gameTick;
 
-        distributeWirelessEnergy(sl, feKey, gameTick);
+        // Refresh validation (host-owned: 20-tick sweep + per-machine cleanup)
+        // — rebuildValidTargets() inside this call publishes the target
+        // snapshot that DistributorHost exposes to the shared distributor.
+        getOrRefreshValidConnections(sl, gameTick);
+        wirelessDistributor.tickNormal(sl);
     }
 
     /**
@@ -1587,7 +1562,23 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
         connectionsDirty = false;
+        rebuildValidTargets();
         return validConnectionsCache;
+    }
+
+    /**
+     * Mirror {@link #validConnectionsCache} into a {@link WirelessEnergyAPI.Target}
+     * snapshot for the shared {@link WirelessEnergyDistributor}. Bumps
+     * {@link #validTargetsVersion} on every replacement so the distributor
+     * picks up the new set on its next tick.
+     */
+    private void rebuildValidTargets() {
+        var targets = new ArrayList<WirelessEnergyAPI.Target>(validConnectionsCache.size());
+        for (var conn : validConnectionsCache) {
+            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
+        }
+        validTargetsCache = List.copyOf(targets);
+        validTargetsVersion++;
     }
 
     private void pruneMachineBackoffState(List<WirelessConnection> validConnections) {
@@ -1599,35 +1590,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         machineBackoff.keySet().retainAll(activeMachineIds);
     }
 
-    // ---- Wireless energy distribution ---------------------------------------------
-
-    private void distributeWirelessEnergy(ServerLevel sl, AEKey feKey, long currentTick) {
-        BufferedStorageService proxy = getWirelessEnergyStorageProxy();
-        BufferedMEStorage buffered = wirelessEnergyBufferedStorage;
-        if (proxy == null || buffered == null) {
-            return;
-        }
-
-        var valid = getOrRefreshValidConnections(sl, currentTick);
-        if (valid.isEmpty()) {
-            return;
-        }
-
-        buffered.setCostMultiplier(1);
-
-        var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
-        for (var conn : valid) {
-            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
-        }
-
-        WirelessEnergyAPI.distributeBatch(
-                sl,
-                targets,
-                buffered,
-                proxy,
-                () -> gridNode.getGrid(),
-                wirelessSource);
-    }
+    // ---- target level resolution ---------------------------------------------
 
     @Nullable
     private ServerLevel resolveTargetLevel(ServerLevel providerLevel, WirelessConnection conn) {
@@ -1641,6 +1604,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         inductionCardCacheDirty = true;
         refreshEjectRegistrations();
         alertGridTick();
+    }
+
+    /**
+     * Flush any FE the shared distributor still has buffered back to the ME
+     * network. Called from BE lifecycle hooks (chunk unload, removal) so we
+     * never leak FE on world-side teardown.
+     */
+    public void flushWirelessEnergyBuffer() {
+        wirelessDistributor.flushBufferToNetwork();
     }
 
     public void onPersistentStateChanged() {
@@ -1731,6 +1703,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         connectionsDirty = true;
         validConnectionsCache = List.of();
         validConnectionsCacheTick = -1;
+        validTargetsCache = List.of();
+        validTargetsVersion++;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();
         readyPQ.clear();
@@ -1738,11 +1712,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         lastPushWheelTick = -1;
         targetCache.clear();
         connectionStates.clear();
-    }
-
-    @Nullable
-    private IEnergyStorage resolveEnergyStorage(ServerLevel targetLevel, WirelessConnection conn) {
-        return getOrCreateState(conn).resolveEnergy(targetLevel, conn);
+        wirelessDistributor.clearTickState(true);
     }
 
     private boolean isInductionCardInstalled() {
@@ -1762,27 +1732,31 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return false;
     }
 
-    @Nullable
-    private BufferedStorageService getWirelessEnergyStorageProxy() {
-        var grid = gridNode.getGrid();
-        if (grid == null) {
-            bufferedEnergyServiceDelegate = null;
-            wirelessEnergyBufferedStorage = null;
-            wirelessEnergyStorageProxy = null;
-            return null;
+    private final class DistributorHost implements WirelessEnergyDistributor.Host {
+        @Override
+        public IManagedGridNode getMainNode() {
+            return gridNode;
         }
 
-        IStorageService storageService = grid.getStorageService();
-        if (wirelessEnergyStorageProxy == null
-                || wirelessEnergyBufferedStorage == null
-                || bufferedEnergyServiceDelegate != storageService) {
-            MEStorage inventory = storageService.getInventory();
-            wirelessEnergyBufferedStorage = new BufferedMEStorage(inventory);
-            wirelessEnergyStorageProxy = new BufferedStorageService(storageService, wirelessEnergyBufferedStorage);
-            bufferedEnergyServiceDelegate = storageService;
+        @Override
+        public IActionSource actionSource() {
+            return wirelessSource;
         }
 
-        return wirelessEnergyStorageProxy;
+        @Override
+        public boolean isHostRemoved() {
+            return overloadedHost.isRemoved();
+        }
+
+        @Override
+        public List<WirelessEnergyAPI.Target> getValidTargets() {
+            return validTargetsCache;
+        }
+
+        @Override
+        public int getValidTargetsVersion() {
+            return validTargetsVersion;
+        }
     }
 
     private static final Item APPFLUX_INDUCTION_CARD =
