@@ -92,6 +92,9 @@ public final class ModItems {
             "thunderstorm_condensate",
             () -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, new Item.Properties().stacksTo(1)));
 
+    public static final DeferredItem<Item> LIGHTNING_ITEM_CELL_HOUSING =
+            ITEMS.registerSimpleItem("lightning_item_cell_housing", new Item.Properties());
+
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
             registerLightningStorageComponent("lightning_storage_component_i", 128, 32);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =

@@ -4,19 +4,11 @@
   "cell_disassembly_items": [
     {
       "count": 1,
+      "id": "ae2lt:lightning_item_cell_housing"
+    },
+    {
+      "count": 1,
       "id": "ae2lt:lightning_cell_component_i"
-    },
-    {
-      "count": 4,
-      "id": "minecraft:redstone"
-    },
-    {
-      "count": 2,
-      "id": "ae2:quartz_glass"
-    },
-    {
-      "count": 3,
-      "id": "ae2lt:overload_alloy"
     }
   ]
 }

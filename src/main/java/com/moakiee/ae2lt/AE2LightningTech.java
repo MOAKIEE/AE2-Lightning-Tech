@@ -136,6 +136,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.RAIN_CONDENSATE);
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         // 存储组件
+                        output.accept(ModItems.LIGHTNING_ITEM_CELL_HOUSING);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_I);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_II);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
