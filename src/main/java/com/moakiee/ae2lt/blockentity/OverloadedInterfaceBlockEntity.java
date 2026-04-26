@@ -25,6 +25,7 @@ import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
 import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
+import com.moakiee.ae2lt.logic.energy.TargetAccess;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -413,7 +414,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         @Nullable WeakReference<IEnergyStorage> energyStorageRef;
         @Nullable WeakReference<BlockEntity>    energyCapBERef;
         @Nullable Object energyCapCache;
-        @Nullable Object energyTarget;
+        @Nullable TargetAccess energyTarget;
 
         CooldownTracker cdFor(AEKeyType type, IoDirection direction) {
             var cds = direction == IoDirection.IMPORT ? importCDs : exportCDs;
@@ -552,7 +553,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
 
         @Nullable
-        Object resolveEnergyTarget(ServerLevel level, WirelessConnection conn,
+        TargetAccess resolveEnergyTarget(ServerLevel level, WirelessConnection conn,
                                    Supplier<IGrid> gridSupplier) {
             BlockEntity be = level.getBlockEntity(conn.pos());
             if (be == null) {

@@ -68,27 +68,27 @@ public final class WirelessEnergyAPI {
     }
 
     @Nullable
-    public static Object resolveEnergyTarget(@Nullable Object capCache, Direction targetFace) {
+    public static TargetAccess resolveEnergyTarget(@Nullable Object capCache, Direction targetFace) {
         return AppFluxBridge.resolveEnergyTarget(capCache, targetFace.getOpposite());
     }
 
-    public static long simulateTarget(@Nullable Object target, long maxFe) {
+    public static long simulateTarget(@Nullable TargetAccess target, long maxFe) {
         return AppFluxBridge.simulateTarget(target, maxFe);
     }
 
-    public static long sendToTarget(@Nullable Object target, IStorageService storage,
+    public static long sendToTarget(@Nullable TargetAccess target, IStorageService storage,
                                     IActionSource source, long maxFe) {
         return AppFluxBridge.sendToTarget(target, storage, source, maxFe);
     }
 
-    public static long sendToTargetKnownDemand(@Nullable Object target, IStorageService storage,
+    public static long sendToTargetKnownDemand(@Nullable TargetAccess target, IStorageService storage,
                                                IActionSource source, long requested) {
         return AppFluxBridge.sendToTargetKnownDemand(target, storage, source, requested);
     }
 
-    public static long sendToTargetOptimistic(@Nullable Object target, BufferedMEStorage buffer,
-                                              IActionSource source, long maxFe) {
-        return AppFluxBridge.sendToTargetOptimistic(target, buffer, source, maxFe);
+    public static long sendToTargetRepeatedOptimistic(@Nullable TargetAccess target, BufferedMEStorage buffer,
+                                                      IActionSource source, long maxFe, int maxCalls) {
+        return AppFluxBridge.sendToTargetRepeatedOptimistic(target, buffer, source, maxFe, maxCalls);
     }
 
     public static long distributeBatch(
@@ -120,7 +120,7 @@ public final class WirelessEnergyAPI {
         for (ResolvedTarget entry : liveTargets) {
             Object capCache = AppFluxBridge.createCapCache(
                     entry.level(), entry.target().virtualHostPos(), gridSupplier);
-            Object target = resolveEnergyTarget(capCache, entry.target().face());
+            TargetAccess target = resolveEnergyTarget(capCache, entry.target().face());
             totalPushed += sendToTarget(target, proxy, source, AppFluxBridge.TRANSFER_RATE);
         }
 

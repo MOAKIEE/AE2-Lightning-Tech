@@ -70,7 +70,7 @@ final class AppFluxAccess {
     }
 
     @Nullable
-    static Object resolveEnergyTarget(Object energyCapCache, Direction side) {
+    static TargetAccess resolveEnergyTarget(Object energyCapCache, Direction side) {
         if (!(energyCapCache instanceof EnergyCapCache cache)) {
             return null;
         }
@@ -90,15 +90,15 @@ final class AppFluxAccess {
         return ForgeEnergyTarget.resolve(cache, side);
     }
 
-    static long simulateTarget(Object target, long maxFe) {
-        return target instanceof TargetAccess access && maxFe > 0L
+    static long simulateTarget(@Nullable TargetAccess access, long maxFe) {
+        return access != null && maxFe > 0L
                 ? Math.max(0L, access.simulateReceive(maxFe))
                 : 0L;
     }
 
-    static long sendToTarget(Object target, IStorageService storage,
+    static long sendToTarget(@Nullable TargetAccess access, IStorageService storage,
                              IActionSource source, long maxFe) {
-        if (!(target instanceof TargetAccess access) || maxFe <= 0L) {
+        if (access == null || maxFe <= 0L) {
             return 0L;
         }
 
@@ -121,9 +121,9 @@ final class AppFluxAccess {
         return accepted;
     }
 
-    static long sendToTargetKnownDemand(Object target, IStorageService storage,
+    static long sendToTargetKnownDemand(@Nullable TargetAccess access, IStorageService storage,
                                         IActionSource source, long requested) {
-        if (!(target instanceof TargetAccess access) || requested <= 0L) {
+        if (access == null || requested <= 0L) {
             return 0L;
         }
 
@@ -141,22 +141,20 @@ final class AppFluxAccess {
         return accepted;
     }
 
-    static long sendToTargetOptimistic(Object target, BufferedMEStorage buffer,
-                                       IActionSource source, long maxFe) {
-        if (!(target instanceof TargetAccess access) || maxFe <= 0L) {
+    /**
+     * Direct-buffer variant of {@link #sendToTargetKnownDemand(TargetAccess, IStorageService, IActionSource, long)}
+     * for callers that already hold a {@link BufferedMEStorage} reference (the
+     * NORMAL-mode tickNormal hot path). Skips the {@code IStorageService.getInventory()}
+     * interface dispatch — JIT cannot always devirt that across modules and
+     * each NORMAL modulate-pass iteration would otherwise spend ~5 ns there.
+     */
+    static long sendToTargetKnownDemand(@Nullable TargetAccess access, BufferedMEStorage buffer,
+                                        IActionSource source, long requested) {
+        if (access == null || requested <= 0L) {
             return 0L;
         }
 
-        long extracted = buffer.extractForDirectSend(maxFe, source);
-        if (extracted <= 0L) {
-            long currentDemand = Math.min(maxFe, Math.max(0L, access.simulateReceive(maxFe)));
-            long refillDemand = buffer.refillBudgetForDirectSend(currentDemand);
-            if (refillDemand <= 0L) {
-                return 0L;
-            }
-            buffer.refillForDirectSend(refillDemand, source);
-            extracted = buffer.extractForDirectSend(currentDemand, source);
-        }
+        long extracted = buffer.extract(FE_KEY, requested, Actionable.MODULATE, source);
         if (extracted <= 0L) {
             return 0L;
         }
@@ -164,9 +162,70 @@ final class AppFluxAccess {
         long accepted = Math.min(extracted, Math.max(0L, access.receive(extracted)));
         long leftover = extracted - accepted;
         if (leftover > 0L) {
-            buffer.returnFromDirectSend(leftover, source);
+            buffer.insert(FE_KEY, leftover, Actionable.MODULATE, source);
         }
         return accepted;
+    }
+
+    static long sendToTargetRepeatedOptimistic(@Nullable TargetAccess access, BufferedMEStorage buffer,
+                                              IActionSource source, long maxFe, int maxCalls) {
+        if (access == null || maxFe <= 0L || maxCalls <= 0) {
+            return 0L;
+        }
+
+        long totalAccepted = 0L;
+        long remaining = 0L;
+        try {
+            for (int i = 0; i < maxCalls; i++) {
+                if (remaining <= 0L) {
+                    remaining = extractRepeatedBudget(access, buffer, source, maxFe, maxCalls - i);
+                    if (remaining <= 0L) {
+                        break;
+                    }
+                }
+
+                long attempt = remaining < maxFe ? remaining : maxFe;
+                long accepted = access.receive(attempt);
+                if (accepted <= 0L) {
+                    break;
+                }
+                if (accepted > attempt) {
+                    accepted = attempt;
+                }
+
+                remaining -= accepted;
+                // totalAccepted bounded by maxFe * maxCalls (≤ Long.MAX_VALUE/64 in
+                // every realistic config) — plain += is safe and avoids the per-call
+                // saturating-add branch overhead.
+                totalAccepted += accepted;
+            }
+        } finally {
+            if (remaining > 0L) {
+                buffer.returnFromDirectSend(remaining, source);
+            }
+        }
+        return totalAccepted;
+    }
+
+    private static long extractRepeatedBudget(TargetAccess access, BufferedMEStorage buffer,
+                                             IActionSource source, long maxFe, int remainingCalls) {
+        long budget = saturatingMul(maxFe, remainingCalls);
+        long extracted = buffer.extractForDirectSend(budget, source);
+        if (extracted > 0L) {
+            return extracted;
+        }
+
+        long simulated = access.simulateReceive(maxFe);
+        long currentDemand = simulated < maxFe ? simulated : maxFe;
+        if (currentDemand <= 0L) {
+            return 0L;
+        }
+        long refillDemand = buffer.refillBudgetForDirectSend(currentDemand);
+        if (refillDemand <= 0L) {
+            return 0L;
+        }
+        buffer.refillForDirectSend(refillDemand, source);
+        return buffer.extractForDirectSend(budget, source);
     }
 
     static long getFluxCellCapacity(ItemStack stack) {
@@ -187,12 +246,6 @@ final class AppFluxAccess {
     }
 
     private AppFluxAccess() {}
-
-    private interface TargetAccess {
-        long simulateReceive(long maxFe);
-
-        long receive(long amountFe);
-    }
 
     @Nullable
     private static TargetAccess resolveGrandPowerTarget(EnergyCapCache cache, Direction side) {
@@ -227,7 +280,7 @@ final class AppFluxAccess {
         }
         try {
             IStrictEnergyHandler target = cache.getEnergyCap(MekEnergyCap.CAP, side);
-            return target != null ? new MekanismStrictTarget(target) : null;
+            return target != null ? MekanismStrictTarget.create(target) : null;
         } catch (LinkageError ignored) {
             return null;
         }
@@ -257,7 +310,67 @@ final class AppFluxAccess {
         }
     }
 
-    private record MekanismStrictTarget(IStrictEnergyHandler target) implements TargetAccess {
+    /**
+     * Mekanism IStrictEnergyHandler facade.
+     *
+     * <p>Caches the FE↔Joule conversion rate at construction so the hot path
+     * does not re-query {@code MekanismConfig.general.forgeConversionRate} on
+     * every receive call. Cap invalidation rebuilds the target instance, which
+     * picks up any in-game config reload at the next resolve. Stale rates only
+     * persist between cap invalidations on a single block — well within
+     * acceptable bounds for a per-tick energy throughput hot path.
+     *
+     * <p>Mekanism's stock conversion is exactly {@code 1 FE = 2.5 J = 5/2 J},
+     * so when no config override is in play we replace
+     * {@code clampToLong((double) x * feToJoules)} with the equivalent
+     * pure-integer {@code (x * 5L) >> 1}, and similarly J→FE becomes
+     * {@code (x << 1) / 5L}. Both directions become a single imul plus a
+     * shift / constant-divisor (HotSpot lowers {@code / 5L} to a magic-number
+     * high-mul on x64), saving the long→double round-trip, the double-mul,
+     * the {@code clampToLong} NaN/range branch tower, and all FPU register
+     * pressure. Custom conversion rates fall back to the original double
+     * path automatically.
+     *
+     * <p>Also short-circuits the J→FE back-conversion when the target accepts
+     * the full amount (the dominant case in OVERLOAD): when {@code remainder}
+     * is zero we simply return the original {@code amountFe} unchanged,
+     * skipping the conversion entirely.
+     */
+    private static final class MekanismStrictTarget implements TargetAccess {
+        /** Mekanism stock {@code joulesPerForgeEnergy}. */
+        private static final double DEFAULT_FE_TO_JOULES = 2.5;
+        /** Largest {@code amountFe} that lets {@code amountFe * 5L} stay
+         *  inside {@code Long}. Real machine demands per tick never come
+         *  near this — it exists purely so a misconfigured TRANSFER_RATE
+         *  cannot wrap silently. */
+        private static final long FE_FAST_PATH_LIMIT = Long.MAX_VALUE / 5L;
+        /** Largest {@code acceptedJ} that lets {@code acceptedJ << 1} stay
+         *  inside {@code Long}. Same rationale as above. */
+        private static final long J_FAST_PATH_LIMIT = Long.MAX_VALUE >> 1;
+
+        private final IStrictEnergyHandler target;
+        private final double feToJoules;
+        private final double joulesToFe;
+        /** Pre-computed Joule equivalent of {@link #TRANSFER_RATE} (the per-call cap). */
+        private final long maxJoulesPerCall;
+        /** True iff Mekanism is running with the stock 5/2 conversion ratio. */
+        private final boolean defaultConversion;
+
+        private MekanismStrictTarget(IStrictEnergyHandler target, double feToJoules,
+                                     double joulesToFe, long maxJoulesPerCall) {
+            this.target = target;
+            this.feToJoules = feToJoules;
+            this.joulesToFe = joulesToFe;
+            this.maxJoulesPerCall = maxJoulesPerCall;
+            this.defaultConversion = feToJoules == DEFAULT_FE_TO_JOULES;
+        }
+
+        static MekanismStrictTarget create(IStrictEnergyHandler target) {
+            double rate = UnitDisplayUtils.EnergyUnit.FORGE_ENERGY.getConversion();
+            double inverse = rate > 0.0 ? 1.0 / rate : 1.0;
+            long maxJ = TRANSFER_RATE > 0L ? clampToLong((double) TRANSFER_RATE * rate) : 0L;
+            return new MekanismStrictTarget(target, rate, inverse, maxJ);
+        }
 
         @Override
         public long simulateReceive(long maxFe) {
@@ -270,13 +383,37 @@ final class AppFluxAccess {
         }
 
         private long insert(long amountFe, Action action) {
-            long mekanismAmount = UnitDisplayUtils.EnergyUnit.FORGE_ENERGY.convertFrom(amountFe);
+            if (amountFe <= 0L) {
+                return 0L;
+            }
+            long mekanismAmount;
+            if (amountFe == TRANSFER_RATE) {
+                // Per-call cap: pre-computed at construction, no math at all.
+                mekanismAmount = maxJoulesPerCall;
+            } else if (defaultConversion && amountFe <= FE_FAST_PATH_LIMIT) {
+                // 1 FE = 5/2 J → integer-only: imul + shift, no FPU.
+                mekanismAmount = (amountFe * 5L) >> 1;
+            } else {
+                mekanismAmount = clampToLong((double) amountFe * feToJoules);
+            }
             if (mekanismAmount <= 0L) {
                 return 0L;
             }
             long remainder = target.insertEnergy(mekanismAmount, action);
-            long accepted = mekanismAmount - Math.max(0L, remainder);
-            return accepted > 0L ? UnitDisplayUtils.EnergyUnit.FORGE_ENERGY.convertTo(accepted) : 0L;
+            if (remainder <= 0L) {
+                return amountFe;
+            }
+            if (remainder >= mekanismAmount) {
+                return 0L;
+            }
+            long acceptedJ = mekanismAmount - remainder;
+            if (defaultConversion && acceptedJ <= J_FAST_PATH_LIMIT) {
+                // 1 J = 2/5 FE → integer-only: shift + idiv (HotSpot lowers
+                // /5L to a magic-number high-mul, so this is one imul + sar
+                // on x64, no FPU.)
+                return (acceptedJ << 1) / 5L;
+            }
+            return clampToLong((double) acceptedJ * joulesToFe);
         }
     }
 
@@ -300,6 +437,23 @@ final class AppFluxAccess {
 
     private static int clampToInt(long value) {
         return value >= Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) Math.max(0L, value);
+    }
+
+    private static long clampToLong(double value) {
+        if (Double.isNaN(value) || value <= 0.0) {
+            return 0L;
+        }
+        if (value >= 9.223372036854776E18) {
+            return Long.MAX_VALUE;
+        }
+        return (long) value;
+    }
+
+    private static long saturatingMul(long a, long b) {
+        if (a <= 0L || b <= 0L) {
+            return 0L;
+        }
+        return a > Long.MAX_VALUE / b ? Long.MAX_VALUE : a * b;
     }
 
     private static boolean isClassPresent(String className) {

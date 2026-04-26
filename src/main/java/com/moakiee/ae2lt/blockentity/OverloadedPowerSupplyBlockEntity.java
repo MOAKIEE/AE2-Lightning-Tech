@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.blockentity;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -97,6 +98,12 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
 
     private final List<WirelessConnection> connections = new ArrayList<>();
     private final List<WirelessConnection> readOnlyConnections = Collections.unmodifiableList(connections);
+    /**
+     * Monotonic version stamp bumped whenever {@link #connections} is mutated.
+     * Lets the supply logic skip an O(n) per-tick {@code List.equals} when the
+     * connection list is unchanged — it just compares an int.
+     */
+    private int connectionVersion;
     private final OverloadedPowerSupplyLogic logic;
 
     private PowerMode mode = PowerMode.NORMAL;
@@ -171,17 +178,36 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         return cachedCellView;
     }
 
+    /**
+     * AE2 ME Chest pattern, deferred-persist variant: every cell mutation
+     * (extract/insert) routes through {@link FluxCellInventory#saveChanges()},
+     * which fires this callback. We do NOT call {@code persist()} here —
+     * doing so on every mutation would write the ItemStack data component
+     * 64+ times per OVERLOAD tick, AND would briefly flash the post-extract
+     * value (often 0) into the ItemStack between distribution and refill.
+     *
+     * <p>Instead, the host logic invokes {@link OverloadedPowerSupplyLogic
+     * #endTick(net.minecraft.server.level.ServerLevel)} once per tick, which
+     * batches all in-tick mutations into a single {@code FluxCellInventory.persist()}
+     * call. The ItemStack therefore only ever sees the post-tick equilibrium
+     * value, exactly matching the in-memory {@code storedEnergy}.
+     *
+     * <p>The {@link #saveChanges()} call here only marks the chunk dirty so
+     * Minecraft's autosave will eventually serialise this BE to disk; it
+     * does not touch the cell's ItemStack.
+     */
     private void onCellInventoryChanged() {
         saveChanges();
     }
 
+    /**
+     * Externally-invoked persist (lifecycle hooks: cell removed, BE saved,
+     * chunk unloaded). Forces the latest in-memory cell state to be flushed
+     * into the ItemStack data component before the stack leaves the BE.
+     */
     public void persistCellStorage() {
-        persistCachedCellView();
-        saveChanges();
-    }
-
-    private void persistCachedCellView() {
         AppFluxBridge.persistCellStorage(cachedCellView);
+        saveChanges();
     }
 
     public PowerMode getMode() {
@@ -207,6 +233,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
                     return;
                 }
                 connections.set(i, updated);
+                connectionVersion++;
                 saveChanges();
                 markForClientUpdate();
                 logic.onStateChanged();
@@ -215,6 +242,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         }
 
         connections.add(new WirelessConnection(dimension, pos, face));
+        connectionVersion++;
         saveChanges();
         markForClientUpdate();
         logic.onStateChanged();
@@ -223,6 +251,22 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
         boolean removed = connections.removeIf(connection -> connection.sameTarget(dimension, pos));
         if (removed) {
+            connectionVersion++;
+            saveChanges();
+            markForClientUpdate();
+            logic.onStateChanged();
+        }
+        return removed;
+    }
+
+    public boolean removeConnections(Collection<WirelessConnection> removedConnections) {
+        if (removedConnections.isEmpty()) {
+            return false;
+        }
+
+        boolean removed = connections.removeIf(removedConnections::contains);
+        if (removed) {
+            connectionVersion++;
             saveChanges();
             markForClientUpdate();
             logic.onStateChanged();
@@ -232,6 +276,16 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
 
     public List<WirelessConnection> getConnections() {
         return readOnlyConnections;
+    }
+
+    /**
+     * Monotonic version stamp; the value changes iff the wireless connection
+     * list has been mutated since the last read. Called once per server tick
+     * by {@link OverloadedPowerSupplyLogic#getValidTargets} to short-circuit
+     * the per-tick rebuild path.
+     */
+    public int getConnectionVersion() {
+        return connectionVersion;
     }
 
     public int clearInvalidConnections() {
@@ -263,6 +317,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         }
 
         if (removed > 0) {
+            connectionVersion++;
             saveChanges();
             markForClientUpdate();
             logic.onStateChanged();
@@ -279,6 +334,17 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onChangeInventory(AppEngInternalInventory inv, int slot) {
         if (inv == cellInv) {
+            // The cell slot just changed (player took out / inserted / swapped).
+            // Flush any FE BufferedMEStorage is still holding (transient buffer
+            // AND staged cell cache) BEFORE we drop the cached view, so the
+            // ItemStack the player just removed is fully up-to-date and we
+            // never carry stale FE forward to whatever cell appears next.
+            // {@code flushBufferToNetwork} ends an active overload batch which
+            // already persists the cell; the explicit persist here covers the
+            // NORMAL-mode path where no batch is active but cached delta might
+            // still be queued in the FluxCellInventory.
+            logic.flushBufferToNetwork();
+            AppFluxBridge.persistCellStorage(cachedCellView);
             cellViewDirty = true;
             cellCapacityDirty = true;
             cachedCellView = null;
@@ -306,7 +372,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     @Override
     public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
         logic.persistCellCache();
-        persistCachedCellView();
+        AppFluxBridge.persistCellStorage(cachedCellView);
         super.saveAdditional(data, registries);
         data.putString(TAG_MODE, mode.name());
         cellInv.writeToNBT(data, TAG_CELL_INV, registries);
@@ -343,6 +409,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
                 connections.add(WirelessConnection.fromTag(list.getCompound(i)));
             }
         }
+        connectionVersion++;
 
         logic.onStateChanged();
     }
@@ -383,6 +450,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             mode = newMode;
             connections.clear();
             connections.addAll(newConnections);
+            connectionVersion++;
             logic.onStateChanged();
             changed = true;
         }

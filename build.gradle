@@ -63,6 +63,17 @@ neoForge {
 
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+
+            // Profiling-only: uncomment to force HotSpot to NOT inline the hot-path
+            // methods that tickNormal calls directly, so a spark sampler can break
+            // out their individual self-time. Off by default — leaving these args
+            // on adds 1-2 µs of method-dispatch overhead per tickNormal call (no
+            // free lunch). See dev-profiling.compilecommands for the per-method
+            // list and a longer explanation.
+            // jvmArguments.addAll(
+            //     '-XX:+UnlockDiagnosticVMOptions',
+            //     "-XX:CompileCommandFile=${project.file('dev-profiling.compilecommands').absolutePath}".toString()
+            // )
         }
 
         // Second dev client for local multiplayer testing — runs as
@@ -75,6 +86,12 @@ neoForge {
             programArguments.addAll '--username', 'Dev2'
             gameDirectory = project.file('run2')
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
+
+            // Same profiling overrides as `client` — see comment there.
+            // jvmArguments.addAll(
+            //     '-XX:+UnlockDiagnosticVMOptions',
+            //     "-XX:CompileCommandFile=${project.file('dev-profiling.compilecommands').absolutePath}".toString()
+            // )
         }
 
         server {

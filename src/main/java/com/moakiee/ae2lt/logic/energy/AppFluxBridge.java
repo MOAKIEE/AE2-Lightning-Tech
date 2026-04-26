@@ -94,27 +94,32 @@ public final class AppFluxBridge {
     }
 
     @Nullable
-    public static Object resolveEnergyTarget(@Nullable Object energyCapCache, Direction side) {
+    public static TargetAccess resolveEnergyTarget(@Nullable Object energyCapCache, Direction side) {
         return LOADED ? AppFluxAccess.resolveEnergyTarget(energyCapCache, side) : null;
     }
 
-    public static long simulateTarget(@Nullable Object target, long maxFe) {
+    public static long simulateTarget(@Nullable TargetAccess target, long maxFe) {
         return LOADED ? AppFluxAccess.simulateTarget(target, maxFe) : 0L;
     }
 
-    public static long sendToTarget(@Nullable Object target, IStorageService storage,
+    public static long sendToTarget(@Nullable TargetAccess target, IStorageService storage,
                                     IActionSource source, long maxFe) {
         return LOADED ? AppFluxAccess.sendToTarget(target, storage, source, maxFe) : 0L;
     }
 
-    public static long sendToTargetKnownDemand(@Nullable Object target, IStorageService storage,
+    public static long sendToTargetKnownDemand(@Nullable TargetAccess target, IStorageService storage,
                                                IActionSource source, long requested) {
         return LOADED ? AppFluxAccess.sendToTargetKnownDemand(target, storage, source, requested) : 0L;
     }
 
-    public static long sendToTargetOptimistic(@Nullable Object target, BufferedMEStorage buffer,
-                                              IActionSource source, long maxFe) {
-        return LOADED ? AppFluxAccess.sendToTargetOptimistic(target, buffer, source, maxFe) : 0L;
+    public static long sendToTargetKnownDemand(@Nullable TargetAccess target, BufferedMEStorage buffer,
+                                               IActionSource source, long requested) {
+        return LOADED ? AppFluxAccess.sendToTargetKnownDemand(target, buffer, source, requested) : 0L;
+    }
+
+    public static long sendToTargetRepeatedOptimistic(@Nullable TargetAccess target, BufferedMEStorage buffer,
+                                                      IActionSource source, long maxFe, int maxCalls) {
+        return LOADED ? AppFluxAccess.sendToTargetRepeatedOptimistic(target, buffer, source, maxFe, maxCalls) : 0L;
     }
 
     public static boolean hasEnergyCapability(ServerLevel level, BlockPos pos,
