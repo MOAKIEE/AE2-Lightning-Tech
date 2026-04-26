@@ -1,0 +1,464 @@
+package com.moakiee.ae2lt.blockentity;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.Tag;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
+
+import appeng.api.networking.IManagedGridNode;
+import appeng.api.storage.MEStorage;
+import appeng.api.storage.StorageCells;
+import appeng.api.storage.cells.ISaveProvider;
+import appeng.api.storage.cells.StorageCell;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.menu.MenuOpener;
+import appeng.menu.locator.MenuHostLocator;
+import appeng.util.inv.AppEngInternalInventory;
+import appeng.util.inv.InternalInventoryHost;
+
+import org.jetbrains.annotations.Nullable;
+
+import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
+import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
+import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
+import com.moakiee.ae2lt.registry.ModBlockEntities;
+import com.moakiee.ae2lt.registry.ModBlocks;
+
+public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
+        implements InternalInventoryHost {
+
+    private static final String TAG_MODE = "Mode";
+    private static final String TAG_CONNECTIONS = "WirelessConnections";
+    private static final String TAG_CELL_INV = "CellInv";
+
+    public enum PowerMode {
+        NORMAL,
+        OVERLOAD;
+
+        public PowerMode next() {
+            return this == NORMAL ? OVERLOAD : NORMAL;
+        }
+    }
+
+    public record WirelessConnection(
+            ResourceKey<Level> dimension,
+            BlockPos pos,
+            Direction boundFace
+    ) {
+        private static final String TAG_DIM = "Dim";
+        private static final String TAG_POS = "Pos";
+        private static final String TAG_FACE = "Face";
+
+        public boolean sameTarget(ResourceKey<Level> otherDim, BlockPos otherPos) {
+            return dimension.equals(otherDim) && pos.equals(otherPos);
+        }
+
+        public CompoundTag toTag() {
+            var tag = new CompoundTag();
+            tag.putString(TAG_DIM, dimension.location().toString());
+            tag.putLong(TAG_POS, pos.asLong());
+            tag.putInt(TAG_FACE, boundFace.get3DDataValue());
+            return tag;
+        }
+
+        public static WirelessConnection fromTag(CompoundTag tag) {
+            var dim = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(tag.getString(TAG_DIM)));
+            var pos = BlockPos.of(tag.getLong(TAG_POS));
+            int rawFace = tag.getInt(TAG_FACE);
+            var face = (rawFace >= 0 && rawFace < Direction.values().length)
+                    ? Direction.from3DDataValue(rawFace) : Direction.DOWN;
+            return new WirelessConnection(dim, pos, face);
+        }
+    }
+
+    private final AppEngInternalInventory cellInv = new AppEngInternalInventory(this, 1, 1) {
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return AppFluxBridge.isFluxCell(stack);
+        }
+    };
+
+    private final List<WirelessConnection> connections = new ArrayList<>();
+    private final List<WirelessConnection> readOnlyConnections = Collections.unmodifiableList(connections);
+    /**
+     * Monotonic version stamp bumped whenever {@link #connections} is mutated.
+     * Lets the supply logic skip an O(n) per-tick {@code List.equals} when the
+     * connection list is unchanged — it just compares an int.
+     */
+    private int connectionVersion;
+    private final OverloadedPowerSupplyLogic logic;
+
+    private PowerMode mode = PowerMode.NORMAL;
+    @Nullable
+    private StorageCell cachedCellView;
+    private boolean cellViewDirty = true;
+    private boolean cellCapacityDirty = true;
+    private long cachedCellCapacity;
+
+    public OverloadedPowerSupplyBlockEntity(BlockPos pos, BlockState blockState) {
+        super(ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(), pos, blockState);
+        this.logic = new OverloadedPowerSupplyLogic(this);
+        getMainNode()
+                .setIdlePowerUsage(0.0D)
+                .addService(appeng.api.networking.ticking.IGridTickable.class, logic);
+    }
+
+    @Override
+    protected IManagedGridNode createMainNode() {
+        return super.createMainNode()
+                .setTagName("overloaded_power_supply")
+                .setVisualRepresentation(ModBlocks.OVERLOADED_POWER_SUPPLY.get());
+    }
+
+    @Override
+    protected Item getItemFromBlockEntity() {
+        return ModBlocks.OVERLOADED_POWER_SUPPLY.get().asItem();
+    }
+
+    public AppEngInternalInventory getCellInventory() {
+        return cellInv;
+    }
+
+    public ItemStack getInstalledCell() {
+        return cellInv.getStackInSlot(0);
+    }
+
+    public long getBufferCapacity() {
+        if (cellCapacityDirty) {
+            cachedCellCapacity = AppFluxBridge.getFluxCellCapacity(getInstalledCell());
+            cellCapacityDirty = false;
+        }
+        return cachedCellCapacity;
+    }
+
+    /**
+     * Resolve the installed Flux Cell's {@link MEStorage} view, properly
+     * bound to a {@link ISaveProvider} so mutations are persisted back to
+     * the ItemStack and this BE is marked dirty.
+     *
+     * <p>The result is cached to avoid re-creating the cell inventory view
+     * on every energy operation (dozens of times per tick in overload mode).
+     * The cache is invalidated when the cell slot changes.
+     *
+     * @return the cell storage, or {@code null} when no valid Flux Cell is
+     *         installed.
+     */
+    @Nullable
+    public MEStorage getInstalledCellStorage() {
+        if (!cellViewDirty && cachedCellView != null) {
+            return cachedCellView;
+        }
+
+        cachedCellView = null;
+        cellViewDirty = false;
+        ItemStack stack = getInstalledCell();
+        if (stack.isEmpty() || !AppFluxBridge.isFluxCell(stack)) {
+            return null;
+        }
+
+        cachedCellView = StorageCells.getCellInventory(stack, this::onCellInventoryChanged);
+        return cachedCellView;
+    }
+
+    /**
+     * AE2 ME Chest pattern, deferred-persist variant: every cell mutation
+     * (extract/insert) routes through {@link FluxCellInventory#saveChanges()},
+     * which fires this callback. We do NOT call {@code persist()} here —
+     * doing so on every mutation would write the ItemStack data component
+     * 64+ times per OVERLOAD tick, AND would briefly flash the post-extract
+     * value (often 0) into the ItemStack between distribution and refill.
+     *
+     * <p>Instead, the host logic invokes {@link OverloadedPowerSupplyLogic
+     * #endTick(net.minecraft.server.level.ServerLevel)} once per tick, which
+     * batches all in-tick mutations into a single {@code FluxCellInventory.persist()}
+     * call. The ItemStack therefore only ever sees the post-tick equilibrium
+     * value, exactly matching the in-memory {@code storedEnergy}.
+     *
+     * <p>The {@link #saveChanges()} call here only marks the chunk dirty so
+     * Minecraft's autosave will eventually serialise this BE to disk; it
+     * does not touch the cell's ItemStack.
+     */
+    private void onCellInventoryChanged() {
+        saveChanges();
+    }
+
+    /**
+     * Externally-invoked persist (lifecycle hooks: cell removed, BE saved,
+     * chunk unloaded). Forces the latest in-memory cell state to be flushed
+     * into the ItemStack data component before the stack leaves the BE.
+     */
+    public void persistCellStorage() {
+        AppFluxBridge.persistCellStorage(cachedCellView);
+        saveChanges();
+    }
+
+    public PowerMode getMode() {
+        return mode;
+    }
+
+    public void cycleMode() {
+        mode = mode.next();
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    public OverloadedPowerSupplyLogic getSupplyLogic() {
+        return logic;
+    }
+
+    public void addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction face) {
+        for (int i = 0; i < connections.size(); i++) {
+            if (connections.get(i).sameTarget(dimension, pos)) {
+                var updated = new WirelessConnection(dimension, pos, face);
+                if (connections.get(i).equals(updated)) {
+                    return;
+                }
+                connections.set(i, updated);
+                connectionVersion++;
+                saveChanges();
+                markForClientUpdate();
+                logic.onStateChanged();
+                return;
+            }
+        }
+
+        connections.add(new WirelessConnection(dimension, pos, face));
+        connectionVersion++;
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
+        boolean removed = connections.removeIf(connection -> connection.sameTarget(dimension, pos));
+        if (removed) {
+            connectionVersion++;
+            saveChanges();
+            markForClientUpdate();
+            logic.onStateChanged();
+        }
+        return removed;
+    }
+
+    public boolean removeConnections(Collection<WirelessConnection> removedConnections) {
+        if (removedConnections.isEmpty()) {
+            return false;
+        }
+
+        boolean removed = connections.removeIf(removedConnections::contains);
+        if (removed) {
+            connectionVersion++;
+            saveChanges();
+            markForClientUpdate();
+            logic.onStateChanged();
+        }
+        return removed;
+    }
+
+    public List<WirelessConnection> getConnections() {
+        return readOnlyConnections;
+    }
+
+    /**
+     * Monotonic version stamp; the value changes iff the wireless connection
+     * list has been mutated since the last read. Called once per server tick
+     * by {@link OverloadedPowerSupplyLogic#getValidTargets} to short-circuit
+     * the per-tick rebuild path.
+     */
+    public int getConnectionVersion() {
+        return connectionVersion;
+    }
+
+    public int clearInvalidConnections() {
+        var server = getLevel() instanceof ServerLevel sl ? sl.getServer() : null;
+        if (server == null) {
+            return 0;
+        }
+
+        int removed = 0;
+        Iterator<WirelessConnection> iterator = connections.iterator();
+        while (iterator.hasNext()) {
+            var connection = iterator.next();
+            ServerLevel targetLevel = server.getLevel(connection.dimension());
+            if (targetLevel == null) {
+                iterator.remove();
+                removed++;
+                continue;
+            }
+
+            if (!targetLevel.isLoaded(connection.pos())) {
+                continue;
+            }
+
+            var state = targetLevel.getBlockState(connection.pos());
+            if (state.isAir() || targetLevel.getBlockEntity(connection.pos()) == null) {
+                iterator.remove();
+                removed++;
+            }
+        }
+
+        if (removed > 0) {
+            connectionVersion++;
+            saveChanges();
+            markForClientUpdate();
+            logic.onStateChanged();
+        }
+        return removed;
+    }
+
+    @Override
+    public void saveChangedInventory(AppEngInternalInventory inv) {
+        saveChanges();
+        markForClientUpdate();
+    }
+
+    @Override
+    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        if (inv == cellInv) {
+            // The cell slot just changed (player took out / inserted / swapped).
+            // Flush any FE BufferedMEStorage is still holding (transient buffer
+            // AND staged cell cache) BEFORE we drop the cached view, so the
+            // ItemStack the player just removed is fully up-to-date and we
+            // never carry stale FE forward to whatever cell appears next.
+            // {@code flushBufferToNetwork} ends an active overload batch which
+            // already persists the cell; the explicit persist here covers the
+            // NORMAL-mode path where no batch is active but cached delta might
+            // still be queued in the FluxCellInventory.
+            logic.flushBufferToNetwork();
+            AppFluxBridge.persistCellStorage(cachedCellView);
+            cellViewDirty = true;
+            cellCapacityDirty = true;
+            cachedCellView = null;
+            logic.onStateChanged();
+        }
+    }
+
+    @Override
+    public boolean isClientSide() {
+        return level != null && level.isClientSide();
+    }
+
+    @Override
+    public void setRemoved() {
+        logic.flushBufferToNetwork();
+        super.setRemoved();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        logic.flushBufferToNetwork();
+        super.onChunkUnloaded();
+    }
+
+    @Override
+    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
+        logic.persistCellCache();
+        AppFluxBridge.persistCellStorage(cachedCellView);
+        super.saveAdditional(data, registries);
+        data.putString(TAG_MODE, mode.name());
+        cellInv.writeToNBT(data, TAG_CELL_INV, registries);
+
+        var list = new ListTag();
+        for (var connection : connections) {
+            list.add(connection.toTag());
+        }
+        data.put(TAG_CONNECTIONS, list);
+    }
+
+    @Override
+    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
+        super.loadTag(data, registries);
+
+        if (data.contains(TAG_MODE, Tag.TAG_STRING)) {
+            try {
+                mode = PowerMode.valueOf(data.getString(TAG_MODE));
+            } catch (IllegalArgumentException ignored) {
+                mode = PowerMode.NORMAL;
+            }
+        } else {
+            mode = PowerMode.NORMAL;
+        }
+
+        cellInv.readFromNBT(data, TAG_CELL_INV, registries);
+        cellViewDirty = true;
+        cellCapacityDirty = true;
+        cachedCellView = null;
+        connections.clear();
+        if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
+            var list = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
+            for (int i = 0; i < list.size(); i++) {
+                connections.add(WirelessConnection.fromTag(list.getCompound(i)));
+            }
+        }
+        connectionVersion++;
+
+        logic.onStateChanged();
+    }
+
+    @Override
+    protected void writeToStream(RegistryFriendlyByteBuf data) {
+        super.writeToStream(data);
+        data.writeByte(mode.ordinal());
+        data.writeVarInt(connections.size());
+        for (var connection : connections) {
+            data.writeResourceLocation(connection.dimension().location());
+            data.writeBlockPos(connection.pos());
+            data.writeByte(connection.boundFace().get3DDataValue());
+        }
+    }
+
+    @Override
+    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+        boolean changed = super.readFromStream(data);
+
+        int modeOrdinal = data.readByte();
+        PowerMode newMode = modeOrdinal >= 0 && modeOrdinal < PowerMode.values().length
+                ? PowerMode.values()[modeOrdinal]
+                : PowerMode.NORMAL;
+
+        int count = data.readVarInt();
+        var newConnections = new ArrayList<WirelessConnection>(count);
+        for (int i = 0; i < count; i++) {
+            var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
+            var pos = data.readBlockPos();
+            int rawFace = data.readByte();
+            var face = (rawFace >= 0 && rawFace < Direction.values().length)
+                    ? Direction.from3DDataValue(rawFace) : Direction.DOWN;
+            newConnections.add(new WirelessConnection(dim, pos, face));
+        }
+
+        if (newMode != mode || !newConnections.equals(connections)) {
+            mode = newMode;
+            connections.clear();
+            connections.addAll(newConnections);
+            connectionVersion++;
+            logic.onStateChanged();
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    public void openMenu(Player player, MenuHostLocator locator) {
+        MenuOpener.open(OverloadedPowerSupplyMenu.TYPE, player, locator);
+    }
+}

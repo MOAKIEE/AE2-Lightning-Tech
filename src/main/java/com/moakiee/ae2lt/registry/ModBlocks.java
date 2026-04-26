@@ -13,6 +13,7 @@ import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
+import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
@@ -138,6 +139,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadedInterfaceBlock> OVERLOADED_INTERFACE =
             registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
+
+    public static final DeferredBlock<OverloadedPowerSupplyBlock> OVERLOADED_POWER_SUPPLY =
+            registerBlock("overloaded_power_supply", OverloadedPowerSupplyBlock::new);
 
     public static final DeferredBlock<WirelessReceiverBlock> WIRELESS_RECEIVER =
             registerBlock("wireless_receiver", WirelessReceiverBlock::new);

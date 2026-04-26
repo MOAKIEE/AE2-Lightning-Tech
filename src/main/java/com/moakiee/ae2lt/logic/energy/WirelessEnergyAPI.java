@@ -15,6 +15,7 @@ import net.minecraft.world.level.Level;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageService;
 
 /**
  * High-level helpers for wireless FE distribution through Applied Flux.
@@ -66,31 +67,28 @@ public final class WirelessEnergyAPI {
                 : null;
     }
 
-    /**
-     * Pushes one AppFlux {@code send()} call to the given target.
-     *
-     * @param targetFace the face of the target block the user clicked; the
-     *                   opposite direction is fed to AppFlux so it resolves
-     *                   back to the target block.
-     */
-    public static long send(@Nullable Object capCache, Direction targetFace,
-                            BufferedStorageService proxy, IActionSource source) {
-        return AppFluxBridge.send(capCache, targetFace.getOpposite(), proxy, source);
+    @Nullable
+    public static TargetAccess resolveEnergyTarget(@Nullable Object capCache, Direction targetFace) {
+        return AppFluxBridge.resolveEnergyTarget(capCache, targetFace.getOpposite());
     }
 
-    public static long sendMulti(@Nullable Object capCache, Direction targetFace,
-                                 BufferedStorageService proxy, IActionSource source,
-                                 int maxCalls) {
-        long total = 0L;
-        Direction sideFromHost = targetFace.getOpposite();
-        for (int i = 0; i < maxCalls; i++) {
-            long pushed = AppFluxBridge.send(capCache, sideFromHost, proxy, source);
-            if (pushed <= 0L) {
-                break;
-            }
-            total += pushed;
-        }
-        return total;
+    public static long simulateTarget(@Nullable TargetAccess target, long maxFe) {
+        return AppFluxBridge.simulateTarget(target, maxFe);
+    }
+
+    public static long sendToTarget(@Nullable TargetAccess target, IStorageService storage,
+                                    IActionSource source, long maxFe) {
+        return AppFluxBridge.sendToTarget(target, storage, source, maxFe);
+    }
+
+    public static long sendToTargetKnownDemand(@Nullable TargetAccess target, IStorageService storage,
+                                               IActionSource source, long requested) {
+        return AppFluxBridge.sendToTargetKnownDemand(target, storage, source, requested);
+    }
+
+    public static long sendToTargetRepeatedOptimistic(@Nullable TargetAccess target, BufferedMEStorage buffer,
+                                                      IActionSource source, long maxFe, int maxCalls) {
+        return AppFluxBridge.sendToTargetRepeatedOptimistic(target, buffer, source, maxFe, maxCalls);
     }
 
     public static long distributeBatch(
@@ -117,32 +115,15 @@ public final class WirelessEnergyAPI {
         }
 
         buffered.setCostMultiplier(1);
-        boolean useBatchBuffer = buffered.getBufferCapacity() > 0L;
-        if (useBatchBuffer) {
-            buffered.preload(AppFluxBridge.FE_KEY,
-                    saturatingMul(AppFluxBridge.TRANSFER_RATE, liveTargets.size()), source);
-        }
 
         long totalPushed = 0L;
-        try {
-            for (ResolvedTarget entry : liveTargets) {
-                Object capCache = AppFluxBridge.createCapCache(
-                        entry.level(), entry.target().virtualHostPos(), gridSupplier);
-                totalPushed += send(capCache, entry.target().face(), proxy, source);
-            }
-        } finally {
-            if (useBatchBuffer) {
-                buffered.flush(AppFluxBridge.FE_KEY, source);
-            }
+        for (ResolvedTarget entry : liveTargets) {
+            Object capCache = AppFluxBridge.createCapCache(
+                    entry.level(), entry.target().virtualHostPos(), gridSupplier);
+            TargetAccess target = resolveEnergyTarget(capCache, entry.target().face());
+            totalPushed += sendToTarget(target, proxy, source, AppFluxBridge.TRANSFER_RATE);
         }
 
         return totalPushed;
-    }
-
-    /** Saturating multiply: 溢出时 clamp 到 Long.MAX_VALUE(TRANSFER_RATE=unlimited 哨兵保护) */
-    private static long saturatingMul(long a, long b) {
-        if (a <= 0 || b <= 0) return 0;
-        if (a > Long.MAX_VALUE / b) return Long.MAX_VALUE;
-        return a * b;
     }
 }

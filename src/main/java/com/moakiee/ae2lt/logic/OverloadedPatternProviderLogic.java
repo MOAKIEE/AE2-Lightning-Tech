@@ -23,8 +23,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.energy.IEnergyStorage;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
@@ -34,7 +32,6 @@ import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.networking.security.IActionSource;
-import appeng.api.networking.storage.IStorageService;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
@@ -42,7 +39,6 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
@@ -56,9 +52,8 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
-import com.moakiee.ae2lt.logic.energy.BufferedMEStorage;
-import com.moakiee.ae2lt.logic.energy.BufferedStorageService;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
+import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -88,12 +83,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private final IActionSource wirelessSource;
     private final int totalCapacity;
 
-    @Nullable
-    private IStorageService bufferedEnergyServiceDelegate;
-    @Nullable
-    private BufferedMEStorage wirelessEnergyBufferedStorage;
-    @Nullable
-    private BufferedStorageService wirelessEnergyStorageProxy;
+    /** Shared NORMAL-mode distributor (32-slot adaptive wheel + cap listeners). */
+    private final WirelessEnergyDistributor wirelessDistributor;
+    /**
+     * Target snapshot exposed to the distributor. Rebuilt in lockstep with
+     * {@link #validConnectionsCache}. {@link #validTargetsVersion} bumps on
+     * every replacement so the distributor's per-target caches refresh
+     * exactly when the validated connection set changes.
+     */
+    private List<WirelessEnergyAPI.Target> validTargetsCache = List.of();
+    private int validTargetsVersion;
 
     /** Currently displayed page index (0-based). */
     private int currentPage = 0;
@@ -180,17 +179,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return adapter;
         }
 
-        // energy cap cache
-        @Nullable WeakReference<BlockEntity> energyBERef;
-        @Nullable WeakReference<IEnergyStorage> energyStorageRef;
-
         // auto-return backoff
         long nextPollTick;
         int backoffInterval = BACKOFF_MIN;
-
-        // energy schedule
-        int scheduleDelay = ENERGY_DELAY_MEAN;
-        long lastCanReceive;
 
         boolean isInProbeWindow(long gameTick) {
             if (cooldownUntil < 0 || gameTick >= cooldownUntil) return false;
@@ -279,30 +270,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             backoffInterval = foundItems ? BACKOFF_MIN
                     : Math.min(backoffInterval * 2, BACKOFF_MAX);
             nextPollTick = gameTick + backoffInterval;
-        }
-
-        @Nullable
-        IEnergyStorage resolveEnergy(ServerLevel level, WirelessConnection conn) {
-            BlockEntity be = level.getBlockEntity(conn.pos());
-            if (be == null) {
-                energyBERef = null;
-                energyStorageRef = null;
-                return null;
-            }
-            if (energyBERef != null && energyBERef.get() == be && energyStorageRef != null) {
-                var s = energyStorageRef.get();
-                if (s != null) return s;
-            }
-            IEnergyStorage storage = level.getCapability(
-                    Capabilities.EnergyStorage.BLOCK, conn.pos(), conn.boundFace());
-            if (storage == null) {
-                energyBERef = null;
-                energyStorageRef = null;
-                return null;
-            }
-            energyBERef = new WeakReference<>(be);
-            energyStorageRef = new WeakReference<>(storage);
-            return storage;
         }
     }
 
@@ -418,33 +385,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private boolean cachedInductionCardInstalled;
     private boolean inductionCardCacheDirty = true;
 
-    // ---- Timing Wheel energy scheduling -------------------------------------------
-
-    private static final int ENERGY_DELAY_MEAN = 5;
-    private static final int ENERGY_DELAY_MAX  = 20;
-    private static final int ENERGY_DELAY_MIN  = 1;
-    private static final int WHEEL_SLOTS = ENERGY_DELAY_MAX; // 20
-
-    static final class ScheduleEntry {
-        final WirelessConnection conn;
-        final ConnectionState state;
-
-        ScheduleEntry(WirelessConnection conn, ConnectionState state) {
-            this.conn = conn;
-            this.state = state;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private final List<ScheduleEntry>[] wheel = new ArrayList[WHEEL_SLOTS];
-    {
-        for (int i = 0; i < WHEEL_SLOTS; i++) wheel[i] = new ArrayList<>();
-    }
-    private List<ScheduleEntry> spareList = new ArrayList<>();
-    private int wheelPointer = 0;
-    private final List<ScheduleEntry> deferredMachines = new ArrayList<>();
-    private boolean wheelDirty = true;
-
     // ---- construction -----------------------------------------------------------
 
     public OverloadedPatternProviderLogic(IManagedGridNode mainNode,
@@ -456,6 +396,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
         this.totalCapacity = patternInventorySize;
+        this.wirelessDistributor = new WirelessEnergyDistributor(new DistributorHost());
 
         var accessor = (PatternProviderLogicAccessor) this;
         IAEItemFilter patternFilter = new IAEItemFilter() {
@@ -1578,18 +1519,18 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return;
 
-        var feKey = CACHED_APPFLUX_FE_KEY;
-        if (feKey == null) return;
+        if (CACHED_APPFLUX_FE_KEY == null) return;
         if (CACHED_APPFLUX_TRANSFER_RATE <= 0) return;
 
         long gameTick = sl.getGameTime();
         if (gameTick == lastEnergyTickGameTime) return;
-        int ticksElapsed = lastEnergyTickGameTime >= 0
-                ? (int) Math.min(gameTick - lastEnergyTickGameTime, WHEEL_SLOTS)
-                : 1;
         lastEnergyTickGameTime = gameTick;
 
-        distributeWirelessEnergy(sl, feKey, gameTick, ticksElapsed);
+        // Refresh validation (host-owned: 20-tick sweep + per-machine cleanup)
+        // — rebuildValidTargets() inside this call publishes the target
+        // snapshot that DistributorHost exposes to the shared distributor.
+        getOrRefreshValidConnections(sl, gameTick);
+        wirelessDistributor.tickNormal(sl);
     }
 
     /**
@@ -1621,7 +1562,23 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
         connectionsDirty = false;
+        rebuildValidTargets();
         return validConnectionsCache;
+    }
+
+    /**
+     * Mirror {@link #validConnectionsCache} into a {@link WirelessEnergyAPI.Target}
+     * snapshot for the shared {@link WirelessEnergyDistributor}. Bumps
+     * {@link #validTargetsVersion} on every replacement so the distributor
+     * picks up the new set on its next tick.
+     */
+    private void rebuildValidTargets() {
+        var targets = new ArrayList<WirelessEnergyAPI.Target>(validConnectionsCache.size());
+        for (var conn : validConnectionsCache) {
+            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
+        }
+        validTargetsCache = List.copyOf(targets);
+        validTargetsVersion++;
     }
 
     private void pruneMachineBackoffState(List<WirelessConnection> validConnections) {
@@ -1633,163 +1590,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         machineBackoff.keySet().retainAll(activeMachineIds);
     }
 
-    // ---- Timing Wheel scheduling operations ----------------------------------------
-
-    private List<ScheduleEntry> pollWheel() {
-        var list = wheel[wheelPointer];
-        if (list.isEmpty()) return list;
-        wheel[wheelPointer] = spareList;
-        spareList = list;
-        return list;
-    }
-
-    private void scheduleToWheel(ScheduleEntry entry) {
-        int slot = (wheelPointer + entry.state.scheduleDelay) % WHEEL_SLOTS;
-        wheel[slot].add(entry);
-    }
-
-    private void rebuildWheel(List<WirelessConnection> valid) {
-        for (var slot : wheel) slot.clear();
-        deferredMachines.clear();
-        for (var conn : valid) {
-            var entry = new ScheduleEntry(conn, getOrCreateState(conn));
-            scheduleToWheel(entry);
-        }
-        wheelDirty = false;
-    }
-
-    // ---- Wheel-based energy distribution ------------------------------------------
-
-    private void distributeWirelessEnergy(ServerLevel sl, AEKey feKey, long currentTick,
-                                          int ticksElapsed) {
-        BufferedStorageService proxy = getWirelessEnergyStorageProxy();
-        BufferedMEStorage buffered = wirelessEnergyBufferedStorage;
-        if (proxy == null || buffered == null) {
-            return;
-        }
-
-        var valid = getOrRefreshValidConnections(sl, currentTick);
-        if (valid.isEmpty()) {
-            return;
-        }
-
-        buffered.setBufferCapacity(0L);
-        buffered.setCostMultiplier(1);
-
-        var targets = new ArrayList<WirelessEnergyAPI.Target>(valid.size());
-        for (var conn : valid) {
-            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
-        }
-
-        WirelessEnergyAPI.distributeBatch(
-                sl,
-                targets,
-                buffered,
-                proxy,
-                () -> gridNode.getGrid(),
-                wirelessSource);
-    }
-
-    private void processBatch(ServerLevel sl, List<ScheduleEntry> machines,
-            AEKey feKey, long available) {
-        int count = machines.size();
-
-        // 1. Target SIM
-        long totalNeeded = 0;
-        long[] canReceive = new long[count];
-        int[] capacity = new int[count];
-        long[] storedEnergy = new long[count];
-        for (int i = 0; i < count; i++) {
-            var entry = machines.get(i);
-            var targetLevel = resolveTargetLevel(sl, entry.conn);
-            var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
-            if (storage != null) {
-                canReceive[i] = AppFluxHelper.simulateReceivable(storage);
-                capacity[i] = storage.getMaxEnergyStored();
-                storedEnergy[i] = storage.getEnergyStored();
-                totalNeeded += canReceive[i];
-            }
-        }
-
-        if (totalNeeded <= 0) {
-            for (int i = 0; i < count; i++) {
-                adjustDelay(machines.get(i), 0, storedEnergy[i], capacity[i]);
-                scheduleToWheel(machines.get(i));
-            }
-            machines.clear();
-            return;
-        }
-
-        // 2. ME MODULATE — batch extract
-        long extracted = extractFluxEnergy(feKey, Math.min(totalNeeded, available));
-        if (extracted <= 0) {
-            var earlyDeferred = new ArrayList<ScheduleEntry>();
-            for (int i = 0; i < count; i++) {
-                var entry = machines.get(i);
-                if (canReceive[i] == 0) {
-                    adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
-                    scheduleToWheel(entry);
-                } else {
-                    earlyDeferred.add(entry);
-                }
-            }
-            machines.clear();
-            if (!earlyDeferred.isEmpty()) {
-                deferredMachines.addAll(earlyDeferred);
-            }
-            return;
-        }
-
-        // 3. Target COMMIT + delay adjustment
-        long remaining = extracted;
-        var stillDeferred = new ArrayList<ScheduleEntry>();
-        for (int i = 0; i < count; i++) {
-            var entry = machines.get(i);
-
-            if (canReceive[i] > 0 && remaining > 0) {
-                long share = Math.min(canReceive[i], remaining);
-                var targetLevel = resolveTargetLevel(sl, entry.conn);
-                var storage = targetLevel != null ? resolveEnergyStorage(targetLevel, entry.conn) : null;
-                long accepted = 0;
-                if (storage != null) {
-                    accepted = storage.receiveEnergy(
-                            (int) Math.min(share, Integer.MAX_VALUE), false);
-                }
-                remaining -= accepted;
-
-                boolean budgetSufficient = (share == canReceive[i]);
-                if (budgetSufficient && accepted > 0 && canReceive[i] > accepted * 2) {
-                    int ratio = (int)(canReceive[i] / accepted);
-                    var st = entry.state;
-                    st.scheduleDelay = Math.min(st.scheduleDelay * ratio, ENERGY_DELAY_MAX);
-                    st.lastCanReceive = canReceive[i];
-                } else if (budgetSufficient && accepted == 0) {
-                    entry.state.scheduleDelay = ENERGY_DELAY_MAX;
-                    entry.state.lastCanReceive = canReceive[i];
-                } else {
-                    adjustDelay(entry, canReceive[i], storedEnergy[i], capacity[i]);
-                }
-                scheduleToWheel(entry);
-
-            } else if (canReceive[i] == 0) {
-                adjustDelay(entry, 0, storedEnergy[i], capacity[i]);
-                scheduleToWheel(entry);
-
-            } else {
-                stillDeferred.add(entry);
-            }
-        }
-
-        machines.clear();
-        if (!stillDeferred.isEmpty()) {
-            deferredMachines.addAll(stillDeferred);
-        }
-
-        // 4. Refund excess
-        if (remaining > 0) {
-            insertFluxEnergy(feKey, remaining);
-        }
-    }
+    // ---- target level resolution ---------------------------------------------
 
     @Nullable
     private ServerLevel resolveTargetLevel(ServerLevel providerLevel, WirelessConnection conn) {
@@ -1798,33 +1599,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return targetLevel;
     }
 
-    private void adjustDelay(ScheduleEntry entry, long canReceive,
-                             long storedEnergy, int machineCapacity) {
-        var st = entry.state;
-        int delay = st.scheduleDelay;
-
-        if (canReceive > st.lastCanReceive) {
-            delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-        } else if ((st.lastCanReceive - canReceive) << 2 < machineCapacity) {
-            if (storedEnergy * 3 <= (long) machineCapacity << 1) {
-                delay = delay > ENERGY_DELAY_MEAN ? delay / 2 : delay - 1;
-            } else {
-                if (delay > ENERGY_DELAY_MEAN) delay--;
-                else if (delay < ENERGY_DELAY_MEAN) delay++;
-            }
-        } else {
-            delay++;
-        }
-
-        st.scheduleDelay = Math.clamp(delay, ENERGY_DELAY_MIN, ENERGY_DELAY_MAX);
-        st.lastCanReceive = canReceive;
-    }
-
     public void onHostStateChanged() {
         invalidateValidConnectionsCache();
         inductionCardCacheDirty = true;
         refreshEjectRegistrations();
         alertGridTick();
+    }
+
+    /**
+     * Flush any FE the shared distributor still has buffered back to the ME
+     * network. Called from BE lifecycle hooks (chunk unload, removal) so we
+     * never leak FE on world-side teardown.
+     */
+    public void flushWirelessEnergyBuffer() {
+        wirelessDistributor.flushBufferToNetwork();
     }
 
     public void onPersistentStateChanged() {
@@ -1854,10 +1642,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private boolean shouldTickWirelessEnergyNow(long gameTick) {
         if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return false;
         if (!gridNode.isActive() || !isInductionCardInstalled()) return false;
-        if (CACHED_APPFLUX_FE_KEY == null || CACHED_APPFLUX_TRANSFER_RATE <= 0) return false;
-        if (!deferredMachines.isEmpty()) return true;
-        if (wheelDirty) return true;
-        return !wheel[(wheelPointer + 1) % WHEEL_SLOTS].isEmpty();
+        return CACHED_APPFLUX_FE_KEY != null && CACHED_APPFLUX_TRANSFER_RATE > 0;
     }
 
     private boolean shouldPollAutoReturnNow(long gameTick) {
@@ -1918,7 +1703,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         connectionsDirty = true;
         validConnectionsCache = List.of();
         validConnectionsCacheTick = -1;
-        wheelDirty = true;
+        validTargetsCache = List.of();
+        validTargetsVersion++;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();
         readyPQ.clear();
@@ -1926,11 +1712,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         lastPushWheelTick = -1;
         targetCache.clear();
         connectionStates.clear();
-    }
-
-    @Nullable
-    private IEnergyStorage resolveEnergyStorage(ServerLevel targetLevel, WirelessConnection conn) {
-        return getOrCreateState(conn).resolveEnergy(targetLevel, conn);
+        wirelessDistributor.clearTickState(true);
     }
 
     private boolean isInductionCardInstalled() {
@@ -1950,51 +1732,31 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return false;
     }
 
-    private long simulateAvailableFluxEnergy(AEKey feKey, long maxAmount) {
-        final long[] available = {0};
-        gridNode.ifPresent((grid, node) -> available[0] =
-                grid.getStorageService().getInventory()
-                        .extract(feKey, maxAmount, Actionable.SIMULATE, wirelessSource));
-        return available[0];
-    }
-
-    private long extractFluxEnergy(AEKey feKey, long amount) {
-        if (amount <= 0) return 0;
-        final long[] extracted = {0};
-        gridNode.ifPresent((grid, node) -> extracted[0] =
-                grid.getStorageService().getInventory()
-                        .extract(feKey, amount, Actionable.MODULATE, wirelessSource));
-        return extracted[0];
-    }
-
-    private void insertFluxEnergy(AEKey feKey, long amount) {
-        if (amount <= 0) return;
-        gridNode.ifPresent((grid, node) ->
-                grid.getStorageService().getInventory()
-                        .insert(feKey, amount, Actionable.MODULATE, wirelessSource));
-    }
-
-    @Nullable
-    private BufferedStorageService getWirelessEnergyStorageProxy() {
-        var grid = gridNode.getGrid();
-        if (grid == null) {
-            bufferedEnergyServiceDelegate = null;
-            wirelessEnergyBufferedStorage = null;
-            wirelessEnergyStorageProxy = null;
-            return null;
+    private final class DistributorHost implements WirelessEnergyDistributor.Host {
+        @Override
+        public IManagedGridNode getMainNode() {
+            return gridNode;
         }
 
-        IStorageService storageService = grid.getStorageService();
-        if (wirelessEnergyStorageProxy == null
-                || wirelessEnergyBufferedStorage == null
-                || bufferedEnergyServiceDelegate != storageService) {
-            MEStorage inventory = storageService.getInventory();
-            wirelessEnergyBufferedStorage = new BufferedMEStorage(inventory);
-            wirelessEnergyStorageProxy = new BufferedStorageService(storageService, wirelessEnergyBufferedStorage);
-            bufferedEnergyServiceDelegate = storageService;
+        @Override
+        public IActionSource actionSource() {
+            return wirelessSource;
         }
 
-        return wirelessEnergyStorageProxy;
+        @Override
+        public boolean isHostRemoved() {
+            return overloadedHost.isRemoved();
+        }
+
+        @Override
+        public List<WirelessEnergyAPI.Target> getValidTargets() {
+            return validTargetsCache;
+        }
+
+        @Override
+        public int getValidTargetsVersion() {
+            return validTargetsVersion;
+        }
     }
 
     private static final Item APPFLUX_INDUCTION_CARD =
@@ -2154,10 +1916,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         invalidateValidConnectionsCache();
         inductionCardCacheDirty = true;
         lastEnergyTickGameTime = -1;
-        for (var slot : wheel) slot.clear();
-        deferredMachines.clear();
-        wheelPointer = 0;
-        wheelDirty = true;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
@@ -2247,8 +2005,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         invalidateValidConnectionsCache();
         inductionCardCacheDirty = true;
         lastEnergyTickGameTime = -1;
-        wheelPointer = 0;
-        wheelDirty = true;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;

@@ -62,6 +62,8 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_MATRIX", false);
     public static final SlotSemantic CRYSTAL_CATALYZER_FLUID =
             SlotSemantics.register("AE2LT_CRYSTAL_CATALYZER_FLUID", false);
+    public static final SlotSemantic OVERLOADED_POWER_SUPPLY_CELL =
+            SlotSemantics.register("AE2LT_OVERLOADED_POWER_SUPPLY_CELL", false);
 
     private Ae2ltSlotSemantics() {
     }

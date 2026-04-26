@@ -19,6 +19,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -94,6 +95,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
+                        output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
                         output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
@@ -335,6 +337,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.WIRELESS_OVERLOADED_CONTROLLER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
@@ -462,6 +469,14 @@ public class AE2LightningTech {
                     null,
                     OverloadedInterfaceBlockEntity::serverTick);
 
+            var powerSupplyBlock = ModBlocks.OVERLOADED_POWER_SUPPLY.get();
+            var powerSupplyBeType = ModBlockEntities.OVERLOADED_POWER_SUPPLY.get();
+            powerSupplyBlock.setBlockEntity(
+                    OverloadedPowerSupplyBlockEntity.class,
+                    powerSupplyBeType,
+                    null,
+                    null);
+
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     lightningCollectorBeType,
                     lightningCollectorBlock.asItem());
@@ -474,6 +489,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    powerSupplyBeType,
+                    powerSupplyBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                     ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get().asItem());

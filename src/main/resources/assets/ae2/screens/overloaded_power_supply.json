@@ -1,0 +1,25 @@
+{
+  "$schema": "schema.json",
+  "includes": ["common/common.json", "common/player_inventory.json"],
+  "background": {
+    "texture": "ae2lt:textures/guis/wireless_controller.png",
+    "srcRect": [0, 0, 176, 166]
+  },
+  "slots": {
+    "AE2LT_OVERLOADED_POWER_SUPPLY_CELL": {
+      "left": 80,
+      "top": 8
+    }
+  },
+  "text": {
+    "dialog_title": {
+      "text": {
+        "translate": "block.ae2lt.overloaded_power_supply"
+      },
+      "position": {
+        "left": 8,
+        "top": 6
+      }
+    }
+  }
+}
