@@ -17,7 +17,6 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationReci
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
-import com.moakiee.ae2lt.registry.ModItems;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -36,7 +35,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     private static final ResourceLocation BACKGROUND_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
 
-    // 裁剪到 (5,14) 起 168x64,保证左侧输入列三格与中央反应腔体的下边框都不被咬
+    // Crop the machine GUI work area without clipping the input slots or reaction chamber border.
     private static final int BACKGROUND_U = 5;
     private static final int BACKGROUND_V = 14;
     private static final int BACKGROUND_WIDTH = 168;
@@ -46,15 +45,13 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     private static final int SLOT_INPUT_X = 39 - BACKGROUND_U;    // 34
     private static final int SLOT_INPUT_Y = 22 - BACKGROUND_V;    // 8
     private static final int SLOT_INPUT_SPACING = 18;
-    private static final int SLOT_CATALYST_X = 65 - BACKGROUND_U; // 60
-    private static final int SLOT_CATALYST_Y = 40 - BACKGROUND_V; // 26
     private static final int SLOT_OUTPUT_X = 119 - BACKGROUND_U;  // 114
     private static final int SLOT_OUTPUT_Y = 41 - BACKGROUND_V;   // 27
 
     private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;     // 66
     private static final int LIGHTNING_TEXT_Y = BACKGROUND_HEIGHT + 12; // 76
     private static final int SUBSTITUTION_TEXT_Y = BACKGROUND_HEIGHT + 22; // 86
-    private static final int HEIGHT = SUBSTITUTION_TEXT_Y + 10;         // 96(留 10px 给最后一行文字)
+    private static final int HEIGHT = SUBSTITUTION_TEXT_Y + 10;         // 96, with room for the last text line
 
     private final IDrawable icon;
     private final IDrawable background;
@@ -101,9 +98,6 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
-        builder.addSlot(RecipeIngredientRole.CATALYST, SLOT_CATALYST_X, SLOT_CATALYST_Y)
-                .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()));
-
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(recipe.getResultStack())
@@ -119,9 +113,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
             double mouseX,
             double mouseY) {
         background.draw(guiGraphics);
-        // JEI 页面不再叠加运行态 process overlay:它是为机器界面的按进度揭示动画
-        // 设计的,在静态展示里叠加整张会把中央反应区画得乱糟糟(和机器内槽位/道具重叠)。
-        // 背景贴图里已经包含了静态的反应腔体与连接走线,已经足够表达含义。
+        // Do not draw the runtime process overlay in JEI; the background already shows the static chamber.
 
         var font = Minecraft.getInstance().font;
         var energyText = Component.translatable(

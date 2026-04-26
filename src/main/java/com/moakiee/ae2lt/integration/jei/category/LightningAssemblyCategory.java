@@ -16,7 +16,6 @@ import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecipe;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
-import com.moakiee.ae2lt.registry.ModItems;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -35,8 +34,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
     private static final ResourceLocation BACKGROUND_TEXTURE =
             ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
 
-    // 截取机器 GUI 中工作区那一片用作 JEI 背景(从 (19,10) 开始,156x76)
-    // 裁剪到 (19,10) 起 156x78,保证 3x3 最底行格子和右侧输出格的下边框都不被咬
+    // Crop the machine GUI work area for JEI without clipping the bottom input row or output slot.
     private static final int BACKGROUND_U = 19;
     private static final int BACKGROUND_V = 10;
     private static final int BACKGROUND_WIDTH = 156;
@@ -44,18 +42,16 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
 
     private static final int WIDTH = BACKGROUND_WIDTH;
 
-    // 分类坐标 = GUI 坐标 - 背景偏移
+    // Category coordinates = GUI coordinates - background offset.
     private static final int INPUT_START_X = 29 - BACKGROUND_U; // 10
     private static final int INPUT_START_Y = 31 - BACKGROUND_V; // 21
     private static final int INPUT_SPACING = 18;
-    private static final int CATALYST_X = 126 - BACKGROUND_U;   // 107
-    private static final int CATALYST_Y = 16 - BACKGROUND_V;    // 6
     private static final int OUTPUT_X = 126 - BACKGROUND_U;     // 107
     private static final int OUTPUT_Y = 49 - BACKGROUND_V;      // 39
 
     private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;   // 80
     private static final int LIGHTNING_TEXT_Y = BACKGROUND_HEIGHT + 12; // 90
-    private static final int HEIGHT = LIGHTNING_TEXT_Y + 10;          // 100(末行文字留 10px)
+    private static final int HEIGHT = LIGHTNING_TEXT_Y + 10;          // 100, with room for the last text line
 
     private final IDrawable icon;
     private final IDrawable background;
@@ -107,9 +103,6 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
-        builder.addSlot(RecipeIngredientRole.CATALYST, CATALYST_X, CATALYST_Y)
-                .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()));
-
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(recipe.getResultStack())
@@ -125,9 +118,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
             double mouseX,
             double mouseY) {
         background.draw(guiGraphics);
-        // 静态展示不再叠加运行态的进度条遮罩:
-        // 一方面源贴图 (177, 48) 这块 sprite 实际是全透明的(只用于游戏内按进度揭示),
-        // 另一方面和 LightningSimulationCategory 保持一致,避免在 JEI 页上画出与槽位/道具重叠的怪东西。
+        // Do not draw the runtime process overlay in JEI; it is only useful for the live machine screen.
 
         var font = Minecraft.getInstance().font;
         var energyText = Component.translatable(
