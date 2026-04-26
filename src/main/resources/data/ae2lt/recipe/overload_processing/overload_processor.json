@@ -6,28 +6,28 @@
       "ingredient": {
         "item": "ae2lt:overload_crystal_block"
       },
-      "count": 1
+      "count": 4
     },
     {
       "ingredient": {
         "item": "minecraft:redstone_block"
       },
-      "count": 1
+      "count": 4
     },
     {
       "ingredient": {
         "tag": "c:storage_blocks/silicon"
       },
-      "count": 1
+      "count": 4
     }
   ],
   "results": [
     {
       "id": "ae2lt:overload_processor",
-      "count": 9
+      "count": 36
     }
   ],
-  "totalEnergy": 200000,
+  "totalEnergy": 800000,
   "lightningCost": 1,
   "lightningTier": "high_voltage"
 }

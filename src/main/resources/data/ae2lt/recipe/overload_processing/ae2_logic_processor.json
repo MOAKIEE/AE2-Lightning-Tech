@@ -6,28 +6,28 @@
       "ingredient": {
         "item": "minecraft:gold_block"
       },
-      "count": 1
+      "count": 4
     },
     {
       "ingredient": {
         "item": "minecraft:redstone_block"
       },
-      "count": 1
+      "count": 4
     },
     {
       "ingredient": {
         "tag": "c:storage_blocks/silicon"
       },
-      "count": 1
+      "count": 4
     }
   ],
   "results": [
     {
       "id": "ae2:logic_processor",
-      "count": 9
+      "count": 36
     }
   ],
-  "totalEnergy": 100000,
+  "totalEnergy": 400000,
   "lightningCost": 1,
   "lightningTier": "high_voltage"
 }

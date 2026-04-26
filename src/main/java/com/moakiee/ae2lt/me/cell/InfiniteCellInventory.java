@@ -7,6 +7,7 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.cells.CellState;
+import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
@@ -35,6 +36,7 @@ public class InfiniteCellInventory implements StorageCell {
 
     private final ItemStack stack;
     private final @Nullable HolderLookup.Provider explicitRegistries;
+    private final @Nullable ISaveProvider saveProvider;
     private final IndexedStorage storage;
     private final ByteTracker byteTracker;
     private final double idleDrain;
@@ -44,11 +46,13 @@ public class InfiniteCellInventory implements StorageCell {
     private long lastWrittenBytes = -1;
 
     private InfiniteCellInventory(ItemStack stack, @Nullable HolderLookup.Provider registries,
+                                  @Nullable ISaveProvider saveProvider,
                                   int bytesPerType, int maxTypes,
                                   long capacityLo, long capacityHi,
                                   double idleDrain) {
         this.stack = stack;
         this.explicitRegistries = registries;
+        this.saveProvider = saveProvider;
         this.idleDrain = idleDrain;
         this.cellId = readCellId();
 
@@ -85,17 +89,19 @@ public class InfiniteCellInventory implements StorageCell {
     }
 
     public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
+                                               @Nullable ISaveProvider saveProvider,
                                                int bytesPerType, int maxTypes,
                                                long capacityLo, long capacityHi,
                                                double idleDrain) {
         return new InfiniteCellInventory(stack, registries,
+                saveProvider,
                 bytesPerType, maxTypes, capacityLo, capacityHi, idleDrain);
     }
 
     public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
                                                int bytesPerType, int maxTypes,
                                                long capacity, double idleDrain) {
-        return create(stack, registries, bytesPerType, maxTypes, capacity, 0, idleDrain);
+        return create(stack, registries, null, bytesPerType, maxTypes, capacity, 0, idleDrain);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -118,6 +124,7 @@ public class InfiniteCellInventory implements StorageCell {
         byteTracker.onInsert(what.getType(), toInsert, isNewKey);
         lastSyncModCount = storage.getModCount();
         syncSummary();
+        markChanged();
         return toInsert;
     }
 
@@ -136,6 +143,7 @@ public class InfiniteCellInventory implements StorageCell {
             byteTracker.onExtract(what.getType(), taken, keyRemoved);
             lastSyncModCount = storage.getModCount();
             syncSummary();
+            markChanged();
         }
         return taken;
     }
@@ -171,6 +179,12 @@ public class InfiniteCellInventory implements StorageCell {
     @Override
     public double getIdleDrain() {
         return idleDrain;
+    }
+
+    @Override
+    public boolean canFitInsideCell() {
+        ensureSync();
+        return storage.getTotalTypes() == 0;
     }
 
     @Override
@@ -234,6 +248,28 @@ public class InfiniteCellInventory implements StorageCell {
     private void clearCellId() {
         CustomData.update(DataComponents.CUSTOM_DATA, stack,
                 tag -> tag.remove(TAG_CELL_ID));
+    }
+
+    private void markChanged() {
+        if (storage.getTotalTypes() == 0) {
+            persist();
+        } else {
+            var savedData = InfiniteCellSavedData.getOrNull();
+            if (savedData != null) {
+                ensureCellId();
+                savedData.markStorageDirty(cellId, storage);
+            }
+        }
+
+        if (saveProvider != null) {
+            saveProvider.saveChanges();
+        }
+    }
+
+    private void ensureCellId() {
+        if (cellId != null) return;
+        cellId = UUID.randomUUID();
+        writeCellId(cellId);
     }
 
     private void syncSummary() {

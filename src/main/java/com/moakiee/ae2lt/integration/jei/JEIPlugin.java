@@ -134,8 +134,6 @@ public class JEIPlugin implements IModPlugin {
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
         registration.addRecipeCatalyst(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.toStack(), LightningAssemblyCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.toStack(), LightningSimulationCategory.TYPE);
-        registration.addRecipeCatalyst(net.minecraft.world.item.Items.LIGHTNING_ROD.getDefaultInstance(), LightningTransformCategory.TYPE);
-        registration.addRecipeCatalyst(net.minecraft.world.item.Items.LIGHTNING_ROD.getDefaultInstance(), LightningStrikeCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.OVERLOAD_PROCESSING_FACTORY.toStack(), OverloadProcessingCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.TESLA_COIL.toStack(), TeslaCoilCategory.TYPE);
         registration.addRecipeCatalyst(ModBlocks.CRYSTAL_CATALYZER.toStack(), CrystalCatalyzerCategory.TYPE);

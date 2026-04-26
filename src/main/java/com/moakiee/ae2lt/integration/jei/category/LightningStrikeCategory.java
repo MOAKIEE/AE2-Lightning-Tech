@@ -1,15 +1,20 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
+import com.moakiee.ae2lt.integration.jei.MultiblockPreviewWidget;
 import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
+import com.moakiee.ae2lt.me.key.LightningKey;
 
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
+import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
@@ -21,52 +26,49 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
 /**
  * JEI category for the data-driven multiblock lightning-strike recipes.
  *
- * <p>The layout shows up to two horizontal layers ({@code y=0} and
- * {@code y=1}) of the structure as 3×3 grids, an arrow, and the produced
- * center block on the right. Rare layers (e.g. {@code y=-1}) and offsets
- * outside |x|,|z| ≤ 1 are grouped into an "additional requirements" tooltip
- * on a spacer slot so the category stays readable for simple cases while
- * still representing arbitrary structures.</p>
+ * <p>The category renders a small isometric 3D preview of the multiblock
+ * structure on the left and a column with the consumed center input,
+ * the produced center output and the unique material blocks on the right.</p>
  */
 public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeRecipe> {
     public static final RecipeType<LightningStrikeRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "lightning_strike", LightningStrikeRecipe.class);
 
-    private static final int WIDTH = 166;
+    private static final int WIDTH = 178;
     private static final int HEIGHT = 110;
-    private static final int CELL = 18;
 
-    private static final int GRID_Y1_X = 10;
-    private static final int GRID_Y1_Y = 4;
+    private static final int PREVIEW_X = 4;
+    private static final int PREVIEW_Y = 14;
+    private static final int PREVIEW_W = 96;
+    private static final int PREVIEW_H = 92;
 
-    private static final int GRID_Y0_X = 10;
-    private static final int GRID_Y0_Y = 60;
+    private static final int CENTER_INPUT_X = 104;
+    private static final int CENTER_INPUT_Y = 14;
+    private static final int ARROW_X = 124;
+    private static final int ARROW_Y = 15;
+    private static final int CENTER_OUTPUT_X = 156;
+    private static final int CENTER_OUTPUT_Y = 14;
 
-    private static final int ARROW_X = 76;
-    private static final int ARROW_Y = 86;
-
-    private static final int OUTPUT_X = 140;
-    private static final int OUTPUT_Y = 84;
+    private static final int MATERIALS_LABEL_Y = 38;
+    private static final int MATERIALS_X = 104;
+    private static final int MATERIALS_Y = 50;
+    private static final int MATERIAL_CELL = 18;
+    private static final int MATERIALS_PER_ROW = 4;
 
     private static final int TEXT_COLOR = 0x404040;
 
     private final IDrawable background;
     private final IDrawable icon;
-    private final IDrawable arrow;
 
     public LightningStrikeCategory(IGuiHelper guiHelper) {
         this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
-        this.icon = guiHelper.createDrawableItemStack(new ItemStack(Blocks.LIGHTNING_ROD));
-        this.arrow = guiHelper.drawableBuilder(
-                        net.minecraft.resources.ResourceLocation.parse("jei:textures/jei/gui/gui_vanilla.png"),
-                        82, 128, 24, 17)
-                .setTextureSize(256, 256)
-                .build();
+        this.icon = guiHelper.createDrawableIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
     }
 
     @Override
@@ -91,68 +93,60 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
-        // Index requirements by (y, x, z) for the two primary layers.
-        Map<Integer, Map<Long, StructureRequirement>> layerIndex = new HashMap<>();
-        for (StructureRequirement req : recipe.requirements()) {
-            BlockPos off = req.offset();
-            layerIndex
-                    .computeIfAbsent(off.getY(), k -> new HashMap<>())
-                    .put(packXZ(off.getX(), off.getZ()), req);
-        }
+        builder.addSlot(RecipeIngredientRole.INPUT, CENTER_INPUT_X, CENTER_INPUT_Y)
+                .setStandardSlotBackground()
+                .addItemStack(new ItemStack(recipe.centerInput()));
 
-        // y = 0 primary layer — center slot is the consumed center input.
-        Map<Long, StructureRequirement> layerY0 = layerIndex.getOrDefault(0, Map.of());
-        for (int dz = -1; dz <= 1; dz++) {
-            for (int dx = -1; dx <= 1; dx++) {
-                int x = GRID_Y0_X + (dx + 1) * CELL;
-                int y = GRID_Y0_Y + (dz + 1) * CELL;
-                if (dx == 0 && dz == 0) {
-                    builder.addSlot(RecipeIngredientRole.CATALYST, x, y)
-                            .addItemStack(new ItemStack(recipe.centerInput()));
-                    continue;
-                }
-                StructureRequirement req = layerY0.get(packXZ(dx, dz));
-                if (req != null) {
-                    builder.addSlot(
-                                    req.consume() ? RecipeIngredientRole.INPUT : RecipeIngredientRole.CATALYST,
-                                    x,
-                                    y)
-                            .addItemStack(new ItemStack(req.block()));
-                }
-            }
-        }
-
-        // y = 1: the lightning rod at (0, +1, 0) is implicit for every ritual. Always display
-        // it at the center of the top layer so the user sees the full minimum structure, even
-        // though the recipe data never lists it.
-        int rodX = GRID_Y1_X + CELL;
-        int rodY = GRID_Y1_Y + CELL;
-        builder.addSlot(RecipeIngredientRole.CATALYST, rodX, rodY)
-                .addItemStack(new ItemStack(Blocks.LIGHTNING_ROD));
-
-        // Any extra requirements explicitly placed on y=1 outside center (rare) are also shown.
-        Map<Long, StructureRequirement> layerY1 = layerIndex.getOrDefault(1, Map.of());
-        for (int dz = -1; dz <= 1; dz++) {
-            for (int dx = -1; dx <= 1; dx++) {
-                if (dx == 0 && dz == 0) {
-                    continue;
-                }
-                StructureRequirement req = layerY1.get(packXZ(dx, dz));
-                if (req == null) {
-                    continue;
-                }
-                int x = GRID_Y1_X + (dx + 1) * CELL;
-                int y = GRID_Y1_Y + (dz + 1) * CELL;
-                builder.addSlot(
-                                req.consume() ? RecipeIngredientRole.INPUT : RecipeIngredientRole.CATALYST,
-                                x,
-                                y)
-                        .addItemStack(new ItemStack(req.block()));
-            }
-        }
-
-        builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
+        builder.addSlot(RecipeIngredientRole.OUTPUT, CENTER_OUTPUT_X, CENTER_OUTPUT_Y)
+                .setOutputSlotBackground()
                 .addItemStack(new ItemStack(recipe.centerOutput()));
+
+        // Aggregate the requirements by block so each unique block is shown once
+        // with the total count needed across the structure. Insertion order is
+        // preserved so the layout matches the recipe's declaration order.
+        Map<Block, Integer> blockCounts = new LinkedHashMap<>();
+        Map<Block, Boolean> blockConsumes = new HashMap<>();
+        for (StructureRequirement req : recipe.requirements()) {
+            blockCounts.merge(req.block(), 1, Integer::sum);
+            blockConsumes.merge(req.block(), req.consume(), (a, b) -> a || b);
+        }
+
+        int index = 0;
+        for (Map.Entry<Block, Integer> entry : blockCounts.entrySet()) {
+            Block block = entry.getKey();
+            int count = entry.getValue();
+            int col = index % MATERIALS_PER_ROW;
+            int row = index / MATERIALS_PER_ROW;
+            int slotX = MATERIALS_X + col * MATERIAL_CELL;
+            int slotY = MATERIALS_Y + row * MATERIAL_CELL;
+            builder.addSlot(
+                            blockConsumes.getOrDefault(block, false)
+                                    ? RecipeIngredientRole.INPUT
+                                    : RecipeIngredientRole.CATALYST,
+                            slotX,
+                            slotY)
+                    .setStandardSlotBackground()
+                    .addItemStack(new ItemStack(block, count));
+            index++;
+        }
+    }
+
+    @Override
+    public void createRecipeExtras(IRecipeExtrasBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
+        builder.addRecipeArrow().setPosition(ARROW_X, ARROW_Y);
+
+        var widgetBuilder = MultiblockPreviewWidget.builder(PREVIEW_X, PREVIEW_Y, PREVIEW_W, PREVIEW_H);
+
+        // y=0 layer requirements at their world offsets.
+        for (StructureRequirement req : recipe.requirements()) {
+            widgetBuilder.addBlock(req.block(), req.offset());
+        }
+        // The consumed center block.
+        widgetBuilder.addBlock(recipe.centerInput(), BlockPos.ZERO);
+        // The implicit lightning rod at (0, +1, 0).
+        widgetBuilder.addBlock(Blocks.LIGHTNING_ROD, new BlockPos(0, 1, 0));
+
+        builder.addWidget(widgetBuilder.build());
     }
 
     @Override
@@ -169,47 +163,14 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
                         .withStyle(ChatFormatting.DARK_PURPLE)
                 : Component.translatable("jei.ae2lt.lightning_strike.any_lightning")
                         .withStyle(ChatFormatting.DARK_AQUA);
-        guiGraphics.drawString(font, lightningLabel, 70, 10, TEXT_COLOR, false);
+        guiGraphics.drawString(font, lightningLabel, PREVIEW_X, 2, TEXT_COLOR, false);
 
         guiGraphics.drawString(
                 font,
-                Component.translatable("jei.ae2lt.lightning_strike.layer_top"),
-                70,
-                24,
+                Component.translatable("jei.ae2lt.lightning_strike.materials"),
+                MATERIALS_X,
+                MATERIALS_LABEL_Y,
                 TEXT_COLOR,
                 false);
-        guiGraphics.drawString(
-                font,
-                Component.translatable("jei.ae2lt.lightning_strike.layer_base"),
-                70,
-                60,
-                TEXT_COLOR,
-                false);
-
-        arrow.draw(guiGraphics, ARROW_X, ARROW_Y);
-
-        // Count extra requirements outside the two rendered layers; surface as text hint.
-        int extra = 0;
-        for (StructureRequirement req : recipe.requirements()) {
-            int y = req.offset().getY();
-            int ax = Math.abs(req.offset().getX());
-            int az = Math.abs(req.offset().getZ());
-            if ((y != 0 && y != 1) || ax > 1 || az > 1) {
-                extra++;
-            }
-        }
-        if (extra > 0) {
-            guiGraphics.drawString(
-                    font,
-                    Component.translatable("jei.ae2lt.lightning_strike.extra_requirements", extra),
-                    70,
-                    72,
-                    TEXT_COLOR,
-                    false);
-        }
-    }
-
-    private static long packXZ(int x, int z) {
-        return (((long) x) << 32) | (z & 0xffffffffL);
     }
 }

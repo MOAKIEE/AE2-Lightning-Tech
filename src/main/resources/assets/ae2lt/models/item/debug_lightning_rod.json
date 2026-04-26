@@ -1,6 +1,6 @@
 {
   "parent": "item/generated",
   "textures": {
-    "layer0": "ae2lt:block/test_lightning_rod"
+    "layer0": "ae2lt:block/debug_lightning_rod"
   }
 }

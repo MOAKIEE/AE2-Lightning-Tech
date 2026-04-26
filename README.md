@@ -1,0 +1,58 @@
+# AE2 Lightning Tech
+
+[中文文档](README_zh_CN.md)
+
+An [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) addon that introduces a lightning energy system, advanced machines, and overloaded network components.
+
+> Requires AE2 · Built for Minecraft 1.21.1 / NeoForge
+
+## About
+
+AE2 Lightning Tech turns lightning into a usable resource. Capture natural strikes, refine them into High Voltage and Extreme High Voltage tiers, and feed them into machines to grow Overload Crystals — the foundation of an overloaded ME network with vastly higher throughput, wireless pattern routing, and new processing pipelines.
+
+## Features
+
+### Lightning Energy System
+Two tiers of lightning energy — High Voltage and Extreme High Voltage — stored, transmitted and crafted with as a first-class resource alongside FE.
+
+### Lightning Collection
+- **Lightning Collector** — catches lightning that strikes nearby rods.
+- **Atmospheric Ionizer** — multiblock weather conditioner that produces clear / rain / thunderstorm condensate.
+- **Tesla Coil** — fabricates HV and EHV lightning from Overload Crystal Dust and FE.
+
+### Overload Crystals
+A budding-crystal progression line built on top of AE2's certus quartz tiers — with **Damaged**, **Cracked**, **Flawed** and **Flawless** budding stages, decay, Crystal Growth Accelerator support, and Overload Crystal Clusters as the final yield.
+
+### Lightning Machinery
+- **Lightning Assembly Chamber** — assembles overload components from raw materials and lightning.
+- **Lightning Simulation Room** — runs Lightning Transform recipes indoors using a Lightning Collapse Matrix.
+- **Overload Processing Factory** — high-throughput parallel processor for overload alloys, plates and cores.
+- **Crystal Catalyzer** — runs catalysts in parallel to bulk-craft crystals; the Lightning Collapse Matrix multiplies output.
+
+### Overloaded ME Network
+- **Overloaded ME Controller**, **ME Interface**, **Pattern Provider**, and 16 colors of **Overloaded ME Cable** — drop-in upgrades of the AE2 network with vastly higher throughput.
+- **Overloaded Pattern Encoder** with byproduct slots and an *Ignore NBT* mode.
+- **Wireless Overloaded Controller** + **Wireless Receiver** — connect a Pattern Provider to remote machines without cables, with round-robin or balanced distribution.
+- **Overloaded Wireless Connect Tool** — bind providers and power supplies to targets in-world.
+
+## Dependencies
+
+| Mod | Required |
+|-----|----------|
+| Applied Energistics 2 | Required |
+| Jade, Flywheel, Ponder | Optional |
+| Advanced AE, ExtendedAE, Applied Flux, AE2 JEI Integration | Optional integrations |
+
+## Issues
+
+Found a bug or have a suggestion? Please open an issue on the project tracker with your Minecraft / NeoForge / AE2LT versions, a clear description and a log if applicable.
+
+## License
+
+AE2 Lightning Tech is licensed under [GNU LGPL 3.0](https://www.gnu.org/licenses/lgpl-3.0.html).
+
+## Credits
+
+Developed by **MOAKIEE**, **CystrySU**, **gjmhmm8**, **_leng**, **TedXenon**, **MHanHanBing**.
+
+Special thanks to the Applied Energistics 2 team — without AE2 this addon would not exist.

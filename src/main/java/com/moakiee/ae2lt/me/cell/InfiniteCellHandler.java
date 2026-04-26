@@ -27,7 +27,7 @@ public final class InfiniteCellHandler implements ICellHandler {
     public @Nullable StorageCell getCellInventory(ItemStack is, @Nullable ISaveProvider host) {
         if (is.getItem() instanceof InfiniteStorageCellItem cell) {
             return InfiniteCellInventory.create(
-                    is, null,
+                    is, null, host,
                     cell.getBytesPerType(), cell.getMaxTypes(),
                     cell.getCapacityLo(), cell.getCapacityHi(),
                     cell.getIdleDrain());

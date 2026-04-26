@@ -84,6 +84,17 @@ public final class InfiniteCellSavedData extends SavedData {
     }
 
     /**
+     * Registers a live storage instance as changed without serialising it
+     * immediately. This lets the normal world save path flush the cached storage
+     * even if the hosting cell container only marks itself dirty.
+     */
+    public void markStorageDirty(UUID id, IndexedStorage storage) {
+        if (id == null || storage == null) return;
+        storageCache.put(id, storage);
+        setDirty();
+    }
+
+    /**
      * Drops all data associated with the given cell UUID. Called when a cell
      * becomes empty so the world save file doesn't accumulate dead entries.
      */

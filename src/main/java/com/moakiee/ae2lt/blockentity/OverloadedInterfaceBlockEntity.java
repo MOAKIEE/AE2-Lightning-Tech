@@ -1011,7 +1011,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (AppFluxHelper.FE_KEY != null && keyType == AppFluxHelper.FE_KEY.getType()) {
             return false;
         }
-        return keyType == AEKeyType.items() || keyType == AEKeyType.fluids();
+        return true;
     }
 
     private void pollIOWheel(long now) {

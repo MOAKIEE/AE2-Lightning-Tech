@@ -19,7 +19,6 @@ import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
 import com.moakiee.ae2lt.registry.ModBlocks;
-import com.moakiee.ae2lt.registry.ModItems;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -59,8 +58,6 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
 
     private static final int CATALYST_X = 56 - BACKGROUND_U; // 34
     private static final int CATALYST_Y = 30 - BACKGROUND_V; // 16
-    private static final int MATRIX_X = 84 - BACKGROUND_U;   // 62
-    private static final int MATRIX_Y = 54 - BACKGROUND_V;   // 40
     private static final int OUTPUT_X = 117 - BACKGROUND_U;  // 95
     private static final int OUTPUT_Y = 30 - BACKGROUND_V;   // 16
 
@@ -72,9 +69,10 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     private static final int PROCESS_OVERLAY_HEIGHT = 10;
     private static final long PROCESS_CYCLE_MS = 1_500L;
 
-    private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;      // 64
-    private static final int MATRIX_TEXT_Y = BACKGROUND_HEIGHT + 12;     // 74
-    private static final int HEIGHT = MATRIX_TEXT_Y + 10;                // 84
+    private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;       // 64
+    private static final int MATRIX_LINE1_Y = BACKGROUND_HEIGHT + 12;     // 74
+    private static final int MATRIX_LINE2_Y = BACKGROUND_HEIGHT + 22;     // 84
+    private static final int HEIGHT = MATRIX_LINE2_Y + 10;                // 94
 
     private final IDrawable icon;
     private final IDrawable background;
@@ -137,13 +135,6 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
                     });
         });
 
-        builder.addSlot(RecipeIngredientRole.CATALYST, MATRIX_X, MATRIX_Y)
-                .addItemStack(new ItemStack(ModItems.LIGHTNING_COLLAPSE_MATRIX.get()))
-                .addRichTooltipCallback((recipeSlotView, tooltip) -> tooltip.add(
-                        Component.translatable(
-                                "jei.ae2lt.crystal_catalyzer.matrix_boost",
-                                CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER)));
-
         var baseOutput = recipe.getOutputTemplate();
         int matrixMultiplier = CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER;
         long boostedCount = (long) baseOutput.getCount() * matrixMultiplier;
@@ -180,11 +171,15 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
         int energyX = (WIDTH - font.width(energyText)) / 2;
         guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
 
-        var matrixText = Component.translatable(
-                "jei.ae2lt.crystal_catalyzer.matrix_note",
+        var matrixLine1 = Component.translatable("jei.ae2lt.crystal_catalyzer.matrix_note_line1");
+        int matrixLine1X = (WIDTH - font.width(matrixLine1)) / 2;
+        guiGraphics.drawString(font, matrixLine1, matrixLine1X, MATRIX_LINE1_Y, 0x404040, false);
+
+        var matrixLine2 = Component.translatable(
+                "jei.ae2lt.crystal_catalyzer.matrix_note_line2",
                 CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER);
-        int matrixX = (WIDTH - font.width(matrixText)) / 2;
-        guiGraphics.drawString(font, matrixText, matrixX, MATRIX_TEXT_Y, 0x404040, false);
+        int matrixLine2X = (WIDTH - font.width(matrixLine2)) / 2;
+        guiGraphics.drawString(font, matrixLine2, matrixLine2X, MATRIX_LINE2_Y, 0x404040, false);
     }
 
     private void drawProcessOverlay(GuiGraphics guiGraphics) {

@@ -14,6 +14,7 @@ import appeng.items.storage.BasicStorageCell;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
+import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.me.key.LightningKeyType;
 import com.moakiee.ae2lt.registry.ModItems;
@@ -32,6 +33,20 @@ public final class LightningKeyClientInit {
                     ModItems.ELECTRO_CHIME_CRYSTAL.get(),
                     ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "catalysis_stage"),
                     (stack, level, entity, seed) -> ElectroChimeCrystalItem.getCatalysisStage(stack) * 0.25F);
+
+            ItemProperties.register(
+                    ModItems.MYSTERIOUS_CELL.get(),
+                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "cell_type"),
+                    (stack, level, entity, seed) -> {
+                        if (!FixedInfiniteCellItem.hasType(stack)) {
+                            return 0.0F;
+                        }
+                        return switch (FixedInfiniteCellItem.getType(stack)) {
+                            case 1 -> 1.0F;
+                            case 2 -> 2.0F;
+                            default -> 0.0F;
+                        };
+                    });
         });
     }
 

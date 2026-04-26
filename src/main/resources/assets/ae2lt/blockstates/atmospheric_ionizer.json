@@ -2,45 +2,7 @@
   "multipart": [
     {
       "when": {
-        "facing": "north"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_off", 
-        "x": 90 
-      }
-    },
-    {
-      "when": {
-        "facing": "south"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_off", 
-        "x": 270 
-      }
-    },
-    {
-      "when": {
-        "facing": "east"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_off", 
-        "x": 90, 
-        "y": 90 
-      }
-    },
-    {
-      "when": {
-        "facing": "west"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_off", 
-        "x": 90, 
-        "y": 270 
-      }
-    },
-    {
-      "when": {
-        "facing": "up"
+        "working": "false"
       },
       "apply": {
         "model": "ae2lt:block/atmospheric_ionizer_off"
@@ -48,72 +10,11 @@
     },
     {
       "when": {
-        "facing": "down"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_off", 
-        "x": 180 
-      }
-    },
-    {
-      "when": {
-        "facing": "north",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_on", 
-        "x": 90 
-      }
-    },
-    {
-      "when": {
-        "facing": "south",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_on", 
-        "x": 270 
-      }
-    },
-    {
-      "when": {
-        "facing": "east",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_on", 
-        "x": 90, 
-        "y": 90 
-      }
-    },
-    {
-      "when": {
-        "facing": "west",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_on", 
-        "x": 90, 
-        "y": 270 
-      }
-    },
-    {
-      "when": {
-        "facing": "up",
         "working": "true"
       },
       "apply": {
         "model": "ae2lt:block/atmospheric_ionizer_on"
       }
-    },
-    {
-      "when": {
-        "facing": "down",
-        "working": "true"
-      },
-      "apply": {
-        "model": "ae2lt:block/atmospheric_ionizer_on", 
-        "x": 180 
-      }
     }
-]}
+  ]
+}
