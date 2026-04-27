@@ -27,6 +27,7 @@ import appeng.menu.slot.AppEngSlot;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 
 public class CrystalCatalyzerMenu extends AEBaseMenu {
     public static final MenuType<CrystalCatalyzerMenu> TYPE = MenuTypeBuilder
@@ -52,6 +53,8 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
     public boolean autoExport;
     @GuiSync(27)
     public int outputSideMask;
+    @GuiSync(28)
+    public int modeOrdinal;
 
     private static final RelativeSide[] OUTPUT_SIDES = RelativeSide.values();
 
@@ -84,6 +87,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
         registerClientAction("insertFluid", this::insertFluidFromCarried);
         registerClientAction("extractFluid", this::extractFluidToCarried);
         registerClientAction("clearFluidTank", this::clearFluidTank);
+        registerClientAction("cycleMode", this::cycleMode);
     }
 
     @Override
@@ -100,6 +104,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
 
             autoExport = host.isAutoExportEnabled();
             outputSideMask = toOutputSideMask(host.getAllowedOutputs());
+            modeOrdinal = host.getMode().ordinal();
         }
         super.broadcastChanges();
     }
@@ -220,6 +225,15 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
         return (outputSideMask & (1 << side.ordinal())) != 0;
     }
 
+    public Mode getMode() {
+        Mode[] values = Mode.values();
+        return modeOrdinal >= 0 && modeOrdinal < values.length ? values[modeOrdinal] : Mode.CRYSTAL;
+    }
+
+    public void clientCycleMode() {
+        sendClientAction("cycleMode");
+    }
+
     public void clientToggleAutoExport() {
         sendClientAction("toggleAutoExport");
     }
@@ -273,6 +287,14 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
             return;
         }
         host.setAutoExportEnabled(!host.isAutoExportEnabled());
+    }
+
+    private void cycleMode() {
+        if (!isServerSide()) {
+            return;
+        }
+        host.cycleMode();
+        broadcastChanges();
     }
 
     private void toggleOutputSide(Integer ordinal) {

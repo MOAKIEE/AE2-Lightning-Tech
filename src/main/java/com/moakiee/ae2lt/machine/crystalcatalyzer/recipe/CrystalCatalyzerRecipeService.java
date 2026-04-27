@@ -20,13 +20,27 @@ public final class CrystalCatalyzerRecipeService {
     public static Optional<CrystalCatalyzerRecipeCandidate> findRecipe(
             @Nullable Level level,
             CrystalCatalyzerInventory inventory) {
+        return findRecipe(level, inventory, Mode.CRYSTAL);
+    }
+
+    public static Optional<CrystalCatalyzerRecipeCandidate> findRecipe(
+            @Nullable Level level,
+            CrystalCatalyzerInventory inventory,
+            Mode mode) {
         if (level == null) {
             return Optional.empty();
         }
 
         CrystalCatalyzerRecipeInput input = CrystalCatalyzerRecipeInput.fromMachine(inventory);
         for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            if (holder.value().matches(input, level)) {
+            CrystalCatalyzerRecipe recipe = holder.value();
+            if (recipe.mode() != mode) {
+                continue;
+            }
+            if (recipe.getOutputTemplate().isEmpty()) {
+                continue;
+            }
+            if (recipe.matches(input, level)) {
                 return Optional.of(new CrystalCatalyzerRecipeCandidate(holder));
             }
         }
@@ -45,11 +59,22 @@ public final class CrystalCatalyzerRecipeService {
     }
 
     public static boolean isKnownCatalyst(@Nullable Level level, ItemStack stack) {
+        return isKnownCatalyst(level, stack, Mode.CRYSTAL);
+    }
+
+    public static boolean isKnownCatalyst(@Nullable Level level, ItemStack stack, Mode mode) {
         if (level == null || stack.isEmpty()) {
             return false;
         }
         for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            var catalyst = holder.value().catalyst();
+            CrystalCatalyzerRecipe recipe = holder.value();
+            if (recipe.mode() != mode) {
+                continue;
+            }
+            if (recipe.getOutputTemplate().isEmpty()) {
+                continue;
+            }
+            var catalyst = recipe.catalyst();
             if (catalyst.isPresent() && catalyst.get().test(stack)) {
                 return true;
             }

@@ -48,6 +48,7 @@ import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerLogic;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerLockedRecipe;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeCandidate;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeService;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryEnergyStorage;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
@@ -66,6 +67,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
     private static final String TAG_AUTO_EXPORT = "AutoExport";
     private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
+    private static final String TAG_MODE = "Mode";
 
     public static final int ENERGY_CAPACITY = 1_000_000;
     public static final int FLUID_TANK_CAPACITY_MB = 16_000;
@@ -78,8 +80,10 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         return new FluidStack(Fluids.WATER, FIXED_FLUID_PER_CYCLE_MB);
     }
 
+    private Mode mode = Mode.CRYSTAL;
+
     private final CrystalCatalyzerInventory inventory =
-            new CrystalCatalyzerInventory(this::onInventoryChanged);
+            new CrystalCatalyzerInventory(this::onInventoryChanged, this::getMode);
     private final CrystalCatalyzerAutomationInventory automationInventory =
             new CrystalCatalyzerAutomationInventory(inventory);
     private final NotifyingFluidTank tank =
@@ -201,11 +205,28 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         }
 
         Optional<CrystalCatalyzerRecipeCandidate> candidate = CrystalCatalyzerRecipeService.findRecipe(
-                level, inventory);
+                level, inventory, mode);
         if (candidate.isEmpty()) {
             return Optional.empty();
         }
         return canAcceptRecipeOutput(candidate.get()) ? candidate : Optional.empty();
+    }
+
+    public Mode getMode() {
+        return mode;
+    }
+
+    /**
+     * 切到下一个模式。切换会立即中断当前正在进行的配方
+     * （因为新模式可能根本不认现槽内催化剂）。
+     */
+    public void cycleMode() {
+        Mode previous = this.mode;
+        this.mode = previous.next();
+        abortProcessing();
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
     }
 
     private boolean hasEnoughFixedFluid() {
@@ -531,6 +552,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             outputTags.add(StringTag.valueOf(side.name()));
         }
         data.put(TAG_ALLOWED_OUTPUTS, outputTags);
+        data.putString(TAG_MODE, mode.getSerializedName());
         if (lockedRecipe != null) {
             data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
         } else {
@@ -554,6 +576,18 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
                 allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
             } catch (IllegalArgumentException ignored) {
             }
+        }
+        if (data.contains(TAG_MODE, Tag.TAG_STRING)) {
+            String modeName = data.getString(TAG_MODE);
+            mode = Mode.CRYSTAL;
+            for (Mode m : Mode.values()) {
+                if (m.getSerializedName().equals(modeName)) {
+                    mode = m;
+                    break;
+                }
+            }
+        } else {
+            mode = Mode.CRYSTAL;
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
             lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(

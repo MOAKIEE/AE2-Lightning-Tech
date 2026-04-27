@@ -178,7 +178,11 @@ public class TextureToggleButton extends Button implements ITooltip {
         // 输出按钮 (2 态):对应 ExportMode { OFF, AUTO }。
         AUTO_EXPORT(texture("auto_export_off"), texture("auto_export_on")),
         // 输入按钮 (3 态):对应 ImportMode { OFF, AUTO, EJECT }。
-        AUTO_IMPORT(texture("auto_input_off"), texture("auto_input_on"), texture("auto_input_ejection"));
+        AUTO_IMPORT(texture("auto_input_off"), texture("auto_input_on"), texture("auto_input_ejection")),
+        // 过载电源 PowerMode { NORMAL=off, OVERLOAD=on }。
+        OVERLOAD_MODE(texture("overloaded_off"), texture("overloaded_on")),
+        // 水晶催化器 Mode { CRYSTAL=off, DUST=on }。
+        CRYSTAL_CATALYZER_MODE(texture("catalyzer_crystal_mode"), texture("catalyzer_dust_mode"));
 
         private final List<ResourceLocation> textures;
 

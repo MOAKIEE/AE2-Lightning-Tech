@@ -1,7 +1,16 @@
 {
   "variants": {
-    "": {
-      "model": "ae2:block/interface"
+    "powered=false,overloaded=false": {
+      "model": "ae2lt:block/overload_power_supply_off"
+    },
+    "powered=false,overloaded=true": {
+      "model": "ae2lt:block/overload_power_supply_off"
+    },
+    "powered=true,overloaded=false": {
+      "model": "ae2lt:block/overload_power_supply_on"
+    },
+    "powered=true,overloaded=true": {
+      "model": "ae2lt:block/overload_power_supply_on_overloaded"
     }
   }
 }

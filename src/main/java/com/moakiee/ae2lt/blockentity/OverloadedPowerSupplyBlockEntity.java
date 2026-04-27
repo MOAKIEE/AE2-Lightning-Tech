@@ -21,6 +21,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.networking.IManagedGridNode;
@@ -36,6 +37,7 @@ import appeng.util.inv.InternalInventoryHost;
 
 import org.jetbrains.annotations.Nullable;
 
+import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
@@ -219,6 +221,51 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         saveChanges();
         markForClientUpdate();
         logic.onStateChanged();
+        // Always pair OVERLOADED with the current mode; POWERED stays where
+        // it is (the next tick will refresh it). Clearing it here would
+        // produce a one-tick "off" flicker every time the player toggles.
+        BlockState state = getBlockState();
+        boolean currentlyPowered = state.hasProperty(OverloadedPowerSupplyBlock.POWERED)
+                && state.getValue(OverloadedPowerSupplyBlock.POWERED);
+        updateVisualState(currentlyPowered, mode == PowerMode.OVERLOAD);
+    }
+
+    /**
+     * Push the (powered, overloaded) pair onto the world block state so the
+     * three Blockbench models swap in line with what the supply is actually
+     * doing. {@code overloaded} is always the player-selected mode — it does
+     * not require an active transfer to be true — but the blockstate JSON
+     * collapses {@code powered=false,overloaded=true} back to the "off"
+     * model so we never show the overloaded crystal while idle.
+     */
+    public void updateVisualState(boolean powered, boolean overloaded) {
+        if (level == null || level.isClientSide()) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!state.hasProperty(OverloadedPowerSupplyBlock.POWERED)
+                || !state.hasProperty(OverloadedPowerSupplyBlock.OVERLOADED)) {
+            return;
+        }
+        boolean curPowered = state.getValue(OverloadedPowerSupplyBlock.POWERED);
+        boolean curOverloaded = state.getValue(OverloadedPowerSupplyBlock.OVERLOADED);
+        if (curPowered == powered && curOverloaded == overloaded) {
+            return;
+        }
+        level.setBlock(worldPosition,
+                state.setValue(OverloadedPowerSupplyBlock.POWERED, powered)
+                        .setValue(OverloadedPowerSupplyBlock.OVERLOADED, overloaded),
+                Block.UPDATE_ALL);
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        // Saved BlockState may already be POWERED=true from before unload, but
+        // the supply is not actually transferring until the first server tick
+        // proves it can. Reset POWERED to false on (re)load so the visuals
+        // always start in the off state and let the logic light it up again.
+        updateVisualState(false, mode == PowerMode.OVERLOAD);
     }
 
     public OverloadedPowerSupplyLogic getSupplyLogic() {

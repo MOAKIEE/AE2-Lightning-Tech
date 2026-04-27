@@ -1,11 +1,14 @@
 package com.moakiee.ae2lt.machine.crystalcatalyzer;
 
+import java.util.function.Supplier;
+
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeService;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 import com.moakiee.ae2lt.machine.lightningchamber.LargeStackItemHandler;
 import com.moakiee.ae2lt.registry.ModItems;
 
@@ -30,8 +33,15 @@ public class CrystalCatalyzerInventory extends LargeStackItemHandler {
     @Nullable
     private Level level;
 
+    private final Supplier<Mode> modeSupplier;
+
     public CrystalCatalyzerInventory(@Nullable Runnable changeListener) {
+        this(changeListener, () -> Mode.CRYSTAL);
+    }
+
+    public CrystalCatalyzerInventory(@Nullable Runnable changeListener, Supplier<Mode> modeSupplier) {
         super(SLOT_COUNT, changeListener);
+        this.modeSupplier = modeSupplier != null ? modeSupplier : () -> Mode.CRYSTAL;
     }
 
     public void setLevel(@Nullable Level level) {
@@ -58,7 +68,7 @@ public class CrystalCatalyzerInventory extends LargeStackItemHandler {
 
         return switch (slot) {
             case SLOT_MATRIX -> isLightningCollapseMatrix(stack);
-            case SLOT_CATALYST -> CrystalCatalyzerRecipeService.isKnownCatalyst(level, stack);
+            case SLOT_CATALYST -> CrystalCatalyzerRecipeService.isKnownCatalyst(level, stack, modeSupplier.get());
             case SLOT_OUTPUT -> false;
             default -> false;
         };

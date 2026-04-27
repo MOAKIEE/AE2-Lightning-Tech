@@ -18,11 +18,13 @@ import appeng.client.gui.widgets.ToggleButton;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.client.gui.LightningStatusIconWidget;
 import com.moakiee.ae2lt.client.gui.LightningStatusLines;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 
 public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
     private final ToggleButton autoExportButton;
     private final ActionButton configureOutputButton;
+    private final TextureToggleButton modeButton;
     private final CrystalCatalyzerFluidWidget fluidWidget;
 
     public CrystalCatalyzerScreen(
@@ -58,6 +60,18 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
                 Component.translatable("ae2lt.gui.crystal_catalyzer.configure_output"));
         addToLeftToolbar(this.configureOutputButton);
 
+        this.modeButton = new TextureToggleButton(
+                TextureToggleButton.ButtonType.CRYSTAL_CATALYZER_MODE, btn -> menu.clientCycleMode());
+        this.modeButton.setTooltipOff(List.of(
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.title"),
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.crystal"),
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.tooltip.crystal")));
+        this.modeButton.setTooltipOn(List.of(
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.title"),
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.dust"),
+                Component.translatable("ae2lt.gui.crystal_catalyzer.mode.tooltip.dust")));
+        addToLeftToolbar(this.modeButton);
+
         widgets.add("lightningStatus", new LightningStatusIconWidget(() -> List.of(
                 LightningStatusLines.title(),
                 LightningStatusLines.status(menu.isWorking()),
@@ -70,6 +84,7 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         super.updateBeforeRender();
         this.autoExportButton.setState(menu.isAutoExportEnabled());
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
+        this.modeButton.setState(menu.getMode() == Mode.DUST);
     }
 
     @Override

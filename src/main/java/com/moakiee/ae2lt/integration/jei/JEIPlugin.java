@@ -92,6 +92,7 @@ public class JEIPlugin implements IModPlugin {
                         .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
                         .stream()
                         .map(RecipeHolder::value)
+                        .filter(recipe -> !recipe.getOutputTemplate().isEmpty())
                         .toList());
         registration.addRecipes(
                 LightningAssemblyCategory.TYPE,

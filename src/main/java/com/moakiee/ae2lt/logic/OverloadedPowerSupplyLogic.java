@@ -127,6 +127,12 @@ public class OverloadedPowerSupplyLogic implements IGridTickable {
         }
 
         boolean didWork = tick(serverLevel);
+        // Reflect the just-finished tick on the world block state so the
+        // off / on / on_overloaded models swap in real time. updateVisualState
+        // is a no-op when nothing changed, so this is cheap on idle ticks.
+        host.updateVisualState(lastStatus == Status.ACTIVE,
+                host.getMode() == OverloadedPowerSupplyBlockEntity.PowerMode.OVERLOAD);
+
         if (isOverloadActive() && getActiveTicketCount() > 0) {
             return TickRateModulation.URGENT;
         }
