@@ -25,7 +25,7 @@ The **Lightning Collapse Matrix** is one of the key end-tier components in AE2 L
 | **Extreme High Voltage Lightning** | 256 |
 | Energy | 500,000,000 AE |
 
-Put the above materials into a [Lightning Simulation Room](../machines/lightning-simulation-chamber.md) that already has a **Lightning Collapse Matrix** installed to craft one. Because the cost is already steep, you typically schedule this alongside your Overload Processing Factory and Lightning Assembly Chamber work.
+Because the cost is already steep, you typically schedule this alongside your Overload Processing Factory and Lightning Assembly Chamber work.
 
 ## As a Machine Catalyst
 
