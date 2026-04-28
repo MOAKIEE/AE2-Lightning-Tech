@@ -47,7 +47,7 @@ Overload Mode requires a Flux Cell in the cell slot. The cell becomes the active
 
 ## Setting Up
 
-1. Place the **Overloaded Power Supply** somewhere on your Overloaded ME network
+1. Place the **Overloaded Power Supply** somewhere on your ME network
 2. (Optional) Insert a Flux Cell into the cell slot to unlock Overload Mode
 3. Use the **Overloaded Wireless Connect Tool**:
    1. **Shift + right-click** the Overloaded Power Supply to select it
