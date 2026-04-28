@@ -27,8 +27,6 @@ The **Overloaded Power Supply** is a wireless FE distributor for the Overloaded 
 
 ## Power Modes
 
-The mode is toggled with the <ItemImage id="ae2lt:overloaded_power_supply" scale="1" /> button in the top-left toolbar of the GUI.
-
 ### Normal Mode
 
 In Normal Mode, the supply pulls FE directly from the ME network on every tick and distributes it across all bound targets using a shared adaptive scheduler. This mode is enabled regardless of whether a Flux Cell is installed.
@@ -57,29 +55,6 @@ Overload Mode requires a Flux Cell in the cell slot. The cell becomes the active
 4. Open the supply's GUI and choose Normal or Overload Mode
 
 The same wireless connect tool used for the Overloaded ME Interface and the Overloaded Pattern Provider works here — one tool, three hosts.
-
-## Status Indicators
-
-The GUI shows one of the following live status messages:
-
-| Status | Meaning |
-|--------|---------|
-| Idle | Ready, but currently nothing to do |
-| Sending power (last X FE) | Actively transferring; X is the FE delivered last tick |
-| Missing cell | Overload Mode is selected but no Flux Cell is installed |
-| Waiting for ME network | The supply is not yet attached to a powered ME grid |
-| No targets linked | No wireless connections have been bound |
-| Targets not loaded | Bound targets are in unloaded chunks or unloaded dimensions |
-| No FE in ME network | The ME network has no FE storage to draw from |
-| Target has no energy capability | A bound block is no longer accepting FE |
-| Target is not accepting power | Bound targets are full or temporarily refusing transfer |
-| AppFlux unavailable | AppFlux integration is missing at runtime |
-
-The block-state visuals follow the status:
-
-* Idle / not transferring → off model
-* Transferring in Normal Mode → lit crystal (steady)
-* Transferring in Overload Mode → lit crystal with the **animated overloaded texture**
 
 ## Tips
 
