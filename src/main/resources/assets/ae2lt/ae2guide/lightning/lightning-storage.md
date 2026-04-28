@@ -35,11 +35,11 @@ Lightning Storage Cells come in five tiers with progressively larger capacity. A
 
 | Tier | Effective Capacity | Idle Drain |
 |------|--------------------|------------|
-| Lightning Storage Cell I | 128 | 32 AE/t |
-| Lightning Storage Cell II | 512 | 128 AE/t |
-| Lightning Storage Cell III | 2,048 | 512 AE/t |
-| Lightning Storage Cell IV | 8,192 | 2,048 AE/t |
-| Lightning Storage Cell V | 32,768 | 8,192 AE/t |
+| Lightning Storage Cell I | 256 | 32 AE/t |
+| Lightning Storage Cell II | 1,024 | 128 AE/t |
+| Lightning Storage Cell III | 4,096 | 512 AE/t |
+| Lightning Storage Cell IV | 16,384 | 2,048 AE/t |
+| Lightning Storage Cell V | 65,536 | 8,192 AE/t |
 
 ## Infinite Storage Cell
 

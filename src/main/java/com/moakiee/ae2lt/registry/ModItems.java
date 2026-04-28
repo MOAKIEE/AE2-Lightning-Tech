@@ -96,15 +96,15 @@ public final class ModItems {
             ITEMS.registerSimpleItem("lightning_item_cell_housing", new Item.Properties());
 
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
-            registerLightningStorageComponent("lightning_storage_component_i", 128, 32);
+            registerLightningStorageComponent("lightning_storage_component_i", 256, 32);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
-            registerLightningStorageComponent("lightning_storage_component_ii", 512, 128);
+            registerLightningStorageComponent("lightning_storage_component_ii", 1024, 128);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
-            registerLightningStorageComponent("lightning_storage_component_iii", 2048, 512);
+            registerLightningStorageComponent("lightning_storage_component_iii", 4096, 512);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
-            registerLightningStorageComponent("lightning_storage_component_iv", 8192, 2048);
+            registerLightningStorageComponent("lightning_storage_component_iv", 16384, 2048);
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
-            registerLightningStorageComponent("lightning_storage_component_v", 32768, 8192);
+            registerLightningStorageComponent("lightning_storage_component_v", 65536, 8192);
 
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_I =
             ITEMS.registerSimpleItem("lightning_cell_component_i", new Item.Properties());
