@@ -194,10 +194,7 @@ final class AppFluxAccess {
                 }
 
                 remaining -= accepted;
-                // totalAccepted bounded by maxFe * maxCalls (≤ Long.MAX_VALUE/64 in
-                // every realistic config) — plain += is safe and avoids the per-call
-                // saturating-add branch overhead.
-                totalAccepted += accepted;
+                totalAccepted = saturatingAdd(totalAccepted, accepted);
             }
         } finally {
             if (remaining > 0L) {
@@ -353,23 +350,29 @@ final class AppFluxAccess {
         private final double joulesToFe;
         /** Pre-computed Joule equivalent of {@link #TRANSFER_RATE} (the per-call cap). */
         private final long maxJoulesPerCall;
+        /** Largest FE request this target can convert without clamping Joules. */
+        private final long maxForgeEnergyPerCall;
         /** True iff Mekanism is running with the stock 5/2 conversion ratio. */
         private final boolean defaultConversion;
 
         private MekanismStrictTarget(IStrictEnergyHandler target, double feToJoules,
-                                     double joulesToFe, long maxJoulesPerCall) {
+                                     double joulesToFe, long maxJoulesPerCall,
+                                     long maxForgeEnergyPerCall) {
             this.target = target;
             this.feToJoules = feToJoules;
             this.joulesToFe = joulesToFe;
             this.maxJoulesPerCall = maxJoulesPerCall;
+            this.maxForgeEnergyPerCall = maxForgeEnergyPerCall;
             this.defaultConversion = feToJoules == DEFAULT_FE_TO_JOULES;
         }
 
         static MekanismStrictTarget create(IStrictEnergyHandler target) {
             double rate = UnitDisplayUtils.EnergyUnit.FORGE_ENERGY.getConversion();
             double inverse = rate > 0.0 ? 1.0 / rate : 1.0;
-            long maxJ = TRANSFER_RATE > 0L ? clampToLong((double) TRANSFER_RATE * rate) : 0L;
-            return new MekanismStrictTarget(target, rate, inverse, maxJ);
+            long maxFe = maxForgeEnergyFor(rate);
+            long cappedTransfer = TRANSFER_RATE > 0L ? Math.min(TRANSFER_RATE, maxFe) : 0L;
+            long maxJ = cappedTransfer > 0L ? clampToLong((double) cappedTransfer * rate) : 0L;
+            return new MekanismStrictTarget(target, rate, inverse, maxJ, maxFe);
         }
 
         @Override
@@ -386,22 +389,26 @@ final class AppFluxAccess {
             if (amountFe <= 0L) {
                 return 0L;
             }
+            long effectiveAmountFe = Math.min(amountFe, maxForgeEnergyPerCall);
+            if (effectiveAmountFe <= 0L) {
+                return 0L;
+            }
             long mekanismAmount;
             if (amountFe == TRANSFER_RATE) {
                 // Per-call cap: pre-computed at construction, no math at all.
                 mekanismAmount = maxJoulesPerCall;
-            } else if (defaultConversion && amountFe <= FE_FAST_PATH_LIMIT) {
+            } else if (defaultConversion && effectiveAmountFe <= FE_FAST_PATH_LIMIT) {
                 // 1 FE = 5/2 J → integer-only: imul + shift, no FPU.
-                mekanismAmount = (amountFe * 5L) >> 1;
+                mekanismAmount = (effectiveAmountFe * 5L) >> 1;
             } else {
-                mekanismAmount = clampToLong((double) amountFe * feToJoules);
+                mekanismAmount = clampToLong((double) effectiveAmountFe * feToJoules);
             }
             if (mekanismAmount <= 0L) {
                 return 0L;
             }
             long remainder = target.insertEnergy(mekanismAmount, action);
             if (remainder <= 0L) {
-                return amountFe;
+                return effectiveAmountFe;
             }
             if (remainder >= mekanismAmount) {
                 return 0L;
@@ -411,9 +418,9 @@ final class AppFluxAccess {
                 // 1 J = 2/5 FE → integer-only: shift + idiv (HotSpot lowers
                 // /5L to a magic-number high-mul, so this is one imul + sar
                 // on x64, no FPU.)
-                return (acceptedJ << 1) / 5L;
+                return Math.min(effectiveAmountFe, (acceptedJ << 1) / 5L);
             }
-            return clampToLong((double) acceptedJ * joulesToFe);
+            return Math.min(effectiveAmountFe, clampToLong((double) acceptedJ * joulesToFe));
         }
     }
 
@@ -447,6 +454,22 @@ final class AppFluxAccess {
             return Long.MAX_VALUE;
         }
         return (long) value;
+    }
+
+    private static long maxForgeEnergyFor(double feToJoules) {
+        if (Double.isNaN(feToJoules) || feToJoules <= 0.0) {
+            return Long.MAX_VALUE;
+        }
+        double max = 9.223372036854776E18 / feToJoules;
+        if (max >= 9.223372036854776E18) {
+            return Long.MAX_VALUE;
+        }
+        return Math.max(1L, (long) max);
+    }
+
+    private static long saturatingAdd(long a, long b) {
+        long r = a + b;
+        return ((a ^ r) & (b ^ r)) < 0L ? Long.MAX_VALUE : r;
     }
 
     private static long saturatingMul(long a, long b) {

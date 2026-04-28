@@ -175,14 +175,25 @@ public class BufferedMEStorage implements MEStorage {
         MEStorage cell = resolveCell();
         if (cell != null) {
             long extracted = cell.extract(feKey, needed, Actionable.MODULATE, source);
-            if (extracted > 0L) recordConsumption(extracted);
-            return extracted / costMultiplier;
+            long credited = extracted / costMultiplier;
+            long consumed = credited * costMultiplier;
+            long remainder = extracted - consumed;
+            if (remainder > 0L) {
+                long returned = cell.insert(feKey, remainder, Actionable.MODULATE, source);
+                if (returned < remainder) {
+                    delegate.insert(feKey, remainder - returned, Actionable.MODULATE, source);
+                }
+            }
+            if (consumed > 0L) recordConsumption(consumed);
+            return credited;
         }
         if (batchOnly || feBuffer > 0L) {
             long extracted = Math.min(needed, feBuffer);
-            feBuffer -= extracted;
-            if (extracted > 0L) recordConsumption(extracted);
-            return extracted / costMultiplier;
+            long credited = extracted / costMultiplier;
+            long consumed = credited * costMultiplier;
+            feBuffer -= consumed;
+            if (consumed > 0L) recordConsumption(consumed);
+            return credited;
         }
         return 0L;
     }

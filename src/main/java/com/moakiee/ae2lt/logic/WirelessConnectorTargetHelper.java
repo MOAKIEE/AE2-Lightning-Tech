@@ -12,6 +12,14 @@ public final class WirelessConnectorTargetHelper {
     }
 
     public static Set<BlockPos> collectTargets(Level level, BlockPos origin, boolean contiguous) {
+        return collectTargets(level, origin, contiguous, Integer.MAX_VALUE);
+    }
+
+    public static Set<BlockPos> collectTargets(Level level, BlockPos origin, boolean contiguous, int maxTargets) {
+        if (maxTargets <= 0) {
+            return Set.of();
+        }
+
         if (!contiguous) {
             return level.getBlockEntity(origin) != null ? Set.of(origin.immutable()) : Set.of();
         }
@@ -30,10 +38,13 @@ public final class WirelessConnectorTargetHelper {
         var queue = new ArrayDeque<BlockPos>();
         queue.add(origin.immutable());
 
-        while (!queue.isEmpty()) {
+        while (!queue.isEmpty() && visited.size() < maxTargets) {
             var current = queue.removeFirst();
             if (!visited.add(current)) {
                 continue;
+            }
+            if (visited.size() >= maxTargets) {
+                break;
             }
 
             for (var direction : Direction.values()) {

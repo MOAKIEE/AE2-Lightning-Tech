@@ -61,7 +61,8 @@ public class OverloadedPowerSupplyLogic implements IGridTickable {
 
     private static final int TICK_MIN = 1;
     private static final int TICK_MAX = 20;
-    private static final int OVERLOAD_MAX_CONNECTIONS = 64;
+    private static final int OVERLOAD_MAX_CONNECTIONS =
+            OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS;
     private static final int OVERLOAD_MAX_CALLS = 64;
     private static final int TICKET_DURATION = 20;
     private static final int SENTINEL_BUCKETS = 5;

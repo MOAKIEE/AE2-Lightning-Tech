@@ -174,6 +174,8 @@
   "ae2lt.connector.need_wireless": "Please enable wireless mode first",
   "ae2lt.connector.cannot_bind_provider": "Cannot bind an Overloaded Pattern Provider to another Pattern Provider",
   "ae2lt.connector.cannot_bind_power_supply": "Cannot bind an Overloaded Power Supply to another Power Supply",
+  "ae2lt.connector.power_supply_partial": "Processed %d targets; skipped %d. Overloaded Power Supply can link at most %d machines",
+  "ae2lt.connector.power_supply_full": "Skipped %d targets; Overloaded Power Supply can link at most %d machines",
   "ae2lt.gui.wireless_speed.normal": "Speed: Normal",
   "ae2lt.gui.wireless_speed.fast": "Speed: Fast (Probe)",
   "ae2lt.gui.filtered_import.on": "Filtered Import: ON (Pattern outputs only)",

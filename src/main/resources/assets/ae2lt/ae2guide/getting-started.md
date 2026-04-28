@@ -99,7 +99,7 @@ Once your starter line is running, you can unlock the following in turn:
 
 * **Lightning Simulation Room** (3 input slots, simple conversions) and **Lightning Assembly Chamber** (9 input slots, complex assembly)
 * **Overload Processing Factory** (9 input slots, supports item + fluid I/O, and parallel processing via the Lightning Collapse Matrix)
-* **Crystal Catalyzer** (fluid + catalyst, used to grow specialty crystals and materials)
+* **Crystal Catalyzer** (water + slotted item, with Crystal / Dust modes)
 * **Overloaded ME Controller** — each controller adds 128 channels to the network
 * **Overloaded Cable** — a single cable has no per-cable channel limit
 * **Overloaded Pattern Provider** and **Overloaded ME Interface** — 36 slots each, with wireless dispatch and wireless I/O

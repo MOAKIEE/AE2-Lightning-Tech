@@ -67,6 +67,7 @@ public record WirelessConnectorUsePacket(
 
         ItemStack stack = player.getItemInHand(hand);
         if (!(stack.getItem() instanceof OverloadedWirelessConnectorItem)) return;
+        if (!player.canInteractWithBlock(pos, 1.0D)) return;
 
         var state = level.getBlockState(pos);
         var targetBe = level.getBlockEntity(pos);
@@ -263,37 +264,45 @@ public record WirelessConnectorUsePacket(
         }
 
         var targetDim = level.dimension();
-        var disconnected = new ArrayList<BlockPos>();
-        var updated = new ArrayList<BlockPos>();
-        var connected = new ArrayList<BlockPos>();
-
-        for (var targetPos : targets) {
-            var existing = powerSupply.getConnections().stream()
-                    .filter(c -> c.sameTarget(targetDim, targetPos))
-                    .findFirst().orElse(null);
-
-            if (existing != null) {
-                if (existing.boundFace() == face) {
-                    if (powerSupply.removeConnection(targetDim, targetPos)) {
-                        disconnected.add(targetPos.immutable());
-                    }
-                } else {
-                    powerSupply.addOrUpdateConnection(targetDim, targetPos, face);
-                    updated.add(targetPos.immutable());
-                }
-            } else {
-                powerSupply.addOrUpdateConnection(targetDim, targetPos, face);
-                connected.add(targetPos.immutable());
-            }
-        }
-
-        sendConnectionFeedback(player, disconnected, updated, connected);
+        var result = powerSupply.editConnections(targetDim, targets, face);
+        sendConnectionFeedback(player,
+                new ArrayList<>(result.disconnected()),
+                new ArrayList<>(result.updated()),
+                new ArrayList<>(result.connected()),
+                result.skippedDueToLimit());
     }
 
     private void sendConnectionFeedback(ServerPlayer player,
                                          ArrayList<BlockPos> disconnected,
                                          ArrayList<BlockPos> updated,
                                          ArrayList<BlockPos> connected) {
+        sendConnectionFeedback(player, disconnected, updated, connected, 0);
+    }
+
+    private void sendConnectionFeedback(ServerPlayer player,
+                                         ArrayList<BlockPos> disconnected,
+                                         ArrayList<BlockPos> updated,
+                                         ArrayList<BlockPos> connected,
+                                         int skippedDueToLimit) {
+        if (skippedDueToLimit > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "ae2lt.connector.power_supply_partial",
+                        changed,
+                        skippedDueToLimit,
+                        OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                        .withStyle(ChatFormatting.GREEN), true);
+                return;
+            }
+            player.displayClientMessage(Component.translatable(
+                    "ae2lt.connector.power_supply_full",
+                    skippedDueToLimit,
+                    OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         boolean many = (disconnected.size() + updated.size() + connected.size()) > 1;
 
         if (many) {

@@ -47,6 +47,8 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         implements InternalInventoryHost {
 
+    public static final int MAX_WIRELESS_CONNECTIONS = 64;
+
     private static final String TAG_MODE = "Mode";
     private static final String TAG_CONNECTIONS = "WirelessConnections";
     private static final String TAG_CELL_INV = "CellInv";
@@ -88,6 +90,17 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             var face = (rawFace >= 0 && rawFace < Direction.values().length)
                     ? Direction.from3DDataValue(rawFace) : Direction.DOWN;
             return new WirelessConnection(dim, pos, face);
+        }
+    }
+
+    public record ConnectionEditResult(
+            List<BlockPos> disconnected,
+            List<BlockPos> updated,
+            List<BlockPos> connected,
+            int skippedDueToLimit
+    ) {
+        public boolean hasChanges() {
+            return !disconnected.isEmpty() || !updated.isEmpty() || !connected.isEmpty();
         }
     }
 
@@ -272,38 +285,86 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         return logic;
     }
 
-    public void addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction face) {
-        for (int i = 0; i < connections.size(); i++) {
-            if (connections.get(i).sameTarget(dimension, pos)) {
-                var updated = new WirelessConnection(dimension, pos, face);
-                if (connections.get(i).equals(updated)) {
-                    return;
-                }
-                connections.set(i, updated);
-                connectionVersion++;
-                saveChanges();
-                markForClientUpdate();
-                logic.onStateChanged();
-                return;
+    public boolean addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction face) {
+        int index = findConnectionIndex(connections, dimension, pos);
+        if (index >= 0) {
+            var updated = new WirelessConnection(dimension, pos.immutable(), face);
+            if (connections.get(index).equals(updated)) {
+                return false;
             }
+            connections.set(index, updated);
+            notifyConnectionsChanged();
+            return true;
         }
 
-        connections.add(new WirelessConnection(dimension, pos, face));
-        connectionVersion++;
-        saveChanges();
-        markForClientUpdate();
-        logic.onStateChanged();
+        if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
+            return false;
+        }
+        connections.add(new WirelessConnection(dimension, pos.immutable(), face));
+        notifyConnectionsChanged();
+        return true;
+    }
+
+    public ConnectionEditResult editConnections(
+            ResourceKey<Level> dimension,
+            Collection<BlockPos> positions,
+            Direction face) {
+        if (positions.isEmpty()) {
+            return new ConnectionEditResult(List.of(), List.of(), List.of(), 0);
+        }
+
+        var disconnected = new ArrayList<BlockPos>();
+        var updated = new ArrayList<BlockPos>();
+        var connected = new ArrayList<BlockPos>();
+        int skippedDueToLimit = 0;
+        boolean changed = false;
+
+        for (var rawPos : positions) {
+            var targetPos = rawPos.immutable();
+            int index = findConnectionIndex(connections, dimension, targetPos);
+            if (index >= 0) {
+                var existing = connections.get(index);
+                if (existing.boundFace() == face) {
+                    connections.remove(index);
+                    disconnected.add(targetPos);
+                    changed = true;
+                } else {
+                    connections.set(index, new WirelessConnection(dimension, targetPos, face));
+                    updated.add(targetPos);
+                    changed = true;
+                }
+                continue;
+            }
+
+            if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
+                skippedDueToLimit++;
+                continue;
+            }
+
+            connections.add(new WirelessConnection(dimension, targetPos, face));
+            connected.add(targetPos);
+            changed = true;
+        }
+
+        if (changed) {
+            notifyConnectionsChanged();
+        }
+
+        return new ConnectionEditResult(
+                List.copyOf(disconnected),
+                List.copyOf(updated),
+                List.copyOf(connected),
+                skippedDueToLimit);
     }
 
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
-        boolean removed = connections.removeIf(connection -> connection.sameTarget(dimension, pos));
-        if (removed) {
-            connectionVersion++;
-            saveChanges();
-            markForClientUpdate();
-            logic.onStateChanged();
+        int index = findConnectionIndex(connections, dimension, pos);
+        if (index >= 0) {
+            connections.remove(index);
+            notifyConnectionsChanged();
+            return true;
         }
-        return removed;
+        return false;
     }
 
     public boolean removeConnections(Collection<WirelessConnection> removedConnections) {
@@ -313,10 +374,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
 
         boolean removed = connections.removeIf(removedConnections::contains);
         if (removed) {
-            connectionVersion++;
-            saveChanges();
-            markForClientUpdate();
-            logic.onStateChanged();
+            notifyConnectionsChanged();
         }
         return removed;
     }
@@ -364,12 +422,37 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         }
 
         if (removed > 0) {
-            connectionVersion++;
-            saveChanges();
-            markForClientUpdate();
-            logic.onStateChanged();
+            notifyConnectionsChanged();
         }
         return removed;
+    }
+
+    private void addLoadedConnection(WirelessConnection connection) {
+        int index = findConnectionIndex(connections, connection.dimension(), connection.pos());
+        if (index >= 0) {
+            connections.set(index, connection);
+        } else if (connections.size() < MAX_WIRELESS_CONNECTIONS) {
+            connections.add(connection);
+        }
+    }
+
+    private void notifyConnectionsChanged() {
+        connectionVersion++;
+        saveChanges();
+        markForClientUpdate();
+        logic.onStateChanged();
+    }
+
+    private static int findConnectionIndex(
+            List<WirelessConnection> source,
+            ResourceKey<Level> dimension,
+            BlockPos pos) {
+        for (int i = 0; i < source.size(); i++) {
+            if (source.get(i).sameTarget(dimension, pos)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     @Override
@@ -453,7 +536,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
             var list = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
-                connections.add(WirelessConnection.fromTag(list.getCompound(i)));
+                addLoadedConnection(WirelessConnection.fromTag(list.getCompound(i)));
             }
         }
         connectionVersion++;
@@ -483,14 +566,20 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
                 : PowerMode.NORMAL;
 
         int count = data.readVarInt();
-        var newConnections = new ArrayList<WirelessConnection>(count);
+        var newConnections = new ArrayList<WirelessConnection>(Math.min(count, MAX_WIRELESS_CONNECTIONS));
         for (int i = 0; i < count; i++) {
             var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
             var pos = data.readBlockPos();
             int rawFace = data.readByte();
             var face = (rawFace >= 0 && rawFace < Direction.values().length)
                     ? Direction.from3DDataValue(rawFace) : Direction.DOWN;
-            newConnections.add(new WirelessConnection(dim, pos, face));
+            var connection = new WirelessConnection(dim, pos, face);
+            int existing = findConnectionIndex(newConnections, dim, pos);
+            if (existing >= 0) {
+                newConnections.set(existing, connection);
+            } else if (newConnections.size() < MAX_WIRELESS_CONNECTIONS) {
+                newConnections.add(connection);
+            }
         }
 
         if (newMode != mode || !newConnections.equals(connections)) {
