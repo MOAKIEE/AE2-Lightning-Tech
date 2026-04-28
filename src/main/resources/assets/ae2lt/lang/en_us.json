@@ -172,6 +172,7 @@
   "ae2lt.connector.connected_many": "Connected %d machines to face %s",
   "ae2lt.connector.deselected": "Overloaded Pattern Provider deselected",
   "ae2lt.connector.need_wireless": "Please enable wireless mode first",
+  "ae2lt.connector.dimension_mismatch": "Wireless connections cannot cross dimensions",
   "ae2lt.connector.cannot_bind_provider": "Cannot bind an Overloaded Pattern Provider to another Pattern Provider",
   "ae2lt.connector.cannot_bind_power_supply": "Cannot bind an Overloaded Power Supply to another Power Supply",
   "ae2lt.connector.power_supply_partial": "Processed %d targets; skipped %d. Overloaded Power Supply can link at most %d machines",

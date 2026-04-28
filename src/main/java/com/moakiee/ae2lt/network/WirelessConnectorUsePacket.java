@@ -127,6 +127,12 @@ public record WirelessConnectorUsePacket(
         }
 
         var hostType = OverloadedWirelessConnectorItem.getSelectedHostType(stack);
+        if (!OverloadedWirelessConnectorItem.isSelectionInCurrentDimension(level, stack)) {
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.connector.dimension_mismatch")
+                            .withStyle(ChatFormatting.RED), true);
+            return;
+        }
 
         if (OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(hostType)) {
             handleProviderConnection(player, level, stack);

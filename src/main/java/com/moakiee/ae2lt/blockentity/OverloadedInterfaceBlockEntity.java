@@ -765,6 +765,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public List<WirelessConnection> getConnections() { return Collections.unmodifiableList(connections); }
 
     public void addOrUpdateConnection(WirelessConnection conn) {
+        if (!isLocalDimension(conn.dimension())) {
+            return;
+        }
         connections.removeIf(c ->
                 c.dimension().equals(conn.dimension()) && c.pos().equals(conn.pos()));
         connections.add(conn);
@@ -777,6 +780,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 c.dimension().equals(dim) && c.pos().equals(pos));
         invalidateConnectionCache(); refreshEjectRegistrations();
         saveChanges(); markForUpdate();
+    }
+
+    private boolean isLocalDimension(ResourceKey<Level> dimension) {
+        return level == null || level.dimension().equals(dimension);
     }
 
     // ── Connection state management ──────────────────────────────────────
@@ -830,6 +837,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (!connectionsDirty
                 && gameTick - validConnectionsCacheTick < VALIDATE_INTERVAL)
             return validConnectionsCache;
+        if (connections.removeIf(c -> !c.dimension().equals(sl.dimension()))) {
+            invalidateConnectionCache();
+            refreshEjectRegistrations();
+            saveChanges();
+            markForUpdate();
+        }
         var srv = sl.getServer();
         var valid = new ArrayList<WirelessConnection>();
         for (var c : connections) {
@@ -870,6 +883,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     @Nullable
     private ServerLevel resolveTargetLevel(
             ServerLevel origin, WirelessConnection conn) {
+        if (!conn.dimension().equals(origin.dimension())) return null;
         var tl = origin.getServer().getLevel(conn.dimension());
         return (tl != null && tl.isLoaded(conn.pos())) ? tl : null;
     }
@@ -1615,9 +1629,11 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (importMode != ImportMode.EJECT || level==null || level.isClientSide()) return;
         var srv = level.getServer(); if (srv==null) return;
         if (interfaceMode == InterfaceMode.WIRELESS) {
-            for (var c : connections)
+            for (var c : connections) {
+                if (!c.dimension().equals(level.dimension())) continue;
                 registerEjectAt(srv, c.dimension(),
                         c.pos().relative(c.boundFace()), c.boundFace().getOpposite());
+            }
         } else {
             for (Direction d : Direction.values())
                 registerEjectAt(srv, level.dimension(),

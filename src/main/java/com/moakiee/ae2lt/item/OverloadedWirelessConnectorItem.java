@@ -17,7 +17,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -136,6 +135,14 @@ public class OverloadedWirelessConnectorItem extends Item {
         return sel.contains(TAG_HOST_TYPE) ? sel.getString(TAG_HOST_TYPE) : HOST_PROVIDER;
     }
 
+    public static boolean isSelectionInCurrentDimension(Level level, ItemStack stack) {
+        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        if (!tag.contains(TAG_SELECTED)) return true;
+        var sel = tag.getCompound(TAG_SELECTED);
+        if (!sel.contains(TAG_DIM)) return true;
+        return level.dimension().location().equals(ResourceLocation.parse(sel.getString(TAG_DIM)));
+    }
+
     public static void clearSelection(ItemStack stack) {
         var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         tag.remove(TAG_SELECTED);
@@ -155,13 +162,9 @@ public class OverloadedWirelessConnectorItem extends Item {
         var dimKey = ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(sel.getString(TAG_DIM)));
         var pos = BlockPos.of(sel.getLong(TAG_POS));
 
-        Level targetLevel = level;
-        if (!level.dimension().equals(dimKey) && level instanceof ServerLevel sl) {
-            targetLevel = sl.getServer().getLevel(dimKey);
-        }
-        if (targetLevel == null || !targetLevel.isLoaded(pos)) return null;
+        if (!level.dimension().equals(dimKey) || !level.isLoaded(pos)) return null;
 
-        return targetLevel.getBlockEntity(pos);
+        return level.getBlockEntity(pos);
     }
 
     @Nullable

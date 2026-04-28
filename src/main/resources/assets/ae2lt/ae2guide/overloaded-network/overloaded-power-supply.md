@@ -19,7 +19,7 @@ The **Overloaded Power Supply** is a wireless FE distributor for the Overloaded 
 
 ## Core Features
 
-* **Wireless FE distribution** to up to 64 bound machines (cross-dimension supported via the wireless network)
+* **Wireless FE distribution** to up to 64 bound machines
 * **Two power modes**: Normal (continuous, ME-network-fed) and Overload (cell-buffered, burst-mode)
 * **Slot for a Flux Cell**: the cell becomes the buffer / cache for Overload Mode (AE2 ME Chest pattern)
 * **Adaptive scheduling**: shares the same per-target wireless scheduling wheel as the Overloaded ME Interface

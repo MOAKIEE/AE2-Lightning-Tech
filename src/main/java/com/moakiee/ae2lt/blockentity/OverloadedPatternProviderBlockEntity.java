@@ -275,6 +275,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
      * already exists, the bound face is updated; otherwise a new record is added.
      */
     public void addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction boundFace) {
+        if (!isLocalDimension(dimension)) {
+            return;
+        }
         for (int i = 0; i < connections.size(); i++) {
             if (connections.get(i).sameTarget(dimension, pos)) {
                 var updated = new WirelessConnection(dimension, pos, boundFace);
@@ -321,7 +324,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
      * @return number of connections removed
      */
     public int clearInvalidConnections() {
-        var server = getLevel() instanceof ServerLevel sl ? sl.getServer() : null;
+        var hostLevel = getLevel();
+        var server = hostLevel instanceof ServerLevel sl ? sl.getServer() : null;
         if (server == null) {
             return 0;
         }
@@ -329,6 +333,11 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         Iterator<WirelessConnection> it = connections.iterator();
         while (it.hasNext()) {
             var conn = it.next();
+            if (!conn.dimension().equals(hostLevel.dimension())) {
+                it.remove();
+                removed++;
+                continue;
+            }
             ServerLevel targetLevel = server.getLevel(conn.dimension());
             if (targetLevel == null) {
                 it.remove();
@@ -351,6 +360,10 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             markForClientUpdate();
         }
         return removed;
+    }
+
+    private boolean isLocalDimension(ResourceKey<Level> dimension) {
+        return level == null || level.dimension().equals(dimension);
     }
 
     // -- Client sync (writeToStream / readFromStream) --

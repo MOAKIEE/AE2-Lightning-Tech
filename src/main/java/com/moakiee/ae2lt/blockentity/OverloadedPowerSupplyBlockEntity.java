@@ -286,6 +286,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     public boolean addOrUpdateConnection(ResourceKey<Level> dimension, BlockPos pos, Direction face) {
+        if (!isLocalDimension(dimension)) {
+            return false;
+        }
         int index = findConnectionIndex(connections, dimension, pos);
         if (index >= 0) {
             var updated = new WirelessConnection(dimension, pos.immutable(), face);
@@ -310,6 +313,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             Collection<BlockPos> positions,
             Direction face) {
         if (positions.isEmpty()) {
+            return new ConnectionEditResult(List.of(), List.of(), List.of(), 0);
+        }
+        if (!isLocalDimension(dimension)) {
             return new ConnectionEditResult(List.of(), List.of(), List.of(), 0);
         }
 
@@ -394,7 +400,8 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     public int clearInvalidConnections() {
-        var server = getLevel() instanceof ServerLevel sl ? sl.getServer() : null;
+        var hostLevel = getLevel();
+        var server = hostLevel instanceof ServerLevel sl ? sl.getServer() : null;
         if (server == null) {
             return 0;
         }
@@ -403,6 +410,11 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         Iterator<WirelessConnection> iterator = connections.iterator();
         while (iterator.hasNext()) {
             var connection = iterator.next();
+            if (!connection.dimension().equals(hostLevel.dimension())) {
+                iterator.remove();
+                removed++;
+                continue;
+            }
             ServerLevel targetLevel = server.getLevel(connection.dimension());
             if (targetLevel == null) {
                 iterator.remove();
@@ -428,6 +440,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     private void addLoadedConnection(WirelessConnection connection) {
+        if (!isLocalDimension(connection.dimension())) {
+            return;
+        }
         int index = findConnectionIndex(connections, connection.dimension(), connection.pos());
         if (index >= 0) {
             connections.set(index, connection);
@@ -453,6 +468,10 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             }
         }
         return -1;
+    }
+
+    private boolean isLocalDimension(ResourceKey<Level> dimension) {
+        return level == null || level.dimension().equals(dimension);
     }
 
     @Override

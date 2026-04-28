@@ -491,6 +491,10 @@ public class OverloadedPowerSupplyLogic implements IGridTickable {
             var server = serverLevel.getServer();
             for (int i = 0; i < cachedConnectionTargets.size(); i++) {
                 var target = cachedConnectionTargets.get(i);
+                if (!target.dimension().equals(serverLevel.dimension())) {
+                    invalidConnections.add(cachedConnections.get(i));
+                    continue;
+                }
                 ServerLevel targetLevel = server.getLevel(target.dimension());
                 if (targetLevel == null) {
                     invalidConnections.add(cachedConnections.get(i));
