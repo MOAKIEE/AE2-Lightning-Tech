@@ -326,7 +326,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
     }
 
     private ItemStack moveFromPlayerInventory(ItemStack stack) {
-        return moveIntoSlots(stack, List.of(catalystSlot));
+        return moveIntoSlots(stack, List.of(matrixSlot, catalystSlot));
     }
 
     private List<Slot> getPlayerDestinationSlots() {
