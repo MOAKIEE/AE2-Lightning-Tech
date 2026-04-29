@@ -44,10 +44,10 @@ final class BlockShapeHelper {
                 rotated[0],
                 switch (direction) {
                     case DOWN -> Shapes.box(minX, 1 - maxY, 1 - maxZ, maxX, 1 - minY, 1 - minZ);
-                    case NORTH -> Shapes.box(minX, 1 - maxZ, minY, maxX, 1 - minZ, maxY);
-                    case SOUTH -> Shapes.box(minX, minZ, 1 - maxY, maxX, maxZ, 1 - minY);
-                    case EAST -> Shapes.box(1 - maxY, 1 - maxZ, minX, 1 - minY, 1 - minZ, maxX);
-                    case WEST -> Shapes.box(minY, 1 - maxZ, 1 - maxX, maxY, 1 - minZ, 1 - minX);
+                    case NORTH -> Shapes.box(minX, minZ, 1 - maxY, maxX, maxZ, 1 - minY);
+                    case SOUTH -> Shapes.box(1 - maxX, minZ, minY, 1 - minX, maxZ, maxY);
+                    case EAST -> Shapes.box(minY, minZ, minX, maxY, maxZ, maxX);
+                    case WEST -> Shapes.box(1 - maxY, minZ, 1 - maxX, 1 - minY, maxZ, 1 - minX);
                     case UP -> Shapes.box(minX, minY, minZ, maxX, maxY, maxZ);
                 }));
         return rotated[0];

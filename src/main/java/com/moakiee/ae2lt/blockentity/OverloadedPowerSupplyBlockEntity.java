@@ -507,6 +507,24 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+        logic.flushBufferToNetwork();
+        AppFluxBridge.persistCellStorage(cachedCellView);
+        super.addAdditionalDrops(level, pos, drops);
+        ItemStack cell = cellInv.getStackInSlot(0);
+        if (!cell.isEmpty()) {
+            drops.add(cell.copy());
+        }
+    }
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+        cellInv.clear();
+        connections.clear();
+    }
+
+    @Override
     public void setRemoved() {
         logic.flushBufferToNetwork();
         super.setRemoved();
