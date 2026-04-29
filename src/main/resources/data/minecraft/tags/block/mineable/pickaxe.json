@@ -14,6 +14,13 @@
     "ae2lt:overloaded_controller",
     "ae2lt:overloaded_pattern_provider",
     "ae2lt:overloaded_interface",
+    {
+      "id": "ae2lt:overloaded_power_supply",
+      "required": false
+    },
+    "ae2lt:wireless_receiver",
+    "ae2lt:wireless_overloaded_controller",
+    "ae2lt:advanced_wireless_overloaded_controller",
     "ae2lt:flawless_budding_overload_crystal",
     "ae2lt:flawed_budding_overload_crystal",
     "ae2lt:cracked_budding_overload_crystal",
