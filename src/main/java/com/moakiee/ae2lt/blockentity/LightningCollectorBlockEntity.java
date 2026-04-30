@@ -56,6 +56,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
 
     private int cooldownTicks;
     private int workingTicks;
+    private long lastCaptureGameTime = Long.MIN_VALUE;
     private long lastNaturalCultivationGameTime = Long.MIN_VALUE;
 
     public LightningCollectorBlockEntity(BlockPos pos, BlockState blockState) {
@@ -147,11 +148,11 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     }
 
     public boolean canCaptureLightning() {
-        return cooldownTicks <= 0;
+        return cooldownTicks <= 0 && !hasCapturedThisTick();
     }
 
     public boolean captureLightning(boolean naturalWeatherLightning) {
-        if (!(level instanceof ServerLevel serverLevel) || cooldownTicks > 0) {
+        if (!(level instanceof ServerLevel serverLevel) || cooldownTicks > 0 || hasCapturedThisTick(serverLevel)) {
             return false;
         }
 
@@ -189,6 +190,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             }
         }
 
+        this.lastCaptureGameTime = serverLevel.getGameTime();
         this.cooldownTicks = AE2LTCommonConfig.lightningCollectorCooldownTicks();
         this.workingTicks = WORKING_DURATION_TICKS;
         updateWorkingBlockState(true);
@@ -276,6 +278,14 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         long gameTime = serverLevel.getGameTime();
         return lastNaturalCultivationGameTime == Long.MIN_VALUE
                 || gameTime - lastNaturalCultivationGameTime >= NATURAL_CULTIVATION_DEBOUNCE_TICKS;
+    }
+
+    private boolean hasCapturedThisTick() {
+        return level instanceof ServerLevel serverLevel && hasCapturedThisTick(serverLevel);
+    }
+
+    private boolean hasCapturedThisTick(ServerLevel serverLevel) {
+        return lastCaptureGameTime == serverLevel.getGameTime();
     }
 
     private boolean cultivateCrystal(RandomSource random) {
