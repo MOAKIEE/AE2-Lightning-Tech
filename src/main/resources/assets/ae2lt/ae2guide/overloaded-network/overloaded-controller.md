@@ -46,7 +46,7 @@ What this means for the player:
 
 ## How to Use
 
-The Overloaded ME Controller follows the same placement and multiblock rules as the vanilla controller. It can be mixed with vanilla controllers — only the Overloaded controllers contribute the extra channel supply.
+The Overloaded ME Controller follows the same placement and multiblock rules as the vanilla controller.
 
 For full effect, pair it with [Overloaded Cable](overloaded-cable.md).
 
