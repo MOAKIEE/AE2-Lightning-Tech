@@ -7,6 +7,7 @@ import java.util.Set;
 import org.jetbrains.annotations.Nullable;
 
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
+import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.Settings;
@@ -22,7 +23,6 @@ import appeng.api.stacks.AEKeyTypes;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.AEKeySlotFilter;
-import appeng.api.storage.MEStorage;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
@@ -313,11 +313,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             this.logic = logic;
         }
 
-        private @Nullable MEStorage net() {
-            var grid = logic.mainNode.getGrid();
-            return grid != null ? grid.getStorageService().getInventory() : null;
-        }
-
         private IActionSource src() {
             return IActionSource.ofMachine(logic.owner);
         }
@@ -469,8 +464,16 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             if (proxying) return 0;
             proxying = true;
             try {
-                var network = net();
-                return network != null ? network.extract(what, amount, mode, src()) : 0;
+                var grid = logic.mainNode.getGrid();
+                if (grid == null) return 0;
+                var network = grid.getStorageService().getInventory();
+                long affordable = PowerCostUtil.maxAffordable(grid, what, amount);
+                if (affordable <= 0) return 0;
+                long extracted = network.extract(what, affordable, mode, src());
+                if (extracted > 0 && mode == Actionable.MODULATE) {
+                    PowerCostUtil.consume(grid, what, extracted);
+                }
+                return extracted;
             } finally {
                 proxying = false;
             }
@@ -480,8 +483,16 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             if (proxying) return 0;
             proxying = true;
             try {
-                var network = net();
-                return network != null ? network.insert(what, amount, mode, src()) : 0;
+                var grid = logic.mainNode.getGrid();
+                if (grid == null) return 0;
+                var network = grid.getStorageService().getInventory();
+                long affordable = PowerCostUtil.maxAffordable(grid, what, amount);
+                if (affordable <= 0) return 0;
+                long inserted = network.insert(what, affordable, mode, src());
+                if (inserted > 0 && mode == Actionable.MODULATE) {
+                    PowerCostUtil.consume(grid, what, inserted);
+                }
+                return inserted;
             } finally {
                 proxying = false;
             }

@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
+import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
@@ -70,6 +71,15 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         implements OverloadedGridNodeOwner {
 
     public static final int SLOT_COUNT = 36;
+
+    // ── Idle power (recomputed on mode/connection changes) ───────────────
+    // Base interface upkeep is already heavier than vanilla because the
+    // overloaded variant proxies an unbounded ME view; wireless mode and
+    // FAST IO add further multiplicative cost.
+    private static final double IDLE_BASE = 5.0;
+    private static final double IDLE_WIRELESS_BONUS = 5.0;
+    private static final double IDLE_PER_CONNECTION = 1.0;
+    private static final double IDLE_FAST_MULTIPLIER = 1.5;
 
     // ── NBT tags ─────────────────────────────────────────────────────────
 
@@ -616,6 +626,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public void onLoad() {
         super.onLoad();
         unloadingChunk = false;
+        recomputeIdlePower();
         if (level != null && !level.isClientSide() && importMode == ImportMode.EJECT) {
             refreshEjectRegistrations();
         }
@@ -714,13 +725,16 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public void setInterfaceMode(InterfaceMode m) {
         if (interfaceMode == m) return; interfaceMode = m;
         invalidateConnectionCache(); refreshEjectRegistrations();
+        recomputeIdlePower();
         saveChanges(); markForUpdate();
     }
 
     public IOSpeedMode getIOSpeedMode() { return ioSpeedMode; }
     public void setIOSpeedMode(IOSpeedMode m) {
         if (ioSpeedMode == m) return; ioSpeedMode = m;
-        wakeWirelessIo(); saveChanges(); markForUpdate();
+        wakeWirelessIo();
+        recomputeIdlePower();
+        saveChanges(); markForUpdate();
     }
 
     public ExportMode getExportMode() { return exportMode; }
@@ -760,6 +774,18 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         wakeWirelessIo();
     }
 
+    void recomputeIdlePower() {
+        double idle = IDLE_BASE;
+        if (interfaceMode == InterfaceMode.WIRELESS) {
+            idle += IDLE_WIRELESS_BONUS;
+            idle += connections.size() * IDLE_PER_CONNECTION;
+        }
+        if (ioSpeedMode == IOSpeedMode.FAST) {
+            idle *= IDLE_FAST_MULTIPLIER;
+        }
+        getMainNode().setIdlePowerUsage(idle);
+    }
+
     // ── Wireless connections ─────────────────────────────────────────────
 
     public List<WirelessConnection> getConnections() { return Collections.unmodifiableList(connections); }
@@ -772,6 +798,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 c.dimension().equals(conn.dimension()) && c.pos().equals(conn.pos()));
         connections.add(conn);
         invalidateConnectionCache(); refreshEjectRegistrations();
+        recomputeIdlePower();
         saveChanges(); markForUpdate();
     }
 
@@ -779,6 +806,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         connections.removeIf(c ->
                 c.dimension().equals(dim) && c.pos().equals(pos));
         invalidateConnectionCache(); refreshEjectRegistrations();
+        recomputeIdlePower();
         saveChanges(); markForUpdate();
     }
 
@@ -840,6 +868,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (connections.removeIf(c -> !c.dimension().equals(sl.dimension()))) {
             invalidateConnectionCache();
             refreshEjectRegistrations();
+            recomputeIdlePower();
             saveChanges();
             markForUpdate();
         }
@@ -1294,8 +1323,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     private long importExtractToBuffer(AEKey key, long amount, MEStorage wrapper, IActionSource src) {
         if (amount <= 0) return 0;
-        long extracted = wrapper.extract(key, amount, Actionable.MODULATE, src);
+        var grid = getMainNode().getGrid();
+        long affordable = PowerCostUtil.maxAffordable(grid, key, amount);
+        if (affordable <= 0) return 0;
+        long extracted = wrapper.extract(key, affordable, Actionable.MODULATE, src);
         if (extracted > 0) {
+            PowerCostUtil.consume(grid, key, extracted);
             addToImportBuffer(key, extracted);
         }
         return extracted;
@@ -1354,6 +1387,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var entries = exportEntriesForType(keyType, now);
         long moved = 0;
         boolean overflowed = false;
+        var grid = getMainNode().getGrid();
 
         for (var entry : entries) {
             var key = entry.key();
@@ -1371,11 +1405,16 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 continue;
             }
 
-            long extracted = me.extract(key, Math.min(requested, canAccept), Actionable.MODULATE, src);
+            long target = Math.min(requested, canAccept);
+            long affordable = PowerCostUtil.maxAffordable(grid, key, target);
+            if (affordable <= 0) continue;
+
+            long extracted = me.extract(key, affordable, Actionable.MODULATE, src);
             if (extracted <= 0) continue;
 
             long inserted = wrapper.insert(key, extracted, Actionable.MODULATE, src);
             if (inserted > 0) {
+                PowerCostUtil.consume(grid, key, inserted);
                 state.onExportAccepted(key);
                 moved += inserted;
             } else {
@@ -1854,6 +1893,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         keyTypeLockUntil.clear();
         invalidateConnectionCache();
         refreshEjectRegistrations();
+        recomputeIdlePower();
     }
 
     // ── Memory card copy/paste (machine-specific fields only) ───────────────
@@ -1920,6 +1960,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             }
         }
         invalidateConnectionCache();
+        recomputeIdlePower();
         saveChanges();
         markForUpdate();
     }

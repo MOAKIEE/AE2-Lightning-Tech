@@ -22,9 +22,12 @@ import appeng.api.stacks.GenericStack;
 public class InsertOnlyReturnInvWrapper implements GenericInternalInventory {
 
     private final UnlimitedReturnInventory delegate;
+    private final OverloadedPatternProviderLogic logic;
 
-    public InsertOnlyReturnInvWrapper(UnlimitedReturnInventory delegate) {
+    public InsertOnlyReturnInvWrapper(UnlimitedReturnInventory delegate,
+                                      OverloadedPatternProviderLogic logic) {
         this.delegate = delegate;
+        this.logic = logic;
     }
 
     @Override
@@ -79,7 +82,14 @@ public class InsertOnlyReturnInvWrapper implements GenericInternalInventory {
 
     @Override
     public long insert(int slot, AEKey what, long amount, Actionable mode) {
-        return delegate.insert(slot, what, amount, mode);
+        if (what == null || amount <= 0) return 0;
+        long affordable = logic.maxAffordableExternalReturn(what, amount);
+        if (affordable <= 0) return 0;
+        long inserted = delegate.insert(slot, what, affordable, mode);
+        if (inserted > 0 && mode == Actionable.MODULATE) {
+            logic.consumeExternalReturnPower(what, inserted);
+        }
+        return inserted;
     }
 
     @Override

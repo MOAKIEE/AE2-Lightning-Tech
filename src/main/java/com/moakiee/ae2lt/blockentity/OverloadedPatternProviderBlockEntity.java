@@ -53,6 +53,15 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     /** Pattern slots displayed per GUI page. */
     public static final int SLOTS_PER_PAGE = 36;
 
+    // ── Idle power (recomputed on mode/connection changes) ───────────────
+    // Mirrors the overloaded interface: wireless dispatch is far more
+    // expensive than vanilla adjacent push, so wireless mode and FAST speed
+    // both add cost on top of the base upkeep.
+    private static final double IDLE_BASE = 5.0;
+    private static final double IDLE_WIRELESS_BONUS = 5.0;
+    private static final double IDLE_PER_CONNECTION = 1.0;
+    private static final double IDLE_FAST_MULTIPLIER = 1.5;
+
     // -- Custom fields --
 
     /** Operating mode: NORMAL (adjacent) or WIRELESS (remote). */
@@ -140,6 +149,19 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             logic.onBlockEntityReady();
         }
         super.onReady();
+        recomputeIdlePower();
+    }
+
+    void recomputeIdlePower() {
+        double idle = IDLE_BASE;
+        if (providerMode == ProviderMode.WIRELESS) {
+            idle += IDLE_WIRELESS_BONUS;
+            idle += connections.size() * IDLE_PER_CONNECTION;
+        }
+        if (wirelessSpeedMode == WirelessSpeedMode.FAST) {
+            idle *= IDLE_FAST_MULTIPLIER;
+        }
+        getMainNode().setIdlePowerUsage(idle);
     }
 
     @Nullable
@@ -197,6 +219,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             return;
         }
         this.providerMode = providerMode;
+        recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
@@ -243,6 +266,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             return;
         }
         this.wirelessSpeedMode = wirelessSpeedMode;
+        recomputeIdlePower();
         saveChanges();
         markForClientUpdate();
     }
@@ -292,6 +316,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         }
         connections.add(new WirelessConnection(dimension, pos, boundFace));
+        recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
         markForClientUpdate();
@@ -305,6 +330,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
         boolean removed = connections.removeIf(c -> c.sameTarget(dimension, pos));
         if (removed) {
+            recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
             markForClientUpdate();
@@ -355,6 +381,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         }
         if (removed > 0) {
+            recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
             markForClientUpdate();
@@ -420,6 +447,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             filteredImport = newFilteredImport;
             connections.clear();
             connections.addAll(newConns);
+            recomputeIdlePower();
             notifyLogicStateChanged();
             changed = true;
         }
@@ -493,6 +521,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
             }
         }
+        recomputeIdlePower();
         notifyLogicStateChanged();
     }
 
@@ -537,6 +566,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 tag, TAG_WIRELESS_SPEED_MODE, WirelessSpeedMode.class, this.wirelessSpeedMode);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_FILTERED_IMPORT,
                 v -> this.filteredImport = v);
+        recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
         markForUpdate();

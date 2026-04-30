@@ -52,6 +52,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
+import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
@@ -453,6 +454,19 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return fullReturnInv;
     }
 
+    /**
+     * Cap {@code amount} to what the grid can afford for an external EJECT-mode
+     * insert. Returns 0 when the grid is unavailable or out of power.
+     */
+    public long maxAffordableExternalReturn(AEKey what, long amount) {
+        return PowerCostUtil.maxAffordable(gridNode.getGrid(), what, amount);
+    }
+
+    /** Drain the AE corresponding to {@code amount} of {@code what} for an external EJECT-mode insert. */
+    public void consumeExternalReturnPower(AEKey what, long amount) {
+        PowerCostUtil.consume(gridNode.getGrid(), what, amount);
+    }
+
     @Override
     public void resetCraftingLock() {
         super.resetCraftingLock();
@@ -554,22 +568,25 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
 
         if (overloadedHost.getProviderMode() == ProviderMode.NORMAL) {
+            double cost = PowerCostUtil.totalCost(inputHolder);
+            var grid = gridNode.getGrid();
+            if (!PowerCostUtil.canAfford(grid, cost)) {
+                return false;
+            }
+            boolean result;
             if (AdvancedAECompat.isDirectional(patternDetails)) {
-                boolean result = pushPatternDirectionally(patternDetails, inputHolder);
-                if (result && overloadedHost.isAutoReturn()) {
+                result = pushPatternDirectionally(patternDetails, inputHolder);
+            } else {
+                result = super.pushPattern(patternDetails, inputHolder);
+                if (result) {
+                    syncPendingUnlockRule(patternDetails);
+                }
+            }
+            if (result) {
+                PowerCostUtil.consumeRaw(grid, cost);
+                if (overloadedHost.isAutoReturn()) {
                     resetBackoffAllTargets();
                 }
-                if (result) alertGridTick();
-                return result;
-            }
-            boolean result = super.pushPattern(patternDetails, inputHolder);
-            if (result && overloadedHost.isAutoReturn()) {
-                resetBackoffAllTargets();
-            }
-            if (result) {
-                syncPendingUnlockRule(patternDetails);
-            }
-            if (result) {
                 alertGridTick();
             }
             return result;
@@ -817,6 +834,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var adapter = state.resolveAdapter(targetLevel, conn.pos());
         if (adapter == null) return PushOutcome.HARD_FAIL;
 
+        double cost = PowerCostUtil.totalCost(inputs);
+        var grid = gridNode.getGrid();
+        if (!PowerCostUtil.canAfford(grid, cost)) {
+            return PushOutcome.SOFT_FAIL;
+        }
+
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
         var result = adapter.pushCopies(
@@ -824,6 +847,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 pattern, inputs, 1,
                 blocking, patternInputs, wirelessSource);
         if (result.acceptedCopies() == 0) return PushOutcome.SOFT_FAIL;
+
+        PowerCostUtil.consumeRaw(grid, cost);
 
         if (!result.overflow().isEmpty()) {
             wirelessSendList.addAll(result.overflow());
@@ -917,6 +942,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var be = targetLevel.getBlockEntity(conn.pos());
         if (be == null) return PushOutcome.HARD_FAIL;
 
+        double cost = PowerCostUtil.totalCost(inputs);
+        var grid = gridNode.getGrid();
+        if (!PowerCostUtil.canAfford(grid, cost)) {
+            return PushOutcome.SOFT_FAIL;
+        }
+
         var defaultFace = conn.boundFace();
 
         EjectModeRegistry.setBypass(true);
@@ -935,6 +966,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 return PushOutcome.SOFT_FAIL;
 
             var overflow = commitDirectionalPushWithOverflow(pattern, inputs, faceToTarget, defaultFace);
+            PowerCostUtil.consumeRaw(grid, cost);
             if (!overflow.isEmpty()) {
                 wirelessSendList.addAll(overflow);
                 wirelessSendConn = conn;
@@ -1330,8 +1362,13 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         gridNode.ifPresent((grid, node) -> {
             var storage = grid.getStorageService().getInventory();
             for (var stack : outputs) {
-                storage.insert(stack.what(), stack.amount(),
+                long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
+                if (affordable <= 0) continue;
+                long inserted = storage.insert(stack.what(), affordable,
                         appeng.api.config.Actionable.MODULATE, wirelessSource);
+                if (inserted > 0) {
+                    PowerCostUtil.consume(grid, stack.what(), inserted);
+                }
             }
         });
     }
@@ -1359,8 +1396,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     private void insertOutputsToReturnInv(List<GenericStack> outputs) {
+        var grid = gridNode.getGrid();
         for (var stack : outputs) {
-            fullReturnInv.insert(0, stack.what(), stack.amount(), Actionable.MODULATE);
+            long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
+            if (affordable <= 0) continue;
+            long inserted = fullReturnInv.insert(0, stack.what(), affordable, Actionable.MODULATE);
+            if (inserted > 0) {
+                PowerCostUtil.consume(grid, stack.what(), inserted);
+            }
         }
     }
 
