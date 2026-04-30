@@ -21,6 +21,7 @@ import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
@@ -33,6 +34,7 @@ import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -220,6 +222,22 @@ public class AE2LightningTech {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.TESLA_COIL.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        // TeslaCoil 是双格高方块,UPPER 半部分没有 BlockEntity;
+        // 把 UPPER 的 ItemHandler 查询代理到下方 LOWER 的 BE,
+        // 让漏斗/导管从顶面和上半身四面也能输入物品。
+        event.registerBlock(
+                Capabilities.ItemHandler.BLOCK,
+                (level, pos, state, blockEntity, context) -> {
+                    if (state.getValue(TeslaCoilBlock.HALF) != DoubleBlockHalf.UPPER) {
+                        return null;
+                    }
+                    if (level.getBlockEntity(pos.below()) instanceof TeslaCoilBlockEntity be) {
+                        return be.getAutomationInventory();
+                    }
+                    return null;
+                },
+                ModBlocks.TESLA_COIL.get());
 
         event.registerBlockEntity(
                 Capabilities.ItemHandler.BLOCK,
