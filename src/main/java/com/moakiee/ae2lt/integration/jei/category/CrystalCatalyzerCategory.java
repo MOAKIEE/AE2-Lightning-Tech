@@ -137,16 +137,13 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
 
         var baseOutput = recipe.getOutputTemplate();
         int matrixMultiplier = CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER;
-        long boostedCount = (long) baseOutput.getCount() * matrixMultiplier;
-        int displayCount = (int) Math.min(boostedCount, Integer.MAX_VALUE);
-        var boostedOutput = baseOutput.copyWithCount(Math.max(1, displayCount));
         int baseCount = baseOutput.getCount();
         int catalystPerInstance = Math.max(1, recipe.catalystCount());
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                .addItemStack(boostedOutput)
+                .addItemStack(baseOutput)
                 .addRichTooltipCallback((recipeSlotView, tooltip) -> {
-                    LargeStackCountRenderer.appendCountTooltip(tooltip, displayCount);
+                    LargeStackCountRenderer.appendCountTooltip(tooltip, baseCount);
                     tooltip.add(Component.translatable(
                             "jei.ae2lt.crystal_catalyzer.output_base", baseCount, matrixMultiplier));
                     tooltip.add(Component.translatable(
