@@ -6,6 +6,7 @@ import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.mojang.logging.LogUtils;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -21,11 +22,23 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
 import org.joml.Vector3f;
+import org.slf4j.Logger;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class NaturalLightningTransformationHandler {
     public static final String NATURAL_WEATHER_LIGHTNING_TAG = "ae2lt.natural_weather_lightning";
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.natural_transform_checked";
+    /**
+     * Marker that this mod's onLightningTick handler ran for a given LightningBolt.
+     * Distinguishes "this mod handled the strike" from "some other mod set the
+     * transformation_checked tag at higher priority". When the latter happens,
+     * captureLightning and the public LightningCollectedEvent are silently bypassed.
+     */
+    private static final String MAIN_HANDLED_TAG = "ae2lt.main_lightning_handled";
+
+    private static final Logger LOG = LogUtils.getLogger();
+    /** Throttle the takeover warning so it logs at most once per JVM. */
+    private static volatile boolean warnedTakeover;
 
     private static final DustParticleOptions PINK_DUST =
             new DustParticleOptions(new Vector3f(1.0F, 0.45F, 0.78F), 1.6F);
@@ -46,10 +59,29 @@ public final class NaturalLightningTransformationHandler {
 
         var data = lightningBolt.getPersistentData();
         if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)) {
+            // The transformation_checked tag is set but our own marker isn't — another
+            // mod (e.g. Thunderbolt_lib) intercepted the lightning at higher priority
+            // and ran its own pipeline. The collector's captureLightning() will not be
+            // called for this strike, which means LightningCollectedEvent will not
+            // fire either. Warn once so server operators can correlate missing
+            // capture-side effects with a third-party takeover.
+            if (!data.getBoolean(MAIN_HANDLED_TAG) && !warnedTakeover) {
+                warnedTakeover = true;
+                LOG.warn(
+                        "AE2 Lightning Tech: a LightningBolt arrived with "
+                                + "{} already set but {} unset. Another mod is "
+                                + "intercepting natural lightning before this mod's "
+                                + "handler runs; LightningCollectorBlockEntity.captureLightning "
+                                + "and the public LightningCollectedEvent will not fire "
+                                + "for those strikes. This warning logs only once per JVM.",
+                        TRANSFORMATION_CHECKED_TAG,
+                        MAIN_HANDLED_TAG);
+            }
             return;
         }
 
         data.putBoolean(TRANSFORMATION_CHECKED_TAG, true);
+        data.putBoolean(MAIN_HANDLED_TAG, true);
         boolean naturalWeatherLightning = data.getBoolean(NATURAL_WEATHER_LIGHTNING_TAG);
         tryCaptureLightning(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
         tryTransformFromNearbyLightningRod(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
