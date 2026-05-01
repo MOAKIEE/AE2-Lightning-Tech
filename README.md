@@ -35,6 +35,17 @@ A budding-crystal progression line built on top of AE2's certus quartz tiers —
 - **Wireless Overloaded Controller** + **Wireless Receiver** — connect a Pattern Provider to remote machines without cables, with round-robin or balanced distribution.
 - **Overloaded Wireless Connect Tool** — bind providers and power supplies to targets in-world.
 
+## Public API for addon authors
+
+`com.moakiee.ae2lt.api.*` is the only stable surface this mod exposes to third-party mods. Addons can `compileOnly` against this jar and import:
+
+- **`AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK`** — block-side capability returning an `ILightningEnergyHandler`. Registered on the five lightning-grid block entities: Lightning Collector, Lightning Simulation Room, Lightning Assembly Chamber, Overload Processing Factory, Tesla Coil. The handler reads/writes the AE2 grid's lightning storage directly — no reflection required.
+- **`LightningTier`** — `HIGH_VOLTAGE` / `EXTREME_HIGH_VOLTAGE`. Serialized names are frozen at `"high_voltage"` / `"extreme_high_voltage"`.
+- **`LightningCollectedEvent`** — a cancellable event posted on `NeoForge.EVENT_BUS` from inside `LightningCollectorBlockEntity.captureLightning(boolean)`, after the amount has been rolled but before it is inserted into the grid. Subscribers can cancel the capture or rewrite the amount.
+- **`AE2LTBlockEntityIds`** / **`AE2LTRecipeIds`** — frozen `ResourceLocation` constants for the public block-entity and recipe types.
+
+Anything outside `com.moakiee.ae2lt.api.*` is internal and may change between minor versions. See `package-info.java` for the full contract and the frozen-on-release list.
+
 ## Dependencies
 
 | Mod | Required |
