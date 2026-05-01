@@ -405,10 +405,30 @@ public class AE2LightningTech {
                 ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
                 (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
 
-        event.registerBlockEntity(
+        // TeslaCoil 是双高方块：UPPER 半部分 newBlockEntity 返回 null，
+        // 单用 registerBlockEntity 会让 UPPER 位置 capability 查询拿到 null，
+        // 与 README 公开契约不符。改用 registerBlock 在 block 层面统一处理：
+        // UPPER 转发到 pos.below() 的 LOWER BE，与 TeslaCoilBlock 自身
+        // useWithoutItem / useItemOn 已采用的 UPPER→LOWER 委托一致。
+        event.registerBlock(
                 AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
-                ModBlockEntities.TESLA_COIL.get(),
-                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
+                (level, pos, state, blockEntity, side) -> {
+                    if (state.getValue(TeslaCoilBlock.HALF) == DoubleBlockHalf.UPPER) {
+                        var lowerPos = pos.below();
+                        var lowerState = level.getBlockState(lowerPos);
+                        if (lowerState.is(state.getBlock())
+                                && lowerState.getValue(TeslaCoilBlock.HALF) == DoubleBlockHalf.LOWER
+                                && level.getBlockEntity(lowerPos) instanceof TeslaCoilBlockEntity be) {
+                            return new GridLightningEnergyHandler(be);
+                        }
+                        return null;
+                    }
+                    if (blockEntity instanceof TeslaCoilBlockEntity be) {
+                        return new GridLightningEnergyHandler(be);
+                    }
+                    return null;
+                },
+                ModBlocks.TESLA_COIL.get());
 
         event.registerBlock(
                 AECapabilities.GENERIC_INTERNAL_INV,
