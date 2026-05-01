@@ -17,7 +17,11 @@ public final class TeslaCoilLogic implements IGridTickable {
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(1, 20, !hasGridTickWork());
+        // 加载 / grid 重组瞬间, storage 等服务可能尚未稳定, 此时基于当前状态
+        // (尤其依赖 grid 的查找) 推断 sleeping 容易错判, 导致机器明明可以工作
+        // 却卡在 sleeping。始终以 awake 入队, 首次 tick 自行评估,
+        // 无工作时通过返回 SLEEP 自动转 sleeping。
+        return new TickingRequest(1, 20, false);
     }
 
     @Override
@@ -29,11 +33,18 @@ public final class TeslaCoilLogic implements IGridTickable {
         rechargeFromAppliedFlux();
 
         if (!host.hasLockedMode()) {
-            if (!host.hasLocalStartPrerequisites()) {
+            // 本地资源 (粉 / 矩阵) 完全不够, 此时 SLEEP 是安全的:
+            // 玩家或自动化补充槽位会通过 onInventoryChanged 重新 alertDevice 唤醒。
+            if (!host.hasLocalResourcesForMinimumOperation()) {
                 host.setWorking(false);
                 return TickRateModulation.SLEEP;
             }
 
+            // 本地资源足够, 但当前还不能开工 —— 典型情况: ME 网络输出端已满,
+            // 或 EHV 模式所需的 HV 闪电网络存量不足。
+            // 这里**绝不能 SLEEP**: ME 网络的存量变化不会回调到本设备,
+            // 一旦 sleep, 等网络腾出空位 / 补足闪电后无法被唤醒,
+            // 必须由玩家手动碰一下库存才能恢复。改用 SLOWER 持续慢速轮询。
             if (host.canStartSelectedMode() && host.hasEnoughEnergyForSelectedStart()) {
                 if (!host.lockSelectedMode()) {
                     host.setWorking(false);
@@ -82,7 +93,7 @@ public final class TeslaCoilLogic implements IGridTickable {
     }
 
     public boolean hasGridTickWork() {
-        return host.hasLockedMode() || host.hasLocalStartPrerequisites();
+        return host.hasLockedMode() || host.hasLocalResourcesForMinimumOperation();
     }
 
     public void onStateChanged() {

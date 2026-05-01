@@ -137,6 +137,26 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         return hasLocalPrerequisites(selectedMode, getBatchSizeForMode(selectedMode));
     }
 
+    /**
+     * 仅检查本地槽位是否具备开始一次操作的最小资源 —— 即 HV 模式至少 1 份粉、
+     * EHV 模式装了矩阵 —— 不考虑 ME 网络能否接收输出 / 提供 HV 输入。
+     *
+     * <p>用于决定能否安全 SLEEP：本地资源耗尽时 sleep 会通过
+     * {@link #onInventoryChanged()} 在补给到位时重新 alertDevice 唤醒；
+     * 但"本地够、网络满"这种情况不能 sleep —— 网络存量变化不会回调到本设备,
+     * 一旦 sleep 就会卡死直到玩家手动碰库存。</p>
+     */
+    public boolean hasLocalResourcesForMinimumOperation() {
+        return switch (selectedMode) {
+            case HIGH_VOLTAGE -> {
+                int dustPerOp = selectedMode.requiredDust();
+                yield dustPerOp > 0
+                        && inventory.getStackInSlot(TeslaCoilInventory.SLOT_DUST).getCount() >= dustPerOp;
+            }
+            case EXTREME_HIGH_VOLTAGE -> inventory.hasMatrix();
+        };
+    }
+
     public boolean hasLockedModeLocalPrerequisites() {
         return lockedMode != null && hasLocalPrerequisites(lockedMode, lockedBatchSize);
     }
