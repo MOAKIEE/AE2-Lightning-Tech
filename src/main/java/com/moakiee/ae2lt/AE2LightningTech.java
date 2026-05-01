@@ -54,7 +54,9 @@ import appeng.block.AEBaseEntityBlock;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
 
+import com.moakiee.ae2lt.api.AE2LTCapabilities;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
+import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
@@ -376,6 +378,37 @@ public class AE2LightningTech {
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.WIRELESS_RECEIVER.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        // Public, addon-facing lightning energy capability. Each registered BE
+        // bridges the AE2 grid's lightning-typed storage through the
+        // ILightningEnergyHandler API so external mods don't have to reflect into
+        // grid internals. CrystalCatalyzer is intentionally not registered: it does
+        // not interact with lightning energy on the grid, so a handler there would
+        // be misleading. See PLAN_public_api_design.md sections 3.1, 5.1.
+        event.registerBlockEntity(
+                AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
+                ModBlockEntities.LIGHTNING_COLLECTOR.get(),
+                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
+
+        event.registerBlockEntity(
+                AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
+                ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
+                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
+
+        event.registerBlockEntity(
+                AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
+                ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get(),
+                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
+
+        event.registerBlockEntity(
+                AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
+                ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
+                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
+
+        event.registerBlockEntity(
+                AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK,
+                ModBlockEntities.TESLA_COIL.get(),
+                (blockEntity, side) -> new GridLightningEnergyHandler(blockEntity));
 
         event.registerBlock(
                 AECapabilities.GENERIC_INTERNAL_INV,
