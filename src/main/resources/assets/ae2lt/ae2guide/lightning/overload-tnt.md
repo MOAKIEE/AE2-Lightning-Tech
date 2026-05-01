@@ -32,7 +32,6 @@ After ignition or activation, Overload TNT has a fuse of roughly **4 seconds**. 
 2. At detonation, **all mobs in a wide area around the blast center take heavy lightning damage**. Damage falls off with distance, but the inner radius is lethal.
 3. After the first wave, a period of **aftershocks** continues for several seconds, dropping random additional strikes across the area.
 4. A short burst of **thunderstorm weather** is forced into the area around the blast center, reverting after about 8 seconds.
-5. All lightning produced during this sequence counts as **artificial lightning**, and can be captured by the [Lightning Collector](lightning-collector.md) to produce High Voltage Lightning in the ME network.
 
 Overload TNT has good manners when it comes to cleanup: **bedrock, barrier blocks, end portal frames, and command blocks** are not broken, and area-protected zones are respected.
 
@@ -48,7 +47,6 @@ The config option `overloadTnt.enableTerrainDamage` in `ae2lt-common.toml` (defa
 ## Usage Tips
 
 * Place it on top of a **solid block**, give yourself plenty of distance, and prefer using it in open terrain. The blast radius is large enough that standing on the same map can still get you caught up in it.
-* Used in low-altitude open ground, it lets a <ItemLink id="ae2lt:lightning_collector" /> absorb a huge amount of artificial lightning at once — much faster than relying on the regular [Tesla Coil](tesla-coil.md) cycle.
 * If you only want it to break terrain and not wipe nearby mobs, move anything you want to keep away first.
 
 ## Field Log: An Anomalous Drop
