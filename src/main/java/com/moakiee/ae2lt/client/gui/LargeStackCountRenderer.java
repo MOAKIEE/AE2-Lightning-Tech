@@ -2,8 +2,6 @@ package com.moakiee.ae2lt.client.gui;
 
 import java.util.List;
 
-import com.mojang.blaze3d.systems.RenderSystem;
-
 import org.joml.Matrix4f;
 
 import net.minecraft.ChatFormatting;
@@ -149,13 +147,16 @@ public final class LargeStackCountRenderer {
     }
 
     private static void drawShadowedText(Matrix4f matrix, Font font, int x, int y, String text) {
-        RenderSystem.disableBlend();
+        // Use the vanilla buffered text path; RenderType.text() manages its own
+        // blend / depth state, so we deliberately do NOT toggle RenderSystem
+        // blend here -- doing so would pollute the caller's GL state machine
+        // (a common source of "exit-game-but-DWM-still-laggy" symptoms when
+        // combined with other mods that assume blend remains enabled).
         var buffer = Minecraft.getInstance().renderBuffers().bufferSource();
         font.drawInBatch(text, x + 1, y + 1, SHADOW_COLOR, false, matrix, buffer,
                 Font.DisplayMode.NORMAL, 0, 15728880);
         font.drawInBatch(text, x, y, TEXT_COLOR, false, matrix, buffer,
                 Font.DisplayMode.NORMAL, 0, 15728880);
         buffer.endBatch();
-        RenderSystem.enableBlend();
     }
 }

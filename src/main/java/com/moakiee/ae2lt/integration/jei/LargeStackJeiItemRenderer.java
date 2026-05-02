@@ -10,7 +10,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 
 import mezz.jei.api.ingredients.IIngredientRenderer;
@@ -32,10 +31,14 @@ public class LargeStackJeiItemRenderer implements IIngredientRenderer<ItemStack>
             return;
         }
 
-        RenderSystem.enableDepthTest();
+        // Intentionally do NOT toggle RenderSystem.enableDepthTest / disableBlend here.
+        // GuiGraphics#renderFakeItem and Font#drawInBatch already manage their own
+        // depth / blend state via their RenderTypes; toggling them here would leave
+        // the GL state machine in an unexpected configuration for the next JEI
+        // ingredient (one of the patterns the optimization report flags as
+        // GL state-machine pollution).
         guiGraphics.renderFakeItem(ingredient, posX, posY);
         LargeStackCountRenderer.renderCountAt(guiGraphics, getFontRenderer(Minecraft.getInstance(), ingredient), posX, posY, ingredient.getCount());
-        RenderSystem.disableBlend();
     }
 
     @Override

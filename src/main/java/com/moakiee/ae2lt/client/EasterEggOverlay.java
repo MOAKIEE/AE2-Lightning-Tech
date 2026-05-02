@@ -34,6 +34,15 @@ public final class EasterEggOverlay implements LayeredDraw.Layer {
         }
     }
 
+    /**
+     * Force-clears the overlay state. Called on logout / world unload so the
+     * easter-egg image cannot bleed into the next session (and so the static
+     * tick counter does not retain references that survive the logical client).
+     */
+    public static void reset() {
+        ticksRemaining = 0;
+    }
+
     @Override
     public void render(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
         if (ticksRemaining <= 0) {

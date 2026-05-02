@@ -3,7 +3,9 @@ package com.moakiee.ae2lt.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
 
@@ -28,6 +30,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import appeng.client.render.overlay.OverlayRenderType;
@@ -44,6 +47,16 @@ import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
  * <p>
  * When the player holds the connector, all wireless-capable hosts within range
  * are highlighted with their connections. A preview overlay is shown for the selected host.
+ * <p>
+ * Performance notes (matches the optimization-report guidance):
+ * <ul>
+ *   <li>The chunk/BE scan is performed at most once every {@link #RESCAN_INTERVAL_TICKS}
+ *       game ticks, not every frame. At 200fps this turns ~200 scans/sec into ~5 scans/sec
+ *       while remaining visually instantaneous (≤200ms staleness).</li>
+ *   <li>Hot-path objects ({@link Quaternionf}, scratch {@link HashSet}) are reused across
+ *       frames instead of re-allocated, to keep GC pressure flat under high frame rates
+ *       (the report flags high-FPS as an amplifier of any per-frame leak path).</li>
+ * </ul>
  */
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public class WirelessConnectorRenderer {
@@ -62,6 +75,20 @@ public class WirelessConnectorRenderer {
     private static final int COLOR_LINE = 0xC00080FF;
 
     private static final int SCAN_RANGE = 64;
+    /** How many game ticks between full chunk re-scans for wireless hosts. */
+    private static final int RESCAN_INTERVAL_TICKS = 4;
+
+    /** Cached host positions from the last scan; refreshed every {@link #RESCAN_INTERVAL_TICKS}. */
+    private static final List<BlockPos> cachedHostPositions = new ArrayList<>();
+    /** Game time of the last scan. -1 means never scanned. */
+    private static long lastScanTick = -1L;
+    /** Dimension key of the last scan; if it changes we force a re-scan immediately. */
+    private static ResourceKey<Level> lastScanDimension = null;
+
+    /** Reusable rotation; avoids {@code new Quaternionf(...)} every frame. */
+    private static final Quaternionf scratchRotation = new Quaternionf();
+    /** Reusable scratch set used by {@link #collectConnectionsForFace}; cleared between calls. */
+    private static final Set<BlockPos> scratchConnectionSet = new HashSet<>();
 
     @SubscribeEvent
     public static void onRenderLevelStage(RenderLevelStageEvent event) {
@@ -94,9 +121,13 @@ public class WirelessConnectorRenderer {
 
         poseStack.pushPose();
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
-        Quaternionf rotation = new Quaternionf(mc.gameRenderer.getMainCamera().rotation());
-        rotation.invert();
-        poseStack.mulPose(rotation);
+        // Reuse a single Quaternionf instance instead of allocating per frame.
+        // mc.gameRenderer.getMainCamera().rotation() returns a reference Quaternionf
+        // owned by the camera; copying-and-inverting through scratchRotation keeps
+        // the camera's value untouched while avoiding a per-frame allocation.
+        scratchRotation.set(mc.gameRenderer.getMainCamera().rotation());
+        scratchRotation.invert();
+        poseStack.mulPose(scratchRotation);
         poseStack.translate(-cam.x, -cam.y, -cam.z);
 
         // Resolve selected host for special coloring and preview rendering.
@@ -110,53 +141,49 @@ public class WirelessConnectorRenderer {
                 && mc.level.dimension().equals(selectedDim);
         boolean selectedRendered = false;
 
-        // Scan all wireless hosts in loaded chunks within range.
-        BlockPos playerPos = player.blockPosition();
-        int minCX = (playerPos.getX() - SCAN_RANGE) >> 4;
-        int maxCX = (playerPos.getX() + SCAN_RANGE) >> 4;
-        int minCZ = (playerPos.getZ() - SCAN_RANGE) >> 4;
-        int maxCZ = (playerPos.getZ() + SCAN_RANGE) >> 4;
+        // Refresh the cached host position list at most every RESCAN_INTERVAL_TICKS,
+        // or immediately if the player has changed dimensions since the last scan.
+        long gameTime = mc.level.getGameTime();
+        ResourceKey<Level> currentDim = mc.level.dimension();
+        if (lastScanTick < 0L
+                || lastScanDimension == null
+                || !lastScanDimension.equals(currentDim)
+                || gameTime - lastScanTick >= RESCAN_INTERVAL_TICKS) {
+            rescanHosts(mc.level, player.blockPosition());
+            lastScanTick = gameTime;
+            lastScanDimension = currentDim;
+        }
 
-        for (int cx = minCX; cx <= maxCX; cx++) {
-            for (int cz = minCZ; cz <= maxCZ; cz++) {
-                if (!mc.level.hasChunk(cx, cz)) continue;
-                var chunk = mc.level.getChunk(cx, cz);
-                for (var bePos : chunk.getBlockEntitiesPos()) {
-                    var be = chunk.getBlockEntity(bePos);
-                    if (be instanceof OverloadedPatternProviderBlockEntity provider) {
-                        if (provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
-                            continue;
-                        }
-
-                        boolean isSelected = hasSelection
-                                && OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(selectedHostType)
-                                && bePos.equals(selectedPos);
-                        renderProviderHost(poseStack, buffer, mc.level, bePos, provider, isSelected);
-                        selectedRendered |= isSelected;
-                        continue;
-                    }
-
-                    if (be instanceof OverloadedInterfaceBlockEntity iface) {
-                        if (iface.getInterfaceMode() != OverloadedInterfaceBlockEntity.InterfaceMode.WIRELESS) {
-                            continue;
-                        }
-
-                        boolean isSelected = hasSelection
-                                && OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(selectedHostType)
-                                && bePos.equals(selectedPos);
-                        renderInterfaceHost(poseStack, buffer, mc.level, bePos, iface, isSelected);
-                        selectedRendered |= isSelected;
-                        continue;
-                    }
-
-                    if (be instanceof OverloadedPowerSupplyBlockEntity powerSupply) {
-                        boolean isSelected = hasSelection
-                                && OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(selectedHostType)
-                                && bePos.equals(selectedPos);
-                        renderPowerSupplyHost(poseStack, buffer, mc.level, bePos, powerSupply, isSelected);
-                        selectedRendered |= isSelected;
-                    }
+        // Render every cached host. We re-fetch the BlockEntity from the level so
+        // that connection state (added/removed since the last scan) is always live;
+        // only the *which positions to consider* part is cached.
+        for (BlockPos bePos : cachedHostPositions) {
+            if (!mc.level.isLoaded(bePos)) continue;
+            var be = mc.level.getBlockEntity(bePos);
+            if (be instanceof OverloadedPatternProviderBlockEntity provider) {
+                if (provider.getProviderMode() == OverloadedPatternProviderBlockEntity.ProviderMode.NORMAL) {
+                    continue;
                 }
+                boolean isSelected = hasSelection
+                        && OverloadedWirelessConnectorItem.HOST_PROVIDER.equals(selectedHostType)
+                        && bePos.equals(selectedPos);
+                renderProviderHost(poseStack, buffer, mc.level, bePos, provider, isSelected);
+                selectedRendered |= isSelected;
+            } else if (be instanceof OverloadedInterfaceBlockEntity iface) {
+                if (iface.getInterfaceMode() != OverloadedInterfaceBlockEntity.InterfaceMode.WIRELESS) {
+                    continue;
+                }
+                boolean isSelected = hasSelection
+                        && OverloadedWirelessConnectorItem.HOST_INTERFACE.equals(selectedHostType)
+                        && bePos.equals(selectedPos);
+                renderInterfaceHost(poseStack, buffer, mc.level, bePos, iface, isSelected);
+                selectedRendered |= isSelected;
+            } else if (be instanceof OverloadedPowerSupplyBlockEntity powerSupply) {
+                boolean isSelected = hasSelection
+                        && OverloadedWirelessConnectorItem.HOST_POWER_SUPPLY.equals(selectedHostType)
+                        && bePos.equals(selectedPos);
+                renderPowerSupplyHost(poseStack, buffer, mc.level, bePos, powerSupply, isSelected);
+                selectedRendered |= isSelected;
             }
         }
 
@@ -446,13 +473,47 @@ public class WirelessConnectorRenderer {
             Function<T, ResourceKey<Level>> dimensionGetter,
             Function<T, BlockPos> posGetter,
             Function<T, Direction> faceGetter) {
-        Set<BlockPos> result = new HashSet<>();
+        // Reuse a single scratch set to keep allocations off the hot render path.
+        // Safe because RenderLevelStageEvent is only fired on the client render thread.
+        scratchConnectionSet.clear();
         for (var conn : connections) {
             if (dimensionGetter.apply(conn).equals(level.dimension()) && faceGetter.apply(conn) == face) {
-                result.add(posGetter.apply(conn));
+                scratchConnectionSet.add(posGetter.apply(conn));
             }
         }
-        return result;
+        return scratchConnectionSet;
+    }
+
+    /**
+     * Refreshes {@link #cachedHostPositions} by walking the chunks in {@link #SCAN_RANGE}
+     * around {@code playerPos}. Called at most every {@link #RESCAN_INTERVAL_TICKS} ticks
+     * (or immediately on dimension change) to keep the per-frame render path allocation-free.
+     */
+    private static void rescanHosts(net.minecraft.client.multiplayer.ClientLevel level, BlockPos playerPos) {
+        cachedHostPositions.clear();
+
+        int minCX = (playerPos.getX() - SCAN_RANGE) >> 4;
+        int maxCX = (playerPos.getX() + SCAN_RANGE) >> 4;
+        int minCZ = (playerPos.getZ() - SCAN_RANGE) >> 4;
+        int maxCZ = (playerPos.getZ() + SCAN_RANGE) >> 4;
+
+        for (int cx = minCX; cx <= maxCX; cx++) {
+            for (int cz = minCZ; cz <= maxCZ; cz++) {
+                if (!level.hasChunk(cx, cz)) continue;
+                var chunk = level.getChunk(cx, cz);
+                for (var bePos : chunk.getBlockEntitiesPos()) {
+                    var be = chunk.getBlockEntity(bePos);
+                    if (be instanceof OverloadedPatternProviderBlockEntity
+                            || be instanceof OverloadedInterfaceBlockEntity
+                            || be instanceof OverloadedPowerSupplyBlockEntity) {
+                        // Defensive copy: chunk.getBlockEntitiesPos() returns positions
+                        // that may share identity with the BE's stored pos; we only need
+                        // the immutable coordinates.
+                        cachedHostPositions.add(bePos.immutable());
+                    }
+                }
+            }
+        }
     }
 
     private static SelectedHost getSelectedHost(ItemStack stack) {
@@ -474,5 +535,19 @@ public class WirelessConnectorRenderer {
     }
 
     private record SelectedHost(BlockPos pos, ResourceKey<Level> dimension, String hostType) {
+    }
+
+    /**
+     * Drop cached host positions when the player disconnects. Without this, a
+     * subsequent login to a different world would briefly render highlights at
+     * the previous world's coordinates on the very first frame (until the next
+     * scheduled re-scan replaces them). Cheap and prevents stale-state bleed.
+     */
+    @SubscribeEvent
+    public static void onLoggingOut(ClientPlayerNetworkEvent.LoggingOut event) {
+        cachedHostPositions.clear();
+        scratchConnectionSet.clear();
+        lastScanTick = -1L;
+        lastScanDimension = null;
     }
 }
