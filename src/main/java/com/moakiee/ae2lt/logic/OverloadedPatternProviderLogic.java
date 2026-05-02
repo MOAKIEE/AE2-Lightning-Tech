@@ -554,6 +554,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         outputFilterDirty = true;
         refreshEjectRegistrations();
 
+        // EAP smart-doubling compat: re-apply the eap$allowScaling marker to
+        // every pattern. Vanilla updatePatterns has a TAIL mixin from EAP that
+        // does this; since we fully override updatePatterns without calling
+        // super, we replicate it here.
+        SmartDoublingCompat.applyTo(this, patterns);
+
         ICraftingProvider.requestUpdate(accessor.getMainNode());
         alertGridTick();
     }
@@ -842,6 +848,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
+        // EAP advanced-blocking compat: when ADVANCED_BLOCKING is on and the
+        // target fully covers every input slot, treat the push as not blocked
+        // (mirrors EAP's @Redirect on PatternProviderTarget.containsPatternInput).
+        if (blocking) {
+            var targetBe = targetLevel.getBlockEntity(conn.pos());
+            var ppt = PatternProviderTarget.get(
+                    targetLevel, conn.pos(), targetBe, conn.boundFace(), wirelessSource);
+            if (ppt != null && AdvancedBlockingCompat.shouldBypassBlocking(this, ppt, pattern)) {
+                blocking = false;
+            }
+        }
         var result = adapter.pushCopies(
                 targetLevel, conn.pos(), conn.boundFace(),
                 pattern, inputs, 1,
@@ -903,7 +920,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
                 if (isBlocking()) {
                     var anyTarget = faceToTarget.values().iterator().next();
-                    if (anyTarget.containsPatternInput(patternInputKeys)) continue;
+                    // EAP advanced-blocking compat: bypass when target fully matches.
+                    if (anyTarget.containsPatternInput(patternInputKeys)
+                            && !AdvancedBlockingCompat.shouldBypassBlocking(this, anyTarget, pattern)) continue;
                 }
 
                 if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) continue;
@@ -959,7 +978,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (isBlocking()) {
                 var patternInputKeys = ((PatternProviderLogicAccessor) this).getPatternInputs();
                 var anyTarget = faceToTarget.values().iterator().next();
-                if (anyTarget.containsPatternInput(patternInputKeys)) return PushOutcome.SOFT_FAIL;
+                // EAP advanced-blocking compat: bypass when target fully matches.
+                if (anyTarget.containsPatternInput(patternInputKeys)
+                        && !AdvancedBlockingCompat.shouldBypassBlocking(this, anyTarget, pattern)) return PushOutcome.SOFT_FAIL;
             }
 
             if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs))
