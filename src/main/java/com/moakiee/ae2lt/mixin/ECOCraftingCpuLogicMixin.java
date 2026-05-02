@@ -27,6 +27,7 @@ import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.crafting.CraftingLink;
+import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 
 import com.moakiee.ae2lt.mixin.support.MixinReflectionSupport;
@@ -36,88 +37,61 @@ import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
 import com.moakiee.ae2lt.overload.cpu.OverloadPatternReference;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 
+/**
+ * Pseudo mixin that grafts the AE2LT overload pattern ID-only claim logic onto
+ * NeoECOAEExtension's {@code ECOCraftingCPULogic}. Mirrors the seven injection
+ * points used by {@link CraftingCpuLogicMixin} and {@link AdvCraftingCpuLogicMixin}.
+ * <p>
+ * Critical simplification compared to the AdvancedAE variant: ECO's logic uses
+ * AE2's own {@code appeng.crafting.execution.ExecutingCraftingJob} for its
+ * {@code job} field (via {@code import appeng.crafting.execution.*;}), so the
+ * job's internals can be reached through the existing
+ * {@link ExecutingCraftingJobAccessor} / {@link ElapsedTimeTrackerAccessor}
+ * accessors instead of more reflection. ECO also lacks an {@code updateOutput}
+ * hook, so the corresponding monitor-update calls are intentionally omitted.
+ */
 @Pseudo
-@Mixin(targets = "net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic", remap = false)
-public abstract class AdvCraftingCpuLogicMixin {
+@Mixin(targets = "cn.dancingsnow.neoecoae.api.me.ECOCraftingCPULogic", remap = false)
+public abstract class ECOCraftingCpuLogicMixin {
 
-    // --- Safe reflection lookups: return null on failure instead of crashing ---
-
-    @Unique
-    private static final @Nullable Class<?> AE2LT_ADV_LOGIC_CLASS =
-            MixinReflectionSupport.findClassSafe("net.pedroksl.advanced_ae.common.logic.AdvCraftingCPULogic");
+    // --- Reflection lookups: null-safe; failure disables the feature gracefully ---
 
     @Unique
-    private static final @Nullable Class<?> AE2LT_ADV_JOB_CLASS =
-            MixinReflectionSupport.findClassSafe("net.pedroksl.advanced_ae.common.logic.ExecutingCraftingJob");
+    private static final @Nullable Class<?> AE2LT_ECO_LOGIC_CLASS =
+            MixinReflectionSupport.findClassSafe("cn.dancingsnow.neoecoae.api.me.ECOCraftingCPULogic");
 
     @Unique
-    private static final @Nullable Class<?> AE2LT_ADV_ELAPSED_TRACKER_CLASS =
-            MixinReflectionSupport.findClassSafe("net.pedroksl.advanced_ae.common.logic.ElapsedTimeTracker");
+    private static final @Nullable Field AE2LT_ECO_JOB_FIELD =
+            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ECO_LOGIC_CLASS, "job");
 
     @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_LOGIC_CLASS, "job");
+    private static final @Nullable Field AE2LT_ECO_INVENTORY_FIELD =
+            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ECO_LOGIC_CLASS, "inventory");
 
     @Unique
-    private static final @Nullable Field AE2LT_ADV_INVENTORY_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_LOGIC_CLASS, "inventory");
+    private static final @Nullable Field AE2LT_ECO_CPU_FIELD =
+            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ECO_LOGIC_CLASS, "cpu");
 
     @Unique
-    private static final @Nullable Field AE2LT_ADV_CPU_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_LOGIC_CLASS, "cpu");
+    private static final @Nullable Method AE2LT_ECO_FINISH_JOB_METHOD =
+            MixinReflectionSupport.findDeclaredMethodSafe(AE2LT_ECO_LOGIC_CLASS, "finishJob", boolean.class);
 
     @Unique
-    private static final @Nullable Method AE2LT_ADV_FINISH_JOB_METHOD =
-            MixinReflectionSupport.findDeclaredMethodSafe(AE2LT_ADV_LOGIC_CLASS, "finishJob", boolean.class);
-
-    @Unique
-    private static final @Nullable Method AE2LT_ADV_POST_CHANGE_METHOD =
-            MixinReflectionSupport.findDeclaredMethodSafe(AE2LT_ADV_LOGIC_CLASS, "postChange", AEKey.class);
-
-    @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_WAITING_FOR_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_JOB_CLASS, "waitingFor");
-
-    @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_TIME_TRACKER_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_JOB_CLASS, "timeTracker");
-
-    @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_FINAL_OUTPUT_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_JOB_CLASS, "finalOutput");
-
-    @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_JOB_CLASS, "remainingAmount");
-
-    @Unique
-    private static final @Nullable Field AE2LT_ADV_JOB_LINK_FIELD =
-            MixinReflectionSupport.findDeclaredFieldSafe(AE2LT_ADV_JOB_CLASS, "link");
-
-    @Unique
-    private static final @Nullable Method AE2LT_ADV_DECREMENT_ITEMS_METHOD =
-            MixinReflectionSupport.findDeclaredMethodSafe(AE2LT_ADV_ELAPSED_TRACKER_CLASS,
-                    "decrementItems", long.class, AEKeyType.class);
+    private static final @Nullable Method AE2LT_ECO_POST_CHANGE_METHOD =
+            MixinReflectionSupport.findDeclaredMethodSafe(AE2LT_ECO_LOGIC_CLASS, "postChange", AEKey.class);
 
     /**
      * Whether all required reflection targets are available.
-     * If false, all injection handlers will gracefully skip (no-op).
+     * If false, every injection handler short-circuits to a no-op so the mixin
+     * is effectively inert when NeoECOAEExtension is absent or has changed shape.
      */
     @Unique
-    private static final boolean AE2LT_ADV_AVAILABLE = AE2LT_ADV_LOGIC_CLASS != null
-            && AE2LT_ADV_JOB_CLASS != null
-            && AE2LT_ADV_ELAPSED_TRACKER_CLASS != null
-            && AE2LT_ADV_JOB_FIELD != null
-            && AE2LT_ADV_INVENTORY_FIELD != null
-            && AE2LT_ADV_CPU_FIELD != null
-            && AE2LT_ADV_FINISH_JOB_METHOD != null
-            && AE2LT_ADV_POST_CHANGE_METHOD != null
-            && AE2LT_ADV_JOB_WAITING_FOR_FIELD != null
-            && AE2LT_ADV_JOB_TIME_TRACKER_FIELD != null
-            && AE2LT_ADV_JOB_FINAL_OUTPUT_FIELD != null
-            && AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD != null
-            && AE2LT_ADV_JOB_LINK_FIELD != null
-            && AE2LT_ADV_DECREMENT_ITEMS_METHOD != null;
+    private static final boolean AE2LT_ECO_AVAILABLE = AE2LT_ECO_LOGIC_CLASS != null
+            && AE2LT_ECO_JOB_FIELD != null
+            && AE2LT_ECO_INVENTORY_FIELD != null
+            && AE2LT_ECO_CPU_FIELD != null
+            && AE2LT_ECO_FINISH_JOB_METHOD != null
+            && AE2LT_ECO_POST_CHANGE_METHOD != null;
 
     @Unique
     @Nullable
@@ -128,7 +102,7 @@ public abstract class AdvCraftingCpuLogicMixin {
     @Inject(method = "insert", at = @At("HEAD"))
     private void ae2lt$beginInsertContext(AEKey what, long amount, Actionable type,
                                           CallbackInfoReturnable<Long> cir) {
-        if (!AE2LT_ADV_AVAILABLE) return;
+        if (!AE2LT_ECO_AVAILABLE) return;
         this.ae2lt$insertContext = new InsertContext(what, amount, type);
     }
 
@@ -142,7 +116,7 @@ public abstract class AdvCraftingCpuLogicMixin {
     private long ae2lt$captureStrictWaitingMatch(ListCraftingInventory waitingFor, AEKey what, long amount,
                                                  Actionable mode, Operation<Long> original) {
         long strictMatched = original.call(waitingFor, what, amount, mode);
-        if (AE2LT_ADV_AVAILABLE && mode == Actionable.SIMULATE && this.ae2lt$insertContext != null) {
+        if (AE2LT_ECO_AVAILABLE && mode == Actionable.SIMULATE && this.ae2lt$insertContext != null) {
             this.ae2lt$insertContext.setStrictMatched(strictMatched);
         }
         return strictMatched;
@@ -151,7 +125,7 @@ public abstract class AdvCraftingCpuLogicMixin {
     @Inject(method = "insert", at = @At("RETURN"), cancellable = true)
     private void ae2lt$claimOverloadRemainder(AEKey what, long amount, Actionable type,
                                               CallbackInfoReturnable<Long> cir) {
-        if (!AE2LT_ADV_AVAILABLE) return;
+        if (!AE2LT_ECO_AVAILABLE) return;
 
         var ctx = this.ae2lt$insertContext;
         this.ae2lt$insertContext = null;
@@ -178,7 +152,7 @@ public abstract class AdvCraftingCpuLogicMixin {
             long supplementalReturn = ae2lt$applyInventoryClaims(what, claims) + ae2lt$applyRequesterClaims(what, claims);
             var cpu = ae2lt$getCpu();
             if (cpu != null) {
-                ((AdvCraftingCpuAccessor) cpu).invokeMarkDirty();
+                ((ECOCraftingCpuAccessor) cpu).invokeMarkDirty();
             }
             cir.setReturnValue(cir.getReturnValue() + supplementalReturn);
         } else {
@@ -194,7 +168,7 @@ public abstract class AdvCraftingCpuLogicMixin {
             remap = false)
     private boolean ae2lt$registerOverloadExpectedOutputs(ICraftingProvider provider, IPatternDetails details,
                                                           KeyCounter[] inputHolder, Operation<Boolean> original) {
-        if (!AE2LT_ADV_AVAILABLE) {
+        if (!AE2LT_ECO_AVAILABLE) {
             return original.call(provider, details, inputHolder);
         }
 
@@ -214,9 +188,10 @@ public abstract class AdvCraftingCpuLogicMixin {
         boolean pushed = original.call(provider, details, inputHolder);
         var job = ae2lt$getJob();
         if (pushed && details instanceof OverloadedProviderOnlyPatternDetails overloadDetails && job != null) {
-            var finalOutput = ae2lt$getJobFinalOutput(job);
-            var finalOutputKey = finalOutput != null ? finalOutput.what() : null;
-            CraftingLink link = ae2lt$getJobLink(job);
+            var jobAccessor = (ExecutingCraftingJobAccessor) job;
+            GenericStack finalOutput = jobAccessor.getFinalOutput();
+            AEKey finalOutputKey = finalOutput != null ? finalOutput.what() : null;
+            CraftingLink link = jobAccessor.getLink();
             if (link != null) {
                 UUID craftingId = link.getCraftingID();
                 OverloadCpuStateManager.INSTANCE.registerExpectedOutputs(
@@ -238,7 +213,7 @@ public abstract class AdvCraftingCpuLogicMixin {
 
     @Inject(method = "writeToNBT", at = @At("RETURN"))
     private void ae2lt$writeOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
-        if (!AE2LT_ADV_AVAILABLE) return;
+        if (!AE2LT_ECO_AVAILABLE) return;
         var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(this, registries);
         if (overloadStateTag != null) {
             data.put("ae2ltOverloadState", overloadStateTag);
@@ -249,11 +224,11 @@ public abstract class AdvCraftingCpuLogicMixin {
 
     @Inject(method = "readFromNBT", at = @At("RETURN"))
     private void ae2lt$readOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
-        if (!AE2LT_ADV_AVAILABLE) return;
+        if (!AE2LT_ECO_AVAILABLE) return;
         OverloadCpuStateManager.INSTANCE.clear(this);
         var job = ae2lt$getJob();
         if (job != null && data.contains("ae2ltOverloadState", CompoundTag.TAG_COMPOUND)) {
-            CraftingLink link = ae2lt$getJobLink(job);
+            CraftingLink link = ((ExecutingCraftingJobAccessor) job).getLink();
             if (link != null) {
                 OverloadCpuStateManager.INSTANCE.readFromTag(
                         this,
@@ -266,7 +241,7 @@ public abstract class AdvCraftingCpuLogicMixin {
 
     @Inject(method = "finishJob", at = @At("HEAD"))
     private void ae2lt$clearOverloadState(boolean success, CallbackInfo ci) {
-        if (!AE2LT_ADV_AVAILABLE) return;
+        if (!AE2LT_ECO_AVAILABLE) return;
         OverloadCpuStateManager.INSTANCE.clear(this);
     }
 
@@ -297,25 +272,19 @@ public abstract class AdvCraftingCpuLogicMixin {
         }
 
         ae2lt$decrementJobItems(job, claimed, incoming.getType());
-        CraftingLink link = ae2lt$getJobLink(job);
+        var jobAccessor = (ExecutingCraftingJobAccessor) job;
+        CraftingLink link = jobAccessor.getLink();
         long inserted = link != null ? link.insert(incoming, claimed, Actionable.MODULATE) : 0;
         ae2lt$invokePostChange(incoming);
 
-        long remaining = Math.max(0L, ae2lt$getJobRemainingAmount(job) - claimed);
-        ae2lt$setJobRemainingAmount(job, remaining);
+        long remaining = Math.max(0L, jobAccessor.getRemainingAmount() - claimed);
+        jobAccessor.setRemainingAmount(remaining);
 
-        var cpu = ae2lt$getCpu();
         if (remaining <= 0) {
             ae2lt$invokeFinishJob(true);
-            if (cpu != null) {
-                ((AdvCraftingCpuAccessor) cpu).invokeUpdateOutput(null);
-            }
-        } else {
-            GenericStack finalOutput = ae2lt$getJobFinalOutput(job);
-            if (cpu != null && finalOutput != null) {
-                ((AdvCraftingCpuAccessor) cpu).invokeUpdateOutput(new GenericStack(finalOutput.what(), remaining));
-            }
         }
+        // ECO has no updateOutput hook (Crafting Monitor unsupported), so
+        // partial-progress final-output stack is intentionally not pushed.
 
         return inserted;
     }
@@ -327,7 +296,7 @@ public abstract class AdvCraftingCpuLogicMixin {
             return;
         }
 
-        var waitingFor = ae2lt$getJobWaitingFor(job);
+        ListCraftingInventory waitingFor = ((ExecutingCraftingJobAccessor) job).getWaitingFor();
         if (waitingFor == null) return;
 
         for (var claim : claims.claims()) {
@@ -335,74 +304,44 @@ public abstract class AdvCraftingCpuLogicMixin {
         }
     }
 
+    @Unique
+    private void ae2lt$decrementJobItems(ExecutingCraftingJob job, long amount, AEKeyType keyType) {
+        var jobAccessor = (ExecutingCraftingJobAccessor) job;
+        var timeTracker = jobAccessor.getTimeTracker();
+        if (timeTracker != null) {
+            ((ElapsedTimeTrackerAccessor) timeTracker).invokeDecrementItems(amount, keyType);
+        }
+    }
+
     // ========================= Reflection Accessors (null-safe) =========================
 
     @Unique
     @Nullable
-    private Object ae2lt$getJob() {
-        return MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_JOB_FIELD, this);
+    private ExecutingCraftingJob ae2lt$getJob() {
+        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ECO_JOB_FIELD, this);
+        return val instanceof ExecutingCraftingJob ecj ? ecj : null;
     }
 
     @Unique
     @Nullable
     private ListCraftingInventory ae2lt$getInventory() {
-        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_INVENTORY_FIELD, this);
+        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ECO_INVENTORY_FIELD, this);
         return val instanceof ListCraftingInventory inv ? inv : null;
     }
 
     @Unique
     @Nullable
     private Object ae2lt$getCpu() {
-        return MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_CPU_FIELD, this);
-    }
-
-    @Unique
-    @Nullable
-    private ListCraftingInventory ae2lt$getJobWaitingFor(Object job) {
-        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_JOB_WAITING_FOR_FIELD, job);
-        return val instanceof ListCraftingInventory inv ? inv : null;
-    }
-
-    @Unique
-    @Nullable
-    private GenericStack ae2lt$getJobFinalOutput(Object job) {
-        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_JOB_FINAL_OUTPUT_FIELD, job);
-        return val instanceof GenericStack gs ? gs : null;
-    }
-
-    @Unique
-    private long ae2lt$getJobRemainingAmount(Object job) {
-        return MixinReflectionSupport.getLongFieldSafe(AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD, job, 0L);
-    }
-
-    @Unique
-    private void ae2lt$setJobRemainingAmount(Object job, long remainingAmount) {
-        MixinReflectionSupport.setLongFieldSafe(
-                AE2LT_ADV_JOB_REMAINING_AMOUNT_FIELD, job, remainingAmount, "set Adv job remaining amount");
-    }
-
-    @Unique
-    @Nullable
-    private CraftingLink ae2lt$getJobLink(Object job) {
-        Object val = MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_JOB_LINK_FIELD, job);
-        return val instanceof CraftingLink cl ? cl : null;
-    }
-
-    @Unique
-    private void ae2lt$decrementJobItems(Object job, long amount, AEKeyType keyType) {
-        var timeTracker = MixinReflectionSupport.getFieldValueSafe(AE2LT_ADV_JOB_TIME_TRACKER_FIELD, job);
-        if (timeTracker == null) return;
-        MixinReflectionSupport.invokeMethodSafe(
-                AE2LT_ADV_DECREMENT_ITEMS_METHOD, timeTracker, "decrement Adv job items", amount, keyType);
+        return MixinReflectionSupport.getFieldValueSafe(AE2LT_ECO_CPU_FIELD, this);
     }
 
     @Unique
     private void ae2lt$invokeFinishJob(boolean success) {
-        MixinReflectionSupport.invokeMethodSafe(AE2LT_ADV_FINISH_JOB_METHOD, this, "finish Adv job", success);
+        MixinReflectionSupport.invokeMethodSafe(AE2LT_ECO_FINISH_JOB_METHOD, this, "finish ECO job", success);
     }
 
     @Unique
     private void ae2lt$invokePostChange(AEKey what) {
-        MixinReflectionSupport.invokeMethodSafe(AE2LT_ADV_POST_CHANGE_METHOD, this, "Adv post change", what);
+        MixinReflectionSupport.invokeMethodSafe(AE2LT_ECO_POST_CHANGE_METHOD, this, "ECO post change", what);
     }
 }

@@ -79,8 +79,7 @@ public abstract class CraftingCpuLogicMixin {
         }
 
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
-        var pendingBefore = OverloadCpuStateManager.INSTANCE.snapshotPending(logic);
-        if (pendingBefore.isEmpty()) {
+        if (!OverloadCpuStateManager.INSTANCE.hasAnyPending(logic)) {
             return;
         }
 

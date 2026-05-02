@@ -227,6 +227,20 @@ public final class OverloadCpuStateManager {
     }
 
     /**
+     * Lightweight emptiness probe that avoids {@link List#copyOf} in the common
+     * "is there any overload state at all on this CPU" check used by mixins.
+     */
+    public synchronized boolean hasAnyPending(CraftingCpuLogic logic) {
+        return hasAnyPending((Object) logic);
+    }
+
+    public synchronized boolean hasAnyPending(Object logic) {
+        Objects.requireNonNull(logic, "logic");
+        var state = states.get(logic);
+        return state != null && !state.isEmpty();
+    }
+
+    /**
      * Clear all overload-side state for this CPU.
      * Call from job cancel, normal finish, and any path that replaces the active
      * crafting job.
