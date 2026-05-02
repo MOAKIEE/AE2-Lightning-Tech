@@ -101,9 +101,10 @@ public class OverloadedWirelessConnectorItem extends Item {
         }
 
         if (hasSelection(stack)) {
+            var hostType = getSelectedHostType(stack);
             clearSelection(stack);
             player.displayClientMessage(
-                    Component.translatable("ae2lt.connector.deselected").withStyle(ChatFormatting.GREEN),
+                    Component.translatable(getDeselectedTranslationKey(hostType)).withStyle(ChatFormatting.GREEN),
                     true);
             return InteractionResultHolder.success(stack);
         }
@@ -151,6 +152,16 @@ public class OverloadedWirelessConnectorItem extends Item {
         } else {
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
         }
+    }
+
+    private static String getDeselectedTranslationKey(@Nullable String hostType) {
+        if (HOST_INTERFACE.equals(hostType)) {
+            return "ae2lt.connector.deselected_interface";
+        }
+        if (HOST_POWER_SUPPLY.equals(hostType)) {
+            return "ae2lt.connector.deselected_power_supply";
+        }
+        return "ae2lt.connector.deselected";
     }
 
     @Nullable

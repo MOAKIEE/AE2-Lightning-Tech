@@ -140,6 +140,8 @@
   "ae2lt.connector.connected": "已连接 [%d, %d, %d] 的 %s 面",
   "ae2lt.connector.connected_many": "已连接 %d 台机器的 %s 面",
   "ae2lt.connector.deselected": "已取消选中过载样板供应器",
+  "ae2lt.connector.deselected_interface": "已取消选中过载ME接口",
+  "ae2lt.connector.deselected_power_supply": "已取消选中过载供电仪",
   "ae2lt.connector.need_wireless": "需要先开启无线模式",
   "ae2lt.connector.dimension_mismatch": "无线连接不能跨维度",
   "ae2lt.connector.cannot_bind_provider": "不能将过载样板供应器绑定到另一个样板供应器",
