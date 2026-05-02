@@ -19,7 +19,7 @@
     "id": "ae2lt:lightning_collapse_matrix",
     "count": 1
   },
-  "totalEnergy": 500000000,
+  "totalEnergy": 50000000,
   "lightningCost": 256,
   "lightningTier": "extreme_high_voltage"
 }

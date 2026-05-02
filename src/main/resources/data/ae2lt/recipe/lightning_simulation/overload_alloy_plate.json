@@ -25,7 +25,7 @@
     "id": "ae2lt:overload_alloy_plate",
     "count": 1
   },
-  "totalEnergy": 1000000,
+  "totalEnergy": 500000,
   "lightningCost": 4,
   "lightningTier": "high_voltage"
 }

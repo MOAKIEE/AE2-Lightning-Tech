@@ -25,7 +25,7 @@
     "id": "ae2lt:tesla_coil",
     "count": 1
   },
-  "totalEnergy": 8000000,
+  "totalEnergy": 4000000,
   "lightningCost": 8,
   "lightningTier": "extreme_high_voltage"
 }

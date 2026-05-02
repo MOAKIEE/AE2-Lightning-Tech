@@ -19,7 +19,7 @@
     "id": "ae2lt:overload_singularity",
     "count": 1
   },
-  "totalEnergy": 2000000,
+  "totalEnergy": 1000000,
   "lightningCost": 8,
   "lightningTier": "high_voltage"
 }
