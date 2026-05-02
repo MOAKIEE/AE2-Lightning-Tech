@@ -55,10 +55,11 @@ public final class ProtectedItemEntityHelper {
     }
 
     public static void applyTransformLock(ItemEntity itemEntity, long gameTime) {
-        putMax(
-                itemEntity.getPersistentData(),
-                TRANSFORM_LOCK_UNTIL_TAG,
-                gameTime + LightningTransformRules.PARTICIPANT_LOCK_TICKS);
+        CompoundTag data = itemEntity.getPersistentData();
+        putMax(data, TRANSFORM_LOCK_UNTIL_TAG, gameTime + LightningTransformRules.PARTICIPANT_LOCK_TICKS);
+        putMax(data, PROTECT_UNTIL_TAG, gameTime + LightningTransformRules.OUTPUT_PROTECTION_TICKS);
+        itemEntity.clearFire();
+        itemEntity.setRemainingFireTicks(0);
     }
 
     public static boolean isProtectedItem(ItemEntity itemEntity) {
