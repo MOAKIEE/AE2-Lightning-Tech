@@ -17,6 +17,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.api.lightning.LightningTier;
 
 public final class LightningKey extends AEKey {
     public static final ResourceLocation TYPE_ID =
@@ -85,8 +86,47 @@ public final class LightningKey extends AEKey {
         return of(Tier.fromOrdinal(ordinal));
     }
 
+    /**
+     * Convenience constructor that takes the public-API tier enum. Equivalent to
+     * {@code of(fromApiTier(tier))} but allocation-free.
+     */
+    public static LightningKey of(LightningTier tier) {
+        return tier == LightningTier.EXTREME_HIGH_VOLTAGE ? EXTREME_HIGH_VOLTAGE : HIGH_VOLTAGE;
+    }
+
+    /**
+     * Map an internal {@link Tier} to its public-API counterpart.
+     *
+     * <p>The mapping is total and never throws: an unrecognized tier degrades to
+     * {@link LightningTier#HIGH_VOLTAGE}, mirroring the safe-fallback policy used
+     * elsewhere in this class.
+     */
+    public static LightningTier toApiTier(Tier tier) {
+        return tier == Tier.EXTREME_HIGH_VOLTAGE
+                ? LightningTier.EXTREME_HIGH_VOLTAGE
+                : LightningTier.HIGH_VOLTAGE;
+    }
+
+    /**
+     * Map a public-API {@link LightningTier} to the internal {@link Tier} enum.
+     *
+     * <p>Total mapping with the same safe-fallback policy as {@link #toApiTier}.
+     */
+    public static Tier fromApiTier(LightningTier tier) {
+        return tier == LightningTier.EXTREME_HIGH_VOLTAGE
+                ? Tier.EXTREME_HIGH_VOLTAGE
+                : Tier.HIGH_VOLTAGE;
+    }
+
     public Tier tier() {
         return this.tier;
+    }
+
+    /**
+     * @return the public-API tier for this key.
+     */
+    public LightningTier apiTier() {
+        return toApiTier(this.tier);
     }
 
     @Override

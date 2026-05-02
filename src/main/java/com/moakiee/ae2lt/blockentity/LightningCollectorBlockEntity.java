@@ -16,6 +16,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
+import com.moakiee.ae2lt.api.event.LightningCollectedEvent;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.machine.common.InsertOnlyAutomationInventory;
@@ -39,6 +40,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost {
@@ -170,7 +172,20 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             return false;
         }
 
-        long amountToInsert = rolledOutput;
+        // Public API hook: addons may cancel the capture entirely or rewrite the
+        // amount before it reaches the grid. See com.moakiee.ae2lt.api.event.
+        LightningCollectedEvent collectedEvent = new LightningCollectedEvent(
+                serverLevel,
+                worldPosition,
+                LightningKey.toApiTier(tier),
+                rolledOutput,
+                naturalWeatherLightning);
+        NeoForge.EVENT_BUS.post(collectedEvent);
+        if (collectedEvent.isCanceled()) {
+            return false;
+        }
+
+        long amountToInsert = collectedEvent.getAmount();
         long inserted = amountToInsert > 0
                 ? grid.getStorageService().getInventory().insert(
                         LightningKey.of(tier),

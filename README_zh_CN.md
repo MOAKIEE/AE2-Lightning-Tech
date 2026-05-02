@@ -35,6 +35,17 @@ AE2 闪电科技 把闪电变成一种可用的资源。收集自然雷电，精
 - **无线过载控制器** + **无线接收器** —— 不用线缆即可把样板供应器对接到远程机器，可选 轮询 / 均衡 两种分配策略。
 - **过载无线连接工具** —— 在世界中直接绑定样板供应器和电源供应器与目标机器。
 
+## Addon 开发者 API
+
+`com.moakiee.ae2lt.api.*` 是本 mod 对第三方模组暴露的唯一稳定接口。Addon 可以 `compileOnly` 依赖本 jar 并 import：
+
+- **`AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK`** —— 方块侧 capability，返回 `ILightningEnergyHandler`。已为 5 个接入闪电网格的方块实体注册：闪电收集器、闪电模拟室、闪电装配室、过载处理工厂、特斯拉线圈。Handler 直接桥接到 AE2 网格闪电存储，不需要任何反射。
+- **`LightningTier`** —— `HIGH_VOLTAGE` / `EXTREME_HIGH_VOLTAGE`。序列化名固化为 `"high_voltage"` / `"extreme_high_voltage"`。
+- **`LightningCollectedEvent`** —— 在 `NeoForge.EVENT_BUS` 上发布的可取消事件，于 `LightningCollectorBlockEntity.captureLightning(boolean)` 内部、roll 出数量之后、写入网格之前触发。订阅者可以取消捕获或改写入库数量。
+- **`AE2LTBlockEntityIds`** / **`AE2LTRecipeIds`** —— 公开方块实体与配方类型的固化 `ResourceLocation` 常量。
+
+`com.moakiee.ae2lt.api.*` 之外的所有代码都是内部实现，可能在小版本之间变更。完整契约与"发布即冻结"清单见 `package-info.java`。
+
 ## 依赖
 
 | 模组 | 是否必需 |
