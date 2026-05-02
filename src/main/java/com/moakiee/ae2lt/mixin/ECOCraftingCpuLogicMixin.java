@@ -30,7 +30,7 @@ import appeng.crafting.CraftingLink;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 
-import com.moakiee.ae2lt.mixin.support.MixinReflectionSupport;
+import com.moakiee.ae2lt.util.MixinReflectionSupport;
 import com.moakiee.ae2lt.overload.cpu.InsertContext;
 import com.moakiee.ae2lt.overload.cpu.OverloadClaimResult;
 import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
