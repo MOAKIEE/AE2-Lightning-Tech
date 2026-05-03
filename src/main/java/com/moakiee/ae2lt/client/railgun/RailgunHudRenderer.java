@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.client.railgun;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
@@ -18,9 +18,26 @@ import com.moakiee.ae2lt.registry.ModDataComponents;
 /**
  * Renders a small charge-progress bar near the crosshair while the player is
  * holding right-click on the railgun.
+ *
+ * <p>The bar is a 13x19 lightning-bolt icon placed immediately to the right of
+ * the crosshair. The empty texture is drawn as the background; the full
+ * texture is revealed progressively from the bottom up as charge builds. The
+ * tier text label was intentionally removed: the lit portion of the bolt
+ * already communicates progress, and tier thresholds are surfaced through the
+ * audio/visual cues fired elsewhere by the railgun client FX.
  */
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public final class RailgunHudRenderer {
+
+    private static final ResourceLocation EMPTY_TEX = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/hud/lightning_charging_bar.png");
+    private static final ResourceLocation FULL_TEX = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/hud/lightning_charging_bar_full.png");
+
+    private static final int ICON_W = 13;
+    private static final int ICON_H = 19;
+    /** Horizontal gap between the crosshair center and the icon's left edge. */
+    private static final int CROSSHAIR_OFFSET_X = 10;
 
     private RailgunHudRenderer() {}
 
@@ -32,33 +49,26 @@ public final class RailgunHudRenderer {
         if (!(stack.getItem() instanceof ElectromagneticRailgunItem)) return;
 
         long ticks = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
-        int t1 = RailgunDefaults.CHARGE_TICKS_TIER1;
-        int t2 = RailgunDefaults.CHARGE_TICKS_TIER2;
         int t3 = RailgunDefaults.CHARGE_TICKS_TIER3;
         float progress = Math.min(1.0f, (float) ticks / (float) t3);
-
-        int tier = ticks >= t3 ? 3 : ticks >= t2 ? 2 : ticks >= t1 ? 1 : 0;
 
         GuiGraphics gfx = e.getGuiGraphics();
         int w = mc.getWindow().getGuiScaledWidth();
         int h = mc.getWindow().getGuiScaledHeight();
-        int barW = 80, barH = 6;
-        int x = (w - barW) / 2;
-        int y = h / 2 + 16;
+        int x = w / 2 + CROSSHAIR_OFFSET_X;
+        int y = (h - ICON_H) / 2;
 
-        int color = switch (tier) {
-            case 3 -> 0xFFB0FFFF;
-            case 2 -> 0xFF7FCCFF;
-            case 1 -> 0xFF55AAFF;
-            default -> 0xFF334466;
-        };
-        gfx.fill(x - 1, y - 1, x + barW + 1, y + barH + 1, 0xCC000000);
-        gfx.fill(x, y, x + (int) (barW * progress), y + barH, color);
+        // Empty bolt as the always-visible background.
+        gfx.blit(EMPTY_TEX, x, y, 0, 0, ICON_W, ICON_H, ICON_W, ICON_H);
 
-        // Tier label
-        Component label = Component.translatable("ae2lt.railgun.tier_" + tier);
-        int lw = mc.font.width(label);
-        gfx.drawString(mc.font, label, (w - lw) / 2, y + barH + 2, 0xFFFFFFFF, true);
+        // Reveal the lit bolt from the bottom up by sampling the matching
+        // bottom slice of the full texture; this keeps pixel alignment exact
+        // even at fractional progress values.
+        int filledH = Math.round(ICON_H * progress);
+        if (filledH > 0) {
+            int emptyTop = ICON_H - filledH;
+            gfx.blit(FULL_TEX, x, y + emptyTop, 0, emptyTop, ICON_W, filledH, ICON_W, ICON_H);
+        }
 
         ensureUserStillUsing(mc.player, stack);
     }
