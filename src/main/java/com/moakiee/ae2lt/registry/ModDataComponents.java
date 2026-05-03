@@ -1,9 +1,14 @@
 package com.moakiee.ae2lt.registry;
 
+import com.mojang.serialization.Codec;
+
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 
 import net.minecraft.core.component.DataComponentType;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -36,4 +41,28 @@ public final class ModDataComponents {
                     builder -> builder
                             .persistent(CustomData.CODEC)
                             .networkSynchronized(CustomData.STREAM_CODEC));
+
+    /** Per-stack railgun module loadout. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunModules>>
+            RAILGUN_MODULES = DATA_COMPONENTS.registerComponentType(
+                    "railgun_modules",
+                    builder -> builder
+                            .persistent(RailgunModules.CODEC)
+                            .networkSynchronized(RailgunModules.STREAM_CODEC));
+
+    /** Persistent UI toggles for the railgun (terrain destruction, PVP lock). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunSettings>>
+            RAILGUN_SETTINGS = DATA_COMPONENTS.registerComponentType(
+                    "railgun_settings",
+                    builder -> builder
+                            .persistent(RailgunSettings.CODEC)
+                            .networkSynchronized(RailgunSettings.STREAM_CODEC));
+
+    /** Server-authoritative charge ticks while the player is holding right-click. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Long>>
+            RAILGUN_CHARGE_TICKS = DATA_COMPONENTS.registerComponentType(
+                    "railgun_charge_ticks",
+                    builder -> builder
+                            .persistent(Codec.LONG)
+                            .networkSynchronized(ByteBufCodecs.VAR_LONG));
 }

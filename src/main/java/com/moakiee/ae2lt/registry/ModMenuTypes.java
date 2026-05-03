@@ -13,6 +13,7 @@ import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
+import com.moakiee.ae2lt.menu.railgun.RailgunMenu;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -83,6 +84,11 @@ public final class ModMenuTypes {
             CRYSTAL_CATALYZER = MENU_TYPES.register(
                     "crystal_catalyzer",
                     () -> CrystalCatalyzerMenu.TYPE);
+
+    public static final DeferredHolder<MenuType<?>, MenuType<RailgunMenu>>
+            RAILGUN = MENU_TYPES.register(
+                    "railgun",
+                    () -> RailgunMenu.TYPE);
 
     private ModMenuTypes() {
     }

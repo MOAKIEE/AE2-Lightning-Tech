@@ -1,6 +1,13 @@
 package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamChainFxPacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamTogglePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamUpdatePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunFirePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunOpenGuiPacket;
+import com.moakiee.ae2lt.network.railgun.RailgunRecoilFxPacket;
+import com.moakiee.ae2lt.network.railgun.RailgunSettingsTogglePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -63,6 +70,38 @@ public final class NetworkInit {
                 FrequencyResponsePacket.TYPE,
                 FrequencyResponsePacket.STREAM_CODEC,
                 FrequencyResponsePacket::handle);
+
+        // Railgun: C→S
+        registrar.playToServer(
+                RailgunOpenGuiPacket.TYPE,
+                RailgunOpenGuiPacket.STREAM_CODEC,
+                RailgunOpenGuiPacket::handle);
+        registrar.playToServer(
+                RailgunBeamTogglePacket.TYPE,
+                RailgunBeamTogglePacket.STREAM_CODEC,
+                RailgunBeamTogglePacket::handle);
+        registrar.playToServer(
+                RailgunSettingsTogglePacket.TYPE,
+                RailgunSettingsTogglePacket.STREAM_CODEC,
+                RailgunSettingsTogglePacket::handle);
+
+        // Railgun: S→C
+        registrar.playToClient(
+                RailgunFirePacket.TYPE,
+                RailgunFirePacket.STREAM_CODEC,
+                RailgunFirePacket::handle);
+        registrar.playToClient(
+                RailgunBeamUpdatePacket.TYPE,
+                RailgunBeamUpdatePacket.STREAM_CODEC,
+                RailgunBeamUpdatePacket::handle);
+        registrar.playToClient(
+                RailgunBeamChainFxPacket.TYPE,
+                RailgunBeamChainFxPacket.STREAM_CODEC,
+                RailgunBeamChainFxPacket::handle);
+        registrar.playToClient(
+                RailgunRecoilFxPacket.TYPE,
+                RailgunRecoilFxPacket.STREAM_CODEC,
+                RailgunRecoilFxPacket::handle);
     }
 
     public static ResourceLocation id(String path) {

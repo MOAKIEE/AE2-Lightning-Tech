@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
 import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
+import com.moakiee.ae2lt.registry.ModMobEffects;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
@@ -47,6 +48,7 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.features.GridLinkables;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
@@ -163,6 +165,13 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        // 电磁炮 + 模块
+                        output.accept(ModItems.ELECTROMAGNETIC_RAILGUN);
+                        output.accept(ModItems.RAILGUN_MODULE_CORE);
+                        output.accept(ModItems.RAILGUN_MODULE_COMPUTE);
+                        output.accept(ModItems.RAILGUN_MODULE_RESONANCE);
+                        output.accept(ModItems.RAILGUN_MODULE_ACCELERATION);
+                        output.accept(ModItems.RAILGUN_MODULE_ENERGY);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -193,6 +202,7 @@ public class AE2LightningTech {
         ModRecipeTypes.RECIPE_SERIALIZERS.register(modEventBus);
         ModRecipeTypes.RECIPE_TYPES.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModMobEffects.EFFECTS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
@@ -638,6 +648,11 @@ public class AE2LightningTech {
 
             registerAppliedFluxInductionCardCompat();
             registerOverloadTntDispenseBehavior();
+
+            // Railgun: wireless link handler so AE2 wireless access points can bind it.
+            GridLinkables.register(
+                    ModItems.ELECTROMAGNETIC_RAILGUN.get(),
+                    com.moakiee.ae2lt.event.railgun.RailgunGridLinkHandler.INSTANCE);
 
         });
     }

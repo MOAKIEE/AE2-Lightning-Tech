@@ -152,6 +152,28 @@ public final class AE2LTCommonConfig {
         return VALUES.pigmeeFumoGiftOnFirstJoin.get();
     }
 
+    // ── Railgun: damage (per-tier base + beam settle) ─────────────────────────
+    public static int railgunBeamDamagePerSettle() { return VALUES.railgunBeamDamagePerSettle.get(); }
+    public static int railgunBaseDamageEhv1() { return VALUES.railgunBaseDamageEhv1.get(); }
+    public static int railgunBaseDamageEhv2() { return VALUES.railgunBaseDamageEhv2.get(); }
+    public static int railgunBaseDamageEhv3() { return VALUES.railgunBaseDamageEhv3.get(); }
+
+    // ── Railgun: AE energy + lightning ammo ───────────────────────────────────
+    public static long railgunBeamAeCostPerSettle() { return VALUES.railgunBeamAeCostPerSettle.get(); }
+    public static long railgunAeCostTier1() { return VALUES.railgunAeCostTier1.get(); }
+    public static long railgunAeCostTier2() { return VALUES.railgunAeCostTier2.get(); }
+    public static long railgunAeCostTier3() { return VALUES.railgunAeCostTier3.get(); }
+    public static int railgunBeamHvCostInterval() { return VALUES.railgunBeamHvCostInterval.get(); }
+    public static long railgunEhvCostTier1() { return VALUES.railgunEhvCostTier1.get(); }
+    public static long railgunEhvCostTier2() { return VALUES.railgunEhvCostTier2.get(); }
+    public static long railgunEhvCostTier3() { return VALUES.railgunEhvCostTier3.get(); }
+
+    // ── Railgun: PvP / terrain switches and budget ────────────────────────────
+    public static boolean railgunDamagePlayers() { return VALUES.railgunDamagePlayers.get(); }
+    public static boolean railgunParalysisOnPlayers() { return VALUES.railgunParalysisOnPlayers.get(); }
+    public static boolean railgunTerrainDropItems() { return VALUES.railgunTerrainDropItems.get(); }
+    public static int railgunTerrainBlocksPerTick() { return VALUES.railgunTerrainBlocksPerTick.get(); }
+
     private static final class Values {
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
         private final ModConfigSpec.IntValue electroChimeMaxCatalysis;
@@ -187,6 +209,24 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
         private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
+
+        // ── Railgun fields ────────────────────────────────────────────────
+        private final ModConfigSpec.IntValue railgunBeamDamagePerSettle;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv1;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv2;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv3;
+        private final ModConfigSpec.LongValue railgunBeamAeCostPerSettle;
+        private final ModConfigSpec.LongValue railgunAeCostTier1;
+        private final ModConfigSpec.LongValue railgunAeCostTier2;
+        private final ModConfigSpec.LongValue railgunAeCostTier3;
+        private final ModConfigSpec.IntValue railgunBeamHvCostInterval;
+        private final ModConfigSpec.LongValue railgunEhvCostTier1;
+        private final ModConfigSpec.LongValue railgunEhvCostTier2;
+        private final ModConfigSpec.LongValue railgunEhvCostTier3;
+        private final ModConfigSpec.BooleanValue railgunDamagePlayers;
+        private final ModConfigSpec.BooleanValue railgunParalysisOnPlayers;
+        private final ModConfigSpec.BooleanValue railgunTerrainDropItems;
+        private final ModConfigSpec.IntValue railgunTerrainBlocksPerTick;
 
         private Values(ModConfigSpec.Builder builder) {
             builder.push("lightningCollector");
@@ -319,6 +359,68 @@ public final class AE2LTCommonConfig {
             pigmeeFumoGiftOnFirstJoin = builder
                     .comment("Controls whether players receive a Pigmee Fumo as a gift on their first login.")
                     .define("giftOnFirstJoin", true);
+            builder.pop();
+
+            builder.push("railgun");
+            builder.push("damage");
+            railgunBeamDamagePerSettle = builder
+                    .comment("Beam damage per 2-tick settle. Theoretical 300 DPS, ~150 DPS after vanilla i-frames.")
+                    .defineInRange("beamDamagePerSettle", 30, 0, Integer.MAX_VALUE);
+            railgunBaseDamageEhv1 = builder
+                    .comment("Charge tier 1 base damage.")
+                    .defineInRange("baseDamageEhv1", 200, 0, Integer.MAX_VALUE);
+            railgunBaseDamageEhv2 = builder
+                    .comment("Charge tier 2 base damage.")
+                    .defineInRange("baseDamageEhv2", 350, 0, Integer.MAX_VALUE);
+            railgunBaseDamageEhv3 = builder
+                    .comment("Charge tier 3 (max) base damage.")
+                    .defineInRange("baseDamageEhv3", 500, 0, Integer.MAX_VALUE);
+            builder.pop();
+
+            builder.push("energy");
+            railgunBeamAeCostPerSettle = builder
+                    .comment("AE energy consumed per beam settle.")
+                    .defineInRange("beamAeCostPerSettle", 400L, 0L, Long.MAX_VALUE);
+            railgunAeCostTier1 = builder
+                    .comment("AE energy consumed per tier-1 charged shot.")
+                    .defineInRange("aeCostTier1", 8000L, 0L, Long.MAX_VALUE);
+            railgunAeCostTier2 = builder
+                    .comment("AE energy consumed per tier-2 charged shot.")
+                    .defineInRange("aeCostTier2", 40000L, 0L, Long.MAX_VALUE);
+            railgunAeCostTier3 = builder
+                    .comment("AE energy consumed per tier-3 (max) charged shot.")
+                    .defineInRange("aeCostTier3", 200000L, 0L, Long.MAX_VALUE);
+            railgunBeamHvCostInterval = builder
+                    .comment("Beam consumes 1 HV every N settles (settle = 2 ticks). N=8 means ~1.25 HV/sec; energy module doubles N.")
+                    .defineInRange("beamHvCostInterval", 8, 1, 64);
+            railgunEhvCostTier1 = builder
+                    .comment("EHV consumed per tier-1 charged shot.")
+                    .defineInRange("ehvCostTier1", 32L, 0L, Long.MAX_VALUE);
+            railgunEhvCostTier2 = builder
+                    .comment("EHV consumed per tier-2 charged shot.")
+                    .defineInRange("ehvCostTier2", 96L, 0L, Long.MAX_VALUE);
+            railgunEhvCostTier3 = builder
+                    .comment("EHV consumed per tier-3 (max) charged shot.")
+                    .defineInRange("ehvCostTier3", 256L, 0L, Long.MAX_VALUE);
+            builder.pop();
+
+            builder.push("misc");
+            railgunDamagePlayers = builder
+                    .comment("Whether the railgun damages other players.")
+                    .define("damagePlayers", true);
+            railgunParalysisOnPlayers = builder
+                    .comment("Whether paralysis applies to players.")
+                    .define("paralysisOnPlayers", true);
+            builder.pop();
+
+            builder.push("terrain");
+            railgunTerrainDropItems = builder
+                    .comment("Whether terrain destruction produces drops (drops auto-despawn after 60s).")
+                    .define("dropItems", false);
+            railgunTerrainBlocksPerTick = builder
+                    .comment("Block break budget per tick across all railgun terrain jobs.")
+                    .defineInRange("blocksPerTick", 200, 1, 8192);
+            builder.pop();
             builder.pop();
         }
     }

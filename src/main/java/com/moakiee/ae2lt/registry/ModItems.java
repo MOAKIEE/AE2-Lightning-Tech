@@ -14,9 +14,13 @@ import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
+import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleItem;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleType;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Rarity;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -155,6 +159,42 @@ public final class ModItems {
             "overloaded_filter_component",
             OverloadedFilterComponentItem::new,
             new Item.Properties().stacksTo(1));
+
+    // ── Electromagnetic Railgun (终末期 BiS 武器) ─────────────────────────────
+    public static final DeferredItem<ElectromagneticRailgunItem> ELECTROMAGNETIC_RAILGUN = ITEMS.registerItem(
+            "electromagnetic_railgun",
+            ElectromagneticRailgunItem::new,
+            new Item.Properties().stacksTo(1).rarity(Rarity.EPIC).fireResistant());
+
+    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_CORE = ITEMS.register(
+            "railgun_module_core",
+            () -> new RailgunModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunModuleType.CORE));
+
+    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_COMPUTE = ITEMS.register(
+            "railgun_module_compute",
+            () -> new RailgunModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunModuleType.COMPUTE));
+
+    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_RESONANCE = ITEMS.register(
+            "railgun_module_resonance",
+            () -> new RailgunModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunModuleType.RESONANCE));
+
+    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_ACCELERATION = ITEMS.register(
+            "railgun_module_acceleration",
+            () -> new RailgunModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunModuleType.ACCELERATION));
+
+    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_ENERGY = ITEMS.register(
+            "railgun_module_energy",
+            () -> new RailgunModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunModuleType.ENERGY));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);
