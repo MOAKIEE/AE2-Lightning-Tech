@@ -6,6 +6,7 @@ import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,12 +20,22 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 /**
  * Runtime compatibility shim for ExtendedAE_Plus's "Smart Doubling" feature.
  * <p>
- * EAP wires its smart-doubling marker via a mixin on
- * {@code appeng.helpers.patternprovider.PatternProviderLogic#updatePatterns}
- * (TAIL injection) — but the overload pattern provider fully overrides
- * {@code updatePatterns} and never delegates to {@code super}, so EAP's TAIL
- * never fires. This shim lets the override re-apply the marker manually.
- * <p>
+ * Two EAP integration points need help here, both because the overload
+ * pattern provider fully overrides vanilla code instead of delegating:
+ * <ol>
+ *   <li><b>Marker propagation.</b> EAP's
+ *       {@code PatternProviderLogicDoublingMixin#eap$applySmartDoublingToPatterns}
+ *       TAIL-injects {@code updatePatterns}; since our override doesn't call
+ *       {@code super}, that TAIL never fires. {@link #applyTo} replays it.</li>
+ *   <li><b>Scaled-pattern dispatch.</b> When smart doubling fires, the AE2
+ *       crafting plan stores {@code ScaledProcessingPattern} instances and
+ *       hands those (not the original) back to {@code pushPattern}. EAP
+ *       {@code @Redirect}s the {@code patterns.contains(...)} call inside
+ *       {@code PatternProviderLogic.pushPattern} to unwrap scaled patterns and
+ *       match against {@code getOriginal()}. Our overrides bypass that
+ *       redirect, so the contains check fails and dispatch silently aborts.
+ *       {@link #containsOrUnwrapped} replays the same unwrap.</li>
+ * </ol>
  * All references to EAP types are resolved reflectively so that ae2lt continues
  * to compile and load when EAP is absent.
  */
@@ -35,8 +46,13 @@ public final class SmartDoublingCompat {
 
     private record Handles(Class<?> awareClass, Setting<YesNo> setting, MethodHandle setAllowScaling) {}
 
+    private record ScaledHandles(Class<?> scaledClass, MethodHandle getOriginal) {}
+
     private static volatile Handles HANDLES;
     private static volatile boolean INIT_DONE;
+
+    private static volatile ScaledHandles SCALED_HANDLES;
+    private static volatile boolean SCALED_INIT_DONE;
 
     private static Handles handles() {
         if (INIT_DONE) return HANDLES;
@@ -65,6 +81,62 @@ public final class SmartDoublingCompat {
             } finally {
                 INIT_DONE = true;
             }
+        }
+    }
+
+    private static ScaledHandles scaledHandles() {
+        if (SCALED_INIT_DONE) return SCALED_HANDLES;
+        synchronized (SmartDoublingCompat.class) {
+            if (SCALED_INIT_DONE) return SCALED_HANDLES;
+            try {
+                if (!ModList.get().isLoaded(MOD_ID)) return null;
+                Class<?> scaledClass = Class.forName(
+                        "com.extendedae_plus.api.crafting.ScaledProcessingPattern");
+                MethodHandle getOriginal = MethodHandles.publicLookup().findVirtual(
+                        scaledClass,
+                        "getOriginal",
+                        MethodType.methodType(IPatternDetails.class));
+                SCALED_HANDLES = new ScaledHandles(scaledClass, getOriginal);
+                return SCALED_HANDLES;
+            } catch (Throwable t) {
+                LOGGER.warn("[ae2lt] Failed to wire EAP ScaledProcessingPattern compat: {}",
+                        t.toString());
+                return null;
+            } finally {
+                SCALED_INIT_DONE = true;
+            }
+        }
+    }
+
+    /**
+     * Mirror EAP's {@code PatternProviderLogicContainsRedirectMixin}: when
+     * {@code pattern} is a {@code ScaledProcessingPattern}, accept the original
+     * unwrapped instance as a match in {@code patterns}. Used by overrides of
+     * {@code pushPattern} that don't delegate to {@code super} (and therefore
+     * miss EAP's @Redirect on {@code PatternProviderLogic.pushPattern}).
+     *
+     * @return true if {@code pattern} (or its unwrapped original) is in {@code patterns}
+     */
+    public static boolean containsOrUnwrapped(List<IPatternDetails> patterns, IPatternDetails pattern) {
+        if (patterns.contains(pattern)) return true;
+        IPatternDetails unwrapped = unwrap(pattern);
+        return unwrapped != null && patterns.contains(unwrapped);
+    }
+
+    /**
+     * Returns the original pattern wrapped inside a
+     * {@code ScaledProcessingPattern}, or {@code null} if {@code pattern} is
+     * not scaled (or EAP is absent).
+     */
+    @Nullable
+    public static IPatternDetails unwrap(IPatternDetails pattern) {
+        ScaledHandles sh = scaledHandles();
+        if (sh == null) return null;
+        if (!sh.scaledClass.isInstance(pattern)) return null;
+        try {
+            return (IPatternDetails) sh.getOriginal.invoke(pattern);
+        } catch (Throwable t) {
+            return null;
         }
     }
 

@@ -603,7 +603,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private boolean wirelessPushPattern(IPatternDetails pattern, KeyCounter[] inputs) {
         if (!wirelessSendList.isEmpty()) return false;
         if (!gridNode.isActive()) return false;
-        if (!getAvailablePatterns().contains(pattern)) return false;
+        if (!SmartDoublingCompat.containsOrUnwrapped(getAvailablePatterns(), pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
 
         var level = overloadedHost.getLevel();
@@ -893,7 +893,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var accessor = (PatternProviderLogicAccessor) this;
         if (!accessor.getSendList().isEmpty()) return false;
         if (!gridNode.isActive()) return false;
-        if (!getAvailablePatterns().contains(pattern)) return false;
+        if (!SmartDoublingCompat.containsOrUnwrapped(getAvailablePatterns(), pattern)) return false;
         if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
         if (!pattern.supportsPushInputsToExternalInventory()) return false;
 
