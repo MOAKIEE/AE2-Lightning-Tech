@@ -18,6 +18,12 @@ import net.minecraft.server.level.ServerLevel;
 public class OverloadCrystalItem extends Item {
     private static final String DROPPED_TICKS_TAG = "ae2lt.overload_dropped_ticks";
     private static final int SUMMON_DELAY_TICKS = 200;
+    /**
+     * Granularity of the dropped-state countdown on the server. With this set to 4, the
+     * NBT counter advances at 5 Hz instead of 20 Hz, cutting persistent-data churn by 75%
+     * while still firing the artificial bolt within ~200ms of the configured 10s delay.
+     */
+    private static final int DROPPED_TICK_INTERVAL = 4;
 
     public OverloadCrystalItem(Properties properties) {
         super(properties);
@@ -44,7 +50,15 @@ public class OverloadCrystalItem extends Item {
         if (entity.level().isClientSide) {
             spawnDroppedLightning(entity);
         } else if (entity.level() instanceof ServerLevel serverLevel) {
-            int droppedTicks = entity.getPersistentData().getInt(DROPPED_TICKS_TAG) + 1;
+            // Only advance the timer once per DROPPED_TICK_INTERVAL ticks. tickCount is an
+            // in-memory counter that resets when the entity reloads, but the NBT-stored
+            // counter preserves progress across saves, so the worst-case slip after a
+            // reload is one interval (≤200ms).
+            if ((entity.tickCount % DROPPED_TICK_INTERVAL) != 0) {
+                return false;
+            }
+
+            int droppedTicks = entity.getPersistentData().getInt(DROPPED_TICKS_TAG) + DROPPED_TICK_INTERVAL;
             if (droppedTicks >= SUMMON_DELAY_TICKS) {
                 entity.getPersistentData().putInt(DROPPED_TICKS_TAG, 0);
                 ArtificialLightningHandler.spawnArtificialLightning(serverLevel, entity.position(), null);

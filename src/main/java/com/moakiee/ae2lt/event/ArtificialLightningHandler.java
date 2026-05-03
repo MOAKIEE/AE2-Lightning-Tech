@@ -18,6 +18,13 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 public final class ArtificialLightningHandler {
     private static final String HELD_TICKS_TAG = "ae2lt.overload_held_ticks";
     private static final int SUMMON_DELAY_TICKS = 200;
+    /**
+     * Granularity of the held-state countdown on the server. With this set to 4, the
+     * inventory scan and NBT counter run at 5 Hz instead of 20 Hz, cutting per-player
+     * scan cost by 75% while keeping the bolt cadence within ~200ms of the configured
+     * 10s delay.
+     */
+    private static final int HELD_TICK_INTERVAL = 4;
 
     private ArtificialLightningHandler() {
     }
@@ -29,6 +36,13 @@ public final class ArtificialLightningHandler {
             return;
         }
 
+        // Sample at HELD_TICK_INTERVAL granularity. The hot path here used to scan up to
+        // 37 inventory slots every tick for every player; throttling collapses that to
+        // 5 Hz without changing the user-visible 10s cadence.
+        if ((player.tickCount % HELD_TICK_INTERVAL) != 0) {
+            return;
+        }
+
         boolean carryingOverloadCrystal = isCarryingConfiguredCrystal(player);
 
         if (!carryingOverloadCrystal) {
@@ -36,7 +50,7 @@ public final class ArtificialLightningHandler {
             return;
         }
 
-        int heldTicks = player.getPersistentData().getInt(HELD_TICKS_TAG) + 1;
+        int heldTicks = player.getPersistentData().getInt(HELD_TICKS_TAG) + HELD_TICK_INTERVAL;
         if (heldTicks < SUMMON_DELAY_TICKS) {
             player.getPersistentData().putInt(HELD_TICKS_TAG, heldTicks);
             return;

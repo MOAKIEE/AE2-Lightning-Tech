@@ -15,6 +15,15 @@ import net.minecraft.world.phys.Vec3;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 public final class LightningTransformService {
+    /**
+     * Hard cap on transform rounds per single lightning bolt. Existing recipes peak at a
+     * couple of rounds per strike; this cap exists purely to bound the worst case when an
+     * exotic recipe set or a huge ItemEntity pile would otherwise let the loop spin
+     * pathologically. Bumping this only matters if a legitimate single-strike pipeline
+     * ever needs more than this many sequential transforms, which has not been observed.
+     */
+    private static final int MAX_ROUNDS_PER_STRIKE = 32;
+
     private static final Comparator<RecipeHolder<LightningTransformRecipe>> RECIPE_ORDER = Comparator
             .<RecipeHolder<LightningTransformRecipe>>comparingInt(holder -> holder.value().priority())
             .reversed()
@@ -31,11 +40,24 @@ public final class LightningTransformService {
 
     public static void handleLightning(ServerLevel level, LightningBolt lightningBolt) {
         long gameTime = level.getGameTime();
-        List<LightningTransformPlan> executedPlans = new ArrayList<>();
-        List<RecipeHolder<LightningTransformRecipe>> sortedRecipes = getSortedRecipes(level);
+        // Snapshot the candidate pool exactly once. Newly spawned outputs receive
+        // PROTECT_UNTIL_TAG via applyOutputProtection and would be filtered by
+        // canParticipateInTransform anyway, so re-running the AABB scan every round only
+        // burns CPU on a fixed set of candidates whose state we already have references to.
+        List<ItemEntity> candidatePool = collectCandidates(level, lightningBolt.position(), gameTime);
+        if (candidatePool.isEmpty()) {
+            return;
+        }
 
-        while (true) {
-            List<ItemEntity> candidates = collectCandidates(level, lightningBolt.position(), gameTime);
+        List<RecipeHolder<LightningTransformRecipe>> sortedRecipes = getSortedRecipes(level);
+        if (sortedRecipes.isEmpty()) {
+            return;
+        }
+
+        List<LightningTransformPlan> executedPlans = new ArrayList<>();
+
+        for (int round = 0; round < MAX_ROUNDS_PER_STRIKE; round++) {
+            List<ItemEntity> candidates = filterStillEligible(candidatePool, gameTime);
             if (candidates.isEmpty()) {
                 break;
             }
@@ -77,6 +99,22 @@ public final class LightningTransformService {
                 ItemEntity.class,
                 searchBox,
                 itemEntity -> ProtectedItemEntityHelper.canParticipateInTransform(itemEntity, gameTime));
+    }
+
+    /**
+     * Filter the snapshotted pool to entities still eligible after prior rounds shrank or
+     * discarded their stacks. This preserves the "one bolt may run multiple recipes against
+     * partially-consumed stacks" behavior — locks are only applied once after the loop
+     * completes, exactly as before.
+     */
+    private static List<ItemEntity> filterStillEligible(List<ItemEntity> pool, long gameTime) {
+        List<ItemEntity> result = new ArrayList<>(pool.size());
+        for (ItemEntity itemEntity : pool) {
+            if (ProtectedItemEntityHelper.canParticipateInTransform(itemEntity, gameTime)) {
+                result.add(itemEntity);
+            }
+        }
+        return result;
     }
 
     private static List<RecipeHolder<LightningTransformRecipe>> getSortedRecipes(ServerLevel level) {
