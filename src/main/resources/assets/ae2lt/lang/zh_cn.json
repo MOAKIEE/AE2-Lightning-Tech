@@ -24,6 +24,7 @@
   "ae2lt.railgun.fail.no_ehv": "极高压闪电不足",
   "ae2lt.railgun.fail.no_compensation_hv": "矩阵代偿失败：高压闪电不足",
   "ae2lt.railgun.fail.no_hv": "高压闪电不足",
+  "ae2lt.railgun.tooltip.buffer": "能量缓存：%s / %s AE",
   "ae2lt.railgun.terrain.on": "地形破坏：开启 (蓄力档会破坏方块)",
   "ae2lt.railgun.terrain.off": "地形破坏：关闭",
   "ae2lt.railgun.pvp_lock.on": "PVP 锁：开启 (链跳跳过其他玩家)",

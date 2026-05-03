@@ -1,17 +1,22 @@
 package com.moakiee.ae2lt.item.railgun;
 
+import java.util.List;
+
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
@@ -19,6 +24,8 @@ import net.minecraft.world.phys.BlockHitResult;
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.menu.railgun.RailgunHost;
 import com.moakiee.ae2lt.registry.ModDataComponents;
@@ -90,5 +97,38 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem {
     public @Nullable ItemMenuHost<?> getMenuHost(
             Player player, ItemMenuHostLocator locator, @Nullable BlockHitResult hitResult) {
         return new RailgunHost(this, player, locator);
+    }
+
+    /**
+     * Passive AE buffer top-up while the player holds the railgun. Only runs
+     * server-side and only when the stack is in the main hand or off-hand —
+     * inventory-resident railguns intentionally do not drain the network.
+     * The actual throttling and grid lookup happens inside
+     * {@link RailgunEnergyBuffer#refillFromNetwork}.
+     */
+    @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
+        if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
+        boolean inHand = isSelected || player.getOffhandItem() == stack;
+        if (!inHand) return;
+        RailgunEnergyBuffer.refillFromNetwork(stack, player);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Item.TooltipContext context,
+                                List<Component> tooltip, TooltipFlag tooltipFlag) {
+        super.appendHoverText(stack, context, tooltip, tooltipFlag);
+        long current = RailgunEnergyBuffer.read(stack);
+        long capacity = AE2LTCommonConfig.railgunBufferCapacity();
+        tooltip.add(Component.translatable(
+                        "ae2lt.railgun.tooltip.buffer",
+                        formatAe(current),
+                        formatAe(capacity))
+                .withStyle(ChatFormatting.AQUA));
+    }
+
+    private static String formatAe(long value) {
+        return String.format("%,d", value);
     }
 }

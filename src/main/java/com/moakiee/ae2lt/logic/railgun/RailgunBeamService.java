@@ -26,9 +26,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 import appeng.api.config.Actionable;
-import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGrid;
-import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionSource;
 
 import com.moakiee.ae2lt.AE2LightningTech;
@@ -146,25 +144,36 @@ public final class RailgunBeamService {
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
 
         long aeCost = AmmoCost.beamAeCost(mods);
-        IEnergyService energy = grid.getEnergyService();
         IActionSource src = IActionSource.ofPlayer(player);
-        double aeAvail = energy.extractAEPower(aeCost, Actionable.SIMULATE, PowerMultiplier.CONFIG);
-        if (aeAvail < aeCost) {
-            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_ae");
-            return false;
-        }
-        boolean takeHv = false;
         int interval = AmmoCost.beamHvCostInterval(mods);
+        // The HV pull is sampled BEFORE the AE buffer deduction so that we don't
+        // half-pay (deduct AE then fail HV). If HV is required but unavailable,
+        // we fail immediately without touching the buffer or the network.
+        long pendingHv = 0L;
         if (s.settleCount % interval == 0) {
             long got = grid.getStorageService().getInventory().extract(
-                    LightningKey.HIGH_VOLTAGE, 1L, Actionable.MODULATE, src);
+                    LightningKey.HIGH_VOLTAGE, 1L, Actionable.SIMULATE, src);
             if (got < 1L) {
                 RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_hv");
                 return false;
             }
-            takeHv = true;
+            pendingHv = 1L;
         }
-        energy.extractAEPower(aeCost, Actionable.MODULATE, PowerMultiplier.CONFIG);
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, aeCost)) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_ae");
+            return false;
+        }
+        if (pendingHv > 0L) {
+            long got = grid.getStorageService().getInventory().extract(
+                    LightningKey.HIGH_VOLTAGE, pendingHv, Actionable.MODULATE, src);
+            if (got < pendingHv) {
+                // Should be impossible after a successful SIMULATE in the same tick,
+                // but be defensive: refund AE so we never half-charge the player.
+                RailgunEnergyBuffer.refund(stack, aeCost);
+                RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_hv");
+                return false;
+            }
+        }
 
         // Raycast & damage
         BeamTrace trace = traceBeam(level, player);

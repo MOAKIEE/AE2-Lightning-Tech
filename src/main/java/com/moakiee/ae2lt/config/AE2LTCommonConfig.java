@@ -167,6 +167,9 @@ public final class AE2LTCommonConfig {
     public static long railgunEhvCostTier1() { return VALUES.railgunEhvCostTier1.get(); }
     public static long railgunEhvCostTier2() { return VALUES.railgunEhvCostTier2.get(); }
     public static long railgunEhvCostTier3() { return VALUES.railgunEhvCostTier3.get(); }
+    public static long railgunBufferCapacity() { return VALUES.railgunBufferCapacity.get(); }
+    public static long railgunBufferRefillRatePerTick() { return VALUES.railgunBufferRefillRatePerTick.get(); }
+    public static int railgunBufferRefillIntervalTicks() { return VALUES.railgunBufferRefillIntervalTicks.get(); }
 
     // ── Railgun: PvP / terrain switches and budget ────────────────────────────
     public static boolean railgunDamagePlayers() { return VALUES.railgunDamagePlayers.get(); }
@@ -223,6 +226,9 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.LongValue railgunEhvCostTier1;
         private final ModConfigSpec.LongValue railgunEhvCostTier2;
         private final ModConfigSpec.LongValue railgunEhvCostTier3;
+        private final ModConfigSpec.LongValue railgunBufferCapacity;
+        private final ModConfigSpec.LongValue railgunBufferRefillRatePerTick;
+        private final ModConfigSpec.IntValue railgunBufferRefillIntervalTicks;
         private final ModConfigSpec.BooleanValue railgunDamagePlayers;
         private final ModConfigSpec.BooleanValue railgunParalysisOnPlayers;
         private final ModConfigSpec.BooleanValue railgunTerrainDropItems;
@@ -402,6 +408,18 @@ public final class AE2LTCommonConfig {
             railgunEhvCostTier3 = builder
                     .comment("EHV consumed per tier-3 (max) charged shot.")
                     .defineInRange("ehvCostTier3", 256L, 0L, Long.MAX_VALUE);
+            railgunBufferCapacity = builder
+                    .comment("Maximum AE energy stored in the railgun's internal buffer.",
+                            "Default 1,000,000 AE = ~5 tier-3 shots, ~125 tier-1 shots, or ~250 seconds of beam.")
+                    .defineInRange("bufferCapacity", 1_000_000L, 0L, Long.MAX_VALUE);
+            railgunBufferRefillRatePerTick = builder
+                    .comment("AE energy passively pulled from the bound ME network per tick while the railgun is held.",
+                            "Default 5,000 AE/tick = full buffer in ~10 seconds. Set to 0 to disable passive refill.")
+                    .defineInRange("bufferRefillRatePerTick", 5_000L, 0L, Long.MAX_VALUE);
+            railgunBufferRefillIntervalTicks = builder
+                    .comment("How often (in ticks) the passive refill check runs while the railgun is held.",
+                            "Per-call amount = bufferRefillRatePerTick * bufferRefillIntervalTicks (default 4 = ~5 calls/sec).")
+                    .defineInRange("bufferRefillIntervalTicks", 4, 1, 200);
             builder.pop();
 
             builder.push("misc");

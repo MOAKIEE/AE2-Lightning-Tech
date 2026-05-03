@@ -65,4 +65,17 @@ public final class ModDataComponents {
                     builder -> builder
                             .persistent(Codec.LONG)
                             .networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /**
+     * Per-stack AE energy buffer. Stored as a long to allow large capacities
+     * without precision loss; the railgun's per-shot AE costs are already
+     * long-typed in {@code AmmoCost}. Synced to the client so HUD/tooltip
+     * can show the current value without a separate packet.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Long>>
+            RAILGUN_AE_BUFFER = DATA_COMPONENTS.registerComponentType(
+                    "railgun_ae_buffer",
+                    builder -> builder
+                            .persistent(Codec.LONG)
+                            .networkSynchronized(ByteBufCodecs.VAR_LONG));
 }

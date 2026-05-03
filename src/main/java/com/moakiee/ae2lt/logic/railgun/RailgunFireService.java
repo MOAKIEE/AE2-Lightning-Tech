@@ -26,9 +26,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
 import appeng.api.config.Actionable;
-import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGrid;
-import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionSource;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
@@ -46,8 +44,9 @@ import com.moakiee.ae2lt.registry.ModMobEffects;
 /**
  * Central charged-fire service. Encapsulates the right-click charged fire path:
  * 1. Resolve bound grid; abort with HUD message if invalid.
- * 2. Compute & extract AE energy + EHV (with optional HV-compensation if core
- *    module is installed but EHV is short).
+ * 2. Deduct AE via the per-stack {@link RailgunEnergyBuffer} (buffer first,
+ *    falls back to the bound network for any shortfall) and extract EHV/HV
+ *    ammunition from the network's storage. AE is refunded if EHV/HV fails.
  * 3. Raycast first target; build damage context; fan out chain + penetration +
  *    pulse hits.
  * 4. Apply damage to each target (ELECTROMAGNETIC damage type, manually
@@ -88,12 +87,12 @@ public final class RailgunFireService {
         AmmoCost cost = AmmoCost.forCharged(tier, mods);
 
         IActionSource src = IActionSource.ofPlayer(player);
-        IEnergyService energy = grid.getEnergyService();
         var inv = grid.getStorageService().getInventory();
 
-        // 1. Try AE energy.
-        double aeAvail = energy.extractAEPower(cost.aeEnergy(), Actionable.SIMULATE, PowerMultiplier.CONFIG);
-        if (aeAvail < cost.aeEnergy()) {
+        // 1. Try AE energy via the per-stack buffer. tryConsume prefers to deduct
+        //    from the buffer; if short, it pulls the remainder from the bound
+        //    network in a SIMULATE→MODULATE pair. Failure leaves both untouched.
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, cost.aeEnergy())) {
             sendFail(player, "ae2lt.railgun.fail.no_ae");
             return;
         }
@@ -105,6 +104,7 @@ public final class RailgunFireService {
         if (ehvShort > 0L) {
             if (!mods.hasCore()) {
                 inv.insert(LightningKey.EXTREME_HIGH_VOLTAGE, ehvGot, Actionable.MODULATE, src);
+                RailgunEnergyBuffer.refund(stack, cost.aeEnergy());
                 sendFail(player, "ae2lt.railgun.fail.no_ehv");
                 return;
             }
@@ -113,15 +113,14 @@ public final class RailgunFireService {
             if (gotHv < needHv) {
                 inv.insert(LightningKey.EXTREME_HIGH_VOLTAGE, ehvGot, Actionable.MODULATE, src);
                 inv.insert(LightningKey.HIGH_VOLTAGE, gotHv, Actionable.MODULATE, src);
+                RailgunEnergyBuffer.refund(stack, cost.aeEnergy());
                 sendFail(player, "ae2lt.railgun.fail.no_compensation_hv");
                 return;
             }
             hvUsed = gotHv;
         }
-        // 3. Commit AE.
-        energy.extractAEPower(cost.aeEnergy(), Actionable.MODULATE, PowerMultiplier.CONFIG);
 
-        // 4. Raycast first hit.
+        // 3. Raycast first hit.
         Vec3 from = player.getEyePosition();
         double range = RailgunDefaults.CHARGED_RANGE;
         Vec3 dir = player.getLookAngle();
@@ -183,7 +182,7 @@ public final class RailgunFireService {
             applyAll(level, player, hits, ctx);
         }
 
-        // 5. Terrain
+        // 4. Terrain
         if (settings.terrainDestruction()) {
             RailgunTerrainService.queueDestroy(level, firstHitPos, tier, player, stack);
             if (tier.isMax()) {
@@ -197,10 +196,10 @@ public final class RailgunFireService {
             }
         }
 
-        // 6. Recoil
+        // 5. Recoil
         RailgunRecoilService.apply(player, tier);
 
-        // 7. Broadcast client FX
+        // 6. Broadcast client FX
         broadcastFire(level, player, from, firstHitPos, tier, hits);
     }
 
