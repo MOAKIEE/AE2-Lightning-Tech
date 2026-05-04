@@ -11,6 +11,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
@@ -215,11 +216,16 @@ public final class RailgunBeamService {
         Vec3 to = from.add(dir.scale(range));
         BlockHitResult bhr = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         Vec3 endBlock = bhr.getType() == HitResult.Type.MISS ? to : bhr.getLocation();
-        EntityHitResult ehr = ProjectileUtil.getEntityHitResult(level, player, from, endBlock,
+        EntityHitResult ehr = ProjectileUtil.getEntityHitResult(player, from, endBlock,
                 new AABB(from, endBlock).inflate(0.5D),
-                e -> e instanceof LivingEntity le && le != player && !le.isSpectator());
-        Vec3 endPoint = ehr != null ? ehr.getLocation() : endBlock;
+                e -> e instanceof LivingEntity le && le != player && !le.isSpectator(),
+                Double.MAX_VALUE);
+        Vec3 endPoint = ehr != null ? lockedTargetPoint(ehr.getEntity()) : endBlock;
         return new BeamTrace(from, endPoint, ehr);
+    }
+
+    private static Vec3 lockedTargetPoint(Entity target) {
+        return target.getBoundingBox().getCenter();
     }
 
     private static void broadcastTrace(ServerLevel level, ServerPlayer player, BeamTrace trace) {

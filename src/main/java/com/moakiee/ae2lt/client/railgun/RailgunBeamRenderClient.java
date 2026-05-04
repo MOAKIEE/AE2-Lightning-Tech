@@ -15,6 +15,7 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
@@ -241,10 +242,11 @@ public final class RailgunBeamRenderClient {
         HitResult blockHit = mc.level.clip(new ClipContext(
                 from, maxTo, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
         Vec3 endBlock = blockHit.getType() == HitResult.Type.MISS ? maxTo : blockHit.getLocation();
-        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(mc.level, mc.player, from, endBlock,
+        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(mc.player, from, endBlock,
                 new AABB(from, endBlock).inflate(0.5D),
-                e -> e instanceof LivingEntity le && le != mc.player && !le.isSpectator());
-        Vec3 to = entityHit == null ? endBlock : entityHit.getLocation();
+                e -> e instanceof LivingEntity le && le != mc.player && !le.isSpectator(),
+                Double.MAX_VALUE);
+        Vec3 to = entityHit == null ? endBlock : lockedTargetPoint(entityHit.getEntity());
         ACTIVE.compute(mc.player.getUUID(), (k, prev) -> {
             if (prev == null) {
                 return new BeamState(mc.player.getUUID(), from, to, now);
@@ -254,6 +256,10 @@ public final class RailgunBeamRenderClient {
             prev.lastUpdateTick = now;
             return prev;
         });
+    }
+
+    private static Vec3 lockedTargetPoint(Entity target) {
+        return target.getBoundingBox().getCenter();
     }
 
     /**
