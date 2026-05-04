@@ -100,7 +100,6 @@ public final class RailgunFireService {
         long ehvNeeded = cost.ehv();
         long ehvGot = inv.extract(LightningKey.EXTREME_HIGH_VOLTAGE, ehvNeeded, Actionable.MODULATE, src);
         long ehvShort = ehvNeeded - ehvGot;
-        long hvUsed = 0L;
         if (ehvShort > 0L) {
             if (!mods.hasCore()) {
                 inv.insert(LightningKey.EXTREME_HIGH_VOLTAGE, ehvGot, Actionable.MODULATE, src);
@@ -117,7 +116,6 @@ public final class RailgunFireService {
                 sendFail(player, "ae2lt.railgun.fail.no_compensation_hv");
                 return;
             }
-            hvUsed = gotHv;
         }
 
         // 3. Raycast first hit.
@@ -135,6 +133,13 @@ public final class RailgunFireService {
         Vec3 firstHitPos = ehr != null ? ehr.getLocation() : endBlock;
         List<RailgunChainResolver.Hit> hits = new ArrayList<>();
         int primaryId = -1;
+        // Resonance module: pulse radius +2, damage ratio 0.6 → 0.9 at max tier.
+        // Computed up-front so the client shockwave FX can be widened in lockstep
+        // with the damage AOE.
+        double effectivePulseRadius = tier.isMax()
+                ? RailgunDefaults.PULSE_RADIUS + (mods.hasResonance() ? 2.0D : 0.0D)
+                : 0.0D;
+        double effectivePulseRatio = mods.hasResonance() ? 0.9D : RailgunDefaults.PULSE_DAMAGE_RATIO;
         if (ehr != null && ehr.getEntity() instanceof LivingEntity primary) {
             primaryId = primary.getId();
             hits.add(new RailgunChainResolver.Hit(primary, ctx.firstDamage(), false, false));
@@ -143,8 +148,7 @@ public final class RailgunFireService {
                 hits.addAll(RailgunChainResolver.resolvePenetration(level, player, primary, ctx,
                         RailgunDefaults.PENETRATION_MAX_TARGETS));
                 hits.addAll(RailgunChainResolver.resolvePulse(level, player, primary.position(),
-                        RailgunDefaults.PULSE_RADIUS,
-                        RailgunDefaults.PULSE_DAMAGE_RATIO, ctx));
+                        effectivePulseRadius, effectivePulseRatio, ctx));
             }
         }
         // Impact splash AOE — fires whether or not we hit a target directly. Skips primary
@@ -200,7 +204,7 @@ public final class RailgunFireService {
         RailgunRecoilService.apply(player, tier);
 
         // 6. Broadcast client FX
-        broadcastFire(level, player, from, firstHitPos, tier, hits);
+        broadcastFire(level, player, from, firstHitPos, tier, hits, effectivePulseRadius);
     }
 
     public static void applyAll(ServerLevel level, ServerPlayer player, List<RailgunChainResolver.Hit> hits, DamageContext ctx) {
@@ -238,7 +242,8 @@ public final class RailgunFireService {
     }
 
     private static void broadcastFire(ServerLevel level, ServerPlayer player, Vec3 from, Vec3 firstHit,
-                                      RailgunChargeTier tier, List<RailgunChainResolver.Hit> hits) {
+                                      RailgunChargeTier tier, List<RailgunChainResolver.Hit> hits,
+                                      double effectivePulseRadius) {
         List<Vec3> chainPath = new ArrayList<>();
         Vec3 prev = firstHit;
         for (var h : hits) {
@@ -262,7 +267,7 @@ public final class RailgunFireService {
             default -> 0.0D;
         };
         if (tier.isMax()) {
-            impactR = Math.max(impactR, RailgunDefaults.PULSE_RADIUS);
+            impactR = Math.max(impactR, effectivePulseRadius);
         }
         var pkt = new RailgunFirePacket(player.getUUID(), from, firstHit, chainPath, tier.ordinal(), tier.isMax(), (float) impactR);
         NetworkHandler.sendToTrackingChunk(level, player.chunkPosition(), pkt);
