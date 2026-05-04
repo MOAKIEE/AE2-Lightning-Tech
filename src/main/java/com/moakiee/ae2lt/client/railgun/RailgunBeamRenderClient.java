@@ -160,7 +160,13 @@ public final class RailgunBeamRenderClient {
         stack.pushPose();
         stack.translate(-camPos.x, -camPos.y, -camPos.z);
 
-        RenderSystem.disableDepthTest();
+        // Depth-test ON so the beam is occluded by blocks/entities (the endpoint is
+        // already clipped server- and client-side; without depth-test the prism would
+        // still paint over every block, producing an X-ray beam). AFTER_TRANSLUCENT_BLOCKS
+        // may leave depth-test disabled, so we enable it explicitly.
+        // depthMask off so the additive prism doesn't pollute depth for later passes.
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.enableBlend();

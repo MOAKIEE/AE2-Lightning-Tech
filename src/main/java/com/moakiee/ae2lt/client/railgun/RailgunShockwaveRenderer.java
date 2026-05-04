@@ -13,7 +13,11 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.shapes.CollisionContext;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -79,7 +83,11 @@ public final class RailgunShockwaveRenderer {
         stack.pushPose();
         stack.translate(-camPos.x, -camPos.y, -camPos.z);
 
-        RenderSystem.disableDepthTest();
+        // Depth-test ON so the ring is occluded by blocks (AFTER_TRANSLUCENT_BLOCKS
+        // may leave it disabled). depthMask off so the additive ring doesn't pollute
+        // depth for later passes.
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
@@ -98,7 +106,7 @@ public final class RailgunShockwaveRenderer {
             float radius = burst.maxRadius * (1.0F - (1.0F - t) * (1.0F - t));
             float ringFade = 1.0F - t;
             float ringWidth = burst.maxRadius * 0.18F * (1.0F - t * 0.5F);
-            addRing(bb, matrix, burst.center, radius, ringWidth,
+            addRing(mc.level, bb, matrix, burst.center, radius, ringWidth,
                     burst.r, burst.g, burst.b, 0.85F * ringFade);
         }
         var built = bb.build();
@@ -114,19 +122,35 @@ public final class RailgunShockwaveRenderer {
         stack.popPose();
     }
 
-    private static void addRing(BufferBuilder bb, org.joml.Matrix4f matrix, Vec3 center,
+    private static void addRing(Level level, BufferBuilder bb, org.joml.Matrix4f matrix, Vec3 center,
                                 float radius, float thickness,
                                 float r, float g, float b, float alpha) {
         if (radius <= 0.0F || thickness <= 0.0F) return;
         float inner = Math.max(0.0F, radius - thickness * 0.5F);
         float outer = radius + thickness * 0.5F;
+        // Per-segment block occlusion: cast from ring center to each slice's mid-point
+        // and skip slices that hit geometry. Without this the horizontal disc punches
+        // through walls when the impact point lands on a vertical surface.
+        double testR = outer + 0.05D;
+        double cy = center.y + 0.05D;
+        float y = (float) cy;
+        Vec3 castFrom = new Vec3(center.x, cy, center.z);
         for (int i = 0; i < RING_SEGMENTS; i++) {
             double a0 = (i / (double) RING_SEGMENTS) * Math.PI * 2.0D;
             double a1 = ((i + 1) / (double) RING_SEGMENTS) * Math.PI * 2.0D;
+            if (level != null) {
+                double midA = (a0 + a1) * 0.5D;
+                double mx = center.x + Math.cos(midA) * testR;
+                double mz = center.z + Math.sin(midA) * testR;
+                HitResult hr = level.clip(new ClipContext(castFrom,
+                        new Vec3(mx, cy, mz),
+                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                        CollisionContext.empty()));
+                if (hr.getType() != HitResult.Type.MISS) continue;
+            }
             double cos0 = Math.cos(a0), sin0 = Math.sin(a0);
             double cos1 = Math.cos(a1), sin1 = Math.sin(a1);
             // Ground-aligned (XZ plane) ring quad strip.
-            float y = (float) center.y + 0.05F;
             float ix0 = (float) (center.x + cos0 * inner);
             float iz0 = (float) (center.z + sin0 * inner);
             float ix1 = (float) (center.x + cos1 * inner);

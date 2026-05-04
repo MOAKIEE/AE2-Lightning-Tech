@@ -153,7 +153,10 @@ public final class RailgunArcRenderer {
         stack.pushPose();
         stack.translate(-camPos.x, -camPos.y, -camPos.z);
 
-        RenderSystem.disableDepthTest();
+        // Depth-test ON so arcs are occluded by blocks/entities (AFTER_TRANSLUCENT_BLOCKS
+        // may leave it disabled). depthMask off so additive billboards don't write depth.
+        RenderSystem.enableDepthTest();
+        RenderSystem.depthFunc(org.lwjgl.opengl.GL11.GL_LEQUAL);
         RenderSystem.depthMask(false);
         RenderSystem.disableCull();
         RenderSystem.enableBlend();
