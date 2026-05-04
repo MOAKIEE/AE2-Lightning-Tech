@@ -48,3 +48,6 @@ DevLog/
 .codex-tmp/
 .eclipse/
 .agent/
+
+# Claude Code 本地规则
+CLAUDE.local.md
