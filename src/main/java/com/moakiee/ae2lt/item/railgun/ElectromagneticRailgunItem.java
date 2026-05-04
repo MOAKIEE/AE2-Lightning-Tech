@@ -4,10 +4,10 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -23,8 +23,8 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
+import appeng.core.localization.Tooltips;
 
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.menu.railgun.RailgunHost;
@@ -120,15 +120,28 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem {
                                 List<Component> tooltip, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltip, tooltipFlag);
         long current = RailgunEnergyBuffer.read(stack);
-        long capacity = AE2LTCommonConfig.railgunBufferCapacity();
-        tooltip.add(Component.translatable(
-                        "ae2lt.railgun.tooltip.buffer",
-                        formatAe(current),
-                        formatAe(capacity))
-                .withStyle(ChatFormatting.AQUA));
+        long capacity = RailgunEnergyBuffer.capacity();
+        tooltip.add(Tooltips.energyStorageComponent((double) current, (double) capacity));
     }
 
-    private static String formatAe(long value) {
-        return String.format("%,d", value);
+    @Override
+    public boolean isBarVisible(ItemStack stack) {
+        return true;
+    }
+
+    @Override
+    public int getBarWidth(ItemStack stack) {
+        long capacity = RailgunEnergyBuffer.capacity();
+        if (capacity <= 0L) {
+            return 0;
+        }
+        double filled = (double) RailgunEnergyBuffer.read(stack) / (double) capacity;
+        return Mth.clamp((int) Math.round(filled * 13), 0, 13);
+    }
+
+    @Override
+    public int getBarColor(ItemStack stack) {
+        // Standard green of full durability bars, matching AE2 wireless terminals
+        return Mth.hsvToRgb(1 / 3.0F, 1.0F, 1.0F);
     }
 }

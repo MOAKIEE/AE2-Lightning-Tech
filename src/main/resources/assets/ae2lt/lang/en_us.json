@@ -22,7 +22,6 @@
   "ae2lt.railgun.fail.no_ehv": "Insufficient Extreme High Voltage Lightning",
   "ae2lt.railgun.fail.no_compensation_hv": "Matrix compensation failed: insufficient HV",
   "ae2lt.railgun.fail.no_hv": "Insufficient High Voltage Lightning",
-  "ae2lt.railgun.tooltip.buffer": "Energy buffer: %s / %s AE",
   "ae2lt.railgun.terrain.on": "Terrain Destruction: ON",
   "ae2lt.railgun.terrain.off": "Terrain Destruction: OFF",
   "ae2lt.railgun.pvp_lock.on": "PVP Lock: ON",
