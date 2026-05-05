@@ -142,7 +142,8 @@ public final class RailgunFireService {
         if (ehr != null && ehr.getEntity() instanceof LivingEntity primary) {
             primaryId = primary.getId();
             hits.add(new RailgunChainResolver.Hit(primary, ctx.firstDamage(), false, false));
-            hits.addAll(RailgunChainResolver.resolveChain(level, player, primary, ctx));
+            hits.addAll(RailgunChainResolver.resolveChainForkedFrom(
+                    level, player, primary, ctx, Set.of(), null));
             if (tier.isMax()) {
                 hits.addAll(RailgunChainResolver.resolvePenetration(level, player, primary, ctx,
                         RailgunDefaults.PENETRATION_MAX_TARGETS));
@@ -178,7 +179,7 @@ public final class RailgunFireService {
             for (var h : hits) {
                 if (h.target() != null) alreadyHit.add(h.target().getId());
             }
-            hits.addAll(RailgunChainResolver.resolveChainFrom(
+            hits.addAll(RailgunChainResolver.resolveChainForkedFrom(
                     level, player, splashAnchor, ctx, alreadyHit, firstHitPos));
         }
         if (!hits.isEmpty()) {

@@ -19,6 +19,7 @@ public record DamageContext(
         double bypassRatio,
         double chainDecay,
         int chainSegments,
+        int chainForkCount,
         double chainRadius,
         boolean isMaxCharged,
         boolean isBeam,
@@ -57,6 +58,7 @@ public record DamageContext(
                 RailgunDefaults.ARMOR_BYPASS_BEAM,
                 RailgunDefaults.CHAIN_DECAY,
                 chains,
+                1,
                 radius,
                 false,
                 true,
@@ -92,6 +94,18 @@ public record DamageContext(
             chains += RailgunDefaults.STORM_CHAIN_BONUS;
         }
         chains = Math.min(chains, RailgunDefaults.CHAIN_HARD_CAP);
+        // Fork count: per-tier base + compute + storm, capped.
+        int forkBase = switch (tier) {
+            case EHV1 -> RailgunDefaults.CHAIN_FORK_BASE_EHV1;
+            case EHV2 -> RailgunDefaults.CHAIN_FORK_BASE_EHV2;
+            case EHV3 -> RailgunDefaults.CHAIN_FORK_BASE_EHV3;
+            default -> 1;
+        };
+        int forks = forkBase + compute * RailgunDefaults.CHAIN_FORK_PER_COMPUTE;
+        if (storm) {
+            forks += RailgunDefaults.CHAIN_FORK_STORM_BONUS;
+        }
+        forks = Math.min(forks, RailgunDefaults.CHAIN_FORK_HARD_CAP);
         double radius = switch (tier) {
             case EHV1 -> 20.0D;
             case EHV2 -> 26.0D;
@@ -106,6 +120,7 @@ public record DamageContext(
                 bypass,
                 RailgunDefaults.CHAIN_DECAY,
                 chains,
+                forks,
                 radius,
                 tier.isMax(),
                 false,

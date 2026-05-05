@@ -39,6 +39,18 @@ public final class RailgunDefaults {
     /** Chain-jump search radius in blocks for the left-beam. */
     public static final double CHAIN_RADIUS = 16.0D;
 
+    // ── Chain fork mechanics (charged-shot only) ──────────────────────────
+    /** Base fork branches from the primary target by charge tier. */
+    public static final int CHAIN_FORK_BASE_EHV1 = 2;
+    public static final int CHAIN_FORK_BASE_EHV2 = 3;
+    public static final int CHAIN_FORK_BASE_EHV3 = 4;
+    /** Each compute module adds this many additional forks. */
+    public static final int CHAIN_FORK_PER_COMPUTE = 1;
+    /** Storm grants this many additional forks. */
+    public static final int CHAIN_FORK_STORM_BONUS = 1;
+    /** Hard cap on fork branches per fire (prevents trivial mob-rooms from overflowing). */
+    public static final int CHAIN_FORK_HARD_CAP = 8;
+
     // ── Charged-shot mechanics ────────────────────────────────────────────
     /** Charged-fire raycast range in blocks. */
     public static final int CHARGED_RANGE = 64;

@@ -47,6 +47,72 @@ public final class RailgunChainResolver {
     }
 
     /**
+     * 起点分叉版本：从 {@code start} 同时拉出最多 {@code ctx.chainForkCount()} 条
+     * 独立单线链。所有分支共享同一个 visited 集合，避免抢同一目标。
+     * 当 forkCount &lt;= 1 时退化为 {@link #resolveChainFrom}，行为完全一致。
+     */
+    public static List<Hit> resolveChainForkedFrom(
+            ServerLevel level,
+            ServerPlayer source,
+            LivingEntity start,
+            DamageContext ctx,
+            Set<Integer> initiallyVisited,
+            @Nullable Vec3 firstSegmentVisualStart) {
+        int forks = Math.max(1, ctx.chainForkCount());
+        if (forks <= 1) {
+            return resolveChainFrom(level, source, start, ctx, initiallyVisited, firstSegmentVisualStart);
+        }
+        List<Hit> out = new ArrayList<>();
+        if (ctx.chainSegments() <= 0) return out;
+
+        // 共享 visited：所有分支看到的"已命中名单"是同一份。
+        Set<Integer> visited = new HashSet<>(initiallyVisited);
+        visited.add(start.getId());
+
+        List<LivingEntity> seeds = findNearestK(
+                level, source, start, ctx.chainRadius(), visited, ctx.pvpLock(), forks);
+        if (seeds.isEmpty()) return out;
+
+        // 分支视觉起点：飞溅二次链场景沿用 firstSegmentVisualStart；主链场景用 start 中心。
+        Vec3 branchVisualStart = (firstSegmentVisualStart != null)
+                ? firstSegmentVisualStart
+                : start.position().add(0.0D, start.getBbHeight() / 2.0D, 0.0D);
+
+        for (LivingEntity seed : seeds) {
+            visited.add(seed.getId());
+            out.addAll(walkBranch(level, source, seed, ctx, visited, branchVisualStart));
+        }
+        return out;
+    }
+
+    /** 单条分支推进：seed 作为深度 1，往下走 chainSegments-1 跳。 */
+    private static List<Hit> walkBranch(
+            ServerLevel level,
+            ServerPlayer source,
+            LivingEntity seed,
+            DamageContext ctx,
+            Set<Integer> visited,
+            Vec3 branchVisualStart) {
+        List<Hit> out = new ArrayList<>();
+        // 首跳衰减：最大档第一跳免衰减，沿用 resolveChainFrom 的语义。
+        double damage = ctx.firstDamage();
+        if (!ctx.isMaxCharged()) {
+            damage *= ctx.chainDecay();
+        }
+        out.add(new Hit(seed, damage, false, false, branchVisualStart));
+        LivingEntity prev = seed;
+        for (int i = 1; i < ctx.chainSegments(); i++) {
+            damage *= ctx.chainDecay();
+            LivingEntity next = findNearest(level, source, prev, ctx.chainRadius(), visited, ctx.pvpLock());
+            if (next == null) break;
+            visited.add(next.getId());
+            out.add(new Hit(next, damage, false, false, null));
+            prev = next;
+        }
+        return out;
+    }
+
+    /**
      * Same as {@link #resolveChain} but with two extra inputs:
      *
      * @param initiallyVisited   entity IDs that the chain MUST NOT jump to (e.g. already-hit
@@ -213,6 +279,35 @@ public final class RailgunChainResolver {
             }
         }
         return best;
+    }
+
+    /** 与 {@link #findNearest} 同语义，但返回最多 K 个最近未命中目标，按距离升序。 */
+    private static List<LivingEntity> findNearestK(
+            ServerLevel level,
+            ServerPlayer source,
+            Entity from,
+            double radius,
+            Set<Integer> visited,
+            boolean pvpLock,
+            int k) {
+        if (k <= 0) return List.of();
+        Vec3 c = from.position();
+        AABB box = new AABB(c, c).inflate(radius);
+        double r2 = radius * radius;
+        List<LivingEntity> all = new ArrayList<>();
+        for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box, e -> shouldTarget(e, pvpLock))) {
+            if (ent == source) continue;
+            if (visited.contains(ent.getId())) continue;
+            if (ent.position().distanceToSqr(c) > r2) continue;
+            all.add(ent);
+        }
+        all.sort((a, b) -> Double.compare(
+                a.position().distanceToSqr(c),
+                b.position().distanceToSqr(c)));
+        if (all.size() > k) {
+            return new ArrayList<>(all.subList(0, k));
+        }
+        return all;
     }
 
     private static boolean shouldTarget(LivingEntity entity, boolean pvpLock) {
