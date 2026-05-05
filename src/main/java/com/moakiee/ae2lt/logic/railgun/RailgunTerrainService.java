@@ -13,8 +13,8 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import com.moakiee.ae2lt.registry.ModSounds;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -78,7 +78,7 @@ public final class RailgunTerrainService {
         };
 
         BlockPos centerPos = BlockPos.containing(center);
-        level.playSound(null, centerPos, SoundEvents.GENERIC_EXPLODE.value(), SoundSource.BLOCKS,
+        level.playSound(null, centerPos, ModSounds.RAILGUN_FIRE_IMPACT.get(), SoundSource.BLOCKS,
                 1.5F + tier.ordinal() * 0.3F, 0.5F);
 
         List<BlockPos> candidates = collectSphere(centerPos, radius);

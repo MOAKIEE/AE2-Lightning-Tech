@@ -2,11 +2,11 @@ package com.moakiee.ae2lt.client.railgun;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 import com.moakiee.ae2lt.network.railgun.RailgunFirePacket;
+import com.moakiee.ae2lt.registry.ModSounds;
 
 /**
  * Plays charged-fire client effects:
@@ -127,12 +127,15 @@ public final class RailgunClientFx {
                     (mc.level.random.nextDouble() - 0.5D) * sparkVel);
         }
 
-        // 6. Sound: thunder for max, amethyst chime for sub-tiers, both spatial.
-        var sound = isMax ? SoundEvents.LIGHTNING_BOLT_THUNDER : SoundEvents.AMETHYST_BLOCK_CHIME;
+        // 6. Sound: tier-3 max uses the heavy thunder layer, sub-tiers use the
+        // lighter charged-fire event. Both routed through ae2lt's own SoundEvents
+        // so the audio can be swapped wholesale via sounds.json without touching
+        // this file.
+        var sound = isMax ? ModSounds.RAILGUN_FIRE_MAX.get() : ModSounds.RAILGUN_FIRE_CHARGED.get();
         mc.level.playLocalSound(hit.x, hit.y, hit.z, sound, SoundSource.PLAYERS,
                 isMax ? 1.7f : 0.9f + 0.15f * tier, 1.0f, false);
         if (isMax) {
-            mc.level.playLocalSound(hit.x, hit.y, hit.z, SoundEvents.GENERIC_EXPLODE.value(),
+            mc.level.playLocalSound(hit.x, hit.y, hit.z, ModSounds.RAILGUN_FIRE_IMPACT.get(),
                     SoundSource.PLAYERS, 1.4f, 0.7f, false);
         }
     }

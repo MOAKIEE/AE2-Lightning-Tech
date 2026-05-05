@@ -545,5 +545,11 @@
   "ae2lt.research_note.desc.minecraft.recovery_compass.0": "A compass that insists on grief becoming direction",
   "ae2lt.research_note.desc.minecraft.recovery_compass.1": "A needle taught to point toward loss instead of north",
   "ae2lt.research_note.desc.minecraft.slime_ball.0": "A trembling green orb fresh from elastic hunger",
-  "ae2lt.research_note.desc.minecraft.slime_ball.1": "A soft glob that still remembers how to split"
+  "ae2lt.research_note.desc.minecraft.slime_ball.1": "A soft glob that still remembers how to split",
+  "subtitles.ae2lt.railgun.fire.charged": "Railgun discharges",
+  "subtitles.ae2lt.railgun.fire.max": "Railgun thunders",
+  "subtitles.ae2lt.railgun.fire.impact": "Railgun shockwave",
+  "subtitles.ae2lt.railgun.beam.chain": "Railgun chain arcs",
+  "subtitles.ae2lt.railgun.beam.loop": "Railgun beam hums",
+  "subtitles.ae2lt.railgun.charge.loop": "Railgun coils whine"
 }

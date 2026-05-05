@@ -2,11 +2,11 @@ package com.moakiee.ae2lt.client.railgun;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.phys.Vec3;
 
 import com.moakiee.ae2lt.network.railgun.RailgunBeamChainFxPacket;
+import com.moakiee.ae2lt.registry.ModSounds;
 
 /**
  * Client-side dispatcher for the left-beam chain-jump visual. Mirrors what
@@ -61,7 +61,7 @@ public final class RailgunBeamChainFx {
         Vec3 first = p.firstHit();
         mc.level.addParticle(ParticleTypes.FLASH, first.x, first.y, first.z, 0, 0, 0);
         mc.level.playLocalSound(first.x, first.y, first.z,
-                SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS,
+                ModSounds.RAILGUN_BEAM_CHAIN.get(), SoundSource.PLAYERS,
                 0.35F, 1.6F, false);
     }
 }

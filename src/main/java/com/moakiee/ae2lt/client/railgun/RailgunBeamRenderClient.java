@@ -117,6 +117,11 @@ public final class RailgunBeamRenderClient {
         }
     }
 
+    /** 本地玩家当前是否在持续左键开火（供音效控制器读取）。 */
+    public static boolean isLocalFiring() {
+        return localFiring;
+    }
+
     public static void applyUpdate(RailgunBeamUpdatePacket p) {
         Minecraft mc = Minecraft.getInstance();
         long tick = Minecraft.getInstance().level == null ? 0L : Minecraft.getInstance().level.getGameTime();
