@@ -16,6 +16,7 @@ import appeng.client.gui.Icon;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.ActionButton;
 import appeng.client.gui.widgets.ToggleButton;
+import appeng.client.gui.widgets.ToolboxPanel;
 import appeng.client.gui.widgets.UpgradesPanel;
 import appeng.core.localization.GuiText;
 import appeng.menu.SlotSemantics;
@@ -41,6 +42,11 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
         widgets.add("upgrades", new UpgradesPanel(
                 menu.getSlots(SlotSemantics.UPGRADE),
                 this::getCompatibleUpgrades));
+
+        // 网络工具适配：玩家手持 NetworkTool 打开 GUI 时显示 toolbox 面板
+        if (menu.getToolbox().isPresent()) {
+            this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
+        }
 
         this.processWidget = new LightningAssemblyProcessWidget(menu, style.getImage("processOverlay"));
         widgets.add("processArea", processWidget);

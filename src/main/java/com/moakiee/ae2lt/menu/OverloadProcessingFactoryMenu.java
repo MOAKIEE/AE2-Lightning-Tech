@@ -23,6 +23,7 @@ import appeng.core.localization.GuiText;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
+import appeng.menu.ToolboxMenu;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 
@@ -98,12 +99,15 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     private final OverloadProcessingFactoryBlockEntity host;
     private final List<Slot> machineInputSlots = new ArrayList<>(OverloadProcessingFactoryInventory.INPUT_SLOT_COUNT);
     private final Slot matrixSlot;
+    private final ToolboxMenu toolbox;
     private int recipePreviewCooldown;
     private OverloadProcessingRecipeCandidate cachedProcessable;
 
     public OverloadProcessingFactoryMenu(int id, Inventory playerInventory, OverloadProcessingFactoryBlockEntity host) {
         super(TYPE, id, playerInventory, host);
         this.host = host;
+        // 网络工具 toolbox：手持网络工具时在 GUI 右侧暴露 9 格升级卡槽
+        this.toolbox = new ToolboxMenu(this);
 
         addMachineSlots();
         this.matrixSlot = addSlot(
@@ -137,6 +141,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
     @Override
     public void broadcastChanges() {
         if (isServerSide()) {
+            toolbox.tick();
             storedEnergy = host.getEnergyStorage().getStoredEnergyLong();
             consumedEnergy = host.getConsumedEnergy();
             totalEnergy = host.getLockedRecipe().map(lockedRecipe -> lockedRecipe.totalEnergy()).orElse(0L);
@@ -263,6 +268,10 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
 
     public OverloadProcessingFactoryBlockEntity getHost() {
         return host;
+    }
+
+    public ToolboxMenu getToolbox() {
+        return toolbox;
     }
 
     public long getStoredEnergy() {
