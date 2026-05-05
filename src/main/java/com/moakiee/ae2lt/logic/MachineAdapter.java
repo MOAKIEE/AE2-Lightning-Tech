@@ -3,6 +3,8 @@ package com.moakiee.ae2lt.logic;
 import java.util.List;
 import java.util.Set;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -42,12 +44,15 @@ public interface MachineAdapter {
      *
      * @param blocking      if {@code true}, refuse when the target already holds pattern inputs
      * @param patternInputs the union of all input keys (secondary dropped); used only when blocking
+     * @param cachedTarget  调用方预取的 target（命中缓存可避免重复 BlockCapability 查询）；
+     *                      为 null 时实现需自行解析。仅 generic inventory 路径会用到。
      * @return a {@link PushResult} containing the number of accepted copies and any overflow items
      */
     PushResult pushCopies(ServerLevel level, BlockPos pos, Direction face,
                           IPatternDetails pattern, KeyCounter[] inputs, int maxCopies,
                           boolean blocking, Set<AEKey> patternInputs,
-                          IActionSource source);
+                          IActionSource source,
+                          @Nullable PatternProviderTarget cachedTarget);
 
     /**
      * Try to flush leftover items into the same target.
@@ -55,13 +60,18 @@ public interface MachineAdapter {
      * Default implementation uses {@link PatternProviderTarget} which works for
      * any block exposing ME-storage or platform external-storage capabilities.
      *
+     * @param cachedTarget 同 {@link #pushCopies}，调用方预取的 target；为 null 则自行解析。
      * @return {@code true} if all overflow was delivered
      */
     default boolean flushOverflow(ServerLevel level, BlockPos pos, Direction face,
-                                  List<GenericStack> overflow, IActionSource source) {
+                                  List<GenericStack> overflow, IActionSource source,
+                                  @Nullable PatternProviderTarget cachedTarget) {
         if (!level.isLoaded(pos)) return false;
-        var be = level.getBlockEntity(pos);
-        var target = PatternProviderTarget.get(level, pos, be, face, source);
+        var target = cachedTarget;
+        if (target == null) {
+            var be = level.getBlockEntity(pos);
+            target = PatternProviderTarget.get(level, pos, be, face, source);
+        }
         if (target == null) return false;
 
         var it = overflow.listIterator();

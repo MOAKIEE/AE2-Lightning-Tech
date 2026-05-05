@@ -142,7 +142,8 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
     public PushResult pushCopies(ServerLevel level, BlockPos pos, Direction face,
                                  IPatternDetails pattern, KeyCounter[] inputs, int maxCopies,
                                  boolean blocking, Set<AEKey> patternInputs,
-                                 IActionSource source) {
+                                 IActionSource source,
+                                 @Nullable PatternProviderTarget cachedTarget) {
         // 1. ICraftingMachine path — all-or-nothing
         var machine = ICraftingMachine.of(level, pos, face);
         if (machine != null && machine.acceptsPlans()) {
@@ -157,8 +158,14 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             return PushResult.REJECTED;
         }
 
-        var be = level.getBlockEntity(pos);
-        var target = PatternProviderTarget.get(level, pos, be, face, source);
+        // 优先用调用方预取的 target，避免重复触发 BlockCapability 查询
+        final PatternProviderTarget target;
+        if (cachedTarget != null) {
+            target = cachedTarget;
+        } else {
+            var be = level.getBlockEntity(pos);
+            target = PatternProviderTarget.get(level, pos, be, face, source);
+        }
         if (target == null) {
             return PushResult.REJECTED;
         }

@@ -848,21 +848,23 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         boolean blocking = isBlocking();
         var patternInputs = ((PatternProviderLogicAccessor) this).getPatternInputs();
+        // 预取 cached target：blocking 校验 + 后续 pushCopies 共用同一份，
+        // 把 capability 查询从"每 push 1~2 次"降到"每 20 tick 1 次"
+        var targetBe = targetLevel.getBlockEntity(conn.pos());
+        PatternProviderTarget cachedTarget = (targetBe != null)
+                ? getCachedTarget(targetLevel, conn.pos(), targetBe, conn.boundFace(), wirelessSource)
+                : null;
         // EAP advanced-blocking compat: when ADVANCED_BLOCKING is on and the
         // target fully covers every input slot, treat the push as not blocked
         // (mirrors EAP's @Redirect on PatternProviderTarget.containsPatternInput).
-        if (blocking) {
-            var targetBe = targetLevel.getBlockEntity(conn.pos());
-            var ppt = PatternProviderTarget.get(
-                    targetLevel, conn.pos(), targetBe, conn.boundFace(), wirelessSource);
-            if (ppt != null && AdvancedBlockingCompat.shouldBypassBlocking(this, ppt, pattern)) {
-                blocking = false;
-            }
+        if (blocking && cachedTarget != null
+                && AdvancedBlockingCompat.shouldBypassBlocking(this, cachedTarget, pattern)) {
+            blocking = false;
         }
         var result = adapter.pushCopies(
                 targetLevel, conn.pos(), conn.boundFace(),
                 pattern, inputs, 1,
-                blocking, patternInputs, wirelessSource);
+                blocking, patternInputs, wirelessSource, cachedTarget);
         if (result.acceptedCopies() == 0) return PushOutcome.SOFT_FAIL;
 
         PowerCostUtil.consumeRaw(grid, cost);
@@ -1133,9 +1135,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 var state = getOrCreateState(wirelessSendConn);
                 var adapter = state.resolveAdapter(targetLevel, wirelessSendConn.pos());
                 if (adapter != null) {
+                    var be = targetLevel.getBlockEntity(wirelessSendConn.pos());
+                    var cached = (be != null)
+                            ? getCachedTarget(targetLevel, wirelessSendConn.pos(),
+                                    be, wirelessSendConn.boundFace(), wirelessSource)
+                            : null;
                     adapter.flushOverflow(
                             targetLevel, wirelessSendConn.pos(), wirelessSendConn.boundFace(),
-                            wirelessSendList, wirelessSource);
+                            wirelessSendList, wirelessSource, cached);
                     if (wirelessSendList.isEmpty()) {
                         flushed = true;
                     }
