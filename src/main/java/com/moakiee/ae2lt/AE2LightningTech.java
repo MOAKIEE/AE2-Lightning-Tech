@@ -173,13 +173,9 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
                         output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
                         // Fumo
-                        if (ModFumos.isEnabled()) {
-                            output.accept(ModFumos.MOAKIEE_FUMO_ITEM.get());
-                            output.accept(ModFumos.CYSTRYSU_FUMO_ITEM.get());
-                        }
-                        if (ModFumos.isPigmeeEnabled()) {
-                            output.accept(ModFumos.PIGMEE_FUMO_ITEM.get());
-                        }
+                        output.accept(ModFumos.MOAKIEE_FUMO_ITEM.get());
+                        output.accept(ModFumos.CYSTRYSU_FUMO_ITEM.get());
+                        output.accept(ModFumos.PIGMEE_FUMO_ITEM.get());
                     })
                     .build());
 

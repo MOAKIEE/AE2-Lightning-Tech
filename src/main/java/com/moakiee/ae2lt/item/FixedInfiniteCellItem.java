@@ -77,12 +77,8 @@ public final class FixedInfiniteCellItem extends Item {
                 case EXTREME_HIGH_VOLTAGE -> LightningKey.EXTREME_HIGH_VOLTAGE;
                 case LIGHTNING_COLLAPSE_MATRIX -> AEItemKey.of(ModItems.LIGHTNING_COLLAPSE_MATRIX.get());
                 case RESEARCH_NOTE -> AEItemKey.of(ModItems.RESEARCH_NOTE.get());
-                case MOAKIEE_FUMO -> ModFumos.isEnabled()
-                        ? AEItemKey.of(ModFumos.MOAKIEE_FUMO_ITEM.get())
-                        : AEItemKey.of(Items.LIGHTNING_ROD);
-                case CYSTRYSU_FUMO -> ModFumos.isEnabled()
-                        ? AEItemKey.of(ModFumos.CYSTRYSU_FUMO_ITEM.get())
-                        : AEItemKey.of(Items.LIGHTNING_ROD);
+                case MOAKIEE_FUMO -> AEItemKey.of(ModFumos.MOAKIEE_FUMO_ITEM.get());
+                case CYSTRYSU_FUMO -> AEItemKey.of(ModFumos.CYSTRYSU_FUMO_ITEM.get());
             };
         }
     }
@@ -147,8 +143,6 @@ public final class FixedInfiniteCellItem extends Item {
      * </ul>
      * HIGH_VOLTAGE / EXTREME_HIGH_VOLTAGE / LIGHTNING_COLLAPSE_MATRIX /
      * INFINITE_STORAGE_CELL 全部仅通过研究笔记仪式产出,不再由扭蛋直接抽到。
-     * 若 Fumo 方块未启用(meplacementtool 已加载),对应档位会在 displayKey 兜底回 LIGHTNING_ROD,
-     * 不在 roll 表里特意剔除——玩家在这种存档里抽到的 Fumo cell 会显示为避雷针,是可接受的降级。
      */
     public static CellOutcome resolveOutcome(UUID seed, long worldSeed) {
         long mixed = (seed.getLeastSignificantBits() ^ worldSeed)

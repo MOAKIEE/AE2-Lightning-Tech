@@ -24,7 +24,6 @@ public final class PigmeeFumoGiftHandler {
     @SubscribeEvent
     public static void onPlayerLoggedIn(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof FakePlayer
-                || !ModFumos.isPigmeeEnabled()
                 || !AE2LTCommonConfig.pigmeeFumoGiftOnFirstJoin()) {
             return;
         }
