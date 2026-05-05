@@ -23,6 +23,8 @@ public class LightningCollectorScreen extends AEBaseScreen<LightningCollectorMen
             Component title,
             ScreenStyle style) {
         super(menu, playerInventory, title, style);
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.progressBar = new ProgressBar(menu, style.getImage("progressBar"), Direction.VERTICAL);
         widgets.add("progressBar", this.progressBar);
 

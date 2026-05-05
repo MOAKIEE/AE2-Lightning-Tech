@@ -22,6 +22,8 @@ public class AtmosphericIonizerScreen extends AEBaseScreen<AtmosphericIonizerMen
             ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.energyBar = new AtmosphericIonizerEnergyBar(menu, style.getImage("energyBar"));
         widgets.add("energyBar", energyBar);
 

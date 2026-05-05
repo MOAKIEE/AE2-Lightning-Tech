@@ -24,6 +24,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageWatcherNode;
@@ -39,6 +40,8 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
@@ -55,7 +58,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntity
-    implements IUpgradeableObject,
+    implements IUpgradeableObject, FrequencyBindingHost,
         GridRecipeMachineHost<LightningSimulationLockedRecipe, LightningSimulationRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
@@ -78,6 +81,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final LightningSimulationChamberLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
     private LightningSimulationLockedRecipe lockedRecipe;
     private long consumedEnergy;
     private int processingTicksSpent;
@@ -104,6 +108,38 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
                         onLightningStackChanged(what);
                     }
                 });
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, LightningSimulationChamberBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public LightningSimulationChamberInventory getInventory() {
@@ -389,7 +425,20 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         setWorking(hasLockedRecipe());
+    }
+
+    @Override
+    public void setRemoved() {
+        frequencyBinding.setRemoved();
+        super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     private void onInventoryChanged() {
@@ -449,6 +498,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         } else {
             data.remove(TAG_LOCKED_RECIPE);
         }
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -459,6 +509,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        frequencyBinding.load(data);
         autoExport = data.getBoolean(TAG_AUTO_EXPORT);
         allowedOutputs.clear();
         ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
@@ -542,6 +593,9 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
             var tag = new CompoundTag();
             tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
+            if (getFrequencyId() > 0) {
+                tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
+            }
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
         }
     }
@@ -562,6 +616,9 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
         var sides = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS);
         if (!sides.isEmpty() || tag.contains(TAG_ALLOWED_OUTPUTS)) {
             this.allowedOutputs = sides;
+        }
+        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
+            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
         }
         invalidateExportTargets();
         saveChanges();

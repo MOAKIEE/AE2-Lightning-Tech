@@ -15,6 +15,8 @@ import java.util.function.Predicate;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
@@ -49,6 +51,7 @@ import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
@@ -58,6 +61,7 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
 import appeng.util.inv.AppEngInternalInventory;
@@ -68,7 +72,7 @@ import appeng.menu.locator.MenuHostLocator;
 import appeng.parts.automation.StackWorldBehaviors;
 
 public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
-        implements OverloadedGridNodeOwner {
+        implements OverloadedGridNodeOwner, FrequencyBindingHost {
 
     public static final int SLOT_COUNT = 36;
 
@@ -573,6 +577,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
     private final IActionSource machineSource = IActionSource.ofMachine(this);
     private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
         @Override
@@ -623,6 +628,26 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
     public void onLoad() {
         super.onLoad();
         unloadingChunk = false;
@@ -630,6 +655,18 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (level != null && !level.isClientSide() && importMode == ImportMode.EJECT) {
             refreshEjectRegistrations();
         }
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        frequencyBinding.onReady();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     @Override
@@ -925,6 +962,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                    OverloadedInterfaceBlockEntity be) {
         if (level == null || level.isClientSide()) return;
         if (!(level instanceof ServerLevel sl)) return;
+        be.frequencyBinding.serverTick();
         if (!be.hasServerTickWork()) return;
 
         // 能量层:每 tick 触发(内部 wheel + scheduleDelay 已经是自适应的)
@@ -1705,6 +1743,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     @Override
     public void setRemoved() {
+        frequencyBinding.setRemoved();
         if (!unloadingChunk) {
             unregisterEject();
         }
@@ -1713,6 +1752,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         // BufferedMEStorage discards on GC.
         wirelessDistributor.flushBufferToNetwork();
         super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     @Override
@@ -1844,6 +1889,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             d.put(TAG_IMPORT_BUFFER, buffered);
         }
         d.putLong(TAG_IMPORT_FLUSH_TICK, importBufferLastFlushTick);
+        frequencyBinding.save(d);
     }
 
     @Override
@@ -1893,6 +1939,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         keyTypeLockUntil.clear();
         invalidateConnectionCache();
         refreshEjectRegistrations();
+        frequencyBinding.load(d);
         recomputeIdlePower();
     }
 
@@ -1920,6 +1967,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             if (unlimitedSlots[i]) bits |= (1L << i);
         }
         tag.putLong(TAG_UNLIMITED_SLOTS, bits);
+        if (getFrequencyId() > 0) {
+            tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
+        }
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
     }
 
@@ -1958,6 +2008,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             for (int i = 0; i < SLOT_COUNT; i++) {
                 unlimitedSlots[i] = (bits & (1L << i)) != 0;
             }
+        }
+        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
+            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
         }
         invalidateConnectionCache();
         recomputeIdlePower();

@@ -38,7 +38,7 @@ import appeng.menu.implementations.SetStockAmountMenu;
 import appeng.api.inventories.InternalInventory;
 import appeng.menu.slot.AppEngSlot;
 
-public class OverloadedInterfaceMenu extends InterfaceMenu {
+public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyBindingMenu {
 
     private static final MenuTypeBuilder.MenuFactory<OverloadedInterfaceMenu, InterfaceLogicHost> FACTORY =
             OverloadedInterfaceMenu::new;
@@ -306,6 +306,14 @@ public class OverloadedInterfaceMenu extends InterfaceMenu {
 
     public boolean isSlotUnlimited(int slot) {
         return (unlimitedBits & (1L << slot)) != 0;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        if (host instanceof net.minecraft.world.level.block.entity.BlockEntity be) {
+            return be.getBlockPos();
+        }
+        return net.minecraft.core.BlockPos.ZERO;
     }
 
     // ══════════════════════════════════════════════════════════════════════

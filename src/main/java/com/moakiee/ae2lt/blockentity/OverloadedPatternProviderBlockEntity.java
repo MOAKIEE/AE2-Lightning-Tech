@@ -26,12 +26,16 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.inventories.InternalInventory;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.stacks.AEItemKey;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -48,7 +52,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * in WIRELESS mode it is purely visual / grid-connectivity and does NOT affect
  * wireless dispatch or auto-return — those use wireless connector records instead.
  */
-public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity {
+public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity implements FrequencyBindingHost {
 
     /** Pattern slots displayed per GUI page. */
     public static final int SLOTS_PER_PAGE = 36;
@@ -84,6 +88,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     /** Active wireless connection records. */
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     // -- Wireless connection record --
 
@@ -133,6 +138,38 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         super(type, pos, blockState);
     }
 
+    public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadedPatternProviderBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
+    }
+
     public int getTotalPatternCapacity() {
         return SLOTS_PER_PAGE;
     }
@@ -149,6 +186,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             logic.onBlockEntityReady();
         }
         super.onReady();
+        frequencyBinding.onReady();
         recomputeIdlePower();
     }
 
@@ -478,6 +516,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             connList.add(conn.toTag());
         }
         data.put(TAG_CONNECTIONS, connList);
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -521,6 +560,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
             }
         }
+        frequencyBinding.load(data);
         recomputeIdlePower();
         notifyLogicStateChanged();
     }
@@ -541,6 +581,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode);
         tag.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
+        if (getFrequencyId() > 0) {
+            tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
+        }
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
     }
 
@@ -566,6 +609,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 tag, TAG_WIRELESS_SPEED_MODE, WirelessSpeedMode.class, this.wirelessSpeedMode);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_FILTERED_IMPORT,
                 v -> this.filteredImport = v);
+        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
+            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
+        }
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
@@ -588,6 +634,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     @Override
     public void setRemoved() {
+        frequencyBinding.setRemoved();
         if (!unloadingChunk) {
             var removed = com.moakiee.ae2lt.logic.EjectModeRegistry.unregisterAll(this, true);
             if (level instanceof net.minecraft.server.level.ServerLevel sl) {
@@ -605,6 +652,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             logic.flushWirelessEnergyBuffer();
         }
         super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     // -- Menu binding --

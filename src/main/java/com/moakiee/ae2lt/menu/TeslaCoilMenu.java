@@ -22,7 +22,7 @@ import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilMode;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilStatus;
 
-public class TeslaCoilMenu extends AEBaseMenu {
+public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<TeslaCoilMenu> TYPE = MenuTypeBuilder
             .create(TeslaCoilMenu::new, TeslaCoilBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.tesla_coil"))
@@ -234,6 +234,11 @@ public class TeslaCoilMenu extends AEBaseMenu {
 
     public TeslaCoilBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     private void cycleMode() {

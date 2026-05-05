@@ -19,6 +19,10 @@ public final class NetworkInit {
                 WirelessConnectorUsePacket.TYPE,
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
+        registrar.playToServer(
+                OpenFrequencyMenuPacket.TYPE,
+                OpenFrequencyMenuPacket.STREAM_CODEC,
+                OpenFrequencyMenuPacket::handle);
 
         // frequency system: C→S
         registrar.playToServer(

@@ -21,6 +21,8 @@ public class OverloadedPowerSupplyScreen extends AEBaseScreen<OverloadedPowerSup
                                        Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.modeButton = new TextureToggleButton(
                 TextureToggleButton.ButtonType.OVERLOAD_MODE, btn -> menu.clientCycleMode());
         this.modeButton.setTooltipOff(

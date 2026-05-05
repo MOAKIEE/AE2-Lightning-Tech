@@ -23,6 +23,8 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
     public TeslaCoilScreen(TeslaCoilMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.energyBar = new TeslaCoilEnergyBar(menu, style.getImage("energyBar"));
         widgets.add("energyBar", energyBar);
 

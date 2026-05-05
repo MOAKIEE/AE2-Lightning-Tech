@@ -182,9 +182,14 @@ public class TextureToggleButton extends Button implements ITooltip {
         // 过载电源 PowerMode { NORMAL=off, OVERLOAD=on }。
         OVERLOAD_MODE(texture("overloaded_off"), texture("overloaded_on")),
         // 水晶催化器 Mode { CRYSTAL=off, DUST=on }。
-        CRYSTAL_CATALYZER_MODE(texture("catalyzer_crystal_mode"), texture("catalyzer_dust_mode"));
+        CRYSTAL_CATALYZER_MODE(texture("catalyzer_crystal_mode"), texture("catalyzer_dust_mode")),
+        FREQUENCY_BIND(texture("frequency_select"));
 
         private final List<ResourceLocation> textures;
+
+        ButtonType(ResourceLocation texture) {
+            this.textures = List.of(texture);
+        }
 
         ButtonType(ResourceLocation textureOff, ResourceLocation textureOn) {
             this.textures = List.of(textureOff, textureOn);

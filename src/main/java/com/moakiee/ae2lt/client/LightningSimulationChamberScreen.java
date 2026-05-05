@@ -45,6 +45,8 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
             this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
         }
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.processWidget = new LightningSimulationProcessWidget(menu, style.getImage("processOverlay"));
         widgets.add("processArea", processWidget);
 

@@ -50,6 +50,8 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
                                            Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.autoReturnButton = new TextureToggleButton(
                 TextureToggleButton.ButtonType.AUTO_RETURN,
                 btn -> menu.clientToggleAutoReturn());

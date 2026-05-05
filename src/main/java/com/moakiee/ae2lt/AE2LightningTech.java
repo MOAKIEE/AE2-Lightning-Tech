@@ -482,7 +482,7 @@ public class AE2LightningTech {
                     LightningSimulationChamberBlockEntity.class,
                     lightningChamberBeType,
                     null,
-                    null);
+                    LightningSimulationChamberBlockEntity::serverTick);
 
             var assemblyBlock = ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.get();
             var assemblyBeType = ModBlockEntities.LIGHTNING_ASSEMBLY_CHAMBER.get();
@@ -490,7 +490,7 @@ public class AE2LightningTech {
                     LightningAssemblyChamberBlockEntity.class,
                     assemblyBeType,
                     null,
-                    null);
+                    LightningAssemblyChamberBlockEntity::serverTick);
 
             var overloadProcessingFactoryBlock = ModBlocks.OVERLOAD_PROCESSING_FACTORY.get();
             var overloadProcessingFactoryBeType = ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get();
@@ -498,7 +498,7 @@ public class AE2LightningTech {
                     OverloadProcessingFactoryBlockEntity.class,
                     overloadProcessingFactoryBeType,
                     null,
-                    null);
+                    OverloadProcessingFactoryBlockEntity::serverTick);
 
             var teslaCoilBlock = ModBlocks.TESLA_COIL.get();
             var teslaCoilBeType = ModBlockEntities.TESLA_COIL.get();
@@ -506,7 +506,7 @@ public class AE2LightningTech {
                     TeslaCoilBlockEntity.class,
                     teslaCoilBeType,
                     null,
-                    null);
+                    TeslaCoilBlockEntity::serverTick);
 
             var atmosphericIonizerBlock = ModBlocks.ATMOSPHERIC_IONIZER.get();
             var atmosphericIonizerBeType = ModBlockEntities.ATMOSPHERIC_IONIZER.get();
@@ -514,7 +514,7 @@ public class AE2LightningTech {
                     AtmosphericIonizerBlockEntity.class,
                     atmosphericIonizerBeType,
                     null,
-                    null);
+                    AtmosphericIonizerBlockEntity::serverTick);
 
             var crystalCatalyzerBlock = ModBlocks.CRYSTAL_CATALYZER.get();
             var crystalCatalyzerBeType = ModBlockEntities.CRYSTAL_CATALYZER.get();
@@ -522,7 +522,7 @@ public class AE2LightningTech {
                     CrystalCatalyzerBlockEntity.class,
                     crystalCatalyzerBeType,
                     null,
-                    null);
+                    CrystalCatalyzerBlockEntity::serverTick);
 
             var block = ModBlocks.OVERLOADED_PATTERN_PROVIDER.get();
             var beType = ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get();
@@ -530,7 +530,7 @@ public class AE2LightningTech {
                     OverloadedPatternProviderBlockEntity.class,
                     beType,
                     null,
-                    null
+                    OverloadedPatternProviderBlockEntity::serverTick
             );
 
             var interfaceBlock = ModBlocks.OVERLOADED_INTERFACE.get();
@@ -548,7 +548,7 @@ public class AE2LightningTech {
                         OverloadedPowerSupplyBlockEntity.class,
                         powerSupplyBeType,
                         null,
-                        null);
+                        OverloadedPowerSupplyBlockEntity::serverTick);
             }
 
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(

@@ -48,6 +48,8 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
             this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
         }
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.processWidget = new LightningAssemblyProcessWidget(menu, style.getImage("processOverlay"));
         widgets.add("processArea", processWidget);
 

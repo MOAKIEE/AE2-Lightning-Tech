@@ -26,6 +26,7 @@ import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.storage.IStorageWatcherNode;
@@ -42,6 +43,8 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
@@ -59,7 +62,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
-    implements IUpgradeableObject,
+    implements IUpgradeableObject, FrequencyBindingHost,
         GridRecipeMachineHost<OverloadProcessingLockedRecipe, OverloadProcessingRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_UPGRADES = "Upgrades";
@@ -91,6 +94,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.OVERLOAD_PROCESSING_FACTORY.get(), SPEED_CARD_SLOTS, this::onUpgradesChanged);
     private final OverloadProcessingFactoryLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private OverloadProcessingLockedRecipe lockedRecipe;
     private long consumedEnergy;
@@ -119,6 +123,38 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                         onLightningStackChanged(what);
                     }
                 });
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadProcessingFactoryBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public OverloadProcessingFactoryInventory getInventory() {
@@ -546,7 +582,20 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         setWorking(hasLockedRecipe());
+    }
+
+    @Override
+    public void setRemoved() {
+        frequencyBinding.setRemoved();
+        super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     @Override
@@ -570,6 +619,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         } else {
             data.remove(TAG_LOCKED_RECIPE);
         }
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -582,6 +632,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         outputTank.readFromNBT(registries, data.getCompound(TAG_OUTPUT_TANK));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        frequencyBinding.load(data);
         autoExport = data.getBoolean(TAG_AUTO_EXPORT);
         allowedOutputs.clear();
         ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
@@ -641,6 +692,9 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             var tag = new CompoundTag();
             tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
+            if (getFrequencyId() > 0) {
+                tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
+            }
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
         }
     }
@@ -661,6 +715,9 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         var sides = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS);
         if (!sides.isEmpty() || tag.contains(TAG_ALLOWED_OUTPUTS)) {
             this.allowedOutputs = sides;
+        }
+        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
+            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
         }
         invalidateExportTargets();
         saveChanges();
