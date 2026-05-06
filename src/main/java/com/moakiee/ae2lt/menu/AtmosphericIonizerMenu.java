@@ -22,7 +22,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class AtmosphericIonizerMenu extends AEBaseMenu {
+public class AtmosphericIonizerMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<AtmosphericIonizerMenu> TYPE = MenuTypeBuilder
             .create(AtmosphericIonizerMenu::new, AtmosphericIonizerBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.atmospheric_ionizer"))
@@ -108,6 +108,11 @@ public class AtmosphericIonizerMenu extends AEBaseMenu {
 
     public long getConsumedEnergy() {
         return consumedEnergy;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public long getTotalEnergyRequired() {

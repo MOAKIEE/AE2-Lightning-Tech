@@ -22,7 +22,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 
-public class OverloadedPowerSupplyMenu extends AEBaseMenu {
+public class OverloadedPowerSupplyMenu extends AEBaseMenu implements FrequencyBindingMenu {
 
     public static final MenuType<OverloadedPowerSupplyMenu> TYPE = MenuTypeBuilder
             .create(OverloadedPowerSupplyMenu::new, OverloadedPowerSupplyBlockEntity.class)
@@ -124,6 +124,11 @@ public class OverloadedPowerSupplyMenu extends AEBaseMenu {
 
     public void clientCycleMode() {
         sendClientAction("cycleMode");
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public Component getModeButtonMessage() {

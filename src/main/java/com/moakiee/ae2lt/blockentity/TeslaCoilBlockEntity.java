@@ -6,6 +6,7 @@ import java.util.Set;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
@@ -16,6 +17,8 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilAutomationInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilEnergyStorage;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
@@ -39,7 +42,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
     public static final int ENERGY_CAPACITY = 16_000_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";
@@ -55,6 +58,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             ENERGY_CAPACITY,
             this::onEnergyChanged);
     private final TeslaCoilLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private TeslaCoilMode selectedMode = TeslaCoilMode.HIGH_VOLTAGE;
     private TeslaCoilMode lockedMode;
@@ -69,6 +73,38 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         getMainNode()
                 .setIdlePowerUsage(0)
                 .addService(IGridTickable.class, logic);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, TeslaCoilBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public TeslaCoilInventory getInventory() {
@@ -311,7 +347,20 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         setWorking(hasLockedMode());
+    }
+
+    @Override
+    public void setRemoved() {
+        frequencyBinding.setRemoved();
+        super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     @Override
@@ -329,6 +378,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             data.remove(TAG_LOCKED_MODE);
             data.remove(TAG_LOCKED_BATCH_SIZE);
         }
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -343,6 +393,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         lockedBatchSize = Math.max(0L, data.getLong(TAG_LOCKED_BATCH_SIZE));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        frequencyBinding.load(data);
 
         if (lockedMode == null) {
             lockedBatchSize = 0L;
@@ -380,11 +431,10 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
-            var tag = new CompoundTag();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_SELECTED_MODE, selectedMode);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
-        }
+            FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId());
+        });
     }
 
     @Override
@@ -392,18 +442,14 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
                                net.minecraft.core.component.DataComponentMap input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        var mode2 = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_SELECTED_MODE, TeslaCoilMode.class, selectedMode);
-        this.selectedMode = mode2;
-        saveChanges();
-        markForUpdate();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
+            var mode2 = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_SELECTED_MODE, TeslaCoilMode.class, selectedMode);
+            this.selectedMode = mode2;
+            FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency);
+            saveChanges();
+            markForUpdate();
+        });
     }
 
     @Override

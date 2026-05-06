@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.BlockOrientation;
@@ -18,6 +19,8 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.api.event.LightningCollectedEvent;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.machine.common.InsertOnlyAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningcollector.LightningCollectorInventory;
@@ -43,7 +46,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";
@@ -55,6 +58,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
 
     private final LightningCollectorInventory inventory = new LightningCollectorInventory(this::onInventoryChanged);
     private final IItemHandlerModifiable automationInventory = new InsertOnlyAutomationInventory(inventory);
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private int cooldownTicks;
     private int workingTicks;
@@ -71,6 +75,8 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             return;
         }
 
+        blockEntity.frequencyBinding.serverTick();
+
         if (blockEntity.cooldownTicks > 0) {
             blockEntity.cooldownTicks--;
             if (blockEntity.cooldownTicks == 0) {
@@ -86,6 +92,32 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
                 blockEntity.saveChanges();
             }
         }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public IItemHandlerModifiable getAutomationInventory() {
@@ -224,6 +256,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         inventory.saveToTag(data, TAG_INVENTORY, registries);
         data.putInt(TAG_COOLDOWN, cooldownTicks);
         data.putInt(TAG_WORKING_TICKS, workingTicks);
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -232,6 +265,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         inventory.loadFromTag(data, TAG_INVENTORY, registries);
         cooldownTicks = Math.max(0, data.getInt(TAG_COOLDOWN));
         workingTicks = Math.max(0, data.getInt(TAG_WORKING_TICKS));
+        frequencyBinding.load(data);
     }
 
     @Override
@@ -272,6 +306,22 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     public void clearContent() {
         super.clearContent();
         inventory.clear();
+    }
+
+    @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.importSettings(mode, input, player);
+        FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
     }
 
     @Override
@@ -357,7 +407,20 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         updateWorkingBlockState(workingTicks > 0);
+    }
+
+    @Override
+    public void setRemoved() {
+        frequencyBinding.setRemoved();
+        super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     public record OutputPreview(int min, int max) {

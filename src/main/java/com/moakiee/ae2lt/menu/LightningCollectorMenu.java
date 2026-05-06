@@ -24,7 +24,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
-public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvider {
+public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvider, FrequencyBindingMenu {
     public static final MenuType<LightningCollectorMenu> TYPE = MenuTypeBuilder
             .create(LightningCollectorMenu::new, LightningCollectorBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_collector"))
@@ -115,6 +115,11 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
 
     public LightningCollectorBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     @Override

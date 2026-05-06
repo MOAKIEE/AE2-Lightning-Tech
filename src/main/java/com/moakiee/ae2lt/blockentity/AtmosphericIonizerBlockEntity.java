@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
@@ -17,6 +18,8 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.logic.WeatherControlHelper;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
@@ -43,7 +46,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost {
+public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
     private static final Logger LOG = LogUtils.getLogger();
     public static final int PROCESS_TICKS = 100;
     private static final double POWER_EPSILON = 0.01D;
@@ -58,6 +61,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     private final AtmosphericIonizerInventory inventory = new AtmosphericIonizerInventory(this::onInventoryChanged);
     private final IItemHandlerModifiable automationInventory = new InsertOnlyAutomationInventory(inventory);
     private final AtmosphericIonizerLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private WeatherCondensateItem.Type lockedType;
     private long consumedEnergy;
@@ -70,6 +74,38 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         getMainNode()
                 .setIdlePowerUsage(0)
                 .addService(appeng.api.networking.ticking.IGridTickable.class, logic);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, AtmosphericIonizerBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public AtmosphericIonizerInventory getInventory() {
@@ -262,7 +298,20 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         setWorking(lockedType != null);
+    }
+
+    @Override
+    public void setRemoved() {
+        frequencyBinding.setRemoved();
+        super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     /**
@@ -296,6 +345,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         } else {
             data.remove(TAG_LOCKED_TYPE);
         }
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -307,6 +357,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
                 : null;
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        frequencyBinding.load(data);
 
         if (lockedType == null) {
             consumedEnergy = 0L;
@@ -331,6 +382,22 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     public void clearContent() {
         super.clearContent();
         inventory.clear();
+    }
+
+    @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.importSettings(mode, input, player);
+        FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
     }
 
     @Override

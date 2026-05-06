@@ -91,6 +91,10 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
             for (var d : manager.getDevices(frequencyId)) {
                 ServerLevel lvl = server.getLevel(d.dimension());
                 boolean loaded = lvl != null && lvl.isLoaded(d.pos());
+                String deviceName = d.deviceName();
+                if (loaded && lvl != null) {
+                    deviceName = lvl.getBlockState(d.pos()).getBlock().getDescriptionId();
+                }
 
                 CompoundTag e = new CompoundTag();
                 e.putString("dim", d.dimension().location().toString());
@@ -98,6 +102,7 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
                 e.putBoolean("controller", d.isController());
                 e.putBoolean("advanced", d.advanced());
                 e.putBoolean("loaded", loaded);
+                e.putString("name", deviceName);
                 list.add(e);
             }
         }

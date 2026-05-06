@@ -35,7 +35,7 @@ import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 
-public class OverloadProcessingFactoryMenu extends AEBaseMenu {
+public class OverloadProcessingFactoryMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<OverloadProcessingFactoryMenu> TYPE = MenuTypeBuilder
             .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory"))
@@ -268,6 +268,11 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu {
 
     public OverloadProcessingFactoryBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public ToolboxMenu getToolbox() {

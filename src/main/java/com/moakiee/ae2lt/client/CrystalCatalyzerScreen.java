@@ -33,6 +33,8 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         this.imageWidth = 176;
         this.imageHeight = 190;
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         widgets.add("energyBar", new CrystalCatalyzerEnergyBar(menu, style.getImage("energyBar")));
         this.fluidWidget = new CrystalCatalyzerFluidWidget(
                 menu,

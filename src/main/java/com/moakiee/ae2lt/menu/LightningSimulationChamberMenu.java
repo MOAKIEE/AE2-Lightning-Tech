@@ -26,7 +26,7 @@ import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInve
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 
-public class LightningSimulationChamberMenu extends AEBaseMenu {
+public class LightningSimulationChamberMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<LightningSimulationChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningSimulationChamberMenu::new, LightningSimulationChamberBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_simulation_room"))
@@ -344,6 +344,11 @@ public class LightningSimulationChamberMenu extends AEBaseMenu {
 
     public LightningSimulationChamberBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public ToolboxMenu getToolbox() {

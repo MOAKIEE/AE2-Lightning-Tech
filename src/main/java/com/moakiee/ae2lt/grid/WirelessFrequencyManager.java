@@ -52,8 +52,23 @@ public final class WirelessFrequencyManager extends SavedData {
             ResourceKey<Level> dimension,
             BlockPos pos,
             boolean isController,
-            boolean advanced
-    ) {}
+            boolean advanced,
+            String deviceName
+    ) {
+        public DeviceEntry(ResourceKey<Level> dimension, BlockPos pos,
+                           boolean isController, boolean advanced) {
+            this(dimension, pos, isController, advanced, defaultDeviceName(isController, advanced));
+        }
+
+        private static String defaultDeviceName(boolean isController, boolean advanced) {
+            if (isController) {
+                return advanced
+                        ? "block.ae2lt.advanced_wireless_overloaded_controller"
+                        : "block.ae2lt.wireless_overloaded_controller";
+            }
+            return "block.ae2lt.wireless_receiver";
+        }
+    }
 
     // ── Listener ──
 
@@ -348,8 +363,11 @@ public final class WirelessFrequencyManager extends SavedData {
             BlockPos pos = BlockPos.of(entry.getLong("pos"));
             boolean ctrl = entry.getBoolean("controller");
             boolean adv = entry.getBoolean("advanced");
+            String deviceName = entry.contains("name")
+                    ? entry.getString("name")
+                    : DeviceEntry.defaultDeviceName(ctrl, adv);
             devices.computeIfAbsent(freqId, k -> new HashSet<>())
-                    .add(new DeviceEntry(dimKey, pos, ctrl, adv));
+                    .add(new DeviceEntry(dimKey, pos, ctrl, adv, deviceName));
         }
     }
 
@@ -386,6 +404,7 @@ public final class WirelessFrequencyManager extends SavedData {
                 tag.putLong("pos", d.pos().asLong());
                 tag.putBoolean("controller", d.isController());
                 tag.putBoolean("advanced", d.advanced());
+                tag.putString("name", d.deviceName());
                 devList.add(tag);
             }
         }

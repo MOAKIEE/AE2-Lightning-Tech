@@ -24,7 +24,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
 
-public class LightningAssemblyChamberMenu extends AEBaseMenu {
+public class LightningAssemblyChamberMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<LightningAssemblyChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber"))
@@ -254,6 +254,11 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu {
 
     public LightningAssemblyChamberBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public ToolboxMenu getToolbox() {

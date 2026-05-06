@@ -43,6 +43,7 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
         if (menu.getToolbox().isPresent()) {
             this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
         }
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
         widgets.add("processArea", new OverloadProcessingFactoryProgressWidget(menu, style.getImage("processOverlay")));
         widgets.add("energyBar", new OverloadProcessingFactoryEnergyBar(menu, style.getImage("energyBar")));
         this.inputFluidWidget = new OverloadProcessingFactoryFluidWidget(

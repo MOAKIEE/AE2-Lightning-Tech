@@ -17,12 +17,12 @@ import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
-import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.network.SyncFrequencyDetailPacket;
 import com.moakiee.ae2lt.network.SyncFrequencyListPacket;
 
 /**
- * Shared menu for both Wireless Controller and Wireless Receiver frequency GUI.
+ * Shared menu for wireless controllers and receiver-style frequency-bound devices.
  * Carries the block entity position and device type to the client; the
  * currently bound frequency id is auto-synced via a {@link DataSlot}.
  */
@@ -33,6 +33,7 @@ public class FrequencyMenu extends AbstractContainerMenu {
     private final BlockPos blockPos;
     private final boolean isController;
     private final boolean isAdvanced;
+    private final String deviceName;
 
     @Nullable
     private final BlockEntity backingBlockEntity;
@@ -55,20 +56,25 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             this.isController = true;
             this.isAdvanced = ctrl.isAdvanced();
+            this.deviceName = ctrl.isAdvanced()
+                    ? "block.ae2lt.advanced_wireless_overloaded_controller"
+                    : "block.ae2lt.wireless_overloaded_controller";
             this.freqIdSlot.set(ctrl.getFrequencyId());
             this.linkActiveSlot.set(ctrl.isFrequencyActive() ? 1 : 0);
             this.usedChannelsSlot.set(ctrl.getGridUsedChannels());
             this.maxChannelsSlot.set(ctrl.getGridMaxChannels());
-        } else if (be instanceof WirelessReceiverBlockEntity recv) {
+        } else if (be instanceof FrequencyBindingHost bindingHost) {
             this.isController = false;
             this.isAdvanced = false;
-            this.freqIdSlot.set(recv.getFrequencyId());
-            this.linkActiveSlot.set(recv.isConnected() ? 1 : 0);
-            this.usedChannelsSlot.set(recv.getGridUsedChannels());
-            this.maxChannelsSlot.set(recv.getGridMaxChannels());
+            this.deviceName = bindingHost.getFrequencyBindingDeviceName();
+            this.freqIdSlot.set(bindingHost.getFrequencyId());
+            this.linkActiveSlot.set(bindingHost.isFrequencyConnected() ? 1 : 0);
+            this.usedChannelsSlot.set(bindingHost.getGridUsedChannels());
+            this.maxChannelsSlot.set(bindingHost.getGridMaxChannels());
         } else {
             this.isController = false;
             this.isAdvanced = false;
+            this.deviceName = "block.ae2lt.wireless_receiver";
             this.freqIdSlot.set(-1);
             this.linkActiveSlot.set(0);
             this.usedChannelsSlot.set(0);
@@ -93,20 +99,22 @@ public class FrequencyMenu extends AbstractContainerMenu {
         BlockPos pos = buf.readBlockPos();
         boolean controller = buf.readBoolean();
         boolean advanced = buf.readBoolean();
+        String deviceName = buf.readUtf(256);
         int freqId = buf.readInt();
         boolean linkActive = buf.readBoolean();
         int used = buf.readInt();
         int max = buf.readInt();
-        return new FrequencyMenu(containerId, pos, controller, advanced, freqId, linkActive, used, max);
+        return new FrequencyMenu(containerId, pos, controller, advanced, deviceName, freqId, linkActive, used, max);
     }
 
     // client-side constructor
-    private FrequencyMenu(int containerId, BlockPos pos, boolean isController, boolean isAdvanced, int freqId,
-                          boolean linkActive, int used, int max) {
+    private FrequencyMenu(int containerId, BlockPos pos, boolean isController, boolean isAdvanced, String deviceName,
+                          int freqId, boolean linkActive, int used, int max) {
         super(TYPE, containerId);
         this.blockPos = pos;
         this.isController = isController;
         this.isAdvanced = isAdvanced;
+        this.deviceName = deviceName;
         this.backingBlockEntity = null;
         this.freqIdSlot.set(freqId);
         this.linkActiveSlot.set(linkActive ? 1 : 0);
@@ -123,20 +131,25 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             buf.writeBoolean(true);
             buf.writeBoolean(ctrl.isAdvanced());
+            buf.writeUtf(ctrl.isAdvanced()
+                    ? "block.ae2lt.advanced_wireless_overloaded_controller"
+                    : "block.ae2lt.wireless_overloaded_controller", 256);
             buf.writeInt(ctrl.getFrequencyId());
             buf.writeBoolean(ctrl.isFrequencyActive());
             buf.writeInt(ctrl.getGridUsedChannels());
             buf.writeInt(ctrl.getGridMaxChannels());
-        } else if (be instanceof WirelessReceiverBlockEntity recv) {
+        } else if (be instanceof FrequencyBindingHost bindingHost) {
             buf.writeBoolean(false);
             buf.writeBoolean(false);
-            buf.writeInt(recv.getFrequencyId());
-            buf.writeBoolean(recv.isConnected());
-            buf.writeInt(recv.getGridUsedChannels());
-            buf.writeInt(recv.getGridMaxChannels());
+            buf.writeUtf(bindingHost.getFrequencyBindingDeviceName(), 256);
+            buf.writeInt(bindingHost.getFrequencyId());
+            buf.writeBoolean(bindingHost.isFrequencyConnected());
+            buf.writeInt(bindingHost.getGridUsedChannels());
+            buf.writeInt(bindingHost.getGridMaxChannels());
         } else {
             buf.writeBoolean(false);
             buf.writeBoolean(false);
+            buf.writeUtf("block.ae2lt.wireless_receiver", 256);
             buf.writeInt(-1);
             buf.writeBoolean(false);
             buf.writeInt(0);
@@ -186,8 +199,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (backingBlockEntity instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             return ctrl.getFrequencyId();
         }
-        if (backingBlockEntity instanceof WirelessReceiverBlockEntity recv) {
-            return recv.getFrequencyId();
+        if (backingBlockEntity instanceof FrequencyBindingHost bindingHost) {
+            return bindingHost.getFrequencyId();
         }
         return -1;
     }
@@ -196,8 +209,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (backingBlockEntity instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             return ctrl.isFrequencyActive() ? 1 : 0;
         }
-        if (backingBlockEntity instanceof WirelessReceiverBlockEntity recv) {
-            return recv.isConnected() ? 1 : 0;
+        if (backingBlockEntity instanceof FrequencyBindingHost bindingHost) {
+            return bindingHost.isFrequencyConnected() ? 1 : 0;
         }
         return 0;
     }
@@ -206,8 +219,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (backingBlockEntity instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             return ctrl.getGridUsedChannels();
         }
-        if (backingBlockEntity instanceof WirelessReceiverBlockEntity recv) {
-            return recv.getGridUsedChannels();
+        if (backingBlockEntity instanceof FrequencyBindingHost bindingHost) {
+            return bindingHost.getGridUsedChannels();
         }
         return 0;
     }
@@ -216,8 +229,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (backingBlockEntity instanceof WirelessOverloadedControllerBlockEntity ctrl) {
             return ctrl.getGridMaxChannels();
         }
-        if (backingBlockEntity instanceof WirelessReceiverBlockEntity recv) {
-            return recv.getGridMaxChannels();
+        if (backingBlockEntity instanceof FrequencyBindingHost bindingHost) {
+            return bindingHost.getGridMaxChannels();
         }
         return 0;
     }
@@ -258,6 +271,10 @@ public class FrequencyMenu extends AbstractContainerMenu {
 
     public boolean isAdvanced() {
         return isAdvanced;
+    }
+
+    public String getDeviceName() {
+        return deviceName;
     }
 
     public int getCurrentFrequencyId() {

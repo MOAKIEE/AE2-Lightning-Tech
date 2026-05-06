@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.networking.IManagedGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.ISaveProvider;
@@ -38,6 +39,8 @@ import appeng.util.inv.InternalInventoryHost;
 import org.jetbrains.annotations.Nullable;
 
 import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
@@ -45,7 +48,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
-        implements InternalInventoryHost {
+        implements InternalInventoryHost, FrequencyBindingHost {
 
     public static final int MAX_WIRELESS_CONNECTIONS = 64;
 
@@ -120,6 +123,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
      */
     private int connectionVersion;
     private final OverloadedPowerSupplyLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private PowerMode mode = PowerMode.NORMAL;
     @Nullable
@@ -134,6 +138,38 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         getMainNode()
                 .setIdlePowerUsage(0.0D)
                 .addService(appeng.api.networking.ticking.IGridTickable.class, logic);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadedPowerSupplyBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     @Override
@@ -274,6 +310,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         // Saved BlockState may already be POWERED=true from before unload, but
         // the supply is not actually transferring until the first server tick
         // proves it can. Reset POWERED to false on (re)load so the visuals
@@ -525,9 +562,32 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @Nullable Player player) {
+        super.importSettings(mode, input, player);
+        FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
+    }
+
+    @Override
     public void setRemoved() {
+        frequencyBinding.setRemoved();
         logic.flushBufferToNetwork();
         super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     @Override
@@ -549,6 +609,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             list.add(connection.toTag());
         }
         data.put(TAG_CONNECTIONS, list);
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -578,6 +639,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         }
         connectionVersion++;
 
+        frequencyBinding.load(data);
         logic.onStateChanged();
     }
 

@@ -15,6 +15,8 @@ import java.util.function.Predicate;
 import org.jetbrains.annotations.Nullable;
 
 import com.google.common.util.concurrent.Runnables;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.AppFluxHelper;
@@ -49,6 +51,7 @@ import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.config.FuzzyMode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
@@ -58,6 +61,7 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
+import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
 import appeng.util.inv.AppEngInternalInventory;
@@ -68,7 +72,7 @@ import appeng.menu.locator.MenuHostLocator;
 import appeng.parts.automation.StackWorldBehaviors;
 
 public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
-        implements OverloadedGridNodeOwner {
+        implements OverloadedGridNodeOwner, FrequencyBindingHost {
 
     public static final int SLOT_COUNT = 36;
 
@@ -573,6 +577,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
     private final IActionSource machineSource = IActionSource.ofMachine(this);
     private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
         @Override
@@ -623,6 +628,26 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
     public void onLoad() {
         super.onLoad();
         unloadingChunk = false;
@@ -630,6 +655,18 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (level != null && !level.isClientSide() && importMode == ImportMode.EJECT) {
             refreshEjectRegistrations();
         }
+    }
+
+    @Override
+    public void onReady() {
+        super.onReady();
+        frequencyBinding.onReady();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     @Override
@@ -925,6 +962,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                    OverloadedInterfaceBlockEntity be) {
         if (level == null || level.isClientSide()) return;
         if (!(level instanceof ServerLevel sl)) return;
+        be.frequencyBinding.serverTick();
         if (!be.hasServerTickWork()) return;
 
         // 能量层:每 tick 触发(内部 wheel + scheduleDelay 已经是自适应的)
@@ -1705,6 +1743,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     @Override
     public void setRemoved() {
+        frequencyBinding.setRemoved();
         if (!unloadingChunk) {
             unregisterEject();
         }
@@ -1713,6 +1752,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         // BufferedMEStorage discards on GC.
         wirelessDistributor.flushBufferToNetwork();
         super.setRemoved();
+    }
+
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        frequencyBinding.clearRemoved();
     }
 
     @Override
@@ -1844,6 +1889,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             d.put(TAG_IMPORT_BUFFER, buffered);
         }
         d.putLong(TAG_IMPORT_FLUSH_TICK, importBufferLastFlushTick);
+        frequencyBinding.save(d);
     }
 
     @Override
@@ -1893,6 +1939,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         keyTypeLockUntil.clear();
         invalidateConnectionCache();
         refreshEjectRegistrations();
+        frequencyBinding.load(d);
         recomputeIdlePower();
     }
 
@@ -1906,21 +1953,19 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = new CompoundTag();
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_INTERFACE_MODE, interfaceMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IO_SPEED_MODE, ioSpeedMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_EXPORT_MODE, exportMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IMPORT_MODE, importMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeDirection(tag, TAG_ENERGY_DIR, energyOutputDir);
-        long bits = 0;
-        for (int i = 0; i < SLOT_COUNT; i++) {
-            if (unlimitedSlots[i]) bits |= (1L << i);
-        }
-        tag.putLong(TAG_UNLIMITED_SLOTS, bits);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_INTERFACE_MODE, interfaceMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IO_SPEED_MODE, ioSpeedMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_EXPORT_MODE, exportMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IMPORT_MODE, importMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeDirection(tag, TAG_ENERGY_DIR, energyOutputDir);
+            long bits = 0;
+            for (int i = 0; i < SLOT_COUNT; i++) {
+                if (unlimitedSlots[i]) bits |= (1L << i);
+            }
+            tag.putLong(TAG_UNLIMITED_SLOTS, bits);
+            FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId());
+        });
     }
 
     @Override
@@ -1928,41 +1973,37 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                                net.minecraft.core.component.DataComponentMap input,
                                @Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        this.interfaceMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_INTERFACE_MODE, InterfaceMode.class, this.interfaceMode);
-        this.ioSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_IO_SPEED_MODE, IOSpeedMode.class, this.ioSpeedMode);
-        this.exportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_EXPORT_MODE, ExportMode.class, this.exportMode);
-        var newImportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_IMPORT_MODE, ImportMode.class, this.importMode);
-        if (newImportMode != this.importMode) {
-            var old = this.importMode;
-            this.importMode = newImportMode;
-            if ((old == ImportMode.EJECT) != (newImportMode == ImportMode.EJECT)) {
-                refreshEjectRegistrations();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
+            this.interfaceMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_INTERFACE_MODE, InterfaceMode.class, this.interfaceMode);
+            this.ioSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_IO_SPEED_MODE, IOSpeedMode.class, this.ioSpeedMode);
+            this.exportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_EXPORT_MODE, ExportMode.class, this.exportMode);
+            var newImportMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_IMPORT_MODE, ImportMode.class, this.importMode);
+            if (newImportMode != this.importMode) {
+                var old = this.importMode;
+                this.importMode = newImportMode;
+                if ((old == ImportMode.EJECT) != (newImportMode == ImportMode.EJECT)) {
+                    refreshEjectRegistrations();
+                }
             }
-        }
-        if (tag.contains(TAG_ENERGY_DIR)) {
-            this.energyOutputDir = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readDirection(tag, TAG_ENERGY_DIR);
-        }
-        if (tag.contains(TAG_UNLIMITED_SLOTS)) {
-            long bits = tag.getLong(TAG_UNLIMITED_SLOTS);
-            for (int i = 0; i < SLOT_COUNT; i++) {
-                unlimitedSlots[i] = (bits & (1L << i)) != 0;
+            if (tag.contains(TAG_ENERGY_DIR)) {
+                this.energyOutputDir = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readDirection(tag, TAG_ENERGY_DIR);
             }
-        }
-        invalidateConnectionCache();
-        recomputeIdlePower();
-        saveChanges();
-        markForUpdate();
+            if (tag.contains(TAG_UNLIMITED_SLOTS)) {
+                long bits = tag.getLong(TAG_UNLIMITED_SLOTS);
+                for (int i = 0; i < SLOT_COUNT; i++) {
+                    unlimitedSlots[i] = (bits & (1L << i)) != 0;
+                }
+            }
+            FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency);
+            invalidateConnectionCache();
+            recomputeIdlePower();
+            saveChanges();
+            markForUpdate();
+        });
     }
 
 }

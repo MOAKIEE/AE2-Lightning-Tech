@@ -14,6 +14,7 @@ import appeng.client.gui.widgets.TabButton;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.client.ClientFrequencyCache;
+import com.moakiee.ae2lt.client.FrequencyBindingClient;
 import com.moakiee.ae2lt.grid.FrequencyAccessLevel;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequency;
@@ -303,6 +304,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     @Override
     protected void init() {
         super.init();
+        FrequencyBindingClient.restoreCursorPositionIfNeeded(freqMenu().getBlockPos());
         lastCacheRevision = ClientFrequencyCache.revision();
         lastFreqId = freqMenu().getCurrentFrequencyId();
         initTabWidgets();
@@ -1610,13 +1612,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
         y += 14;
 
-        String deviceType = freqMenu().isController()
-                ? (freqMenu().isAdvanced()
-                        ? "block.ae2lt.advanced_wireless_overloaded_controller"
-                        : "block.ae2lt.wireless_overloaded_controller")
-                : "block.ae2lt.wireless_receiver";
         drawFlat(g, Component.translatable("ae2lt.gui.home.device_type")
-                .append(": ").append(Component.translatable(deviceType)), 10, y, AE2_TEXT_BODY);
+                .append(": ").append(Component.translatable(freqMenu().getDeviceName())), 10, y, AE2_TEXT_BODY);
         y += 14;
 
         boolean connected = freqMenu().isLinkActive();
@@ -1707,11 +1704,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int yTop = LIST_ROW_FIRST_Y + 1 + row * LIST_ROW_HEIGHT;
             int yBot = yTop + 10;
 
-            String typeKey = c.controller()
-                    ? (c.advanced()
-                            ? "block.ae2lt.advanced_wireless_overloaded_controller"
-                            : "block.ae2lt.wireless_overloaded_controller")
-                    : "block.ae2lt.wireless_receiver";
+            String typeKey = c.deviceName();
             ChatFormatting typeColor = c.controller() ? ChatFormatting.DARK_AQUA : ChatFormatting.DARK_GREEN;
 
             drawFlat(g, Component.translatable(typeKey).withStyle(typeColor),

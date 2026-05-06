@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
-import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequency;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
@@ -62,13 +62,13 @@ public record SelectFrequencyPacket(
             // Resolve the device's CURRENT frequency so the block-op
             // access gate below knows what permission to verify. Any
             // non-wireless block entity at this pos is a REJECTED
-            // target — controllers and receivers are the only things
+            // target — controllers and frequency-bound devices are the only things
             // with a frequency binding.
             int currentFreqId;
             if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
                 currentFreqId = ctrl.getFrequencyId();
-            } else if (be instanceof WirelessReceiverBlockEntity recv) {
-                currentFreqId = recv.getFrequencyId();
+            } else if (be instanceof FrequencyBindingHost bindingHost) {
+                currentFreqId = bindingHost.getFrequencyId();
             } else {
                 PacketDistributor.sendToPlayer(player,
                         new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
@@ -102,7 +102,7 @@ public record SelectFrequencyPacket(
                 if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
                     ctrl.clearFrequency();
                 } else {
-                    ((WirelessReceiverBlockEntity) be).clearFrequency();
+                    ((FrequencyBindingHost) be).clearFrequency();
                 }
                 // DataSlot handles freqId sync back to client
                 return;
@@ -157,7 +157,7 @@ public record SelectFrequencyPacket(
             if (be instanceof WirelessOverloadedControllerBlockEntity ctrl) {
                 ctrl.setFrequency(pkt.frequencyId);
             } else {
-                ((WirelessReceiverBlockEntity) be).setFrequency(pkt.frequencyId);
+                ((FrequencyBindingHost) be).setFrequency(pkt.frequencyId);
             }
             // DataSlot handles freqId sync; members may have been updated above
         });

@@ -27,6 +27,7 @@ import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
@@ -39,7 +40,10 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerAutomationInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerFluidHandler;
@@ -56,7 +60,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
-        implements IActionHost, IUpgradeableObject,
+        implements IActionHost, IUpgradeableObject, FrequencyBindingHost,
         GridRecipeMachineHost<CrystalCatalyzerLockedRecipe, CrystalCatalyzerRecipeCandidate> {
 
     private static final String TAG_INVENTORY = "Inventory";
@@ -95,6 +99,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     private final IUpgradeInventory upgrades =
             UpgradeInventories.forMachine(ModBlocks.CRYSTAL_CATALYZER, 0, this::onUpgradesChanged);
     private final CrystalCatalyzerLogic logic;
+    private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
     private CrystalCatalyzerLockedRecipe lockedRecipe;
     private long consumedEnergy;
@@ -110,6 +115,38 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         getMainNode()
                 .setIdlePowerUsage(0)
                 .addService(IGridTickable.class, logic);
+    }
+
+    public static void serverTick(Level level, BlockPos pos, BlockState state, CrystalCatalyzerBlockEntity be) {
+        if (!level.isClientSide()) {
+            be.frequencyBinding.serverTick();
+        }
+    }
+
+    @Override
+    public FrequencyBindingHelper getFrequencyBinding() {
+        return frequencyBinding;
+    }
+
+    @Override
+    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+        return this;
+    }
+
+    @Override
+    public void saveFrequencyBindingChanges() {
+        saveChanges();
+    }
+
+    @Override
+    public void markFrequencyBindingForUpdate() {
+        markForUpdate();
+    }
+
+    @Override
+    public void onMainNodeStateChanged(IGridNodeListener.State reason) {
+        super.onMainNodeStateChanged(reason);
+        frequencyBinding.onMainNodeStateChanged(reason);
     }
 
     public CrystalCatalyzerInventory getInventory() {
@@ -183,6 +220,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     @Override
     public void onReady() {
         super.onReady();
+        frequencyBinding.onReady();
         inventory.setLevel(level);
         setWorking(lockedRecipe != null);
     }
@@ -191,10 +229,12 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     public void clearRemoved() {
         super.clearRemoved();
         inventory.setLevel(level);
+        frequencyBinding.clearRemoved();
     }
 
     @Override
     public void setRemoved() {
+        frequencyBinding.setRemoved();
         super.setRemoved();
         inventory.setLevel(null);
     }
@@ -558,6 +598,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         } else {
             data.remove(TAG_LOCKED_RECIPE);
         }
+        frequencyBinding.save(data);
     }
 
     @Override
@@ -568,6 +609,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+        frequencyBinding.load(data);
         autoExport = data.getBoolean(TAG_AUTO_EXPORT);
         allowedOutputs.clear();
         ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
@@ -663,12 +705,8 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
-            var tag = new CompoundTag();
-            tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
-        }
+        MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
+                tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 
     @Override
@@ -676,21 +714,15 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
                                net.minecraft.core.component.DataComponentMap input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_AUTO_EXPORT, v -> this.autoExport = v);
-        var sides = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS);
-        if (!sides.isEmpty() || tag.contains(TAG_ALLOWED_OUTPUTS)) {
-            this.allowedOutputs = sides;
-        }
-        exportTargetCache.invalidate();
-        saveChanges();
-        markForClientUpdate();
+        MemoryCardConfigSupport.importAutoExportSettings(mode, input,
+                v -> this.autoExport = v,
+                sides -> this.allowedOutputs = sides,
+                tag -> FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency),
+                () -> {
+                    exportTargetCache.invalidate();
+                    saveChanges();
+                    markForClientUpdate();
+                });
     }
 
     @Override

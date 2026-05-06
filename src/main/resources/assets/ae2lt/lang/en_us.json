@@ -359,6 +359,7 @@
   "ae2lt.gui.error.no_permission": "You do not have permission to use this frequency",
   "ae2lt.gui.error.rejected": "The requested frequency action was rejected",
   "ae2lt.gui.error.require_password": "This frequency requires the correct password",
+  "ae2lt.gui.frequency.bind": "Bind Frequency",
   "ae2lt.gui.frequency.color": "Color",
   "ae2lt.gui.frequency.current": "Current",
   "ae2lt.gui.frequency.name": "Frequency Name",

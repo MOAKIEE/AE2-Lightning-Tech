@@ -29,7 +29,7 @@ import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 
-public class CrystalCatalyzerMenu extends AEBaseMenu {
+public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<CrystalCatalyzerMenu> TYPE = MenuTypeBuilder
             .create(CrystalCatalyzerMenu::new, CrystalCatalyzerBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.crystal_catalyzer"))
@@ -171,6 +171,11 @@ public class CrystalCatalyzerMenu extends AEBaseMenu {
 
     public CrystalCatalyzerBlockEntity getHost() {
         return host;
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        return host.getBlockPos();
     }
 
     public long getStoredEnergy() {

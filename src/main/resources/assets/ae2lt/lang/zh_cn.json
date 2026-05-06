@@ -359,6 +359,7 @@
   "ae2lt.gui.error.no_permission": "你没有使用该频率的权限",
   "ae2lt.gui.error.rejected": "该频率操作被拒绝",
   "ae2lt.gui.error.require_password": "该频率需要正确密码",
+  "ae2lt.gui.frequency.bind": "绑定频率",
   "ae2lt.gui.frequency.color": "颜色",
   "ae2lt.gui.frequency.current": "当前频率",
   "ae2lt.gui.frequency.name": "频率名称",

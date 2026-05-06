@@ -21,7 +21,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.Wirele
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessSpeedMode;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 
-public class OverloadedPatternProviderMenu extends PatternProviderMenu {
+public class OverloadedPatternProviderMenu extends PatternProviderMenu implements FrequencyBindingMenu {
 
     public static final MenuType<OverloadedPatternProviderMenu> TYPE = MenuTypeBuilder
             .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class)
@@ -213,6 +213,14 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu {
 
     public void clientPrevPage() {
         sendClientAction("prevPage");
+    }
+
+    @Override
+    public net.minecraft.core.BlockPos getFrequencyBindingBlockPos() {
+        if (host instanceof net.minecraft.world.level.block.entity.BlockEntity be) {
+            return be.getBlockPos();
+        }
+        throw new IllegalStateException("Frequency binding host is not a block entity: " + host);
     }
 
     public int getCurrentPage() {

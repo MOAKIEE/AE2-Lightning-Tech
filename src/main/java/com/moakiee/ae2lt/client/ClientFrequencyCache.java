@@ -33,7 +33,8 @@ public final class ClientFrequencyCache {
     public record CachedMember(java.util.UUID uuid, String name, FrequencyAccessLevel access) {}
 
     public record CachedConnection(String dimension, net.minecraft.core.BlockPos pos,
-                                    boolean controller, boolean advanced, boolean loaded) {}
+                                    boolean controller, boolean advanced, boolean loaded,
+                                    String deviceName) {}
 
     private static final Map<Integer, CachedFrequency> cache = new HashMap<>();
     private static final Map<Integer, List<CachedMember>> members = new HashMap<>();
@@ -92,7 +93,8 @@ public final class ClientFrequencyCache {
                     net.minecraft.core.BlockPos.of(e.getLong("pos")),
                     e.getBoolean("controller"),
                     e.getBoolean("advanced"),
-                    e.getBoolean("loaded")));
+                    e.getBoolean("loaded"),
+                    e.contains("name") ? e.getString("name") : "block.ae2lt.wireless_receiver"));
         }
         connections.put(frequencyId, result);
         revision++;

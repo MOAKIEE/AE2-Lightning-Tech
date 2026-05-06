@@ -67,6 +67,8 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
             this.widgets.add("toolbox", new ToolboxPanel(style, menu.getToolbox().getName()));
         }
 
+        addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
+
         this.fuzzyMode = new ServerSettingToggleButton<>(Settings.FUZZY_MODE, FuzzyMode.IGNORE_ALL);
         addToLeftToolbar(this.fuzzyMode);
 
