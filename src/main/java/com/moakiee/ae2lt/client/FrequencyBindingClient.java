@@ -37,14 +37,10 @@ public final class FrequencyBindingClient {
     }
 
     private static void rememberCursorPosition(BlockPos blockPos) {
-        var mc = Minecraft.getInstance();
-        if (mc == null || mc.getWindow() == null) {
-            return;
-        }
-
+        long window = Minecraft.getInstance().getWindow().getWindow();
         double[] x = new double[1];
         double[] y = new double[1];
-        GLFW.glfwGetCursorPos(mc.getWindow().getWindow(), x, y);
+        GLFW.glfwGetCursorPos(window, x, y);
         restoreCursorX = x[0];
         restoreCursorY = y[0];
         restoreCursorBlockPos = blockPos.immutable();
@@ -59,17 +55,16 @@ public final class FrequencyBindingClient {
 
         if (!blockPos.equals(restoreCursorBlockPos)
                 || System.currentTimeMillis() - restoreCursorAtMs > RESTORE_TIMEOUT_MS) {
-            restoreCursor = false;
-            restoreCursorBlockPos = null;
+            clearRestoreState();
             return;
         }
 
-        var mc = Minecraft.getInstance();
-        if (mc == null || mc.getWindow() == null) {
-            return;
-        }
+        long window = Minecraft.getInstance().getWindow().getWindow();
+        GLFW.glfwSetCursorPos(window, restoreCursorX, restoreCursorY);
+        clearRestoreState();
+    }
 
-        GLFW.glfwSetCursorPos(mc.getWindow().getWindow(), restoreCursorX, restoreCursorY);
+    private static void clearRestoreState() {
         restoreCursor = false;
         restoreCursorBlockPos = null;
     }
