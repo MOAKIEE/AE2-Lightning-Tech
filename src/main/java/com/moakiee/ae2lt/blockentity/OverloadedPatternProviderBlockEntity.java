@@ -572,19 +572,14 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = new CompoundTag();
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_PROVIDER_MODE, providerMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_RETURN_MODE, returnMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode);
-        tag.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
-        if (getFrequencyId() > 0) {
-            tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
-        }
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_PROVIDER_MODE, providerMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_RETURN_MODE, returnMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode);
+            tag.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
+            FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId());
+        });
     }
 
     @Override
@@ -592,30 +587,23 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                                net.minecraft.core.component.DataComponentMap input,
                                @Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        this.providerMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_PROVIDER_MODE, ProviderMode.class, this.providerMode);
-        this.returnMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_RETURN_MODE, ReturnMode.class, this.returnMode);
-        this.wirelessDispatchMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_WIRELESS_DISPATCH_MODE, WirelessDispatchMode.class, this.wirelessDispatchMode);
-        this.wirelessSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_WIRELESS_SPEED_MODE, WirelessSpeedMode.class, this.wirelessSpeedMode);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_FILTERED_IMPORT,
-                v -> this.filteredImport = v);
-        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
-            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
-        }
-        recomputeIdlePower();
-        notifyLogicStateChanged();
-        saveChanges();
-        markForUpdate();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
+            this.providerMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_PROVIDER_MODE, ProviderMode.class, this.providerMode);
+            this.returnMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_RETURN_MODE, ReturnMode.class, this.returnMode);
+            this.wirelessDispatchMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_WIRELESS_DISPATCH_MODE, WirelessDispatchMode.class, this.wirelessDispatchMode);
+            this.wirelessSpeedMode = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_WIRELESS_SPEED_MODE, WirelessSpeedMode.class, this.wirelessSpeedMode);
+            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_FILTERED_IMPORT,
+                    v -> this.filteredImport = v);
+            FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency);
+            recomputeIdlePower();
+            notifyLogicStateChanged();
+            saveChanges();
+            markForUpdate();
+        });
     }
 
     // -- Cleanup --

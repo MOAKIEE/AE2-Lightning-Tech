@@ -19,6 +19,7 @@ import appeng.api.networking.pathing.ChannelMode;
 import appeng.me.GridConnection;
 
 import com.moakiee.ae2lt.grid.WirelessConnectionCapProvider;
+import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -299,18 +300,12 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
         frequencyId = tag.contains("FrequencyId") ? tag.getInt("FrequencyId") : -1;
     }
 
-    private static final String TAG_FREQUENCY = "Frequency";
-
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode == appeng.util.SettingsFrom.MEMORY_CARD && frequencyId > 0) {
-            var tag = new CompoundTag();
-            tag.putInt(TAG_FREQUENCY, frequencyId);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
-        }
+        FrequencyBindingHelper.exportMemorySettings(mode, builder, frequencyId);
     }
 
     @Override
@@ -318,15 +313,8 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
                                net.minecraft.core.component.DataComponentMap input,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null || !tag.contains(TAG_FREQUENCY)) {
-            return;
-        }
         // setFrequency guards against duplicates on transmitters and reverts on conflict,
         // so the paste is a no-op if the target frequency is already bound elsewhere.
-        setFrequency(tag.getInt(TAG_FREQUENCY));
+        FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
     }
 }

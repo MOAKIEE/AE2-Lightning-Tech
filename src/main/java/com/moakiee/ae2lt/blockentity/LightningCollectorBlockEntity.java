@@ -309,6 +309,22 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     }
 
     @Override
+    public void exportSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.exportSettings(mode, builder, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+    }
+
+    @Override
+    public void importSettings(appeng.util.SettingsFrom mode,
+                               net.minecraft.core.component.DataComponentMap input,
+                               @org.jetbrains.annotations.Nullable Player player) {
+        super.importSettings(mode, input, player);
+        FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
+    }
+
+    @Override
     protected net.minecraft.world.item.Item getItemFromBlockEntity() {
         return ModBlocks.LIGHTNING_COLLECTOR.get().asItem();
     }

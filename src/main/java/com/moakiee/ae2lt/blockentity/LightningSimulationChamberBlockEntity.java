@@ -43,6 +43,7 @@ import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.common.SingleOutputLightningRecipeExecutor;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberAutomationInventory;
@@ -589,15 +590,8 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
-            var tag = new CompoundTag();
-            tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
-            if (getFrequencyId() > 0) {
-                tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
-            }
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
-        }
+        MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
+                tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 
     @Override
@@ -605,24 +599,15 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
                                net.minecraft.core.component.DataComponentMap input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.ifBoolean(tag, TAG_AUTO_EXPORT, v -> this.autoExport = v);
-        var sides = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS);
-        if (!sides.isEmpty() || tag.contains(TAG_ALLOWED_OUTPUTS)) {
-            this.allowedOutputs = sides;
-        }
-        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
-            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
-        }
-        invalidateExportTargets();
-        saveChanges();
-        markForUpdate();
+        MemoryCardConfigSupport.importAutoExportSettings(mode, input,
+                v -> this.autoExport = v,
+                sides -> this.allowedOutputs = sides,
+                tag -> FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency),
+                () -> {
+                    invalidateExportTargets();
+                    saveChanges();
+                    markForUpdate();
+                });
     }
 
     @Override

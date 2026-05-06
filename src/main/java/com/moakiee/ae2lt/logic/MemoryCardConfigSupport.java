@@ -14,6 +14,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.component.CustomData;
 
 import appeng.api.orientation.RelativeSide;
+import appeng.util.SettingsFrom;
 
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
@@ -31,6 +32,9 @@ import com.moakiee.ae2lt.registry.ModDataComponents;
  * to hydrate its fields.
  */
 public final class MemoryCardConfigSupport {
+    private static final String TAG_AUTO_EXPORT = "AutoExport";
+    private static final String TAG_ALLOWED_OUTPUTS = "AllowedOutputs";
+
     private MemoryCardConfigSupport() {}
 
     /**
@@ -58,10 +62,67 @@ public final class MemoryCardConfigSupport {
         return data.copyTag();
     }
 
+    /**
+     * AE2 calls machine hooks for multiple settings sources. This helper keeps
+     * our custom machine-data export scoped to memory cards and centralizes the
+     * empty-tag behavior.
+     */
+    public static void exportMemoryCardSettings(SettingsFrom mode, DataComponentMap.Builder builder,
+                                                Consumer<CompoundTag> writer) {
+        if (mode != SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+
+        var tag = new CompoundTag();
+        writer.accept(tag);
+        writeCustomTag(builder, tag);
+    }
+
+    /**
+     * Reads our custom memory-card tag if present. The reader is only invoked
+     * for memory-card imports with an exported AE2LT machine config component.
+     */
+    public static void importMemoryCardSettings(SettingsFrom mode, DataComponentMap input,
+                                                Consumer<CompoundTag> reader) {
+        if (mode != SettingsFrom.MEMORY_CARD) {
+            return;
+        }
+
+        var tag = readCustomTag(input);
+        if (tag != null) {
+            reader.accept(tag);
+        }
+    }
+
+    public static void exportAutoExportSettings(SettingsFrom mode, DataComponentMap.Builder builder,
+                                                boolean autoExport, EnumSet<RelativeSide> allowedOutputs,
+                                                Consumer<CompoundTag> extraWriter) {
+        exportMemoryCardSettings(mode, builder, tag -> {
+            tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
+            writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
+            extraWriter.accept(tag);
+        });
+    }
+
+    public static void importAutoExportSettings(SettingsFrom mode, DataComponentMap input,
+                                                Consumer<Boolean> autoExportSetter,
+                                                Consumer<EnumSet<RelativeSide>> allowedOutputsSetter,
+                                                Consumer<CompoundTag> extraReader,
+                                                Runnable afterImport) {
+        importMemoryCardSettings(mode, input, tag -> {
+            ifBoolean(tag, TAG_AUTO_EXPORT, autoExportSetter);
+            if (tag.contains(TAG_ALLOWED_OUTPUTS)) {
+                allowedOutputsSetter.accept(readRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS));
+            }
+            extraReader.accept(tag);
+            afterImport.run();
+        });
+    }
+
     // ── RelativeSide set serialization ────────────────────────────────────
 
     public static void writeRelativeSideSet(CompoundTag tag, String key, EnumSet<RelativeSide> sides) {
-        if (sides == null || sides.isEmpty()) {
+        if (sides == null) {
             return;
         }
         var list = new ListTag();

@@ -431,14 +431,10 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
                                net.minecraft.core.component.DataComponentMap.Builder builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
-        if (mode == appeng.util.SettingsFrom.MEMORY_CARD) {
-            var tag = new CompoundTag();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_SELECTED_MODE, selectedMode);
-            if (getFrequencyId() > 0) {
-                tag.putInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY, getFrequencyId());
-            }
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeCustomTag(builder, tag);
-        }
+            FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId());
+        });
     }
 
     @Override
@@ -446,21 +442,14 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
                                net.minecraft.core.component.DataComponentMap input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
-        if (mode != appeng.util.SettingsFrom.MEMORY_CARD) {
-            return;
-        }
-        var tag = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readCustomTag(input);
-        if (tag == null) {
-            return;
-        }
-        var mode2 = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
-                tag, TAG_SELECTED_MODE, TeslaCoilMode.class, selectedMode);
-        this.selectedMode = mode2;
-        if (tag.contains(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY)) {
-            setFrequency(tag.getInt(FrequencyBindingHelper.TAG_MEMORY_FREQUENCY));
-        }
-        saveChanges();
-        markForUpdate();
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
+            var mode2 = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readEnum(
+                    tag, TAG_SELECTED_MODE, TeslaCoilMode.class, selectedMode);
+            this.selectedMode = mode2;
+            FrequencyBindingHelper.importMemoryFrequency(tag, this::setFrequency);
+            saveChanges();
+            markForUpdate();
+        });
     }
 
     @Override

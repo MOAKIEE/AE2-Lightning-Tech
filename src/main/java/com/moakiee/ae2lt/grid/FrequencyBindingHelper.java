@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.grid;
 
+import java.util.function.IntConsumer;
+
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,10 +11,13 @@ import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.me.GridConnection;
+import appeng.util.SettingsFrom;
+import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 
 /**
  * Shared receiver-side frequency binding. It mirrors the original
@@ -98,13 +103,19 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
         if (!needsConnectionUpdate) return;
 
         var be = host.getFrequencyBindingBlockEntity();
-        if (be.getMainNode().getNode() == null) return;  // Keep the flag until the grid node exists.
+        if (frequencyId <= 0 || be.getLevel() == null || be.getLevel().isClientSide()) {
+            needsConnectionUpdate = false;
+            return;
+        }
+
+        if (be.getMainNode().getNode() == null) {
+            scheduleRetry();
+            return;
+        }
 
         needsConnectionUpdate = false;
 
-        if (frequencyId <= 0 || be.getLevel() == null || be.getLevel().isClientSide()) return;
-
-        boolean wasConnected = isConnected();
+        boolean wasConnected = hasLiveVirtualConnection();
         if (virtualConnection != null) {
             revalidateConnection();
         }
@@ -113,7 +124,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
             tryEstablishConnection();
         }
 
-        boolean connected = isConnected();
+        boolean connected = hasLiveVirtualConnection();
         if (connected) {
             resetRetryBackoff();
         }
@@ -149,6 +160,28 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
 
     public void load(CompoundTag tag) {
         frequencyId = tag.contains(TAG_FREQUENCY_ID) ? tag.getInt(TAG_FREQUENCY_ID) : -1;
+    }
+
+    public static void writeMemoryFrequency(CompoundTag tag, int frequencyId) {
+        if (frequencyId > 0) {
+            tag.putInt(TAG_MEMORY_FREQUENCY, frequencyId);
+        }
+    }
+
+    public static boolean importMemoryFrequency(CompoundTag tag, IntConsumer setter) {
+        if (!tag.contains(TAG_MEMORY_FREQUENCY)) {
+            return false;
+        }
+        setter.accept(tag.getInt(TAG_MEMORY_FREQUENCY));
+        return true;
+    }
+
+    public static void exportMemorySettings(SettingsFrom mode, DataComponentMap.Builder builder, int frequencyId) {
+        MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> writeMemoryFrequency(tag, frequencyId));
+    }
+
+    public static void importMemorySettings(SettingsFrom mode, DataComponentMap input, IntConsumer setter) {
+        MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> importMemoryFrequency(tag, setter));
     }
 
     public int getGridUsedChannels() {
@@ -190,6 +223,10 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     }
 
     public boolean isConnected() {
+        return hasLiveVirtualConnection();
+    }
+
+    private boolean hasLiveVirtualConnection() {
         if (virtualConnection == null) return false;
 
         IGridNode myNode = host.getFrequencyBindingBlockEntity().getMainNode().getNode();
@@ -198,7 +235,6 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
             if (conn == virtualConnection) return true;
         }
 
-        virtualConnection = null;
         return false;
     }
 
