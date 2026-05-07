@@ -16,7 +16,7 @@ import appeng.api.networking.IGridNode;
 import appeng.blockentity.networking.ControllerBlockEntity;
 import appeng.me.Grid;
 
-@Mixin(Grid.class)
+@Mixin(value = Grid.class, remap = false)
 public abstract class GridGetMachineNodesMixin {
 
     @Shadow

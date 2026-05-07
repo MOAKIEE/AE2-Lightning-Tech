@@ -49,7 +49,7 @@ import appeng.me.pathfinding.PathingCalculation;
  * winning devices into {@code channelNodes}, and set {@code usedChannels}
  * on each cable/node from the flow decomposition.
  */
-@Mixin(PathingCalculation.class)
+@Mixin(value = PathingCalculation.class, remap = false)
 public abstract class PathingCalculationCapMixin {
 
     @Shadow @Final private IGrid grid;
@@ -148,7 +148,8 @@ public abstract class PathingCalculationCapMixin {
 
     @Inject(method = "compute",
             at = @At(value = "INVOKE",
-                     target = "Lappeng/me/pathfinding/PathingCalculation;propagateAssignments()V"))
+                     target = "Lappeng/me/pathfinding/PathingCalculation;propagateAssignments()V",
+                     remap = false))
     private void ae2lt$runMaxFlowBeforeDFS(CallbackInfo ci) {
         BorrowedCapacityCalculator.clearActiveData();
 

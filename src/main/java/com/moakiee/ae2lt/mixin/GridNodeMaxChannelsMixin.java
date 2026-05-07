@@ -19,7 +19,7 @@ import appeng.blockentity.networking.ControllerBlockEntity;
 import appeng.me.GridNode;
 import appeng.me.pathfinding.IPathItem;
 
-@Mixin(GridNode.class)
+@Mixin(value = GridNode.class, remap = false)
 public abstract class GridNodeMaxChannelsMixin implements OverloadedSubtreeNode {
 
     @Shadow int usedChannels;

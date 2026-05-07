@@ -11,7 +11,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.me.GridConnection;
 
-@Mixin(GridConnection.class)
+@Mixin(value = GridConnection.class, remap = false)
 public abstract class GridConnectionMaxChannelsMixin {
 
     @Shadow int usedChannels;
