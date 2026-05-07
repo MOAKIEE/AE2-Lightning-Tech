@@ -14,10 +14,10 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.extensions.IMenuTypeExtension;
-import net.minecraftforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.network.NetworkInit;
 import com.moakiee.ae2lt.network.SyncFrequencyDetailPacket;
 import com.moakiee.ae2lt.network.SyncFrequencyListPacket;
 
@@ -88,7 +88,7 @@ public class FrequencyMenu extends AbstractContainerMenu {
 
         // initial sync to the player who just opened this menu
         if (playerInv.player instanceof ServerPlayer sp) {
-            PacketDistributor.sendToPlayer(sp, SyncFrequencyListPacket.fromServer());
+            NetworkInit.sendToPlayer(sp, SyncFrequencyListPacket.fromServer());
             SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(sp, freqIdSlot.get());
             SyncFrequencyDetailPacket.sendInitialConnectionsIfNeeded(sp, freqIdSlot.get());
         }

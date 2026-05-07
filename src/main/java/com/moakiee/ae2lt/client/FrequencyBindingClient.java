@@ -3,11 +3,11 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import com.moakiee.ae2lt.menu.FrequencyBindingMenu;
+import com.moakiee.ae2lt.network.NetworkInit;
 import com.moakiee.ae2lt.network.OpenFrequencyMenuPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 public final class FrequencyBindingClient {
@@ -28,7 +28,7 @@ public final class FrequencyBindingClient {
                 TextureToggleButton.ButtonType.FREQUENCY_BIND,
                 ignored -> {
                     rememberCursorPosition(menu.getFrequencyBindingBlockPos());
-                    PacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
+                    NetworkInit.sendToServer(new OpenFrequencyMenuPacket(
                             menu.getFrequencyBindingToken(),
                             menu.getFrequencyBindingBlockPos()));
                 });

@@ -5,6 +5,7 @@ import com.moakiee.ae2lt.lightning.LightningTransformService;
 import com.moakiee.ae2lt.lightning.ProtectedItemEntityHelper;
 import com.moakiee.ae2lt.logic.research.ResearchRitualService;
 import com.moakiee.ae2lt.network.EasterEggPacket;
+import com.moakiee.ae2lt.network.NetworkInit;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -18,7 +19,6 @@ import net.minecraftforge.fml.common.EventBusSubscriber;
 import net.minecraftforge.event.entity.EntityInvulnerabilityCheckEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.event.tick.EntityTickEvent;
-import net.minecraftforge.network.PacketDistributor;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class LightningItemTransformationHandler {
@@ -86,7 +86,7 @@ public final class LightningItemTransformationHandler {
             if (level.getBlockState(pos).is(fumoBlock)) {
                 for (ServerPlayer player : level.players()) {
                     if (player.distanceToSqr(pos.getX(), pos.getY(), pos.getZ()) < 64 * 64) {
-                        PacketDistributor.sendToPlayer(player, new EasterEggPacket());
+                        NetworkInit.sendToPlayer(player, new EasterEggPacket());
                     }
                 }
                 return;

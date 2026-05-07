@@ -70,6 +70,7 @@ import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
+import com.moakiee.ae2lt.network.NetworkInit;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.minecraftforge.common.MinecraftForge;
@@ -382,6 +383,8 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
+            NetworkInit.register();
+
             var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
             var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
             lightningCollectorBlock.setBlockEntity(

@@ -33,7 +33,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
-import net.minecraftforge.network.PacketDistributor;
 
 /**
  * Multi-tab frequency management screen, modeled after Flux Networks' GUI.
@@ -511,7 +510,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                 btn -> {
                     int freqId = freqMenu().getCurrentFrequencyId();
                     if (freqId > 0) {
-                        PacketDistributor.sendToServer(new DeleteFrequencyPacket(token(), freqId));
+                        NetworkInit.sendToServer(new DeleteFrequencyPacket(token(), freqId));
                     }
                     deleteConfirmOpen = false;
                     switchTab(FrequencyNavigationTab.TAB_SELECTION);
@@ -596,7 +595,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         String pw = passwordPromptField == null ? "" : passwordPromptField.getValue();
         int freqId = passwordPromptFreqId;
         if (freqId <= 0) return;
-        PacketDistributor.sendToServer(new SelectFrequencyPacket(
+        NetworkInit.sendToServer(new SelectFrequencyPacket(
                 token(), freqMenu().getBlockPos(), freqId, pw));
     }
 
@@ -790,7 +789,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         addRenderableWidget(new AE2Button(
                 x0 + (GUI_WIDTH - 96) / 2, y0 + 124, 96, 18,
                 Component.translatable("ae2lt.gui.button.disconnect"),
-                btn -> PacketDistributor.sendToServer(
+                btn -> NetworkInit.sendToServer(
                         new SelectFrequencyPacket(token(), freqMenu().getBlockPos(), -1, ""))));
     }
 
@@ -892,7 +891,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                             passwordPromptLocksScreen = false;
                             scheduleRebuild();
                         } else {
-                            PacketDistributor.sendToServer(
+                            NetworkInit.sendToServer(
                                     new SelectFrequencyPacket(token(), freqMenu().getBlockPos(), f.id(), ""));
                         }
                     });
@@ -1170,7 +1169,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     private void sendMember(byte type) {
         int currentId = freqMenu().getCurrentFrequencyId();
         if (currentId <= 0 || popupMemberUUID == null) return;
-        PacketDistributor.sendToServer(new ChangeMemberPacket(token(), currentId, popupMemberUUID, type));
+        NetworkInit.sendToServer(new ChangeMemberPacket(token(), currentId, popupMemberUUID, type));
         closePopup();
         scheduleRebuild();
     }
@@ -1219,7 +1218,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                 Component.translatable("ae2lt.gui.button.create"),
                 btn -> {
                     if (nameField.getValue().isBlank()) return;
-                    PacketDistributor.sendToServer(new CreateFrequencyPacket(
+                    NetworkInit.sendToServer(new CreateFrequencyPacket(
                             token(),
                             nameField.getValue(), editColor, editSecurity,
                             passwordField.getValue()));
@@ -1307,7 +1306,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                     // (see EditFrequencyPacket's "only overwrite when
                     // the payload is non-empty" branch).
                     String pw = settingsPasswordPristine ? "" : passwordField.getValue();
-                    PacketDistributor.sendToServer(new EditFrequencyPacket(
+                    NetworkInit.sendToServer(new EditFrequencyPacket(
                             token(),
                             freq.id(), nameField.getValue(), editColor,
                             editSecurity, pw));
@@ -1337,9 +1336,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                     btn -> {
                         var mc = Minecraft.getInstance();
                         if (mc.player == null) return;
-                        PacketDistributor.sendToServer(new SelectFrequencyPacket(
+                        NetworkInit.sendToServer(new SelectFrequencyPacket(
                                 token(), freqMenu().getBlockPos(), -1, ""));
-                        PacketDistributor.sendToServer(new ChangeMemberPacket(
+                        NetworkInit.sendToServer(new ChangeMemberPacket(
                                 token(), freq.id(), mc.player.getUUID(),
                                 WirelessFrequency.MEMBERSHIP_CANCEL));
                         switchTab(FrequencyNavigationTab.TAB_SELECTION);

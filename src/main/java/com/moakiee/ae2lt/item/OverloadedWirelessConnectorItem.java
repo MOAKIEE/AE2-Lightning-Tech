@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
+import com.moakiee.ae2lt.network.NetworkInit;
 import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -25,7 +26,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraftforge.network.PacketDistributor;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -81,7 +81,7 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
         }
 
         if (level.isClientSide()) {
-            PacketDistributor.sendToServer(new WirelessConnectorUsePacket(
+            NetworkInit.sendToServer(new WirelessConnectorUsePacket(
                     context.getHand(),
                     pos,
                     context.getClickedFace(),
