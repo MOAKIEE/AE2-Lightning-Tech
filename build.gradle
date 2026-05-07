@@ -130,6 +130,8 @@ dependencies {
     runtimeOnly fg.deobf("org.appliedenergistics:guideme:${guideme_version}")
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixinextras_version}"))
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:${mixinextras_version}"))
 }
 
 tasks.named('processResources', ProcessResources).configure {
