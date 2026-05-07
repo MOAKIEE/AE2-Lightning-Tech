@@ -37,7 +37,7 @@ public class OverloadTntBlock extends TntBlock {
 
         if (!player.getAbilities().instabuild) {
             if (stack.is(Items.FLINT_AND_STEEL)) {
-                stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+                stack.hurtAndBreak(1, player, brokenPlayer -> brokenPlayer.broadcastBreakEvent(hand));
             } else {
                 stack.shrink(1);
             }
@@ -74,12 +74,12 @@ public class OverloadTntBlock extends TntBlock {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide() && !player.isCreative() && state.getValue(UNSTABLE)) {
             prime(level, pos, player);
         }
 
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override
@@ -94,7 +94,8 @@ public class OverloadTntBlock extends TntBlock {
             return;
         }
 
-        LivingEntity owner = explosion.getIndirectSourceEntity() instanceof LivingEntity livingEntity ? livingEntity : null;
+        var source = explosion.getIndirectSourceEntity();
+        LivingEntity owner = source instanceof LivingEntity ? (LivingEntity) source : null;
         OverloadTntEntity tnt = new OverloadTntEntity(level, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, owner);
         int fuse = tnt.getFuse();
         // Keep vanilla-style shortened chain-explosion timing. The current fuse values are small,

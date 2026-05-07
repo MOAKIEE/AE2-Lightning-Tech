@@ -46,6 +46,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
@@ -409,7 +410,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (candidate.parallel() != lockedRecipe.parallel()) {
             return false;
         }
-        if (!inventory.canAcceptRecipeOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()))) {
+        if (!inventory.canAcceptRecipeOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()))) {
             return false;
         }
 
@@ -425,7 +426,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
 
-        FluidStack requiredInputFluid = candidate.recipe().value().fluidInput();
+        FluidStack requiredInputFluid = candidate.recipe().fluidInput();
         int inputFluidCost = 0;
         if (!requiredInputFluid.isEmpty()) {
             long scaledInputFluidCost = (long) requiredInputFluid.getAmount() * candidate.parallel();
@@ -437,13 +438,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (inputFluidCost > 0) {
             FluidStack currentInput = inputTank.getFluid();
             if (currentInput.isEmpty()
-                    || !FluidStack.isSameFluidSameComponents(requiredInputFluid, currentInput)
+                    || !FluidStackHelper.sameFluidAndTag(requiredInputFluid, currentInput)
                     || currentInput.getAmount() < inputFluidCost) {
                 return false;
             }
         }
 
-        FluidStack scaledOutputFluid = candidate.recipe().value().getScaledFluidResult(candidate.parallel());
+        FluidStack scaledOutputFluid = candidate.recipe().getScaledFluidResult(candidate.parallel());
         if (!canAcceptFluidOutput(scaledOutputFluid)) {
             return false;
         }
@@ -522,7 +523,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
 
-        if (!inventory.insertRecipeOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()))) {
+        if (!inventory.insertRecipeOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()))) {
             insertLightning(plan.primaryKey(), extractedPrimary);
             if (extractedSecondary > 0L) {
                 insertLightning(plan.secondaryKey(), extractedSecondary);
@@ -546,7 +547,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             if (!drainedInput.isEmpty()) {
                 inputTank.fill(drainedInput, FluidAction.EXECUTE);
             }
-            rollbackItemOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()));
+            rollbackItemOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()));
             rollbackInputs(extractedInputs);
             return false;
         }
@@ -691,7 +692,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                                net.minecraft.nbt.CompoundTag output,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, output, player);
-        MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
+        MemoryCardConfigSupport.exportAutoExportSettings(mode, output, autoExport, allowedOutputs,
                 tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 
@@ -769,7 +770,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (current.isEmpty()) {
             return stack.getAmount() <= OUTPUT_TANK_CAPACITY;
         }
-        return FluidStack.isSameFluidSameComponents(current, stack)
+        return FluidStackHelper.sameFluidAndTag(current, stack)
                 && current.getAmount() + stack.getAmount() <= OUTPUT_TANK_CAPACITY;
     }
 
@@ -792,7 +793,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                          + OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT && remaining > 0;
                  slot++) {
                 ItemStack current = inventory.getStackInSlot(slot);
-                if (current.isEmpty() || !ItemStack.isSameItemSameComponents(current, output)) {
+                if (current.isEmpty() || !ItemStack.isSameItemSameTags(current, output)) {
                     continue;
                 }
 

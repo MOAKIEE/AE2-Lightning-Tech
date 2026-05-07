@@ -41,14 +41,14 @@ public final class StrictCompareKey implements CompareKey {
 
     @Override
     public boolean matches(ItemStack stack) {
-        return !stack.isEmpty() && ItemStack.isSameItemSameComponents(template, stack);
+        return !stack.isEmpty() && ItemStack.isSameItemSameTags(template, stack);
     }
 
     @Override
     public boolean matches(CompareKey candidate) {
         Objects.requireNonNull(candidate, "candidate");
         if (candidate instanceof StrictCompareKey strictCandidate) {
-            return ItemStack.isSameItemSameComponents(template, strictCandidate.template);
+            return ItemStack.isSameItemSameTags(template, strictCandidate.template);
         }
         return false;
     }
@@ -61,12 +61,12 @@ public final class StrictCompareKey implements CompareKey {
         if (!(obj instanceof StrictCompareKey other)) {
             return false;
         }
-        return ItemStack.isSameItemSameComponents(template, other.template);
+        return ItemStack.isSameItemSameTags(template, other.template);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(template.getItem(), template.getComponents());
+        return Objects.hash(template.getItem(), template.getTag());
     }
 
     @Override

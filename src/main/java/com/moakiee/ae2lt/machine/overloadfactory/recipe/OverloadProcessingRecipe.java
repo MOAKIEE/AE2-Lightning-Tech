@@ -20,6 +20,7 @@ import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
@@ -213,7 +214,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
             return true;
         }
         return !availableFluid.isEmpty()
-                && FluidStack.isSameFluidSameComponents(fluidInput, availableFluid)
+                && FluidStackHelper.sameFluidAndTag(fluidInput, availableFluid)
                 && availableFluid.getAmount() >= multiplyExactToInt(fluidInput.getAmount(), operations);
     }
 
@@ -270,7 +271,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                 || lightningCost <= 0
                 || (itemInputs.isEmpty() && fluidInput.isEmpty())
                 || (itemResults.isEmpty() && fluidResult.isEmpty())
-                || itemInputs.stream().anyMatch(input -> input.ingredient().hasNoItems());
+                || itemInputs.stream().anyMatch(input -> input.ingredient().getItems().length == 0);
     }
 
     private FluidStack rawFluidInput() {

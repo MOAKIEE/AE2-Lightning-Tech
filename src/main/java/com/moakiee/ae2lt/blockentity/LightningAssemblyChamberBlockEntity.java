@@ -332,7 +332,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
                 LightningAssemblyChamberInventory.SLOT_INPUT_0,
                 LightningAssemblyChamberInventory.SLOT_INPUT_8,
                 candidate.match()::getConsumptionForSlot,
-                candidate.recipe().value().getResultStack(),
+                candidate.recipe().getResultStack(),
                 () -> LightningAssemblyRecipeService.resolveLightningConsumption(
                                 inventory,
                                 lockedRecipe.lightningTier(),
@@ -622,7 +622,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
                                net.minecraft.nbt.CompoundTag output,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, output, player);
-        MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
+        MemoryCardConfigSupport.exportAutoExportSettings(mode, output, autoExport, allowedOutputs,
                 tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 

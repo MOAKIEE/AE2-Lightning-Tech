@@ -171,7 +171,7 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
     public boolean isIncomplete() {
         return inputs.isEmpty()
                 || result.isEmpty()
-                || inputs.stream().anyMatch(input -> input.ingredient().hasNoItems());
+                || inputs.stream().anyMatch(input -> input.ingredient().getItems().length == 0);
     }
 
     private ItemStack rawResult() {

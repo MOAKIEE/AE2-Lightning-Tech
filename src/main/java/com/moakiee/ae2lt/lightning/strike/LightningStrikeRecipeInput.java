@@ -14,6 +14,11 @@ public final class LightningStrikeRecipeInput implements RecipeInput {
     }
 
     @Override
+    public boolean isEmpty() {
+        return true;
+    }
+
+    @Override
     public ItemStack getItem(int slotIndex) {
         return ItemStack.EMPTY;
     }

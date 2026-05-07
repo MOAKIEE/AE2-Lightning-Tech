@@ -29,6 +29,11 @@ public final class CrystalCatalyzerRecipeInput implements RecipeInput {
     }
 
     @Override
+    public boolean isEmpty() {
+        return catalyst.isEmpty();
+    }
+
+    @Override
     public ItemStack getItem(int slotIndex) {
         return slotIndex == 0 ? catalyst : ItemStack.EMPTY;
     }

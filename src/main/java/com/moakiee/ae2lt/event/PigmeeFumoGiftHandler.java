@@ -88,7 +88,7 @@ public final class PigmeeFumoGiftHandler {
 
     private static boolean canMerge(ItemStack stack, ItemStack gift) {
         return !stack.isEmpty()
-                && ItemStack.isSameItemSameComponents(stack, gift)
+                && ItemStack.isSameItemSameTags(stack, gift)
                 && stack.getCount() < stack.getMaxStackSize();
     }
 }

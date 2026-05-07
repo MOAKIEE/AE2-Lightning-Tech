@@ -573,9 +573,9 @@ public class AE2LightningTech {
                     protected net.minecraft.world.item.ItemStack execute(
                             net.minecraft.core.BlockSource source,
                             net.minecraft.world.item.ItemStack stack) {
-                        var level = source.level();
-                        var pos = source.pos().relative(
-                                source.state().getValue(
+                        var level = source.getLevel();
+                        var pos = source.getPos().relative(
+                                source.getBlockState().getValue(
                                         net.minecraft.world.level.block.DispenserBlock.FACING));
                         var tnt = new com.moakiee.ae2lt.entity.OverloadTntEntity(
                                 level,

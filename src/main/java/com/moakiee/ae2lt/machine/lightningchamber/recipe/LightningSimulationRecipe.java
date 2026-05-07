@@ -206,7 +206,7 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
                 || result.isEmpty()
                 || totalEnergy < MIN_TOTAL_ENERGY
                 || lightningCost <= 0
-                || inputs.stream().anyMatch(input -> input.ingredient().hasNoItems());
+                || inputs.stream().anyMatch(input -> input.ingredient().getItems().length == 0);
     }
 
     private ItemStack rawResult() {

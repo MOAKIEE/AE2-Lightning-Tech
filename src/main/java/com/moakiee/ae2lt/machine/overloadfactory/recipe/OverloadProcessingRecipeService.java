@@ -10,6 +10,7 @@ import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 import net.minecraftforge.fluids.FluidStack;
 
+import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
@@ -232,7 +233,7 @@ public final class OverloadProcessingRecipeService {
         FluidStack requiredInputFluid = recipe.fluidInput();
         if (!requiredInputFluid.isEmpty()) {
             if (input.inputFluid().isEmpty()
-                    || !FluidStack.isSameFluidSameComponents(requiredInputFluid, input.inputFluid())) {
+                    || !FluidStackHelper.sameFluidAndTag(requiredInputFluid, input.inputFluid())) {
                 return 0;
             }
             upper = Math.min(upper, input.inputFluid().getAmount() / requiredInputFluid.getAmount());
@@ -303,7 +304,7 @@ public final class OverloadProcessingRecipeService {
                     <= com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity.OUTPUT_TANK_CAPACITY;
         }
 
-        return FluidStack.isSameFluidSameComponents(outputFluid, scaledFluid)
+        return FluidStackHelper.sameFluidAndTag(outputFluid, scaledFluid)
                 && outputFluid.getAmount() + scaledFluid.getAmount()
                 <= com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity.OUTPUT_TANK_CAPACITY;
     }

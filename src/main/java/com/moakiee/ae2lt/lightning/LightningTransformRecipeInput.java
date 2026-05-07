@@ -45,6 +45,11 @@ public final class LightningTransformRecipeInput implements RecipeInput {
     }
 
     @Override
+    public boolean isEmpty() {
+        return groupedStacks.isEmpty();
+    }
+
+    @Override
     public ItemStack getItem(int index) {
         return displayStacks.get(index);
     }
@@ -131,7 +136,7 @@ public final class LightningTransformRecipeInput implements RecipeInput {
 
         private ItemStackKey(ItemStack stack) {
             this.stack = stack.copyWithCount(1);
-            this.hash = ItemStack.hashItemAndComponents(this.stack);
+            this.hash = Objects.hash(this.stack.getItem(), this.stack.getTag());
         }
 
         @Override
@@ -144,7 +149,7 @@ public final class LightningTransformRecipeInput implements RecipeInput {
                 return false;
             }
 
-            return ItemStack.isSameItemSameComponents(this.stack, itemStackKey.stack);
+            return ItemStack.isSameItemSameTags(this.stack, itemStackKey.stack);
         }
 
         @Override

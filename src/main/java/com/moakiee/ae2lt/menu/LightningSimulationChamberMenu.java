@@ -134,7 +134,7 @@ public class LightningSimulationChamberMenu extends AEBaseMenu implements Freque
 
             var lockedRecipe = host.getLockedRecipe().orElse(null);
             var processableRecipe = lockedRecipe == null
-                    ? host.findProcessableRecipe().map(candidate -> candidate.recipe().value()).orElse(null)
+                    ? host.findProcessableRecipe().map(candidate -> candidate.recipe()).orElse(null)
                     : null;
             if (lockedRecipe != null) {
                 lightningTierOrdinal = lockedRecipe.lightningTier().ordinal();
@@ -501,7 +501,7 @@ public class LightningSimulationChamberMenu extends AEBaseMenu implements Freque
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {

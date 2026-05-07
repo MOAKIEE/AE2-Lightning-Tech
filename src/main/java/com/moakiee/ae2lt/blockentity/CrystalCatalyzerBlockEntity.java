@@ -43,6 +43,7 @@ import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
+import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerAutomationInventory;
@@ -275,13 +276,13 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         if (current.isEmpty()) {
             return false;
         }
-        return FluidStack.isSameFluidSameComponents(current, required)
+        return FluidStackHelper.sameFluidAndTag(current, required)
                 && current.getAmount() >= required.getAmount();
     }
 
     private boolean canAcceptRecipeOutput(CrystalCatalyzerRecipeCandidate candidate) {
         return canAcceptRecipeOutput(
-                candidate.recipe().value().getOutputTemplate(),
+                candidate.recipe().getOutputTemplate(),
                 getCurrentOutputMultiplier(candidate));
     }
 
@@ -335,7 +336,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         if (candidate == null) {
             return 1;
         }
-        var recipe = candidate.recipe().value();
+        var recipe = candidate.recipe();
         int perInstance = recipe.catalystCount();
         if (perInstance <= 0) {
             return 1;
@@ -514,7 +515,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         FluidStack requiredFluid = getFixedFluidPerCycle();
         FluidStack currentFluid = tank.getFluid();
         if (currentFluid.isEmpty()
-                || !FluidStack.isSameFluidSameComponents(currentFluid, requiredFluid)
+                || !FluidStackHelper.sameFluidAndTag(currentFluid, requiredFluid)
                 || currentFluid.getAmount() < requiredFluid.getAmount()) {
             return false;
         }
@@ -707,7 +708,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
                                net.minecraft.nbt.CompoundTag output,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, output, player);
-        MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
+        MemoryCardConfigSupport.exportAutoExportSettings(mode, output, autoExport, allowedOutputs,
                 tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 

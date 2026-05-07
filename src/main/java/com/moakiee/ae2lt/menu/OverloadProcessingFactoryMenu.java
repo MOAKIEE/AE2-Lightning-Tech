@@ -181,7 +181,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
                 lightningCost = lockedRecipe.totalLightningCost();
             } else if (processable != null) {
                 currentParallel = processable.parallel();
-                lightningTierOrdinal = processable.recipe().value().lightningTier().ordinal();
+                lightningTierOrdinal = processable.recipe().lightningTier().ordinal();
                 lightningCost = processable.totalLightningCost();
                 totalEnergy = processable.totalEnergy();
             } else {
@@ -554,7 +554,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {

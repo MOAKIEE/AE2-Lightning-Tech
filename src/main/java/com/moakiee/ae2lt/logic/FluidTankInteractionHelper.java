@@ -75,7 +75,7 @@ public final class FluidTankInteractionHelper {
             ItemStack slotStack = player.getInventory().items.get(selected);
             if (slotStack.isEmpty()) {
                 player.getInventory().items.set(selected, result);
-            } else if (ItemStack.isSameItemSameComponents(slotStack, result)
+            } else if (ItemStack.isSameItemSameTags(slotStack, result)
                     && slotStack.getCount() + result.getCount() <= slotStack.getMaxStackSize()) {
                 slotStack.grow(result.getCount());
             } else if (!player.getInventory().add(result)) {
@@ -118,7 +118,7 @@ public final class FluidTankInteractionHelper {
             return;
         }
 
-        if (ItemStack.isSameItemSameComponents(carried, result)
+        if (ItemStack.isSameItemSameTags(carried, result)
                 && carried.getCount() + result.getCount() <= carried.getMaxStackSize()) {
             carried.grow(result.getCount());
             player.containerMenu.setCarried(carried);

@@ -7,7 +7,6 @@ import com.mojang.serialization.MapCodec;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
@@ -140,7 +139,7 @@ public final class LightningKey extends AEKey {
     }
 
     @Override
-    public CompoundTag toTag(HolderLookup.Provider registries) {
+    public CompoundTag toTag() {
         CompoundTag tag = new CompoundTag();
         tag.putString("tier", this.tier.getSerializedName());
         return tag;
@@ -172,7 +171,6 @@ public final class LightningKey extends AEKey {
     public void addDrops(long amount, List<ItemStack> drops, Level level, BlockPos pos) {
     }
 
-    @Override
     public boolean hasComponents() {
         return false;
     }
