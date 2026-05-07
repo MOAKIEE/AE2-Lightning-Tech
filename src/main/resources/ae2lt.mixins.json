@@ -20,7 +20,9 @@
     "GridGetMachineNodesMixin",
     "PathingCalculationCapMixin",
     "ControllerValidatorMixin",
-    "EjectGhostBEMixin"
+    "EjectGhostBEMixin",
+    "MenuTypeBuilderAccessor",
+    "AEBaseMenuAccessor"
   ],
   "client": [
     "client.CableBusRenderStateMixin",

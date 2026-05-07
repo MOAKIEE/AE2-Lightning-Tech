@@ -23,9 +23,10 @@ import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 
 public class OverloadedPatternProviderMenu extends PatternProviderMenu implements FrequencyBindingMenu {
 
-    public static final MenuType<OverloadedPatternProviderMenu> TYPE = MenuTypeBuilder
-            .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class)
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<OverloadedPatternProviderMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class),
+            new ResourceLocation(
                     AE2LightningTech.MODID, "overloaded_pattern_provider"));
 
     private static final int SLOTS_PER_PAGE = 36;

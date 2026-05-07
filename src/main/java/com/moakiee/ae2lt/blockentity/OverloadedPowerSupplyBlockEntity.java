@@ -26,10 +26,12 @@ import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.IGridNodeListener;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
@@ -152,7 +154,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -512,13 +514,13 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveChangedInventory(AppEngInternalInventory inv) {
-        saveChanges();
+    public void saveChanges() {
+        super.saveChanges();
         markForUpdate();
     }
 
     @Override
-    public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+    public void onChangeInventory(InternalInventory inv, int slot) {
         if (inv == cellInv) {
             // The cell slot just changed (player took out / inserted / swapped).
             // Flush any FE BufferedMEStorage is still holding (transient buffer

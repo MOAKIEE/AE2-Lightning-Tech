@@ -234,7 +234,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 cooldownStableSuccessStreak = 0;
                 searchHi = cooldownN;
                 cooldownN = Math.max(searchLo, (searchLo + searchHi) / 2);
-                cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                cooldownN = Math.max(COOLDOWN_MIN, Math.min(COOLDOWN_MAX, cooldownN));
             }
             cooldownUntil = -1;
         }
@@ -261,7 +261,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     cooldownN = COOLDOWN_MAX;
                 } else {
                     cooldownN = (searchLo + searchHi) / 2;
-                    cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                    cooldownN = Math.max(COOLDOWN_MIN, Math.min(COOLDOWN_MAX, cooldownN));
                 }
             }
             cooldownUntil = gameTick + cooldownN;

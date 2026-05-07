@@ -43,9 +43,9 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     private static final MenuTypeBuilder.MenuFactory<OverloadedInterfaceMenu, InterfaceLogicHost> FACTORY =
             OverloadedInterfaceMenu::new;
 
-    public static final MenuType<OverloadedInterfaceMenu> TYPE = MenuTypeBuilder
-            .create(FACTORY, InterfaceLogicHost.class)
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<OverloadedInterfaceMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder.create(FACTORY, InterfaceLogicHost.class),
+            new ResourceLocation(
                     AE2LightningTech.MODID, "overloaded_interface"));
 
     private static final int SLOTS_PER_PAGE = 18;

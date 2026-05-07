@@ -61,10 +61,12 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
 import appeng.util.inv.AppEngInternalInventory;
+import appeng.api.inventories.InternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 
 import appeng.menu.MenuOpener;
@@ -252,7 +254,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             }
             if (model.rateEMA > 0) {
                 long predicted = (long) Math.ceil(deficit / model.rateEMA);
-                return (int) Math.clamp(predicted, NORMAL_CD_MIN, NORMAL_CD_MAX);
+                return (int) Math.max(NORMAL_CD_MIN, Math.min(NORMAL_CD_MAX, predicted));
             }
             return NORMAL_CD_MAX;
         }
@@ -336,7 +338,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 }
             }
             if (maxObserved > 0) {
-                effectiveMax = Math.clamp(effectiveMax, maxObserved / 4, maxObserved);
+                effectiveMax = Math.max(maxObserved / 4, Math.min(maxObserved, effectiveMax));
             }
             lastAvail = totalAvail;
             lastTick = now;
@@ -581,12 +583,13 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private final IActionSource machineSource = IActionSource.ofMachine(this);
     private final InternalInventoryHost filterInvHost = new InternalInventoryHost() {
         @Override
-        public void saveChangedInventory(AppEngInternalInventory inv) {
-            saveChanges(); markForUpdate();
+        public void saveChanges() {
+            OverloadedInterfaceBlockEntity.this.saveChanges();
+            markForUpdate();
         }
 
         @Override
-        public void onChangeInventory(AppEngInternalInventory inv, int slot) {
+        public void onChangeInventory(InternalInventory inv, int slot) {
             rebuildFilter();
         }
 
@@ -633,7 +636,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 

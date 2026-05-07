@@ -30,10 +30,11 @@ import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 
 public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBindingMenu {
-    public static final MenuType<CrystalCatalyzerMenu> TYPE = MenuTypeBuilder
-            .create(CrystalCatalyzerMenu::new, CrystalCatalyzerBlockEntity.class)
-            .withMenuTitle(host -> Component.translatable("block.ae2lt.crystal_catalyzer"))
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<CrystalCatalyzerMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(CrystalCatalyzerMenu::new, CrystalCatalyzerBlockEntity.class)
+                    .withMenuTitle(host -> Component.translatable("block.ae2lt.crystal_catalyzer")),
+            new ResourceLocation(
                     AE2LightningTech.MODID,
                     "crystal_catalyzer"));
 
@@ -129,7 +130,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
         var original = sourceStack.copy();
         ItemStack remainder;
 
-        if (isPlayerSideSlot(sourceSlot)) {
+        if (((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(sourceSlot)) {
             remainder = moveFromPlayerInventory(sourceStack.copy());
         } else {
             remainder = moveIntoSlots(sourceStack.copy(), getPlayerDestinationSlots());
@@ -374,7 +375,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
         }
 
         var slot = getSlot(slotId);
-        if (!(slot instanceof LargeStackAppEngSlot) || isPlayerSideSlot(slot)) {
+        if (!(slot instanceof LargeStackAppEngSlot) || ((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(slot)) {
             return false;
         }
 

@@ -36,10 +36,11 @@ import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe
 import com.moakiee.ae2lt.me.key.LightningKey;
 
 public class OverloadProcessingFactoryMenu extends AEBaseMenu implements FrequencyBindingMenu {
-    public static final MenuType<OverloadProcessingFactoryMenu> TYPE = MenuTypeBuilder
-            .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
-            .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory"))
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<OverloadProcessingFactoryMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
+                    .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory")),
+            new ResourceLocation(
                     AE2LightningTech.MODID,
                     "overload_processing_factory"));
 
@@ -226,7 +227,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
         var original = sourceStack.copy();
         ItemStack remainder;
 
-        if (isPlayerSideSlot(sourceSlot)) {
+        if (((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(sourceSlot)) {
             remainder = moveFromPlayerInventory(sourceStack.copy());
         } else {
             remainder = moveIntoSlots(sourceStack.copy(), getPlayerDestinationSlots());
@@ -510,7 +511,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
         }
 
         var slot = getSlot(slotId);
-        if (!(slot instanceof LargeStackAppEngSlot) || isPlayerSideSlot(slot)) {
+        if (!(slot instanceof LargeStackAppEngSlot) || ((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(slot)) {
             return false;
         }
 

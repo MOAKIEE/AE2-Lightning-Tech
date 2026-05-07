@@ -25,10 +25,11 @@ import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
 
 public class LightningAssemblyChamberMenu extends AEBaseMenu implements FrequencyBindingMenu {
-    public static final MenuType<LightningAssemblyChamberMenu> TYPE = MenuTypeBuilder
-            .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
-            .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber"))
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<LightningAssemblyChamberMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
+                    .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber")),
+            new ResourceLocation(
                     AE2LightningTech.MODID,
                     "lightning_assembly_chamber"));
 
@@ -148,7 +149,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
         var original = sourceStack.copy();
         ItemStack remainder;
 
-        if (isPlayerSideSlot(sourceSlot)) {
+        if (((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(sourceSlot)) {
             remainder = moveFromPlayerInventory(sourceStack.copy());
         } else {
             remainder = moveIntoSlots(sourceStack.copy(), getPlayerDestinationSlots());
@@ -361,7 +362,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
         }
 
         var slot = getSlot(slotId);
-        if (!(slot instanceof LargeStackAppEngSlot) || isPlayerSideSlot(slot)) {
+        if (!(slot instanceof LargeStackAppEngSlot) || ((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(slot)) {
             return false;
         }
 

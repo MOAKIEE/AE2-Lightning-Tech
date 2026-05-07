@@ -1,6 +1,6 @@
 package com.moakiee.ae2lt.grid;
 
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 
 /**
  * Receiver-side wireless frequency binding for block entities that already own
@@ -10,7 +10,7 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 public interface FrequencyBindingHost {
     FrequencyBindingHelper getFrequencyBinding();
 
-    AENetworkedBlockEntity getFrequencyBindingBlockEntity();
+    AENetworkBlockEntity getFrequencyBindingBlockEntity();
 
     void saveFrequencyBindingChanges();
 

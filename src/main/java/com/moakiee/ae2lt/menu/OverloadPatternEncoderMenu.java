@@ -11,6 +11,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.inventories.InternalInventory;
 import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
@@ -37,9 +38,10 @@ import com.moakiee.ae2lt.registry.ModItems;
 public class OverloadPatternEncoderMenu extends AEBaseMenu {
     private static final int RESULT_SLOT_INDEX = 1;
 
-    public static final MenuType<OverloadPatternEncoderMenu> TYPE = MenuTypeBuilder
-            .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class)
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<OverloadPatternEncoderMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class),
+            new ResourceLocation(
                     AE2LightningTech.MODID, "overload_pattern_encoder"));
 
     public static final int MAX_INPUT_SLOTS = 18;
@@ -76,9 +78,13 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
         this.sourceInventory = new AppEngInternalInventory(new InternalInventoryHost() {
             @Override
-            public void saveChangedInventory(AppEngInternalInventory inv) {
+            public void saveChanges() {
                 sourceDirty = true;
                 clearEncodedResult();
+            }
+
+            @Override
+            public void onChangeInventory(InternalInventory inv, int slot) {
             }
 
             @Override

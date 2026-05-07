@@ -23,10 +23,11 @@ import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilMode;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilStatus;
 
 public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
-    public static final MenuType<TeslaCoilMenu> TYPE = MenuTypeBuilder
-            .create(TeslaCoilMenu::new, TeslaCoilBlockEntity.class)
-            .withMenuTitle(host -> Component.translatable("block.ae2lt.tesla_coil"))
-            .buildUnregistered(new ResourceLocation(
+    public static final MenuType<TeslaCoilMenu> TYPE = Ae2ltMenuBuilder.buildUnregistered(
+            MenuTypeBuilder
+                    .create(TeslaCoilMenu::new, TeslaCoilBlockEntity.class)
+                    .withMenuTitle(host -> Component.translatable("block.ae2lt.tesla_coil")),
+            new ResourceLocation(
                     AE2LightningTech.MODID,
                     "tesla_coil"));
 
@@ -114,7 +115,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
         var original = sourceStack.copy();
         ItemStack remainder;
 
-        if (isPlayerSideSlot(sourceSlot)) {
+        if (((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(sourceSlot)) {
             remainder = moveFromPlayerInventory(sourceStack.copy());
         } else {
             remainder = moveIntoSlots(sourceStack.copy(), getPlayerDestinationSlots());
@@ -301,7 +302,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
         }
 
         var slot = getSlot(slotId);
-        if (!(slot instanceof LargeStackAppEngSlot) || isPlayerSideSlot(slot)) {
+        if (!(slot instanceof LargeStackAppEngSlot) || ((com.moakiee.ae2lt.mixin.AEBaseMenuAccessor) (Object) this).ae2lt$isPlayerSideSlot(slot)) {
             return false;
         }
 
