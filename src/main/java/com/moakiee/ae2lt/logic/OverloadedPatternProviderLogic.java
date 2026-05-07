@@ -2234,7 +2234,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
         }
         if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
-            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
+            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.save(new CompoundTag()));
         }
         writeWirelessOverflowToNBT(tag, registries);
     }
@@ -2256,7 +2256,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
         }
         if (tag.contains(TAG_UNLOCK_TEMPLATE, Tag.TAG_COMPOUND)) {
-            pendingUnlockTemplate = ItemStack.parseOptional(registries, tag.getCompound(TAG_UNLOCK_TEMPLATE));
+            pendingUnlockTemplate = ItemStack.of(tag.getCompound(TAG_UNLOCK_TEMPLATE));
             if (pendingUnlockTemplate.isEmpty()) {
                 pendingUnlockTemplate = null;
             }
@@ -2316,7 +2316,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var patternTag = new CompoundTag();
             patternTag.putShort(TAG_OVERFLOW_PATTERN_ID, writeId);
             patternTag.put(TAG_OVERFLOW_PATTERN,
-                    pattern.getDefinition().toStack().saveOptional(registries));
+                    pattern.getDefinition().toStack().save(new CompoundTag()));
             patternList.add(patternTag);
         }
         overflowTag.put(TAG_OVERFLOW_PATTERNS, patternList);
@@ -2338,7 +2338,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             } else {
                 var fallback = new ListTag();
                 for (var stack : bucket.fallbackList) {
-                    fallback.add(GenericStack.writeTag(registries, stack));
+                    fallback.add(GenericStack.writeTag(stack));
                 }
                 bucketTag.put(TAG_OVERFLOW_FALLBACK, fallback);
             }
@@ -2357,8 +2357,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             for (int i = 0; i < patterns.size(); i++) {
                 var patternTag = patterns.getCompound(i);
                 int id = Short.toUnsignedInt(patternTag.getShort(TAG_OVERFLOW_PATTERN_ID));
-                var stack = ItemStack.parseOptional(registries,
-                        patternTag.getCompound(TAG_OVERFLOW_PATTERN));
+                var stack = ItemStack.of(patternTag.getCompound(TAG_OVERFLOW_PATTERN));
                 if (!stack.isEmpty()) {
                     pendingOverflowPatternDefinitions.put(id, stack);
                 }
@@ -2410,7 +2409,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static List<GenericStack> readGenericStackList(HolderLookup.Provider registries, ListTag list) {
         var stacks = new ArrayList<GenericStack>(list.size());
         for (int i = 0; i < list.size(); i++) {
-            var stack = GenericStack.readTag(registries, list.getCompound(i));
+            var stack = GenericStack.readTag(list.getCompound(i));
             if (stack != null && stack.amount() > 0) {
                 stacks.add(stack);
             }

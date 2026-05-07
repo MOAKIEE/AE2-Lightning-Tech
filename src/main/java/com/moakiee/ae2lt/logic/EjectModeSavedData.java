@@ -6,7 +6,6 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -42,18 +41,15 @@ public class EjectModeSavedData extends SavedData {
 
     private final List<PersistentReg> entries = new ArrayList<>();
 
-    public static final Factory<EjectModeSavedData> FACTORY = new Factory<>(
-            EjectModeSavedData::new,
-            EjectModeSavedData::load,
-            null
-    );
-
     public EjectModeSavedData() {
         super();
     }
 
     public static EjectModeSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(FACTORY, DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(
+                EjectModeSavedData::load,
+                EjectModeSavedData::new,
+                DATA_NAME);
     }
 
     public List<PersistentReg> getAll() {
@@ -84,7 +80,7 @@ public class EjectModeSavedData extends SavedData {
     // ---- Persistence -------------------------------------------------------
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         var list = new ListTag();
         for (var e : entries) {
             var ct = new CompoundTag();
@@ -99,18 +95,18 @@ public class EjectModeSavedData extends SavedData {
         return tag;
     }
 
-    private static EjectModeSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+    private static EjectModeSavedData load(CompoundTag tag) {
         var data = new EjectModeSavedData();
         if (tag.contains(TAG_ENTRIES, Tag.TAG_LIST)) {
             var list = tag.getList(TAG_ENTRIES, Tag.TAG_COMPOUND);
             for (int i = 0; i < list.size(); i++) {
                 var ct = list.getCompound(i);
                 var iDim = ResourceKey.create(Registries.DIMENSION,
-                        ResourceLocation.parse(ct.getString(TAG_I_DIM)));
+                        new ResourceLocation(ct.getString(TAG_I_DIM)));
                 var iPos = BlockPos.of(ct.getLong(TAG_I_POS));
                 var iFace = Direction.from3DDataValue(ct.getInt(TAG_I_FACE));
                 var pDim = ResourceKey.create(Registries.DIMENSION,
-                        ResourceLocation.parse(ct.getString(TAG_P_DIM)));
+                        new ResourceLocation(ct.getString(TAG_P_DIM)));
                 var pPos = BlockPos.of(ct.getLong(TAG_P_POS));
                 data.entries.add(new PersistentReg(iDim, iPos, iFace, pDim, pPos));
             }

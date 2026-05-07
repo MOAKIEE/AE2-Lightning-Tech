@@ -6,7 +6,6 @@ import appeng.api.config.Actionable;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.KeyCounter;
-import net.minecraft.core.HolderLookup;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
@@ -207,17 +206,17 @@ final class IndexedStorage {
     //  ListTag<CompoundTag> for keys, LongArrayTag for lo/hi.
     // ══════════════════════════════════════════════════════════════════════
 
-    CompoundTag persist(@Nullable CompoundTag lastRoot, HolderLookup.Provider registries) {
-        return persist(lastRoot, (key, reg) -> key.toTagGeneric(reg), registries);
+    CompoundTag persist(@Nullable CompoundTag lastRoot) {
+        return persist(lastRoot, AEKey::toTagGeneric);
     }
 
-    CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, HolderLookup.Provider registries) {
+    CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer) {
         if (needsCompact) {
             compact();
             lastRoot = null;
         }
         if (lastRoot == null) {
-            return persistFull(keySerializer, registries);
+            return persistFull(keySerializer);
         }
 
         ListTag keys = lastRoot.getList("keys", Tag.TAG_COMPOUND);
@@ -243,7 +242,7 @@ final class IndexedStorage {
                 isStructDirty[id] = false;
                 if (idToKey[id] != null) {
                     if (serializedKey[id] == null) {
-                        serializedKey[id] = keySerializer.toTag(idToKey[id], registries);
+                        serializedKey[id] = keySerializer.toTag(idToKey[id]);
                     }
                     CompoundTag tag = new CompoundTag();
                     tag.put("key", serializedKey[id]);
@@ -263,7 +262,7 @@ final class IndexedStorage {
         return lastRoot;
     }
 
-    private CompoundTag persistFull(KeySerializer keySerializer, HolderLookup.Provider registries) {
+    private CompoundTag persistFull(KeySerializer keySerializer) {
         // Clear dirty state — everything is being written
         for (int i = 0; i < dirtyCount; i++) {
             int id = dirtyQueue[i];
@@ -280,7 +279,7 @@ final class IndexedStorage {
         for (int id = 0; id < nextId; id++) {
             if (idToKey[id] != null) {
                 if (serializedKey[id] == null) {
-                    serializedKey[id] = keySerializer.toTag(idToKey[id], registries);
+                    serializedKey[id] = keySerializer.toTag(idToKey[id]);
                 }
                 CompoundTag tag = new CompoundTag();
                 tag.put("key", serializedKey[id]);
@@ -341,14 +340,14 @@ final class IndexedStorage {
 
     @FunctionalInterface
     interface KeySerializer {
-        CompoundTag toTag(AEKey key, HolderLookup.Provider registries);
+        CompoundTag toTag(AEKey key);
     }
 
     // ══════════════════════════════════════════════════════════════════════
     //  Load
     // ══════════════════════════════════════════════════════════════════════
 
-    void load(CompoundTag root, HolderLookup.Provider registries) {
+    void load(CompoundTag root) {
         keyToId.clear();
         nextId = 0;
         freeCount = 0;
@@ -374,7 +373,7 @@ final class IndexedStorage {
                 addFree(id);
                 continue;
             }
-            AEKey key = AEKey.fromTagGeneric(registries, entry.getCompound("key"));
+            AEKey key = AEKey.fromTagGeneric(entry.getCompound("key"));
             if (key == null) {
                 addFree(id);
                 continue;

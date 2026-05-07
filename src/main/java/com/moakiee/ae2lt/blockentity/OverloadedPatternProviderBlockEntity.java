@@ -121,7 +121,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+                    new ResourceLocation(tag.getString(TAG_DIM)));
             var pos = BlockPos.of(tag.getLong(TAG_POS));
             var face = Direction.from3DDataValue(tag.getInt(TAG_FACE));
             return new WirelessConnection(dim, pos, face);

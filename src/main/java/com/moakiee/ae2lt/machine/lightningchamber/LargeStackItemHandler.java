@@ -231,7 +231,7 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
             CompoundTag itemTag = new CompoundTag();
             itemTag.putInt(TAG_SLOT, slot);
             itemTag.putInt(TAG_COUNT_INT, stack.getCount());
-            Tag stackTag = stack.copyWithCount(1).save(registries, new CompoundTag());
+            Tag stackTag = stack.copyWithCount(1).save(new CompoundTag());
             itemTag.put(TAG_STACK, stackTag);
             items.add(itemTag);
         }
@@ -256,8 +256,8 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
             }
 
             ItemStack stack = itemTag.contains(TAG_STACK, Tag.TAG_COMPOUND)
-                    ? ItemStack.parseOptional(registries, itemTag.getCompound(TAG_STACK))
-                    : ItemStack.parseOptional(registries, itemTag);
+                    ? ItemStack.of(itemTag.getCompound(TAG_STACK))
+                    : ItemStack.of(itemTag);
             if (stack.isEmpty()) {
                 continue;
             }

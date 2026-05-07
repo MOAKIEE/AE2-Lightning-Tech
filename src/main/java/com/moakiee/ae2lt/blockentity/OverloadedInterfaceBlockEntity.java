@@ -169,7 +169,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(
                     net.minecraft.core.registries.Registries.DIMENSION,
-                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+                    new ResourceLocation(tag.getString(TAG_DIM)));
             return new WirelessConnection(
                     dim, BlockPos.of(tag.getLong(TAG_POS)),
                     Direction.from3DDataValue(tag.getInt(TAG_FACE)));
@@ -1887,7 +1887,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (!importBuffer.isEmpty()) {
             var buffered = new ListTag();
             for (var entry : importBuffer.entrySet()) {
-                buffered.add(GenericStack.writeTag(r, new GenericStack(entry.getKey(), entry.getValue())));
+                buffered.add(GenericStack.writeTag(new GenericStack(entry.getKey(), entry.getValue())));
             }
             d.put(TAG_IMPORT_BUFFER, buffered);
         }
@@ -1929,7 +1929,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (d.contains(TAG_IMPORT_BUFFER, Tag.TAG_LIST)) {
             var buffered = d.getList(TAG_IMPORT_BUFFER, Tag.TAG_COMPOUND);
             for (int i = 0; i < buffered.size(); i++) {
-                var stack = GenericStack.readTag(r, buffered.getCompound(i));
+                var stack = GenericStack.readTag(buffered.getCompound(i));
                 if (stack != null && stack.amount() > 0) {
                     importBuffer.merge(stack.what(), stack.amount(), (oldAmount, added) ->
                             oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);

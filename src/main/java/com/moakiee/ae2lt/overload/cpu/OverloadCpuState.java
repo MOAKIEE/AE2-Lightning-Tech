@@ -197,7 +197,7 @@ public final class OverloadCpuState {
             pendingTag.put(TAG_SOURCE_PATTERN, pending.patternReference().sourcePattern().toTag());
             pendingTag.putInt(TAG_OUTPUT_SLOT, pending.key().outputSlotIndex());
             pendingTag.putString(TAG_ITEM_ID, pending.itemId().toString());
-            pendingTag.put(TAG_EXACT_TEMPLATE, pending.exactExpectedKey().toTagGeneric(registries));
+            pendingTag.put(TAG_EXACT_TEMPLATE, pending.exactExpectedKey().toTagGeneric());
             pendingTag.putLong(TAG_REMAINING, pending.remainingAmount());
             pendingTag.putBoolean(TAG_ROUTES_TO_REQUESTER, pending.routesToRequester());
             pendingTag.putLong(TAG_REGISTERED_ORDER, pending.registeredOrder());
@@ -230,7 +230,7 @@ public final class OverloadCpuState {
                     key,
                     owner,
                     patternReference,
-                    ResourceLocation.parse(pendingTag.getString(TAG_ITEM_ID)),
+                    new ResourceLocation(pendingTag.getString(TAG_ITEM_ID)),
                     loadExactExpectedKey(pendingTag, registries),
                     pendingTag.getLong(TAG_REMAINING),
                     pendingTag.getBoolean(TAG_ROUTES_TO_REQUESTER),
@@ -248,7 +248,7 @@ public final class OverloadCpuState {
             throw new IllegalArgumentException("pending overload entry is missing an exact expected key");
         }
 
-        var key = AEKey.fromTagGeneric(registries, pendingTag.getCompound(TAG_EXACT_TEMPLATE).copy());
+        var key = AEKey.fromTagGeneric(pendingTag.getCompound(TAG_EXACT_TEMPLATE).copy());
         if (key == null) {
             throw new IllegalArgumentException("pending overload entry has an invalid exact expected key");
         }

@@ -45,10 +45,7 @@ public final class SourcePatternSnapshot {
         }
 
         var itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        var serializedStack = stack.saveOptional(registries);
-        if (!(serializedStack instanceof CompoundTag stackTag)) {
-            throw new IllegalStateException("serialized source pattern stack was not a compound tag");
-        }
+        var stackTag = stack.save(new CompoundTag());
         return new SourcePatternSnapshot(itemId, stackTag, null);
     }
 
@@ -68,7 +65,7 @@ public final class SourcePatternSnapshot {
         Objects.requireNonNull(registries, "registries");
 
         if (serializedStackTag != null && !serializedStackTag.isEmpty()) {
-            return ItemStack.parseOptional(registries, serializedStackTag.copy());
+            return ItemStack.of(serializedStackTag.copy());
         }
 
         // Backward compatibility for older overload patterns that only stored
@@ -95,9 +92,9 @@ public final class SourcePatternSnapshot {
     public static SourcePatternSnapshot fromTag(CompoundTag tag) {
         ResourceLocation itemId;
         if (tag.contains(TAG_ITEM, Tag.TAG_STRING)) {
-            itemId = ResourceLocation.parse(tag.getString(TAG_ITEM));
+            itemId = new ResourceLocation(tag.getString(TAG_ITEM));
         } else if (tag.contains(TAG_STACK, Tag.TAG_COMPOUND)) {
-            itemId = ResourceLocation.parse(tag.getCompound(TAG_STACK).getString("id"));
+            itemId = new ResourceLocation(tag.getCompound(TAG_STACK).getString("id"));
         } else {
             throw new IllegalArgumentException("source pattern snapshot is missing an item id");
         }

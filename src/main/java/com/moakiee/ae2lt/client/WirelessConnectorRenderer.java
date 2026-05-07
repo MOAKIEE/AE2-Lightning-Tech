@@ -526,7 +526,7 @@ public class WirelessConnectorRenderer {
         }
         return new SelectedHost(
                 BlockPos.of(sel.getLong(TAG_POS)),
-                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr)),
+                ResourceKey.create(Registries.DIMENSION, new ResourceLocation(dimStr)),
                 sel.contains(TAG_HOST_TYPE, CompoundTag.TAG_STRING)
                         ? sel.getString(TAG_HOST_TYPE)
                         : OverloadedWirelessConnectorItem.HOST_PROVIDER);
