@@ -70,7 +70,7 @@ public final class OverloadCpuState {
 
     public void registerExpectedOutputs(OverloadPatternReference patternReference,
                                         OverloadPatternDetails patternDetails,
-                                        List<GenericStack> actualOutputs,
+                                        GenericStack[] actualOutputs,
                                         @Nullable AEKey finalOutputKey,
                                         long pushedCopies) {
         Objects.requireNonNull(patternReference, "patternReference");
@@ -79,7 +79,7 @@ public final class OverloadCpuState {
         if (pushedCopies <= 0) {
             throw new IllegalArgumentException("pushedCopies must be > 0");
         }
-        if (actualOutputs.size() != patternDetails.outputs().size()) {
+        if (actualOutputs.length != patternDetails.outputs().size()) {
             throw new IllegalArgumentException("output count mismatch between overload details and AE2 pattern details");
         }
 
@@ -90,7 +90,7 @@ public final class OverloadCpuState {
             }
 
             var itemId = itemIdOf(output);
-            var exactExpectedKey = actualOutputs.get(outputIndex).what();
+            var exactExpectedKey = actualOutputs[outputIndex].what();
             var amount = output.amountPerCraft() * pushedCopies;
             var key = new PendingOverloadOutputKey(owner.craftingId(), patternReference.patternIdentity(),
                     output.slotIndex());

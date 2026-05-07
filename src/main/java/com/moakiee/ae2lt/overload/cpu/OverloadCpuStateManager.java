@@ -71,7 +71,7 @@ public final class OverloadCpuStateManager {
     public synchronized void registerExpectedOutputs(CraftingCpuLogic logic,
                                                      OverloadPatternReference patternReference,
                                                      OverloadPatternDetails patternDetails,
-                                                     List<GenericStack> actualOutputs,
+                                                     GenericStack[] actualOutputs,
                                                      @Nullable AEKey finalOutputKey,
                                                      long pushedCopies) {
         Objects.requireNonNull(logic, "logic");
@@ -94,7 +94,7 @@ public final class OverloadCpuStateManager {
                                                      UUID craftingId,
                                                      OverloadPatternReference patternReference,
                                                      OverloadPatternDetails patternDetails,
-                                                     List<GenericStack> actualOutputs,
+                                                     GenericStack[] actualOutputs,
                                                      @Nullable AEKey finalOutputKey,
                                                      long pushedCopies) {
         Objects.requireNonNull(logic, "logic");

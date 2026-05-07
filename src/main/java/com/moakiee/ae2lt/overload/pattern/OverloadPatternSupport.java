@@ -36,8 +36,8 @@ public final class OverloadPatternSupport {
 
         var outputs = sourceDetails.getOutputs();
         boolean primaryOutputAssigned = false;
-        for (int slot = 0; slot < outputs.size(); slot++) {
-            var outputStack = toItemStack(outputs.get(slot));
+        for (int slot = 0; slot < outputs.length; slot++) {
+            var outputStack = toItemStack(outputs[slot]);
             if (outputStack.isEmpty()) {
                 continue;
             }

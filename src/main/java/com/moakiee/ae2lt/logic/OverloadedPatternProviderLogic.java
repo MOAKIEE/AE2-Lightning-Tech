@@ -1482,9 +1482,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (pattern instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
                 var ae2Outputs = pattern.getOutputs();
                 var overloadOutputs = overloadDetails.overloadPatternDetailsView().outputs();
-                int count = Math.min(ae2Outputs.size(), overloadOutputs.size());
+                int count = Math.min(ae2Outputs.length, overloadOutputs.size());
                 for (int i = 0; i < count; i++) {
-                    var aeKey = ae2Outputs.get(i).what();
+                    var aeKey = ae2Outputs[i].what();
                     if (overloadOutputs.get(i).matchMode() == MatchMode.ID_ONLY) {
                         filter.allowIdOnly(aeKey);
                     } else {
@@ -1706,14 +1706,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static int resolveUnlockOutputIndex(IPatternDetails pattern, OverloadPatternDetails overloadDetails) {
         var actualOutputs = pattern.getOutputs();
         var overloadOutputs = overloadDetails.outputs();
-        int count = Math.min(actualOutputs.size(), overloadOutputs.size());
+        int count = Math.min(actualOutputs.length, overloadOutputs.size());
         if (count <= 0) {
             return -1;
         }
 
         var primaryOutput = pattern.getPrimaryOutput();
         for (int i = 0; i < count; i++) {
-            var candidate = actualOutputs.get(i);
+            var candidate = actualOutputs[i];
             if (candidate.what().equals(primaryOutput.what()) && candidate.amount() == primaryOutput.amount()) {
                 return i;
             }

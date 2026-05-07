@@ -2,9 +2,12 @@ package com.moakiee.ae2lt.item;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.List;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 
 import appeng.api.crafting.IPatternDetails;
@@ -99,6 +102,14 @@ public class OverloadPatternItem extends EncodedPatternItem {
     @Override
     public IPatternDetails decode(AEItemKey what, Level level) {
         return what != null && what.getItem() == this ? decode(what.toStack(), level) : null;
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, Level level, List<Component> lines, TooltipFlag advancedTooltips) {
+        super.appendHoverText(stack, level, lines, advancedTooltips);
+        if (hasPayload(stack) && requiredHostKind(stack) == PatternExecutionHostKind.OVERLOADED_PATTERN_PROVIDER) {
+            lines.add(Component.translatable("tooltip.ae2lt.overload_pattern.provider_only"));
+        }
     }
 
     private static CompoundTag readRootTag(ItemStack stack) {

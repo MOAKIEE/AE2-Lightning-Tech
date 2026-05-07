@@ -12,7 +12,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
 import appeng.api.config.Actionable;
@@ -21,6 +20,7 @@ import appeng.api.networking.crafting.ICraftingProvider;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
+import appeng.crafting.execution.CraftingCpuLogic;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
@@ -31,7 +31,7 @@ import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
 import com.moakiee.ae2lt.overload.cpu.OverloadPatternReference;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 
-@Mixin(targets = "appeng.crafting.execution.CraftingCpuLogic", remap = false)
+@Mixin(value = CraftingCpuLogic.class, remap = false)
 public abstract class CraftingCpuLogicMixin {
     @Shadow(remap = false)
     CraftingCPUCluster cluster;
@@ -78,7 +78,7 @@ public abstract class CraftingCpuLogicMixin {
             return;
         }
 
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
+        var logic = (CraftingCpuLogic) (Object) this;
         if (!OverloadCpuStateManager.INSTANCE.hasAnyPending(logic)) {
             return;
         }
@@ -114,7 +114,7 @@ public abstract class CraftingCpuLogicMixin {
     )
     private boolean ae2lt$registerOverloadExpectedOutputs(ICraftingProvider provider, IPatternDetails details,
                                                           KeyCounter[] inputHolder, Operation<Boolean> original) {
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
+        var logic = (CraftingCpuLogic) (Object) this;
         OverloadPatternReference patternReference = null;
         if (details instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
             patternReference = new OverloadPatternReference(
@@ -151,9 +151,9 @@ public abstract class CraftingCpuLogicMixin {
     }
 
     @Inject(method = "writeToNBT", at = @At("RETURN"))
-    private void ae2lt$writeOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
-        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic, registries);
+    private void ae2lt$writeOverloadState(CompoundTag data, CallbackInfo ci) {
+        var logic = (CraftingCpuLogic) (Object) this;
+        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic, cluster.getLevel().registryAccess());
         if (overloadStateTag != null) {
             data.put("ae2ltOverloadState", overloadStateTag);
         } else {
@@ -162,12 +162,15 @@ public abstract class CraftingCpuLogicMixin {
     }
 
     @Inject(method = "readFromNBT", at = @At("RETURN"))
-    private void ae2lt$readOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
+    private void ae2lt$readOverloadState(CompoundTag data, CallbackInfo ci) {
+        var logic = (CraftingCpuLogic) (Object) this;
         OverloadCpuStateManager.INSTANCE.clear(logic);
         var job = ((CraftingCpuLogicAccessor) logic).getJob();
         if (job != null && data.contains("ae2ltOverloadState", CompoundTag.TAG_COMPOUND)) {
-            OverloadCpuStateManager.INSTANCE.readFromTag(logic, data.getCompound("ae2ltOverloadState"), registries);
+            OverloadCpuStateManager.INSTANCE.readFromTag(
+                    logic,
+                    data.getCompound("ae2ltOverloadState"),
+                    cluster.getLevel().registryAccess());
         }
     }
 
@@ -183,7 +186,7 @@ public abstract class CraftingCpuLogicMixin {
             return 0;
         }
 
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
+        var logic = (CraftingCpuLogic) (Object) this;
         var job = ((CraftingCpuLogicAccessor) logic).getJob();
         if (job == null) {
             return 0;
@@ -204,7 +207,7 @@ public abstract class CraftingCpuLogicMixin {
             return 0;
         }
 
-        var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
+        var logic = (CraftingCpuLogic) (Object) this;
         var logicAccessor = (CraftingCpuLogicAccessor) logic;
         ExecutingCraftingJob job = logicAccessor.getJob();
         if (job == null) {
