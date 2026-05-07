@@ -10,11 +10,9 @@ import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import org.jetbrains.annotations.Nullable;
@@ -235,18 +233,18 @@ public class InfiniteCellInventory implements StorageCell {
     // ══════════════════════════════════════════════════════════════════════
 
     private @Nullable UUID readCellId() {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         if (!tag.hasUUID(TAG_CELL_ID)) return null;
         return tag.getUUID(TAG_CELL_ID);
     }
 
     private void writeCellId(UUID id) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack,
                 tag -> tag.putUUID(TAG_CELL_ID, id));
     }
 
     private void clearCellId() {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack,
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack,
                 tag -> tag.remove(TAG_CELL_ID));
     }
 
@@ -278,10 +276,9 @@ public class InfiniteCellInventory implements StorageCell {
         if (t == lastWrittenTypes && b == lastWrittenBytes) return;
         lastWrittenTypes = t;
         lastWrittenBytes = b;
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, tag -> {
             tag.putInt("ae2lt:types", t);
             tag.putLong("ae2lt:bytes", b);
         });
     }
 }
-

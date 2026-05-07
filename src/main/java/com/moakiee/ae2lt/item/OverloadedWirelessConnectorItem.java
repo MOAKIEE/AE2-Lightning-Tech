@@ -11,7 +11,6 @@ import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.network.WirelessConnectorUsePacket;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -23,7 +22,6 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -114,7 +112,7 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
     // ── Selection management ─────────────────────────────────────────────
 
     public static void selectHost(ItemStack stack, Level level, BlockPos pos, String hostType) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, tag -> {
             var sel = new CompoundTag();
             sel.putString(TAG_DIM, level.dimension().location().toString());
             sel.putLong(TAG_POS, pos.asLong());
@@ -124,20 +122,20 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
     }
 
     public static boolean hasSelection(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         return tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND);
     }
 
     @Nullable
     public static String getSelectedHostType(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         if (!tag.contains(TAG_SELECTED)) return null;
         var sel = tag.getCompound(TAG_SELECTED);
         return sel.contains(TAG_HOST_TYPE) ? sel.getString(TAG_HOST_TYPE) : HOST_PROVIDER;
     }
 
     public static boolean isSelectionInCurrentDimension(Level level, ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         if (!tag.contains(TAG_SELECTED)) return true;
         var sel = tag.getCompound(TAG_SELECTED);
         if (!sel.contains(TAG_DIM)) return true;
@@ -145,12 +143,12 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
     }
 
     public static void clearSelection(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         tag.remove(TAG_SELECTED);
         if (tag.isEmpty()) {
-            stack.remove(DataComponents.CUSTOM_DATA);
+            stack.setTag(null);
         } else {
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
+            com.moakiee.ae2lt.util.ItemStackTagSupport.setTag(stack, tag);
         }
     }
 
@@ -166,7 +164,7 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
 
     @Nullable
     private static BlockEntity resolveSelectedHost(Level level, ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         if (!tag.contains(TAG_SELECTED)) return null;
 
         var sel = tag.getCompound(TAG_SELECTED);
@@ -196,5 +194,3 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
         return be instanceof OverloadedPowerSupplyBlockEntity powerSupply ? powerSupply : null;
     }
 }
-
-

@@ -5,13 +5,11 @@ import java.util.Objects;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 
 /**
  * Snapshot of the original plain pattern item that was converted into an
@@ -78,7 +76,7 @@ public final class SourcePatternSnapshot {
         var item = BuiltInRegistries.ITEM.get(itemId);
         var stack = new ItemStack(item);
         if (customDataTag != null && !customDataTag.isEmpty()) {
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customDataTag.copy()));
+            com.moakiee.ae2lt.util.ItemStackTagSupport.setTag(stack, customDataTag.copy());
         }
         return stack;
     }

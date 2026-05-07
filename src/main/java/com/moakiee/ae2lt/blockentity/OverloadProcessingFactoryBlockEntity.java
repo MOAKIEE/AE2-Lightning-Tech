@@ -686,16 +686,16 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @org.jetbrains.annotations.Nullable Player player) {
-        super.exportSettings(mode, builder, player);
+        super.exportSettings(mode, output, player);
         MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
                 tag -> FrequencyBindingHelper.writeMemoryFrequency(tag, getFrequencyId()));
     }
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         MemoryCardConfigSupport.importAutoExportSettings(mode, input,
@@ -886,7 +886,3 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         markForClientUpdate();
     }
 }
-
-
-
-

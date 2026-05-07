@@ -127,15 +127,15 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @Nullable net.minecraft.world.entity.player.Player player) {
-        super.exportSettings(mode, builder, player);
-        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+        super.exportSettings(mode, output, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, output, getFrequencyId());
     }
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);

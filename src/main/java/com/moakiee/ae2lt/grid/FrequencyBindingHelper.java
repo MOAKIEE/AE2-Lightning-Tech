@@ -12,7 +12,6 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.me.GridConnection;
 import appeng.util.SettingsFrom;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 
@@ -176,11 +175,11 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
         return true;
     }
 
-    public static void exportMemorySettings(SettingsFrom mode, DataComponentMap.Builder builder, int frequencyId) {
-        MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> writeMemoryFrequency(tag, frequencyId));
+    public static void exportMemorySettings(SettingsFrom mode, CompoundTag output, int frequencyId) {
+        MemoryCardConfigSupport.exportMemoryCardSettings(mode, output, tag -> writeMemoryFrequency(tag, frequencyId));
     }
 
-    public static void importMemorySettings(SettingsFrom mode, DataComponentMap input, IntConsumer setter) {
+    public static void importMemorySettings(SettingsFrom mode, CompoundTag input, IntConsumer setter) {
         MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> importMemoryFrequency(tag, setter));
     }
 

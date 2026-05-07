@@ -3,10 +3,8 @@ package com.moakiee.ae2lt.item;
 import java.util.Objects;
 import java.util.Optional;
 
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 
 import appeng.api.crafting.IPatternDetails;
@@ -66,7 +64,7 @@ public class OverloadPatternItem extends EncodedPatternItem<IPatternDetails> {
         Objects.requireNonNull(stack, "stack");
         Objects.requireNonNull(payload, "payload");
 
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, rootTag -> {
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, rootTag -> {
             rootTag.put(TAG_OVERLOAD_PATTERN, OverloadPatternPayloadTagCodec.writePayload(payload));
         });
     }
@@ -94,6 +92,6 @@ public class OverloadPatternItem extends EncodedPatternItem<IPatternDetails> {
     }
 
     private static CompoundTag readRootTag(ItemStack stack) {
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        return com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
     }
 }

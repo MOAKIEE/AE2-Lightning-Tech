@@ -12,7 +12,6 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.items.storage.StorageCellTooltipComponent;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
@@ -20,7 +19,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -90,7 +88,7 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
     // ── Seed (outer cell only) ──
 
     public static void setSeed(ItemStack stack, UUID seed) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putUUID(TAG_SEED, seed));
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, tag -> tag.putUUID(TAG_SEED, seed));
     }
 
     public static void initializeOuterCell(ItemStack stack) {
@@ -104,7 +102,7 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
 
     @Nullable
     public static UUID getSeed(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         return tag.hasUUID(TAG_SEED) ? tag.getUUID(TAG_SEED) : null;
     }
 
@@ -120,7 +118,7 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
         if (!isOuterCell(stack)) {
             return false;
         }
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         return tag.getBoolean(TAG_RESULT_CONSUMED);
     }
 
@@ -129,7 +127,7 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
             return;
         }
         initializeOuterCell(stack);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(TAG_RESULT_CONSUMED, consumed));
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, tag -> tag.putBoolean(TAG_RESULT_CONSUMED, consumed));
     }
 
     /**
@@ -168,16 +166,16 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
     // ── Type byte (inner cell only) ──
 
     public static void setType(ItemStack stack, byte type) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putByte(TAG_TYPE, type));
+        com.moakiee.ae2lt.util.ItemStackTagSupport.updateTag(stack, tag -> tag.putByte(TAG_TYPE, type));
     }
 
     public static boolean hasType(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         return tag.contains(TAG_TYPE);
     }
 
     public static byte getType(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         return tag.getByte(TAG_TYPE);
     }
 
@@ -270,5 +268,3 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
         return Optional.of(new StorageCellTooltipComponent(List.of(), content, false, true));
     }
 }
-
-

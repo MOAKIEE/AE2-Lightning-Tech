@@ -310,15 +310,15 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @org.jetbrains.annotations.Nullable Player player) {
-        super.exportSettings(mode, builder, player);
-        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+        super.exportSettings(mode, output, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, output, getFrequencyId());
     }
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
@@ -432,5 +432,3 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         }
     }
 }
-
-

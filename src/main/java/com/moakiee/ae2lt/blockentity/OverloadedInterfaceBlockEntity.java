@@ -1950,10 +1950,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @Nullable Player player) {
-        super.exportSettings(mode, builder, player);
-        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
+        super.exportSettings(mode, output, player);
+        com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, output, tag -> {
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_INTERFACE_MODE, interfaceMode);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IO_SPEED_MODE, ioSpeedMode);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_EXPORT_MODE, exportMode);
@@ -1970,7 +1970,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable Player player) {
         super.importSettings(mode, input, player);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
@@ -2007,4 +2007,3 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
 }
-

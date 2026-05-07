@@ -302,15 +302,15 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @Nullable net.minecraft.world.entity.player.Player player) {
-        super.exportSettings(mode, builder, player);
-        FrequencyBindingHelper.exportMemorySettings(mode, builder, frequencyId);
+        super.exportSettings(mode, output, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, output, frequencyId);
     }
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.importSettings(mode, input, player);
         // setFrequency guards against duplicates on transmitters and reverts on conflict,

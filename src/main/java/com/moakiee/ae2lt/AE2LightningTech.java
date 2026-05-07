@@ -2,7 +2,6 @@ package com.moakiee.ae2lt;
 
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
-import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
@@ -188,7 +187,6 @@ public class AE2LightningTech {
         ModMenuTypes.MENU_TYPES.register(modEventBus);
         ModRecipeTypes.RECIPE_SERIALIZERS.register(modEventBus);
         ModRecipeTypes.RECIPE_TYPES.register(modEventBus);
-        ModDataComponents.DATA_COMPONENTS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);

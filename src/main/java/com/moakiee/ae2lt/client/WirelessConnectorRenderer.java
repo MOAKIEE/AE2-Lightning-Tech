@@ -16,13 +16,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -517,7 +515,7 @@ public class WirelessConnectorRenderer {
     }
 
     private static SelectedHost getSelectedHost(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        var tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
             return null;
         }
@@ -551,4 +549,3 @@ public class WirelessConnectorRenderer {
         lastScanDimension = null;
     }
 }
-

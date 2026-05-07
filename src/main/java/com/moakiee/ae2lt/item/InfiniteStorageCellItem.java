@@ -3,13 +3,11 @@ package com.moakiee.ae2lt.item;
 import java.util.List;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 
 public final class InfiniteStorageCellItem extends AE2LTItem {
 
@@ -34,7 +32,7 @@ public final class InfiniteStorageCellItem extends AE2LTItem {
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = com.moakiee.ae2lt.util.ItemStackTagSupport.getTagCopy(stack);
         // 空壳(创造物品栏里的初始 cell)上显示 "0 types / 0 B" 只是噪音,
         // 完全没带 ae2lt:types / ae2lt:bytes 数据时直接不画 tooltip。
         if (!tag.contains("ae2lt:types") && !tag.contains("ae2lt:bytes")) {
@@ -65,4 +63,3 @@ public final class InfiniteStorageCellItem extends AE2LTItem {
     public int getMaxTypes() { return maxTypes; }
     public double getIdleDrain() { return idleDrain; }
 }
-

@@ -563,15 +563,15 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag output,
                                @Nullable Player player) {
-        super.exportSettings(mode, builder, player);
-        FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
+        super.exportSettings(mode, output, player);
+        FrequencyBindingHelper.exportMemorySettings(mode, output, getFrequencyId());
     }
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
@@ -697,4 +697,3 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         MenuOpener.open(OverloadedPowerSupplyMenu.TYPE, player, locator);
     }
 }
-
