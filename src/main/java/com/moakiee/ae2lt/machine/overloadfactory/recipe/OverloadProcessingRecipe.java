@@ -64,11 +64,11 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         return DataResult.success(lightningCost);
     });
 
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<OverloadProcessingIngredient>> INPUTS_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, List<OverloadProcessingIngredient>> INPUTS_STREAM_CODEC =
             OverloadProcessingIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OUTPUTS_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OUTPUTS_STREAM_CODEC =
             ItemStack.STREAM_CODEC.apply(ByteBufCodecs.list());
-    private static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
             StreamCodec.of((buffer, tier) -> buffer.writeEnum(tier), buffer -> buffer.readEnum(LightningKey.Tier.class));
 
     private final int priority;
@@ -425,8 +425,8 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         }
     }
 
-    public static final class Serializer implements RecipeSerializer<OverloadProcessingRecipe> {
-        private static final MapCodec<OverloadProcessingRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final class Serializer {
+        public static final MapCodec<OverloadProcessingRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(OverloadProcessingRecipe::priority),
                         INPUTS_CODEC.optionalFieldOf("inputs", List.of()).forGetter(OverloadProcessingRecipe::itemInputs),
                         FluidStack.OPTIONAL_CODEC.optionalFieldOf("inputFluid", FluidStack.EMPTY)
@@ -441,7 +441,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                                 .forGetter(OverloadProcessingRecipe::lightningTier))
                 .apply(instance, OverloadProcessingRecipe::new));
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, OverloadProcessingRecipe> STREAM_CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, OverloadProcessingRecipe> STREAM_CODEC =
                 new StreamCodec<>() {
                     @Override
                     public OverloadProcessingRecipe decode(RegistryFriendlyByteBuf buffer) {
@@ -468,13 +468,9 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                         TIER_STREAM_CODEC.encode(buffer, recipe.lightningTier());
                     }
                 };
-
-        @Override
         public MapCodec<OverloadProcessingRecipe> codec() {
             return CODEC;
         }
-
-        @Override
         public StreamCodec<RegistryFriendlyByteBuf, OverloadProcessingRecipe> streamCodec() {
             return STREAM_CODEC;
         }

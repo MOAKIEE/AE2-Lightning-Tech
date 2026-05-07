@@ -29,7 +29,7 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
             .validate(inputs -> inputs.isEmpty()
                     ? DataResult.error(() -> "Lightning transform recipe inputs cannot be empty")
                     : DataResult.success(List.copyOf(inputs)));
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<CountedIngredient>> INPUTS_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, List<CountedIngredient>> INPUTS_STREAM_CODEC =
             CountedIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
 
     private final int priority;
@@ -274,13 +274,13 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
         }
     }
 
-    public static final class Serializer implements RecipeSerializer<LightningTransformRecipe> {
-        private static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final class Serializer {
+        public static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningTransformRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningTransformRecipe::inputs),
                         ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
                 .apply(instance, LightningTransformRecipe::new));
-        private static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
+        public static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT,
                 LightningTransformRecipe::priority,
                 INPUTS_STREAM_CODEC,
@@ -288,13 +288,9 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
                 ItemStack.STREAM_CODEC,
                 LightningTransformRecipe::rawResult,
                 LightningTransformRecipe::new);
-
-        @Override
         public MapCodec<LightningTransformRecipe> codec() {
             return CODEC;
         }
-
-        @Override
         public StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> streamCodec() {
             return STREAM_CODEC;
         }

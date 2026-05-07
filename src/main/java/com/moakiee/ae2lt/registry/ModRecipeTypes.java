@@ -22,7 +22,9 @@ public final class ModRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningTransformRecipe>>
             LIGHTNING_TRANSFORM_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("lightning_transform", LightningTransformRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("lightning_transform", () -> new RecipeSerializer<>(
+                            LightningTransformRecipe.Serializer.CODEC,
+                            LightningTransformRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningTransformRecipe>> LIGHTNING_TRANSFORM_TYPE =
             RECIPE_TYPES.register(
@@ -33,7 +35,9 @@ public final class ModRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningSimulationRecipe>>
             LIGHTNING_SIMULATION_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("lightning_simulation", LightningSimulationRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("lightning_simulation", () -> new RecipeSerializer<>(
+                            LightningSimulationRecipe.Serializer.CODEC,
+                            LightningSimulationRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningSimulationRecipe>> LIGHTNING_SIMULATION_TYPE =
             RECIPE_TYPES.register(
@@ -44,7 +48,9 @@ public final class ModRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningAssemblyRecipe>>
             LIGHTNING_ASSEMBLY_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("lightning_assembly", LightningAssemblyRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("lightning_assembly", () -> new RecipeSerializer<>(
+                            LightningAssemblyRecipe.Serializer.CODEC,
+                            LightningAssemblyRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningAssemblyRecipe>> LIGHTNING_ASSEMBLY_TYPE =
             RECIPE_TYPES.register(
@@ -55,7 +61,9 @@ public final class ModRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<OverloadProcessingRecipe>>
             OVERLOAD_PROCESSING_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("overload_processing", OverloadProcessingRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("overload_processing", () -> new RecipeSerializer<>(
+                            OverloadProcessingRecipe.Serializer.CODEC,
+                            OverloadProcessingRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<OverloadProcessingRecipe>> OVERLOAD_PROCESSING_TYPE =
             RECIPE_TYPES.register(
@@ -66,11 +74,15 @@ public final class ModRecipeTypes {
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<CrystalCatalyzerRecipe>>
             CRYSTAL_CATALYZER_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("crystal_catalyzer", CrystalCatalyzerRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("crystal_catalyzer", () -> new RecipeSerializer<>(
+                            CrystalCatalyzerRecipe.Serializer.CODEC,
+                            CrystalCatalyzerRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeSerializer<?>, RecipeSerializer<LightningStrikeRecipe>>
             LIGHTNING_STRIKE_SERIALIZER =
-                    RECIPE_SERIALIZERS.register("lightning_strike", LightningStrikeRecipe.Serializer::new);
+                    RECIPE_SERIALIZERS.register("lightning_strike", () -> new RecipeSerializer<>(
+                            LightningStrikeRecipe.Serializer.CODEC,
+                            LightningStrikeRecipe.Serializer.STREAM_CODEC));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningStrikeRecipe>> LIGHTNING_STRIKE_TYPE =
             RECIPE_TYPES.register(

@@ -56,9 +56,9 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
         }
         return DataResult.success(lightningCost);
     });
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<LightningSimulationIngredient>> INPUTS_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, List<LightningSimulationIngredient>> INPUTS_STREAM_CODEC =
             LightningSimulationIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
-    private static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
+    public static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
             StreamCodec.of(
                     (buffer, tier) -> buffer.writeEnum(tier),
                     buffer -> buffer.readEnum(LightningKey.Tier.class));
@@ -339,8 +339,8 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
         }
     }
 
-    public static final class Serializer implements RecipeSerializer<LightningSimulationRecipe> {
-        private static final MapCodec<LightningSimulationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final class Serializer {
+        public static final MapCodec<LightningSimulationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningSimulationRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningSimulationRecipe::inputs),
                         ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningSimulationRecipe::rawResult),
@@ -351,7 +351,7 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
                                 .forGetter(LightningSimulationRecipe::lightningTier))
                 .apply(instance, LightningSimulationRecipe::new));
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, LightningSimulationRecipe> STREAM_CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, LightningSimulationRecipe> STREAM_CODEC =
                 StreamCodec.composite(
                         ByteBufCodecs.VAR_INT,
                         LightningSimulationRecipe::priority,
@@ -366,13 +366,9 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
                         TIER_STREAM_CODEC,
                         LightningSimulationRecipe::lightningTier,
                         LightningSimulationRecipe::new);
-
-        @Override
         public MapCodec<LightningSimulationRecipe> codec() {
             return CODEC;
         }
-
-        @Override
         public StreamCodec<RegistryFriendlyByteBuf, LightningSimulationRecipe> streamCodec() {
             return STREAM_CODEC;
         }

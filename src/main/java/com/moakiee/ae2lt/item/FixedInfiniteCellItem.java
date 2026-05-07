@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.item;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -90,7 +92,7 @@ public final class FixedInfiniteCellItem extends Item {
     // ── Seed (outer cell only) ──
 
     public static void setSeed(ItemStack stack, UUID seed) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putUUID(TAG_SEED, seed));
+        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putString(TAG_SEED, seed.toString()));
     }
 
     public static void initializeOuterCell(ItemStack stack) {
@@ -105,7 +107,15 @@ public final class FixedInfiniteCellItem extends Item {
     @Nullable
     public static UUID getSeed(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.hasUUID(TAG_SEED) ? tag.getUUID(TAG_SEED) : null;
+        String seed = tag.getStringOr(TAG_SEED, "");
+        if (seed.isEmpty()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(seed);
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     public static boolean hasSeed(ItemStack stack) {
@@ -121,7 +131,7 @@ public final class FixedInfiniteCellItem extends Item {
             return false;
         }
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getBoolean(TAG_RESULT_CONSUMED);
+        return tag.getBooleanOr(TAG_RESULT_CONSUMED, false);
     }
 
     public static void setResultConsumed(ItemStack stack, boolean consumed) {
@@ -178,7 +188,7 @@ public final class FixedInfiniteCellItem extends Item {
 
     public static byte getType(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getByte(TAG_TYPE);
+        return tag.getByteOr(TAG_TYPE, (byte) 0);
     }
 
     // ── Effective key ──
@@ -224,7 +234,8 @@ public final class FixedInfiniteCellItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context,
-                                List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+                                TooltipDisplay tooltipDisplay, Consumer<Component> tooltipComponents,
+                                TooltipFlag tooltipFlag) {
         if (hasType(stack)) {
             // 内核 cell(扭蛋解析完的成品,或创造栏里直接拿的变体)不再画任何
             // flavor 文案 —— 物品名已经说明它是什么,tooltip 重复一遍既啰嗦
@@ -240,17 +251,17 @@ public final class FixedInfiniteCellItem extends Item {
         }
 
         if (isResultConsumed(stack)) {
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".consumed")
+            tooltipComponents.accept(Component.translatable(TOOLTIP_KEY + ".consumed")
                     .withStyle(ChatFormatting.DARK_GRAY));
-            tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".consumed.hint")
+            tooltipComponents.accept(Component.translatable(TOOLTIP_KEY + ".consumed.hint")
                     .withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
 
         String suffix = getOutcomeFromSeed(stack).suffix();
-        tooltipComponents.add(Component.translatable(TOOLTIP_KEY + "." + suffix)
+        tooltipComponents.accept(Component.translatable(TOOLTIP_KEY + "." + suffix)
                 .withStyle(ChatFormatting.GREEN));
-        tooltipComponents.add(Component.translatable(TOOLTIP_KEY + ".hint.once")
+        tooltipComponents.accept(Component.translatable(TOOLTIP_KEY + ".hint.once")
                 .withStyle(ChatFormatting.GRAY));
     }
 

@@ -103,10 +103,10 @@ public final class LightningStrikeRecipe implements Recipe<LightningStrikeRecipe
         return ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get();
     }
 
-    public static final class Serializer implements RecipeSerializer<LightningStrikeRecipe> {
+    public static final class Serializer {
         private static final Codec<Block> BLOCK_CODEC = BuiltInRegistries.BLOCK.byNameCodec();
 
-        private static final MapCodec<LightningStrikeRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+        public static final MapCodec<LightningStrikeRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.BOOL.optionalFieldOf("requires_natural_lightning", false)
                                 .forGetter(LightningStrikeRecipe::requiresNaturalLightning),
                         BLOCK_CODEC.fieldOf("center_input").forGetter(LightningStrikeRecipe::centerInput),
@@ -115,7 +115,7 @@ public final class LightningStrikeRecipe implements Recipe<LightningStrikeRecipe
                                 .forGetter(LightningStrikeRecipe::requirements))
                 .apply(instance, LightningStrikeRecipe::new));
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, LightningStrikeRecipe> STREAM_CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, LightningStrikeRecipe> STREAM_CODEC =
                 StreamCodec.of(Serializer::encode, Serializer::decode);
 
         private static void encode(RegistryFriendlyByteBuf buf, LightningStrikeRecipe recipe) {
@@ -134,13 +134,9 @@ public final class LightningStrikeRecipe implements Recipe<LightningStrikeRecipe
                     .decode(buf);
             return new LightningStrikeRecipe(requiresNatural, centerIn, centerOut, reqs);
         }
-
-        @Override
         public MapCodec<LightningStrikeRecipe> codec() {
             return CODEC;
         }
-
-        @Override
         public StreamCodec<RegistryFriendlyByteBuf, LightningStrikeRecipe> streamCodec() {
             return STREAM_CODEC;
         }

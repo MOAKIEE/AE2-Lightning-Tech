@@ -166,8 +166,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                 || (catalyst.isPresent() && catalystCount <= 0);
     }
 
-    public static final class Serializer implements RecipeSerializer<CrystalCatalyzerRecipe> {
-        private static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
+    public static final class Serializer {
+        public static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Ingredient.CODEC_NONEMPTY.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
                         NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
                         CrystalCatalyzerOutput.CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::outputSpec),
@@ -175,10 +175,10 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                         Mode.CODEC.optionalFieldOf("mode", Mode.CRYSTAL).forGetter(CrystalCatalyzerRecipe::mode))
                 .apply(instance, CrystalCatalyzerRecipe::new));
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, Optional<Ingredient>> OPTIONAL_INGREDIENT_STREAM_CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, Optional<Ingredient>> OPTIONAL_INGREDIENT_STREAM_CODEC =
                 ByteBufCodecs.optional(Ingredient.CONTENTS_STREAM_CODEC);
 
-        private static final StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerRecipe> STREAM_CODEC =
+        public static final StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerRecipe> STREAM_CODEC =
                 StreamCodec.of(Serializer::encode, Serializer::decode);
 
         private static void encode(RegistryFriendlyByteBuf buf, CrystalCatalyzerRecipe recipe) {
@@ -200,13 +200,9 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                     : Mode.CRYSTAL;
             return new CrystalCatalyzerRecipe(catalyst, catalystCount, output, energyPerCycle, mode);
         }
-
-        @Override
         public MapCodec<CrystalCatalyzerRecipe> codec() {
             return CODEC;
         }
-
-        @Override
         public StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerRecipe> streamCodec() {
             return STREAM_CODEC;
         }
