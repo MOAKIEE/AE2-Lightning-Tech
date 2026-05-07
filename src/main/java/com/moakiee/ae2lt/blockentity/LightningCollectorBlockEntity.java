@@ -14,7 +14,7 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.BlockOrientation;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.api.event.LightningCollectedEvent;
@@ -43,7 +43,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraftforge.common.NeoForge;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
 public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
@@ -212,7 +212,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
                 LightningKey.toApiTier(tier),
                 rolledOutput,
                 naturalWeatherLightning);
-        NeoForge.EVENT_BUS.post(collectedEvent);
+        MinecraftForge.EVENT_BUS.post(collectedEvent);
         if (collectedEvent.isCanceled()) {
             return false;
         }
@@ -246,7 +246,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(LightningCollectorMenu.TYPE, player, locator);
     }
 
@@ -432,4 +432,5 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         }
     }
 }
+
 

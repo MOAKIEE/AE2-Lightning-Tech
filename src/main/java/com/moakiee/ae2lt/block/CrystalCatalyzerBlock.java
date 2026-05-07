@@ -25,7 +25,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 
-public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlockEntity> {
+public class CrystalCatalyzerBlock extends AE2LTBaseEntityBlock<CrystalCatalyzerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     // Horizontal-only: the model is axially symmetric around the vertical axis,
     // and the block's output side config UI (RelativeSide.TOP) should always map
@@ -96,3 +96,4 @@ public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlo
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }
+

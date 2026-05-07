@@ -26,7 +26,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 
-public class OverloadedPowerSupplyBlock extends AEBaseEntityBlock<OverloadedPowerSupplyBlockEntity> {
+public class OverloadedPowerSupplyBlock extends AE2LTBaseEntityBlock<OverloadedPowerSupplyBlockEntity> {
 
     /**
      * Block-state visualisation:
@@ -112,3 +112,4 @@ public class OverloadedPowerSupplyBlock extends AEBaseEntityBlock<OverloadedPowe
         return InteractionResult.PASS;
     }
 }
+

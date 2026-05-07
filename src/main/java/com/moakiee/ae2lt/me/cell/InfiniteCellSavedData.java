@@ -10,7 +10,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * World-level persistent storage for all infinite cell inventories.
@@ -135,3 +135,4 @@ public final class InfiniteCellSavedData extends SavedData {
         return tag;
     }
 }
+

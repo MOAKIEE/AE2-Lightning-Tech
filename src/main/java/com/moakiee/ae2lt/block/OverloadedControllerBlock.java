@@ -28,7 +28,7 @@ import appeng.menu.me.networktool.NetworkStatusMenu;
  * Important: this block only handles AE2LT's own controller visuals and
  * right-click menu entry. It does not alter vanilla AE2 controller behavior.
  */
-public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedControllerBlockEntity> {
+public class OverloadedControllerBlock extends AE2LTBaseEntityBlock<OverloadedControllerBlockEntity> {
 
     public OverloadedControllerBlock() {
         super(metalProps().forceSolidOn().strength(6.0F));
@@ -103,3 +103,4 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
         return super.useWithoutItem(state, level, pos, player, hitResult);
     }
 }
+

@@ -33,7 +33,7 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
@@ -658,7 +658,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     // -- Menu binding --
 
     @Override
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(OverloadedPatternProviderMenu.TYPE, player, locator);
     }
 
@@ -685,3 +685,4 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         return ModBlocks.OVERLOADED_PATTERN_PROVIDER.get().asItem();
     }
 }
+

@@ -16,7 +16,7 @@ import appeng.api.orientation.OrientationStrategies;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
-public class LightningAssemblyChamberBlock extends AEBaseEntityBlock<LightningAssemblyChamberBlockEntity> {
+public class LightningAssemblyChamberBlock extends AE2LTBaseEntityBlock<LightningAssemblyChamberBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
 
@@ -68,3 +68,4 @@ public class LightningAssemblyChamberBlock extends AEBaseEntityBlock<LightningAs
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }
+

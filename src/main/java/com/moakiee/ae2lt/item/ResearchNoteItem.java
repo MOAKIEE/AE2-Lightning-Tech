@@ -29,7 +29,7 @@ import net.minecraft.world.item.WrittenBookItem;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.Level;
 
-public class ResearchNoteItem extends Item {
+public class ResearchNoteItem extends AE2LTItem {
     private static final String[] ORDER_MARKERS = {"1", "2", "3", "4", "5", "6", "7", "8", "9"};
     private static final String BOOK_TITLE_KEY = "ae2lt.research_note.book.title";
     private static final String BOOK_AUTHOR_KEY = "ae2lt.research_note.book.author";
@@ -197,3 +197,4 @@ public class ResearchNoteItem extends Item {
         return page;
     }
 }
+

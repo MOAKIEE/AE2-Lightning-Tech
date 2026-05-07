@@ -14,7 +14,7 @@ import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
@@ -322,7 +322,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(TeslaCoilMenu.TYPE, player, locator);
     }
 
@@ -627,4 +627,5 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         return Math.multiplyExact(mode.requiredHighVoltage(), batchSize);
     }
 }
+
 

@@ -20,7 +20,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.common.NeoForge;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.common.util.FakePlayer;
 import net.minecraftforge.event.level.BlockEvent;
 
@@ -430,7 +430,7 @@ public class LightningBlastTask {
         boolean cancelled;
         try {
             BlockEvent.BreakEvent event = new BlockEvent.BreakEvent(this.level, pos, state, breaker);
-            NeoForge.EVENT_BUS.post(event);
+            MinecraftForge.EVENT_BUS.post(event);
             cancelled = event.isCanceled();
         } catch (Throwable ignored) {
             cancelled = false;
@@ -447,4 +447,5 @@ public class LightningBlastTask {
     }
 
 }
+
 

@@ -26,7 +26,7 @@ import appeng.util.ConfigInventory;
  * </ul>
  * Placed into the interface's filter slot; only affects the input side.
  */
-public class OverloadedFilterComponentItem extends Item implements ICellWorkbenchItem {
+public class OverloadedFilterComponentItem extends AE2LTItem implements ICellWorkbenchItem {
 
     private static final int CONFIG_SLOTS = 63;
     private static final int UPGRADE_SLOTS = 2;
@@ -62,3 +62,4 @@ public class OverloadedFilterComponentItem extends Item implements ICellWorkbenc
         return UpgradeInventories.forItem(stack, UPGRADE_SLOTS);
     }
 }
+

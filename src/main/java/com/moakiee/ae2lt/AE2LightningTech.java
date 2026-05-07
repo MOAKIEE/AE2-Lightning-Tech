@@ -42,7 +42,7 @@ import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
-import net.minecraftforge.registries.DeferredHolder;
+import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 
 import appeng.api.AECapabilities;
@@ -65,7 +65,7 @@ import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
-import net.minecraftforge.common.NeoForge;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 
@@ -76,7 +76,7 @@ public class AE2LightningTech {
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
 
-    public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MAIN_TAB =
+    public static final RegistryObject<CreativeModeTab> MAIN_TAB =
             CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.ae2lt"))
                     .withTabsBefore(CreativeModeTabs.SPAWN_EGGS)
@@ -195,9 +195,9 @@ public class AE2LightningTech {
         modEventBus.addListener(this::commonSetup);
         modContainer.registerConfig(ModConfig.Type.COMMON, AE2LTCommonConfig.SPEC);
 
-        NeoForge.EVENT_BUS.addListener(this::onServerStarting);
-        NeoForge.EVENT_BUS.addListener(this::onServerStopped);
-        NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStopped);
+        MinecraftForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
@@ -706,4 +706,6 @@ public class AE2LightningTech {
         AEBaseBlockEntity.registerBlockEntityItem(beType, block.asItem());
     }
 }
+
+
 

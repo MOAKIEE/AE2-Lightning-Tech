@@ -15,7 +15,7 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraft.server.level.ServerLevel;
 
-public class OverloadCrystalItem extends Item {
+public class OverloadCrystalItem extends AE2LTItem {
     private static final String DROPPED_TICKS_TAG = "ae2lt.overload_dropped_ticks";
     private static final int SUMMON_DELAY_TICKS = 200;
     /**
@@ -119,4 +119,5 @@ public class OverloadCrystalItem extends Item {
         }
     }
 }
+
 

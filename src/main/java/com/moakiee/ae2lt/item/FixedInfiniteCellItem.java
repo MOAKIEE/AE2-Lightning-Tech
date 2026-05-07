@@ -21,13 +21,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModItems;
 
-public final class FixedInfiniteCellItem extends Item {
+public final class FixedInfiniteCellItem extends AE2LTItem {
 
     private static final String TAG_SEED = "CellSeed";
     private static final String TAG_TYPE = "CellType";
@@ -270,3 +270,5 @@ public final class FixedInfiniteCellItem extends Item {
         return Optional.of(new StorageCellTooltipComponent(List.of(), content, false, true));
     }
 }
+
+

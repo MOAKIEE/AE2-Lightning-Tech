@@ -25,7 +25,7 @@ import appeng.api.orientation.OrientationStrategies;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
-public class LightningSimulationChamberBlock extends AEBaseEntityBlock<LightningSimulationChamberBlockEntity> {
+public class LightningSimulationChamberBlock extends AE2LTBaseEntityBlock<LightningSimulationChamberBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     private static final VoxelShape NORTH_SHAPE = BlockShapeHelper.or(
@@ -91,3 +91,4 @@ public class LightningSimulationChamberBlock extends AEBaseEntityBlock<Lightning
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }
+

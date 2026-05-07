@@ -33,7 +33,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 
-public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadProcessingFactoryBlockEntity> {
+public class OverloadProcessingFactoryBlock extends AE2LTBaseEntityBlock<OverloadProcessingFactoryBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
 
     public OverloadProcessingFactoryBlock() {
@@ -160,5 +160,6 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
         level.playSound(player, pos, sound, SoundSource.BLOCKS, 1.0F, 1.0F);
     }
 }
+
 
 

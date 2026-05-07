@@ -39,7 +39,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 
-public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
+public class TeslaCoilBlock extends AE2LTBaseEntityBlock<TeslaCoilBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final DirectionProperty FACING = BlockStateProperties.HORIZONTAL_FACING;
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
@@ -253,3 +253,4 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
 }
+

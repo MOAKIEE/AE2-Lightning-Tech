@@ -13,7 +13,7 @@ import net.minecraft.world.phys.BlockHitResult;
 
 import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.ItemMenuHostLocator;
+import appeng.menu.locator.ItemMenuLocator;
 import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderHost;
@@ -24,7 +24,7 @@ import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
  * <p>
  * This item only opens the editor UI. It does not execute pattern semantics.
  */
-public class OverloadPatternEncoderItem extends Item implements IMenuItem {
+public class OverloadPatternEncoderItem extends AE2LTItem implements IMenuItem {
     public OverloadPatternEncoderItem(Properties properties) {
         super(properties.stacksTo(1));
     }
@@ -32,7 +32,7 @@ public class OverloadPatternEncoderItem extends Item implements IMenuItem {
     @Override
     public @Nullable OverloadPatternEncoderHost getMenuHost(
             Player player,
-            ItemMenuHostLocator locator,
+            ItemMenuLocator locator,
             @Nullable BlockHitResult hitResult
     ) {
         return new OverloadPatternEncoderHost(this, player, locator);
@@ -48,3 +48,5 @@ public class OverloadPatternEncoderItem extends Item implements IMenuItem {
                 player.getItemInHand(hand));
     }
 }
+
+

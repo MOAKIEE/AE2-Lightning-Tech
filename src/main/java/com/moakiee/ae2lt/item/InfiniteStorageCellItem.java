@@ -11,7 +11,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 
-public final class InfiniteStorageCellItem extends Item {
+public final class InfiniteStorageCellItem extends AE2LTItem {
 
     private final long capacityLo;
     private final long capacityHi;
@@ -65,3 +65,4 @@ public final class InfiniteStorageCellItem extends Item {
     public int getMaxTypes() { return maxTypes; }
     public double getIdleDrain() { return idleDrain; }
 }
+

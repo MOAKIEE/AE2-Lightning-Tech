@@ -38,7 +38,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
@@ -393,7 +393,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(LightningAssemblyChamberMenu.TYPE, player, locator);
     }
 
@@ -717,6 +717,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
                 .insert(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
     }
 }
+
 
 
 

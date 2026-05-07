@@ -20,7 +20,7 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 /**
  * Wireless receiver block. Right-click to open the frequency selection GUI.
  */
-public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlockEntity> {
+public class WirelessReceiverBlock extends AE2LTBaseEntityBlock<WirelessReceiverBlockEntity> {
 
     public WirelessReceiverBlock() {
         super(metalProps());
@@ -63,3 +63,4 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
         return super.useWithoutItem(state, level, pos, player, hitResult);
     }
 }
+

@@ -37,7 +37,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
@@ -213,7 +213,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         return upgrades;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(CrystalCatalyzerMenu.TYPE, player, locator);
     }
 
@@ -762,4 +762,5 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         logic.onStateChanged();
     }
 }
+
 

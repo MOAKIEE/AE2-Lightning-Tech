@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.menu;
 import net.minecraft.world.entity.player.Player;
 
 import appeng.api.implementations.menuobjects.ItemMenuHost;
-import appeng.menu.locator.ItemMenuHostLocator;
+import appeng.menu.locator.ItemMenuLocator;
 
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 
@@ -17,8 +17,9 @@ public final class OverloadPatternEncoderHost extends ItemMenuHost<OverloadPatte
     public OverloadPatternEncoderHost(
             OverloadPatternEncoderItem item,
             Player player,
-            ItemMenuHostLocator locator
+            ItemMenuLocator locator
     ) {
         super(item, player, locator);
     }
 }
+

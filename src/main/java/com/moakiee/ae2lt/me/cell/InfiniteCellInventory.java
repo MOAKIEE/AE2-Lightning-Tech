@@ -15,7 +15,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -284,3 +284,4 @@ public class InfiniteCellInventory implements StorageCell {
         });
     }
 }
+

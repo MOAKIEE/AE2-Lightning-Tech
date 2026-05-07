@@ -14,7 +14,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
 
-public class ElectroChimeCrystalItem extends Item {
+public class ElectroChimeCrystalItem extends AE2LTItem {
     private static final String TAG_CATALYSIS = "ae2lt.catalysis_value";
     private static final double STAGE_1_FRACTION = 0.20D;
     private static final double STAGE_2_FRACTION = 0.55D;
@@ -107,3 +107,4 @@ public class ElectroChimeCrystalItem extends Item {
         };
     }
 }
+

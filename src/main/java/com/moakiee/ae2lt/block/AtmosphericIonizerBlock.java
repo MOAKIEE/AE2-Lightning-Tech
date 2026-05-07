@@ -36,7 +36,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 
-public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonizerBlockEntity> {
+public class AtmosphericIonizerBlock extends AE2LTBaseEntityBlock<AtmosphericIonizerBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final EnumProperty<DoubleBlockHalf> HALF = BlockStateProperties.DOUBLE_BLOCK_HALF;
 
@@ -244,3 +244,4 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
         return state.is(this) && state.getValue(HALF) == half;
     }
 }
+

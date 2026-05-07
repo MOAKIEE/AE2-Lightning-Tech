@@ -18,7 +18,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollectorBlockEntity> {
+public class LightningCollectorBlock extends AE2LTBaseEntityBlock<LightningCollectorBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     private static final VoxelShape SHAPE = BlockShapeHelper.or(
             Block.box(1, 0, 1, 15, 12, 15),
@@ -69,3 +69,4 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
         return InteractionResult.sidedSuccess(level.isClientSide());
     }
 }
+

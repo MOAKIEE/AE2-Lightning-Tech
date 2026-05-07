@@ -68,7 +68,7 @@ import appeng.util.inv.AppEngInternalInventory;
 import appeng.util.inv.InternalInventoryHost;
 
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 import appeng.parts.automation.StackWorldBehaviors;
 
 public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
@@ -676,7 +676,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(OverloadedInterfaceMenu.TYPE, player, locator);
     }
 
@@ -2007,3 +2007,4 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
 }
+

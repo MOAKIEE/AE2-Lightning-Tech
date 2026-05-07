@@ -40,7 +40,7 @@ import appeng.util.Platform;
  *       NOT by this block's orientation.</li>
  * </ul>
  */
-public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<OverloadedPatternProviderBlockEntity> {
+public class OverloadedPatternProviderBlock extends AE2LTBaseEntityBlock<OverloadedPatternProviderBlockEntity> {
 
     public OverloadedPatternProviderBlock() {
         super(metalProps().forceSolidOn());
@@ -109,3 +109,4 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
         }
     }
 }
+

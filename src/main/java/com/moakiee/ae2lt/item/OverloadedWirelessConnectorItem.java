@@ -35,7 +35,7 @@ import org.jetbrains.annotations.Nullable;
  * A tool item for establishing and managing wireless connections between an
  * Overloaded Pattern Provider / Overloaded ME Interface and remote machines.
  */
-public class OverloadedWirelessConnectorItem extends Item {
+public class OverloadedWirelessConnectorItem extends AE2LTItem {
 
     private static final String TAG_SELECTED = "SelectedProvider";
     private static final String TAG_DIM = "Dim";
@@ -196,4 +196,5 @@ public class OverloadedWirelessConnectorItem extends Item {
         return be instanceof OverloadedPowerSupplyBlockEntity powerSupply ? powerSupply : null;
     }
 }
+
 

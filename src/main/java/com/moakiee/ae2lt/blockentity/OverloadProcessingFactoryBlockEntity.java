@@ -39,7 +39,7 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
@@ -558,7 +558,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(OverloadProcessingFactoryMenu.TYPE, player, locator);
     }
 
@@ -886,6 +886,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         markForClientUpdate();
     }
 }
+
 
 
 

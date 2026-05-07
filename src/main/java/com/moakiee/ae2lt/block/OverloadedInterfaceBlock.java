@@ -12,7 +12,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
-public class OverloadedInterfaceBlock extends AEBaseEntityBlock<OverloadedInterfaceBlockEntity> {
+public class OverloadedInterfaceBlock extends AE2LTBaseEntityBlock<OverloadedInterfaceBlockEntity> {
 
     public OverloadedInterfaceBlock() {
         super(metalProps().forceSolidOn());
@@ -31,3 +31,4 @@ public class OverloadedInterfaceBlock extends AEBaseEntityBlock<OverloadedInterf
         return InteractionResult.PASS;
     }
 }
+
