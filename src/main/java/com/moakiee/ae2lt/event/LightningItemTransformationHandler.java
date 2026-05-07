@@ -14,13 +14,13 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Block;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.EventBusSubscriber;
-import net.minecraftforge.event.entity.EntityInvulnerabilityCheckEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
-import net.minecraftforge.event.tick.EntityTickEvent;
+import net.minecraftforge.fml.common.Mod;
 
-@EventBusSubscriber(modid = AE2LightningTech.MODID)
+@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class LightningItemTransformationHandler {
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.lightning_item_transform_checked";
     private static final ResourceLocation FUMO_BLOCK_ID =
@@ -31,7 +31,7 @@ public final class LightningItemTransformationHandler {
     }
 
     @SubscribeEvent
-    public static void onLightningTick(EntityTickEvent.Pre event) {
+    public static void onLightningSpawn(EntityJoinLevelEvent event) {
         if (!(event.getEntity() instanceof LightningBolt lightningBolt)
                 || !(lightningBolt.level() instanceof ServerLevel serverLevel)) {
             return;
@@ -58,17 +58,15 @@ public final class LightningItemTransformationHandler {
     }
 
     @SubscribeEvent
-    public static void onEntityInvulnerabilityCheck(EntityInvulnerabilityCheckEvent event) {
-        if (event.getEntity() instanceof ItemEntity itemEntity
-                && ProtectedItemEntityHelper.shouldIgnoreDamage(itemEntity, event.getSource())) {
-            event.setInvulnerable(true);
+    public static void onLevelTick(TickEvent.LevelTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !(event.level instanceof ServerLevel serverLevel)) {
+            return;
         }
-    }
 
-    @SubscribeEvent
-    public static void onItemTick(EntityTickEvent.Post event) {
-        if (event.getEntity() instanceof ItemEntity itemEntity) {
-            ProtectedItemEntityHelper.tick(itemEntity);
+        for (var entity : serverLevel.getAllEntities()) {
+            if (entity instanceof ItemEntity itemEntity) {
+                ProtectedItemEntityHelper.tick(itemEntity);
+            }
         }
     }
 

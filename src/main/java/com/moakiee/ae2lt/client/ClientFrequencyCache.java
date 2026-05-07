@@ -18,13 +18,13 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.EventBusSubscriber;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.fml.common.Mod;
 
 /**
  * Client-side cache of all wireless frequencies. Populated by sync packets.
  */
-@EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public final class ClientFrequencyCache {
 
     public record CachedFrequency(int id, String name, int color,

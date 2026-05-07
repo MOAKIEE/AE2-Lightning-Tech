@@ -26,10 +26,10 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.EventBusSubscriber;
 import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
 import net.minecraftforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
 
 import appeng.client.render.overlay.OverlayRenderType;
 
@@ -56,7 +56,7 @@ import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
  *       (the report flags high-FPS as an amplifier of any per-frame leak path).</li>
  * </ul>
  */
-@EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public class WirelessConnectorRenderer {
 
     // Preview color: semi-transparent yellow (ARGB)

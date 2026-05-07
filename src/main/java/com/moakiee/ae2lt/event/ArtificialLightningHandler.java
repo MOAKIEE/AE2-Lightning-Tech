@@ -10,11 +10,11 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.EventBusSubscriber;
-import net.minecraftforge.event.tick.PlayerTickEvent;
+import net.minecraftforge.fml.common.Mod;
 
-@EventBusSubscriber(modid = AE2LightningTech.MODID)
+@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class ArtificialLightningHandler {
     private static final String HELD_TICKS_TAG = "ae2lt.overload_held_ticks";
     private static final int SUMMON_DELAY_TICKS = 200;
@@ -30,7 +30,10 @@ public final class ArtificialLightningHandler {
     }
 
     @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Pre event) {
+    public static void onPlayerTick(TickEvent.PlayerTickEvent event) {
+        if (event.phase != TickEvent.Phase.START) {
+            return;
+        }
         Player player = event.getEntity();
         if (!(player.level() instanceof ServerLevel serverLevel) || player.isSpectator()) {
             return;

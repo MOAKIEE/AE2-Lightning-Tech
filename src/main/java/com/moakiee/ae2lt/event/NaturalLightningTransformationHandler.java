@@ -17,13 +17,13 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.EventBusSubscriber;
-import net.minecraftforge.event.tick.EntityTickEvent;
+import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
 
-@EventBusSubscriber(modid = AE2LightningTech.MODID)
+@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class NaturalLightningTransformationHandler {
     public static final String NATURAL_WEATHER_LIGHTNING_TAG = "ae2lt.natural_weather_lightning";
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.natural_transform_checked";
@@ -50,7 +50,7 @@ public final class NaturalLightningTransformationHandler {
     }
 
     @SubscribeEvent
-    public static void onLightningTick(EntityTickEvent.Pre event) {
+    public static void onLightningSpawn(EntityJoinLevelEvent event) {
         if (!(event.getEntity() instanceof LightningBolt lightningBolt)
                 || !(lightningBolt.level() instanceof ServerLevel serverLevel)) {
             return;
