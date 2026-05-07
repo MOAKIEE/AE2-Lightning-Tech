@@ -229,7 +229,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
             }
 
             var resolver = new Ae2PlainPatternResolver(getPlayer().level());
-            return conversionService.resolveEditableSource(sourceStack, resolver, registryAccess()).orElse(null);
+            return conversionService.resolveEditableSource(sourceStack, resolver, getPlayer().level().registryAccess()).orElse(null);
         } catch (RuntimeException ignored) {
             return null;
         }
@@ -240,7 +240,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
         if (sourceStack.getItem() instanceof OverloadPatternItem overloadPatternItem) {
             try {
                 var payload = overloadPatternItem.readPayload(sourceStack).orElse(null);
-                return payload != null ? payload.sourcePattern().toItemStack(registryAccess()) : null;
+                return payload != null ? payload.sourcePattern().toItemStack(getPlayer().level().registryAccess()) : null;
             } catch (RuntimeException ignored) {
                 return null;
             }

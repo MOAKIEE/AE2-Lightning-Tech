@@ -69,20 +69,20 @@ public class TeslaCoilModeButton extends IconButton {
         }
 
         int yOffset = isHovered() ? 1 : 0;
-        Icon bgIcon = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER
+        Icon bgIcon = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND
                 : mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE
-                        ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS
+                        ? Icon.TOOLBAR_BUTTON_BACKGROUND
                         : Icon.TOOLBAR_BUTTON_BACKGROUND;
         bgIcon.getBlitter()
                 .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
+                
                 .blit(guiGraphics);
 
         var texture = mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE ? EHV_TEXTURE : HV_TEXTURE;
         Blitter.texture(texture, 16, 16)
                 .src(0, 0, 16, 16)
                 .dest(getX(), getY() + 1 + yOffset, 16, 16)
-                .zOffset(3)
+                
                 .blit(guiGraphics);
     }
 }

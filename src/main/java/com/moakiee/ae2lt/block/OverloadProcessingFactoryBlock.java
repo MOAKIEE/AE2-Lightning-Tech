@@ -147,7 +147,7 @@ public class OverloadProcessingFactoryBlock extends AE2LTBaseEntityBlock<Overloa
     }
 
     private void playBucketSound(Player player, Level level, BlockPos pos, FluidStack fluid, boolean fillBucket) {
-        SoundEvent sound = fluid.getFluidType().getSound(
+        SoundEvent sound = fluid.getFluid().getFluidType().getSound(
                 player,
                 level,
                 pos,
@@ -156,8 +156,8 @@ public class OverloadProcessingFactoryBlock extends AE2LTBaseEntityBlock<Overloa
                         : SoundActions.BUCKET_EMPTY);
         if (sound == null) {
             sound = fillBucket
-                    ? (fluid.is(FluidTags.LAVA) ? SoundEvents.BUCKET_FILL_LAVA : SoundEvents.BUCKET_FILL)
-                    : (fluid.is(FluidTags.LAVA) ? SoundEvents.BUCKET_EMPTY_LAVA : SoundEvents.BUCKET_EMPTY);
+                    ? (fluid.getFluid().is(FluidTags.LAVA) ? SoundEvents.BUCKET_FILL_LAVA : SoundEvents.BUCKET_FILL)
+                    : (fluid.getFluid().is(FluidTags.LAVA) ? SoundEvents.BUCKET_EMPTY_LAVA : SoundEvents.BUCKET_EMPTY);
         }
         level.playSound(player, pos, sound, SoundSource.BLOCKS, 1.0F, 1.0F);
     }

@@ -95,7 +95,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
 
         var newConfig = new OverloadedConfigInv(
-                AEKeyTypes.getAll(), null,
+                com.google.common.collect.Sets.newHashSet(AEKeyTypes.getAll()), null,
                 GenericStackInv.Mode.CONFIG_STACKS, slots,
                 () -> invokeQuietly(M_ON_CONFIG_CHANGED, this));
         newConfig.owner = host;
@@ -104,7 +104,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         newConfig.setCapacity(AEKeyType.items(), OVERLOADED_CAP);
 
         proxiedStorage = new ProxiedStorageInv(
-                this, AEKeyTypes.getAll(),
+                this, com.google.common.collect.Sets.newHashSet(AEKeyTypes.getAll()),
                 (slot, key) -> invokeSlotFilter(M_IS_ALLOWED_IN_SLOT, this, slot, key),
                 slots,
                 () -> invokeQuietly(M_ON_STORAGE_CHANGED, this));

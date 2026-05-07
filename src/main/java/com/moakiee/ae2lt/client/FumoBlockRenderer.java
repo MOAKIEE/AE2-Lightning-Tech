@@ -112,7 +112,7 @@ public class FumoBlockRenderer implements BlockEntityRenderer<FumoBlockEntity> {
                 qg = shade;
                 qb = shade;
             }
-            consumer.putBulkData(pose, quad, qr, qg, qb, 1.0F, packedLight, packedOverlay);
+            consumer.putBulkData(pose, quad, qr, qg, qb, packedLight, packedOverlay);
         }
     }
 

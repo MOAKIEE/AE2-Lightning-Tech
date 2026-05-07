@@ -23,10 +23,10 @@ public final class Ae2ltMenuBuilder {
     private Ae2ltMenuBuilder() {
     }
 
+    @SuppressWarnings({"unchecked", "rawtypes"})
     public static <M extends AEBaseMenu, I> MenuType<M> buildUnregistered(
             MenuTypeBuilder<M, I> builder, ResourceLocation id) {
-        @SuppressWarnings("unchecked")
-        var accessor = (MenuTypeBuilderAccessor<M, I>) builder;
+        MenuTypeBuilderAccessor<M, I> accessor = (MenuTypeBuilderAccessor) (Object) builder;
         if (accessor.ae2lt$getMenuType() != null) {
             throw new IllegalStateException("buildUnregistered already called for " + id);
         }

@@ -117,8 +117,10 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
 
         for (int i = SLOTS_PER_PAGE; i < total; i++) {
             int ref = i % SLOTS_PER_PAGE;
-            patternSlots.get(i).x = patternSlots.get(ref).x;
-            patternSlots.get(i).y = patternSlots.get(ref).y;
+            com.moakiee.ae2lt.util.SlotPositionAccess.set(
+                    patternSlots.get(i),
+                    patternSlots.get(ref).x,
+                    patternSlots.get(ref).y);
         }
     }
 

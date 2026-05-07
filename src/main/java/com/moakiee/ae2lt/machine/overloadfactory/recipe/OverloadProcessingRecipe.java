@@ -228,12 +228,12 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         if (fluidResult.isEmpty()) {
             return FluidStack.EMPTY;
         }
-        return fluidResult.copyWithAmount(multiplyExactToInt(fluidResult.getAmount(), operations));
+        return new FluidStack(fluidResult, multiplyExactToInt(fluidResult.getAmount(), operations));
     }
 
     @Override
     public ItemStack assemble(OverloadProcessingRecipeInput input, RegistryAccess registries) {
-        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
+        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.get(0).copy();
     }
 
     @Override
@@ -243,7 +243,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
 
     @Override
     public ItemStack getResultItem(RegistryAccess registries) {
-        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
+        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.get(0).copy();
     }
 
     @Override

@@ -128,12 +128,12 @@ public class TextureToggleButton extends Button implements ITooltip {
         }
 
         var yOffset = isHovered() ? 1 : 0;
-        var background = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER
-                : isFocused() ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS : Icon.TOOLBAR_BUTTON_BACKGROUND;
+        var background = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND
+                : isFocused() ? Icon.TOOLBAR_BUTTON_BACKGROUND : Icon.TOOLBAR_BUTTON_BACKGROUND;
 
         background.getBlitter()
                 .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
+                
                 .blit(guiGraphics);
 
         if (this.textures.isEmpty()) {
@@ -145,7 +145,7 @@ public class TextureToggleButton extends Button implements ITooltip {
         if (!this.active) {
             blitter.opacity(0.5f);
         }
-        blitter.dest(getX(), getY() + 1 + yOffset).zOffset(3).blit(guiGraphics);
+        blitter.dest(getX(), getY() + 1 + yOffset).blit(guiGraphics);
     }
 
     @Override

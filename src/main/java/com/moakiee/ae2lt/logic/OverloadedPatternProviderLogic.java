@@ -511,7 +511,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     @Override
-    public void onChangeInventory(appeng.util.inv.AppEngInternalInventory inv, int slot) {
+    public void onChangeInventory(appeng.api.inventories.InternalInventory inv, int slot) {
         super.onChangeInventory(inv, slot);
     }
 

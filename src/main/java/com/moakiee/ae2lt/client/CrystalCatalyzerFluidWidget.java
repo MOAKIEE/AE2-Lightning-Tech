@@ -166,7 +166,7 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
             lines.add(Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", 0, capacity)
                     .withStyle(Tooltips.NUMBER_TEXT));
         } else {
-            lines.add(fluid.getHoverName());
+            lines.add(fluid.getDisplayName());
             lines.add(Component.empty());
             lines.add(Component.translatable("ae2lt.gui.crystal_catalyzer.fluid.tooltip", fluid.getAmount(), capacity)
                     .withStyle(Tooltips.NUMBER_TEXT));

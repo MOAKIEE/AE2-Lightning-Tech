@@ -362,10 +362,10 @@ public class WirelessConnectorRenderer {
             float x3, float y3, float z3,
             float x4, float y4, float z4,
             float nx, float ny, float nz) {
-        vc.addVertex(mat, x1, y1, z1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x2, y2, z2).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x3, y3, z3).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x4, y4, z4).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+        vc.vertex(mat, x1, y1, z1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+        vc.vertex(mat, x2, y2, z2).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+        vc.vertex(mat, x3, y3, z3).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+        vc.vertex(mat, x4, y4, z4).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
     }
 
 
@@ -390,40 +390,40 @@ public class WirelessConnectorRenderer {
 
         switch (face) {
             case DOWN -> {
-                vc.addVertex(mat, 0, -offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, -offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, -offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, -offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, -offset, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, -offset, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, -offset, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 0, -offset, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
             case UP -> {
-                vc.addVertex(mat, 0, 1 + offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1 + offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1 + offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1 + offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, 1 + offset, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, 1 + offset, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, 1 + offset, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 0, 1 + offset, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
             case NORTH -> {
-                vc.addVertex(mat, 0, 0, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 0, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, 0, -offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 0, 1, -offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, 1, -offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, 0, -offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
             case SOUTH -> {
-                vc.addVertex(mat, 1, 0, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 0, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 1, 0, 1 + offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1, 1, 1 + offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 0, 1, 1 + offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 0, 0, 1 + offset).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
             case WEST -> {
-                vc.addVertex(mat, -offset, 0, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 1, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 1, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 0, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, -offset, 0, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, -offset, 1, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, -offset, 1, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, -offset, 0, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
             case EAST -> {
-                vc.addVertex(mat, 1 + offset, 0, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 1, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 1, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 0, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 1 + offset, 0, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1 + offset, 1, 0).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1 + offset, 1, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+                vc.vertex(mat, 1 + offset, 0, 1).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
             }
         }
 
@@ -455,8 +455,8 @@ public class WirelessConnectorRenderer {
         if (len < 1e-6f) return;
         float nx = dx / len, ny = dy / len, nz = dz / len;
 
-        vc.addVertex(mat, fx, fy, fz).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, tx, ty, tz).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+        vc.vertex(mat, fx, fy, fz).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
+        vc.vertex(mat, tx, ty, tz).color(c[1], c[2], c[3], c[0]).normal(nx, ny, nz).endVertex();
     }
 
     // -- Item NBT helpers (client-side read-only) --

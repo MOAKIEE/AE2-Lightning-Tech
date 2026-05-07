@@ -28,6 +28,14 @@ public final class OverloadPatternDecoder implements IPatternDetailsDecoder {
     }
 
     @Override
+    public @Nullable IPatternDetails decodePattern(ItemStack stack, Level level, boolean tryRecovery) {
+        if (stack.isEmpty() || !(stack.getItem() instanceof OverloadPatternItem)) {
+            return null;
+        }
+        return decodePattern(AEItemKey.of(stack), level);
+    }
+
+    @Override
     public @Nullable IPatternDetails decodePattern(AEItemKey what, Level level) {
         if (what == null || !(what.getItem() instanceof OverloadPatternItem overloadPatternItem)) {
             return null;

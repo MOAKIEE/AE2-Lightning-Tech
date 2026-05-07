@@ -15,7 +15,7 @@ public final class EasterEggClientInit {
     @SubscribeEvent
     public static void registerOverlay(RegisterGuiOverlaysEvent event) {
         event.registerAbove(
-                VanillaGuiOverlay.CHAT.id(),
+                VanillaGuiOverlay.CHAT_PANEL.id(),
                 "easter_egg",
                 EasterEggOverlay.INSTANCE);
     }

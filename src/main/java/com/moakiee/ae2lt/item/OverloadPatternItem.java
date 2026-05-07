@@ -91,7 +91,7 @@ public class OverloadPatternItem extends EncodedPatternItem {
     }
 
     public IPatternDetails decode(ItemStack stack, Level level) {
-        return stack.getItem() == this ? OverloadPatternDecoder.INSTANCE.decodePattern(stack, level) : null;
+        return stack.getItem() == this ? OverloadPatternDecoder.INSTANCE.decodePattern(AEItemKey.of(stack), level) : null;
     }
 
     @Override

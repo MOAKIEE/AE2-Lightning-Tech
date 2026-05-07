@@ -97,7 +97,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderEntryTooltip(graphics, mouseX, mouseY);
     }
@@ -136,12 +136,12 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         if (isWithinPanel(mouseX, mouseY) && maxScrollOffset() > 0) {
-            scrollOffset = Mth.clamp(scrollOffset - (int) Math.signum(scrollY), 0, maxScrollOffset());
+            scrollOffset = Mth.clamp(scrollOffset - (int) Math.signum(delta), 0, maxScrollOffset());
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
     private void renderEntries(GuiGraphics graphics, int mouseX, int mouseY) {

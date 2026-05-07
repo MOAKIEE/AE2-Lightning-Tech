@@ -722,7 +722,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      */
     private static Icon iconFor(FrequencyNavigationTab tab) {
         return switch (tab) {
-            case TAB_SETTING -> Icon.COG;
+            case TAB_SETTING -> Icon.WRENCH;
             default -> null;
         };
     }
@@ -1820,7 +1820,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
 
     @Override
     public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g, mouseX, mouseY, partialTick);
+        renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
     }
@@ -1966,14 +1966,16 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         @Override
         protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             boolean enabled = maxOffset() > 0;
-            ResourceLocation sprite = enabled
-                    ? new ResourceLocation("ae2", "big_scroller")
-                    : new ResourceLocation("ae2", "big_scroller_disabled");
             int availH = Math.max(0, getHeight() - SCROLLBAR_HANDLE_HEIGHT);
             int handleY = enabled
                     ? getY() + scrollOffset * availH / maxOffset()
                     : getY();
-            g.blitSprite(sprite, getX(), handleY, SCROLLBAR_WIDTH, SCROLLBAR_HANDLE_HEIGHT);
+            // 1.20.1 lacks blitSprite/sprite-atlas access — draw a flat handle.
+            int color = enabled ? 0xFFB0B0B0 : 0xFF606060;
+            g.fill(getX(), handleY, getX() + SCROLLBAR_WIDTH, handleY + SCROLLBAR_HANDLE_HEIGHT, color);
+            g.fill(getX(), handleY, getX() + SCROLLBAR_WIDTH, handleY + 1, 0xFFFFFFFF);
+            g.fill(getX(), handleY + SCROLLBAR_HANDLE_HEIGHT - 1,
+                    getX() + SCROLLBAR_WIDTH, handleY + SCROLLBAR_HANDLE_HEIGHT, 0xFF000000);
         }
 
         @Override
@@ -2012,8 +2014,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-            return handleScroll(scrollY);
+        public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
+            return handleScroll(delta);
         }
 
         @Override
@@ -2021,15 +2023,15 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double delta) {
         // Forward wheel events anywhere over the GUI to the active list-tab
         // scrollbar so the user doesn't have to aim at the 12-px gutter —
         // spinning the wheel while hovering the row buttons or panel chrome
         // still scrolls the list.
-        if (currentScrollbar != null && currentScrollbar.handleScroll(scrollY)) {
+        if (currentScrollbar != null && currentScrollbar.handleScroll(delta)) {
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, delta);
     }
 
 }
