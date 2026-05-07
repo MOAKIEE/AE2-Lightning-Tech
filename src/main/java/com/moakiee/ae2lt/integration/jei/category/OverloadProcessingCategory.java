@@ -7,7 +7,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -35,8 +35,8 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     public static final RecipeType<OverloadProcessingRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "overload_processing", OverloadProcessingRecipe.class);
 
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/overload_processing_factory.png");
+    private static final Identifier BACKGROUND_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/overload_processing_factory.png");
 
     private static final int BACKGROUND_U = 4;
     private static final int BACKGROUND_V = 14;

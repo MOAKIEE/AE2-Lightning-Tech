@@ -9,7 +9,7 @@ import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
@@ -25,13 +25,13 @@ public final class SourcePatternSnapshot {
     private static final String TAG_STACK = "Stack";
     private static final String TAG_CUSTOM_DATA = "CustomData";
 
-    private final ResourceLocation itemId;
+    private final Identifier itemId;
     @Nullable
     private final CompoundTag serializedStackTag;
     @Nullable
     private final CompoundTag customDataTag;
 
-    public SourcePatternSnapshot(ResourceLocation itemId,
+    public SourcePatternSnapshot(Identifier itemId,
                                  @Nullable CompoundTag serializedStackTag,
                                  @Nullable CompoundTag customDataTag) {
         this.itemId = Objects.requireNonNull(itemId, "itemId");
@@ -54,7 +54,7 @@ public final class SourcePatternSnapshot {
         return new SourcePatternSnapshot(itemId, stackTag, null);
     }
 
-    public ResourceLocation itemId() {
+    public Identifier itemId() {
         return itemId;
     }
 
@@ -95,11 +95,11 @@ public final class SourcePatternSnapshot {
     }
 
     public static SourcePatternSnapshot fromTag(CompoundTag tag) {
-        ResourceLocation itemId;
+        Identifier itemId;
         if (tag.contains(TAG_ITEM, Tag.TAG_STRING)) {
-            itemId = ResourceLocation.parse(tag.getString(TAG_ITEM));
+            itemId = Identifier.parse(tag.getString(TAG_ITEM));
         } else if (tag.contains(TAG_STACK, Tag.TAG_COMPOUND)) {
-            itemId = ResourceLocation.parse(tag.getCompound(TAG_STACK).getString("id"));
+            itemId = Identifier.parse(tag.getCompound(TAG_STACK).getString("id"));
         } else {
             throw new IllegalArgumentException("source pattern snapshot is missing an item id");
         }

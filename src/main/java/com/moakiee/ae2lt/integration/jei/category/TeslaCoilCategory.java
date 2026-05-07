@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 
@@ -51,17 +51,17 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     private static final int TEXT_COLOR = 0x404040;
     private static final int[] TEXT_LINES = {34, 46, 58, 70};
 
-    private static final ResourceLocation ARROW_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+    private static final Identifier ARROW_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
     private static final int ARROW_U = 176;
     private static final int ARROW_V = 18;
     private static final int ARROW_TEX_W = 256;
     private static final int ARROW_TEX_H = 256;
 
-    private static final ResourceLocation HV_LIGHTNING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/high_voltage_lightning.png");
-    private static final ResourceLocation EHV_LIGHTNING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/extreme_high_voltage_lightning.png");
+    private static final Identifier HV_LIGHTNING_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/high_voltage_lightning.png");
+    private static final Identifier EHV_LIGHTNING_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/extreme_high_voltage_lightning.png");
 
     private final IDrawable icon;
 
@@ -177,7 +177,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
                 ARROW_TEX_H);
     }
 
-    private static void drawLightningIcon(GuiGraphics guiGraphics, ResourceLocation texture, int x, int y) {
+    private static void drawLightningIcon(GuiGraphics guiGraphics, Identifier texture, int x, int y) {
         int frame = (int) ((Util.getMillis() / ICON_FRAME_MS) % ICON_FRAMES);
         guiGraphics.blit(
                 texture,

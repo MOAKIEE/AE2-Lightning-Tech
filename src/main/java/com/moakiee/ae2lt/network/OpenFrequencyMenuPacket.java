@@ -11,7 +11,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -19,7 +19,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record OpenFrequencyMenuPacket(int token, BlockPos blockPos) implements CustomPacketPayload {
     public static final Type<OpenFrequencyMenuPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "open_frequency_menu"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "open_frequency_menu"));
 
     public static final StreamCodec<FriendlyByteBuf, OpenFrequencyMenuPacket> STREAM_CODEC =
             StreamCodec.of(OpenFrequencyMenuPacket::encode, OpenFrequencyMenuPacket::decode);

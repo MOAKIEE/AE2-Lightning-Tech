@@ -31,14 +31,14 @@ import mezz.jei.api.registration.IRecipeCategoryRegistration;
 import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.fml.ModList;
 
 @JeiPlugin
 public class JEIPlugin implements IModPlugin {
-    private static final ResourceLocation ID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "jei_plugin");
+    private static final Identifier ID =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "jei_plugin");
     private static final String AE2_JEI_INTEGRATION_MODID = "ae2jeiintegration";
 
     public JEIPlugin() {
@@ -48,7 +48,7 @@ public class JEIPlugin implements IModPlugin {
     }
 
     @Override
-    public ResourceLocation getPluginUid() {
+    public Identifier getPluginUid() {
         return ID;
     }
 

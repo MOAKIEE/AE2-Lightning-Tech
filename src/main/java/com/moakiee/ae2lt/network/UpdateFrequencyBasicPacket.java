@@ -8,7 +8,7 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -30,7 +30,7 @@ public record UpdateFrequencyBasicPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<UpdateFrequencyBasicPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "update_frequency_basic"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "update_frequency_basic"));
 
     public static final StreamCodec<FriendlyByteBuf, UpdateFrequencyBasicPacket> STREAM_CODEC =
             StreamCodec.of(UpdateFrequencyBasicPacket::encode, UpdateFrequencyBasicPacket::decode);

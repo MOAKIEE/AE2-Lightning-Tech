@@ -31,7 +31,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.neoforged.neoforge.network.PacketDistributor;
 
@@ -129,13 +129,13 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      *   <li>{@code wireless_overloaded_form.png} — clean panel for create / settings.</li>
      * </ul>
      */
-    private static final ResourceLocation BG_HOME = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BG_HOME = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/wireless_overloaded_home.png");
-    private static final ResourceLocation BG_SELECTION = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BG_SELECTION = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/wireless_overloaded_selection.png");
-    private static final ResourceLocation BG_LIST = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BG_LIST = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/wireless_overloaded_list.png");
-    private static final ResourceLocation BG_FORM = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier BG_FORM = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/wireless_overloaded_form.png");
     private static final int TEXTURE_SIZE = 256;
 
@@ -638,7 +638,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // (short-circuits on `icon == null`), leaving the surface clean
             // for our PNG overlay. Only TAB_SETTING has customIcon == null
             // and falls back to the AE2 sprite.
-            ResourceLocation customIcon = customIconFor(tab);
+            Identifier customIcon = customIconFor(tab);
             Icon baseIcon = customIcon != null ? null : iconFor(tab);
             Component tooltip = Component.translatable(tab.getTranslationKey());
             Button.OnPress onPress = popup
@@ -678,9 +678,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * same (3, 3) offset used by the AE2 atlas icon.</p>
      */
     private static final class HoverableTabButton extends TabButton {
-        private final ResourceLocation customIcon;
+        private final Identifier customIcon;
 
-        HoverableTabButton(Icon icon, ResourceLocation customIcon,
+        HoverableTabButton(Icon icon, Identifier customIcon,
                 Component tooltip, Button.OnPress onPress) {
             super(icon, tooltip, onPress);
             this.customIcon = customIcon;
@@ -734,7 +734,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * the AE2 {@link Icon} from {@link #iconFor} should be the visible
      * sprite — currently only TAB_SETTING keeps the AE2 cog.
      */
-    private static ResourceLocation customIconFor(FrequencyNavigationTab tab) {
+    private static Identifier customIconFor(FrequencyNavigationTab tab) {
         return switch (tab) {
             case TAB_HOME       -> TAB_ICON_HOME;
             case TAB_SELECTION  -> TAB_ICON_SELECTION;
@@ -745,15 +745,15 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         };
     }
 
-    private static final ResourceLocation TAB_ICON_HOME = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier TAB_ICON_HOME = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/buttons/menu.png");
-    private static final ResourceLocation TAB_ICON_SELECTION = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier TAB_ICON_SELECTION = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/buttons/frequency_select.png");
-    private static final ResourceLocation TAB_ICON_CONNECTION = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier TAB_ICON_CONNECTION = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/buttons/frequency_connect.png");
-    private static final ResourceLocation TAB_ICON_MEMBER = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier TAB_ICON_MEMBER = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/buttons/frequency_member.png");
-    private static final ResourceLocation TAB_ICON_CREATE = ResourceLocation.fromNamespaceAndPath(
+    private static final Identifier TAB_ICON_CREATE = Identifier.fromNamespaceAndPath(
             AE2LightningTech.MODID, "textures/gui/buttons/frequency_add.png");
 
     private void switchTab(FrequencyNavigationTab tab) {
@@ -1389,7 +1389,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * a search-field strip below, the home tab gets the wide info shelf,
      * and create / settings get the blank form panel.
      */
-    private static ResourceLocation backgroundTextureForTab(FrequencyNavigationTab tab) {
+    private static Identifier backgroundTextureForTab(FrequencyNavigationTab tab) {
         return switch (tab) {
             case TAB_HOME -> BG_HOME;
             case TAB_SELECTION -> BG_SELECTION;
@@ -1968,9 +1968,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         @Override
         protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             boolean enabled = maxOffset() > 0;
-            ResourceLocation sprite = enabled
-                    ? ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller")
-                    : ResourceLocation.fromNamespaceAndPath("ae2", "big_scroller_disabled");
+            Identifier sprite = enabled
+                    ? Identifier.fromNamespaceAndPath("ae2", "big_scroller")
+                    : Identifier.fromNamespaceAndPath("ae2", "big_scroller_disabled");
             int availH = Math.max(0, getHeight() - SCROLLBAR_HANDLE_HEIGHT);
             int handleY = enabled
                     ? getY() + scrollOffset * availH / maxOffset()

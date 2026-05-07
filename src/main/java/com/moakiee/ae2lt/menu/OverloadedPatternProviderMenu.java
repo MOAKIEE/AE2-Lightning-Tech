@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.menu;
 
 import java.util.List;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 
@@ -25,7 +25,7 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu implement
 
     public static final MenuType<OverloadedPatternProviderMenu> TYPE = MenuTypeBuilder
             .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class)
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
+            .buildUnregistered(Identifier.fromNamespaceAndPath(
                     AE2LightningTech.MODID, "overloaded_pattern_provider"));
 
     private static final int SLOTS_PER_PAGE = 36;

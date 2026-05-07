@@ -10,7 +10,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -21,7 +21,7 @@ public record SelectFrequencyPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<SelectFrequencyPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "select_frequency"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "select_frequency"));
 
     public static final StreamCodec<FriendlyByteBuf, SelectFrequencyPacket> STREAM_CODEC =
             StreamCodec.of(SelectFrequencyPacket::encode, SelectFrequencyPacket::decode);

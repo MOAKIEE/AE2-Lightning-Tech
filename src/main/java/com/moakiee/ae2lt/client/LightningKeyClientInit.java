@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.client;
 
 import net.minecraft.client.renderer.item.ItemProperties;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FastColor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,12 +31,12 @@ public final class LightningKeyClientInit {
 
             ItemProperties.register(
                     ModItems.ELECTRO_CHIME_CRYSTAL.get(),
-                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "catalysis_stage"),
+                    Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "catalysis_stage"),
                     (stack, level, entity, seed) -> ElectroChimeCrystalItem.getCatalysisStage(stack) * 0.25F);
 
             ItemProperties.register(
                     ModItems.MYSTERIOUS_CELL.get(),
-                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "cell_type"),
+                    Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "cell_type"),
                     (stack, level, entity, seed) -> {
                         if (!FixedInfiniteCellItem.hasType(stack)) {
                             return 0.0F;

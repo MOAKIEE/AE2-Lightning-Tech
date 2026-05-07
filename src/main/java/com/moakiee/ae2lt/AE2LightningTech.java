@@ -28,7 +28,7 @@ import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem.CellOutcome;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -648,7 +648,7 @@ public class AE2LightningTech {
     }
 
     private static void registerAppliedFluxInductionCardCompat() {
-        var inductionId = ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
+        var inductionId = Identifier.fromNamespaceAndPath("appflux", "induction_card");
         Item inductionCard = net.minecraft.core.registries.BuiltInRegistries.ITEM.get(inductionId);
         if (inductionCard == null || inductionCard == net.minecraft.world.item.Items.AIR) {
             return;

@@ -19,7 +19,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -348,7 +348,7 @@ public final class WirelessFrequencyManager extends SavedData {
             CompoundTag entry = txList.getCompound(i);
             int freqId = entry.getInt("freqId");
             var dimKey = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(entry.getString("dim")));
+                    Identifier.parse(entry.getString("dim")));
             BlockPos pos = BlockPos.of(entry.getLong("pos"));
             boolean adv = entry.getBoolean("advanced");
             transmitters.put(freqId, new TransmitterEntry(dimKey, pos, null, adv));
@@ -359,7 +359,7 @@ public final class WirelessFrequencyManager extends SavedData {
             CompoundTag entry = devList.getCompound(i);
             int freqId = entry.getInt("freqId");
             var dimKey = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(entry.getString("dim")));
+                    Identifier.parse(entry.getString("dim")));
             BlockPos pos = BlockPos.of(entry.getLong("pos"));
             boolean ctrl = entry.getBoolean("controller");
             boolean adv = entry.getBoolean("advanced");

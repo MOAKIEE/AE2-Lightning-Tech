@@ -8,7 +8,7 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import appeng.client.gui.widgets.ITooltip;
 
@@ -24,7 +24,7 @@ import appeng.client.gui.widgets.ITooltip;
  */
 public class LightningStatusIconWidget extends AbstractWidget implements ITooltip {
 
-    public static final ResourceLocation ICON = ResourceLocation.fromNamespaceAndPath(
+    public static final Identifier ICON = Identifier.fromNamespaceAndPath(
             "ae2lt", "textures/gui/buttons/lightning.png");
     public static final int SIZE = 16;
 

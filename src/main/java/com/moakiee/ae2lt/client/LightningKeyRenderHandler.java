@@ -9,7 +9,7 @@ import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 
@@ -22,16 +22,16 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 public final class LightningKeyRenderHandler implements AEKeyRenderHandler<LightningKey> {
     public static final LightningKeyRenderHandler INSTANCE = new LightningKeyRenderHandler();
 
-    private static final ResourceLocation HIGH_VOLTAGE_SPRITE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "item/high_voltage_lightning");
-    private static final ResourceLocation EXTREME_HIGH_VOLTAGE_SPRITE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "item/extreme_high_voltage_lightning");
+    private static final Identifier HIGH_VOLTAGE_SPRITE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "item/high_voltage_lightning");
+    private static final Identifier EXTREME_HIGH_VOLTAGE_SPRITE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "item/extreme_high_voltage_lightning");
 
     private LightningKeyRenderHandler() {
     }
 
     private static TextureAtlasSprite spriteFor(LightningKey stack) {
-        ResourceLocation id = stack.tier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
+        Identifier id = stack.tier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
                 ? EXTREME_HIGH_VOLTAGE_SPRITE
                 : HIGH_VOLTAGE_SPRITE;
         return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(id);

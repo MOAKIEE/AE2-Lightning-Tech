@@ -10,7 +10,7 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -26,7 +26,7 @@ public record SyncFrequencyListPacket(List<FrequencyEntry> entries) implements C
                                   java.util.UUID ownerUUID, FrequencySecurityLevel security) {}
 
     public static final Type<SyncFrequencyListPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "sync_frequency_list"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "sync_frequency_list"));
 
     public static final StreamCodec<FriendlyByteBuf, SyncFrequencyListPacket> STREAM_CODEC =
             StreamCodec.of(SyncFrequencyListPacket::encode, SyncFrequencyListPacket::decode);

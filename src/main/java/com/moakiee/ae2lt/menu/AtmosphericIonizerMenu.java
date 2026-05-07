@@ -15,7 +15,7 @@ import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
@@ -26,7 +26,7 @@ public class AtmosphericIonizerMenu extends AEBaseMenu implements FrequencyBindi
     public static final MenuType<AtmosphericIonizerMenu> TYPE = MenuTypeBuilder
             .create(AtmosphericIonizerMenu::new, AtmosphericIonizerBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.atmospheric_ionizer"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "atmospheric_ionizer"));
+            .buildUnregistered(Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "atmospheric_ionizer"));
 
     @GuiSync(50)
     public long consumedEnergy;

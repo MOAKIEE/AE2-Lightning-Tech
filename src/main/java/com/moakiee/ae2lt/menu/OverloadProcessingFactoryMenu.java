@@ -6,7 +6,7 @@ import java.util.List;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -39,7 +39,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
     public static final MenuType<OverloadProcessingFactoryMenu> TYPE = MenuTypeBuilder
             .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
+            .buildUnregistered(Identifier.fromNamespaceAndPath(
                     AE2LightningTech.MODID,
                     "overload_processing_factory"));
 

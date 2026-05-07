@@ -7,7 +7,7 @@ import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -35,8 +35,8 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     public static final RecipeType<CrystalCatalyzerRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "crystal_catalyzer", CrystalCatalyzerRecipe.class);
 
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+    private static final Identifier BACKGROUND_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
 
     // 机器 GUI 坐标:流体腔 (26,18)+16×53,催化剂槽 (56,30),矩阵槽 (84,54),
     // 进度条 (74,33)+22×16,产物槽 (117,30),能量条 (140,30)+6×18。

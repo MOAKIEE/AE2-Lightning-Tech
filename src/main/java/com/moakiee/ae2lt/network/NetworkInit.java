@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
@@ -65,7 +65,7 @@ public final class NetworkInit {
                 FrequencyResponsePacket::handle);
     }
 
-    public static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, path);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, path);
     }
 }

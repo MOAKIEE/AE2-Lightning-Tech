@@ -8,7 +8,7 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
@@ -19,7 +19,7 @@ public record ChangeMemberPacket(
 ) implements CustomPacketPayload {
 
     public static final Type<ChangeMemberPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "change_member"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "change_member"));
 
     public static final StreamCodec<FriendlyByteBuf, ChangeMemberPacket> STREAM_CODEC =
             StreamCodec.of(ChangeMemberPacket::encode, ChangeMemberPacket::decode);

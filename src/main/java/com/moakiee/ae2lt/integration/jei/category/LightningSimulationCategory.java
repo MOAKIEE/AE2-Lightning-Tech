@@ -6,7 +6,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -32,8 +32,8 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     public static final RecipeType<LightningSimulationRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "lightning_simulation", LightningSimulationRecipe.class);
 
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
+    private static final Identifier BACKGROUND_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
 
     // Crop the machine GUI work area without clipping the input slots or reaction chamber border.
     private static final int BACKGROUND_U = 5;

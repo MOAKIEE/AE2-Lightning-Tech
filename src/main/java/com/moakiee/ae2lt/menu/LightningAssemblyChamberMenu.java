@@ -5,7 +5,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ClickType;
@@ -28,7 +28,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
     public static final MenuType<LightningAssemblyChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
+            .buildUnregistered(Identifier.fromNamespaceAndPath(
                     AE2LightningTech.MODID,
                     "lightning_assembly_chamber"));
 

@@ -17,7 +17,7 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModItems;
 
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.MenuType;
@@ -28,7 +28,7 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
     public static final MenuType<LightningCollectorMenu> TYPE = MenuTypeBuilder
             .create(LightningCollectorMenu::new, LightningCollectorBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_collector"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning_collector"));
+            .buildUnregistered(Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning_collector"));
 
     @GuiSync(30)
     public int catalysisValue;

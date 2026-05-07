@@ -13,7 +13,7 @@
  *   <li>All public type signatures in {@code com.moakiee.ae2lt.api.*}</li>
  *   <li>{@link com.moakiee.ae2lt.api.lightning.LightningTier} constants and their
  *       serialized names ({@code "high_voltage"}, {@code "extreme_high_voltage"})</li>
- *   <li>{@link com.moakiee.ae2lt.api.AE2LTCapabilities} {@code ResourceLocation}s</li>
+ *   <li>{@link com.moakiee.ae2lt.api.AE2LTCapabilities} {@code Identifier}s</li>
  *   <li>The block entity and recipe IDs in
  *       {@link com.moakiee.ae2lt.api.ids}</li>
  *   <li>The fields and trigger timing of

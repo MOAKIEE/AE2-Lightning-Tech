@@ -9,7 +9,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
@@ -23,7 +23,7 @@ public final class OverloadProcessingLockedRecipe {
     private static final String TAG_PARALLEL = "Parallel";
     private static final String TAG_INPUTS = "InputConsumptions";
 
-    private final ResourceLocation recipeId;
+    private final Identifier recipeId;
     private final long totalEnergy;
     private final long totalLightningCost;
     private final LightningKey.Tier lightningTier;
@@ -31,7 +31,7 @@ public final class OverloadProcessingLockedRecipe {
     private final int[] inputConsumptions;
 
     public OverloadProcessingLockedRecipe(
-            ResourceLocation recipeId,
+            Identifier recipeId,
             long totalEnergy,
             long totalLightningCost,
             LightningKey.Tier lightningTier,
@@ -69,7 +69,7 @@ public final class OverloadProcessingLockedRecipe {
                 candidate.match().inputConsumptions());
     }
 
-    public ResourceLocation recipeId() {
+    public Identifier recipeId() {
         return recipeId;
     }
 
@@ -129,7 +129,7 @@ public final class OverloadProcessingLockedRecipe {
                 ? LightningKey.Tier.fromSerializedName(tag.getString(TAG_LIGHTNING_TIER))
                 : OverloadProcessingRecipe.DEFAULT_LIGHTNING_TIER;
         return new OverloadProcessingLockedRecipe(
-                ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
+                Identifier.parse(tag.getString(TAG_RECIPE_ID)),
                 totalEnergy,
                 totalLightningCost,
                 lightningTier,

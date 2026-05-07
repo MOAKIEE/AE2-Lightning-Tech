@@ -11,7 +11,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -20,13 +20,13 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.api.lightning.LightningTier;
 
 public final class LightningKey extends AEKey {
-    public static final ResourceLocation TYPE_ID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning");
-    public static final ResourceLocation ID = TYPE_ID;
-    public static final ResourceLocation HIGH_VOLTAGE_ID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "high_voltage_lightning");
-    public static final ResourceLocation EXTREME_HIGH_VOLTAGE_ID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "extreme_high_voltage_lightning");
+    public static final Identifier TYPE_ID =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning");
+    public static final Identifier ID = TYPE_ID;
+    public static final Identifier HIGH_VOLTAGE_ID =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "high_voltage_lightning");
+    public static final Identifier EXTREME_HIGH_VOLTAGE_ID =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "extreme_high_voltage_lightning");
 
     public static final LightningKey HIGH_VOLTAGE = new LightningKey(Tier.HIGH_VOLTAGE);
     public static final LightningKey EXTREME_HIGH_VOLTAGE = new LightningKey(Tier.EXTREME_HIGH_VOLTAGE);
@@ -152,7 +152,7 @@ public final class LightningKey extends AEKey {
     }
 
     @Override
-    public ResourceLocation getId() {
+    public Identifier getId() {
         return this.tier == Tier.EXTREME_HIGH_VOLTAGE ? EXTREME_HIGH_VOLTAGE_ID : HIGH_VOLTAGE_ID;
     }
 

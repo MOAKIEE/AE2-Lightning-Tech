@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.api;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.ItemCapability;
 
@@ -14,7 +14,7 @@ import com.moakiee.ae2lt.api.lightning.ILightningEnergyHandler;
  * Public AE2 Lightning Tech capabilities, modeled on
  * {@code appeng.api.AECapabilities}.
  *
- * <p>The {@link ResourceLocation}s used to register these capabilities are part of
+ * <p>The {@link Identifier}s used to register these capabilities are part of
  * the frozen API contract:
  * <ul>
  *   <li>{@code ae2lt:lightning_energy} for {@link #LIGHTNING_ENERGY_BLOCK}</li>
@@ -35,7 +35,7 @@ public final class AE2LTCapabilities {
      */
     public static final BlockCapability<ILightningEnergyHandler, @Nullable Direction>
             LIGHTNING_ENERGY_BLOCK = BlockCapability.createSided(
-                    ResourceLocation.fromNamespaceAndPath(
+                    Identifier.fromNamespaceAndPath(
                             AE2LTBlockEntityIds.MOD_ID, "lightning_energy"),
                     ILightningEnergyHandler.class);
 
@@ -47,7 +47,7 @@ public final class AE2LTCapabilities {
      */
     public static final ItemCapability<ILightningEnergyHandler, Void>
             LIGHTNING_ENERGY_ITEM = ItemCapability.createVoid(
-                    ResourceLocation.fromNamespaceAndPath(
+                    Identifier.fromNamespaceAndPath(
                             AE2LTBlockEntityIds.MOD_ID, "lightning_energy_item"),
                     ILightningEnergyHandler.class);
 

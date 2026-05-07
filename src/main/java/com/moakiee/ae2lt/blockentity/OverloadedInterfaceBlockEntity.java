@@ -38,7 +38,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -169,7 +169,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(
                     net.minecraft.core.registries.Registries.DIMENSION,
-                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+                    Identifier.parse(tag.getString(TAG_DIM)));
             return new WirelessConnection(
                     dim, BlockPos.of(tag.getLong(TAG_POS)),
                     Direction.from3DDataValue(tag.getInt(TAG_FACE)));
@@ -1790,7 +1790,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         data.writeVarInt(connections.size());
         for (var c : connections) {
-            data.writeResourceLocation(c.dimension().location());
+            data.writeIdentifier(c.dimension().location());
             data.writeBlockPos(c.pos());
             data.writeByte(c.boundFace().get3DDataValue());
         }
@@ -1830,7 +1830,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var newConnections = new ArrayList<WirelessConnection>(count);
         for (int i = 0; i < count; i++) {
             var dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
-                    data.readResourceLocation());
+                    data.readIdentifier());
             var pos = data.readBlockPos();
             var face = Direction.from3DDataValue(data.readByte());
             newConnections.add(new WirelessConnection(dim, pos, face));

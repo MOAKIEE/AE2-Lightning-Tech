@@ -5,13 +5,13 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.LayeredDraw;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 public final class EasterEggOverlay implements LayeredDraw.Layer {
     public static final EasterEggOverlay INSTANCE = new EasterEggOverlay();
 
-    private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/gui/easter_egg.png");
+    private static final Identifier TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/gui/easter_egg.png");
 
     private static final int DISPLAY_TICKS = 40;
 

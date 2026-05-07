@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -30,8 +30,8 @@ import appeng.api.storage.MEStorage;
  */
 public final class AppFluxBridge {
 
-    private static final ResourceLocation INDUCTION_CARD_ID =
-            ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
+    private static final Identifier INDUCTION_CARD_ID =
+            Identifier.fromNamespaceAndPath("appflux", "induction_card");
 
     private static final boolean LOADED;
 

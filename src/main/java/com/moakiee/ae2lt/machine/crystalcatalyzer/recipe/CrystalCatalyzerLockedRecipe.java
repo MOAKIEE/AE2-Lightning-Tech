@@ -7,7 +7,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -17,13 +17,13 @@ public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_ENERGY = "Energy";
     private static final String TAG_OUTPUT_MULTIPLIER = "OutputMultiplier";
 
-    private final ResourceLocation recipeId;
+    private final Identifier recipeId;
     private final ItemStack output;
     private final int energyPerCycle;
     private final int outputMultiplier;
 
     public CrystalCatalyzerLockedRecipe(
-            ResourceLocation recipeId,
+            Identifier recipeId,
             ItemStack output,
             int energyPerCycle,
             int outputMultiplier) {
@@ -54,7 +54,7 @@ public final class CrystalCatalyzerLockedRecipe {
                 outputMultiplier);
     }
 
-    public ResourceLocation recipeId() {
+    public Identifier recipeId() {
         return recipeId;
     }
 
@@ -115,7 +115,7 @@ public final class CrystalCatalyzerLockedRecipe {
         }
 
         return new CrystalCatalyzerLockedRecipe(
-                ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
+                Identifier.parse(tag.getString(TAG_RECIPE_ID)),
                 output,
                 energy,
                 outputMultiplier);

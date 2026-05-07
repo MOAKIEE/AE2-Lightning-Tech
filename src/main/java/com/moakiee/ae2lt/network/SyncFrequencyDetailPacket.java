@@ -9,7 +9,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,7 +26,7 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
     public static final byte TYPE_CONNECTIONS = 10;
 
     public static final Type<SyncFrequencyDetailPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "sync_frequency_detail"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "sync_frequency_detail"));
 
     public static final StreamCodec<FriendlyByteBuf, SyncFrequencyDetailPacket> STREAM_CODEC =
             StreamCodec.of(SyncFrequencyDetailPacket::encode, SyncFrequencyDetailPacket::decode);

@@ -20,7 +20,7 @@ import com.moakiee.ae2lt.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -98,7 +98,7 @@ public final class ResearchRitualService {
             return;
         }
 
-        List<ResourceLocation> thrownSequence = candidates.stream()
+        List<Identifier> thrownSequence = candidates.stream()
                 .map(itemEntity -> BuiltInRegistries.ITEM.getKey(itemEntity.getItem().getItem()))
                 .toList();
         LOG.debug("[ae2lt/ritual] tryHandleIonizer: thrown sequence (oldest->newest) = {}", thrownSequence);
@@ -195,16 +195,16 @@ public final class ResearchRitualService {
         };
     }
 
-    private static boolean sameMultiset(List<ResourceLocation> left, List<ResourceLocation> right) {
+    private static boolean sameMultiset(List<Identifier> left, List<Identifier> right) {
         if (left.size() != right.size()) {
             return false;
         }
 
-        Map<ResourceLocation, Integer> counts = new HashMap<>();
-        for (ResourceLocation id : left) {
+        Map<Identifier, Integer> counts = new HashMap<>();
+        for (Identifier id : left) {
             counts.merge(id, 1, Integer::sum);
         }
-        for (ResourceLocation id : right) {
+        for (Identifier id : right) {
             Integer current = counts.get(id);
             if (current == null) {
                 return false;

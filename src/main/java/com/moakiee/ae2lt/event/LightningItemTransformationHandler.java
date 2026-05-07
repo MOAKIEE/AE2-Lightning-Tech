@@ -7,7 +7,7 @@ import com.moakiee.ae2lt.logic.research.ResearchRitualService;
 import com.moakiee.ae2lt.network.EasterEggPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LightningBolt;
@@ -23,8 +23,8 @@ import net.neoforged.neoforge.network.PacketDistributor;
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class LightningItemTransformationHandler {
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.lightning_item_transform_checked";
-    private static final ResourceLocation FUMO_BLOCK_ID =
-            ResourceLocation.fromNamespaceAndPath("appliedcreate", "whichball_skin_doll");
+    private static final Identifier FUMO_BLOCK_ID =
+            Identifier.fromNamespaceAndPath("appliedcreate", "whichball_skin_doll");
     private static final int EASTER_EGG_SEARCH_RADIUS = 3;
 
     private LightningItemTransformationHandler() {

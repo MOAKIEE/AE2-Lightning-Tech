@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.menu;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -39,7 +39,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
     public static final MenuType<OverloadPatternEncoderMenu> TYPE = MenuTypeBuilder
             .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class)
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
+            .buildUnregistered(Identifier.fromNamespaceAndPath(
                     AE2LightningTech.MODID, "overload_pattern_encoder"));
 
     public static final int MAX_INPUT_SLOTS = 18;

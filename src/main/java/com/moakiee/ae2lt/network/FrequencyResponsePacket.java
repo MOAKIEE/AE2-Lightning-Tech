@@ -7,7 +7,7 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 public record FrequencyResponsePacket(int responseCode) implements CustomPacketPayload {
@@ -19,7 +19,7 @@ public record FrequencyResponsePacket(int responseCode) implements CustomPacketP
     public static final int FREQUENCY_IN_USE = 5;
 
     public static final Type<FrequencyResponsePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "frequency_response"));
+            new Type<>(Identifier.fromNamespaceAndPath("ae2lt", "frequency_response"));
 
     public static final StreamCodec<FriendlyByteBuf, FrequencyResponsePacket> STREAM_CODEC =
             StreamCodec.of(FrequencyResponsePacket::encode, FrequencyResponsePacket::decode);

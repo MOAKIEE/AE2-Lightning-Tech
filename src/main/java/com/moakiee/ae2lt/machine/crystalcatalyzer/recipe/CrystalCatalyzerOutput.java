@@ -12,7 +12,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -67,7 +67,7 @@ public sealed interface CrystalCatalyzerOutput
             }
             case OfTag tag -> {
                 buf.writeBoolean(true);
-                buf.writeResourceLocation(tag.tag().location());
+                buf.writeIdentifier(tag.tag().location());
                 ByteBufCodecs.VAR_INT.encode(buf, tag.count());
             }
         }
@@ -75,7 +75,7 @@ public sealed interface CrystalCatalyzerOutput
 
     private static CrystalCatalyzerOutput decode(RegistryFriendlyByteBuf buf) {
         if (buf.readBoolean()) {
-            ResourceLocation tagId = buf.readResourceLocation();
+            Identifier tagId = buf.readIdentifier();
             int count = ByteBufCodecs.VAR_INT.decode(buf);
             return new OfTag(TagKey.create(BuiltInRegistries.ITEM.key(), tagId), count);
         }

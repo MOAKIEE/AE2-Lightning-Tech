@@ -6,7 +6,7 @@ import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 
@@ -31,8 +31,8 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
     public static final RecipeType<LightningAssemblyRecipe> TYPE =
             RecipeType.create(AE2LightningTech.MODID, "lightning_assembly", LightningAssemblyRecipe.class);
 
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
+    private static final Identifier BACKGROUND_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
 
     // Crop the machine GUI work area for JEI without clipping the bottom input row or output slot.
     private static final int BACKGROUND_U = 19;

@@ -17,7 +17,7 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -121,7 +121,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+                    Identifier.parse(tag.getString(TAG_DIM)));
             var pos = BlockPos.of(tag.getLong(TAG_POS));
             var face = Direction.from3DDataValue(tag.getInt(TAG_FACE));
             return new WirelessConnection(dim, pos, face);
@@ -448,7 +448,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         data.writeBoolean(filteredImport);
         data.writeVarInt(connections.size());
         for (var conn : connections) {
-            data.writeResourceLocation(conn.dimension().location());
+            data.writeIdentifier(conn.dimension().location());
             data.writeBlockPos(conn.pos());
             data.writeByte(conn.boundFace().get3DDataValue());
         }
@@ -473,7 +473,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         int count = data.readVarInt();
         var newConns = new ArrayList<WirelessConnection>(Math.min(count, MAX_WIRELESS_CONNECTIONS));
         for (int i = 0; i < count; i++) {
-            var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
+            var dim = ResourceKey.create(Registries.DIMENSION, data.readIdentifier());
             var pos = data.readBlockPos();
             var face = Direction.from3DDataValue(data.readByte());
             if (newConns.size() < MAX_WIRELESS_CONNECTIONS) {

@@ -9,7 +9,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
@@ -25,7 +25,7 @@ public final class LightningSimulationLockedRecipe {
     private static final String TAG_LEGACY_DUST_COST = "DustCost";
     private static final String TAG_INPUTS = "InputConsumptions";
 
-    private final ResourceLocation recipeId;
+    private final Identifier recipeId;
     private final ItemStack result;
     private final long totalEnergy;
     private final int lightningCost;
@@ -33,7 +33,7 @@ public final class LightningSimulationLockedRecipe {
     private final int[] inputConsumptions;
 
     public LightningSimulationLockedRecipe(
-            ResourceLocation recipeId,
+            Identifier recipeId,
             ItemStack result,
             long totalEnergy,
             int lightningCost,
@@ -70,7 +70,7 @@ public final class LightningSimulationLockedRecipe {
                 candidate.match().inputConsumptions());
     }
 
-    public ResourceLocation recipeId() {
+    public Identifier recipeId() {
         return recipeId;
     }
 
@@ -141,7 +141,7 @@ public final class LightningSimulationLockedRecipe {
         }
 
         return new LightningSimulationLockedRecipe(
-                ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
+                Identifier.parse(tag.getString(TAG_RECIPE_ID)),
                 result,
                 totalEnergy,
                 lightningCost,

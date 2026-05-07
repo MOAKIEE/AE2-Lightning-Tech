@@ -14,7 +14,7 @@ import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -230,7 +230,7 @@ public final class ModItems {
     private static void registerStorageCellModel(DeferredItem<? extends Item> item) {
         StorageCellModels.registerModel(
                 item.get(),
-                ResourceLocation.fromNamespaceAndPath(
+                Identifier.fromNamespaceAndPath(
                         AE2LightningTech.MODID,
                         "block/drive/cells/" + item.getId().getPath()));
     }
@@ -238,7 +238,7 @@ public final class ModItems {
     private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {
         StorageCellModels.registerModel(
                 item.get(),
-                ResourceLocation.fromNamespaceAndPath("ae2", "block/drive/cells/" + modelName));
+                Identifier.fromNamespaceAndPath("ae2", "block/drive/cells/" + modelName));
     }
 
     private static DeferredItem<ColoredPartItem<OverloadedCablePart>> registerOverloadedCable(String id, AEColor color) {

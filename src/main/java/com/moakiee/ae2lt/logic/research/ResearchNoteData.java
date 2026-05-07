@@ -12,14 +12,14 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 
 public record ResearchNoteData(
         UUID ritualSeed,
         RitualGoal goal,
-        List<ResourceLocation> recipeItems,
+        List<Identifier> recipeItems,
         List<String> descriptionKeys,
         boolean consumed) {
 
@@ -71,7 +71,7 @@ public record ResearchNoteData(
             return null;
         }
 
-        List<ResourceLocation> recipeItems = readResourceLocationList(tag, TAG_RECIPE_ITEMS);
+        List<Identifier> recipeItems = readResourceLocationList(tag, TAG_RECIPE_ITEMS);
         List<String> descriptionKeys = readStringList(tag, TAG_DESCRIPTIONS);
         if (recipeItems.size() != 9 || descriptionKeys.size() != recipeItems.size()) {
             return null;
@@ -99,15 +99,15 @@ public record ResearchNoteData(
         return ritualSeed.toString().replace("-", "").substring(0, 4).toUpperCase(Locale.ROOT);
     }
 
-    private static List<ResourceLocation> readResourceLocationList(CompoundTag tag, String key) {
-        List<ResourceLocation> values = new ArrayList<>();
+    private static List<Identifier> readResourceLocationList(CompoundTag tag, String key) {
+        List<Identifier> values = new ArrayList<>();
         ListTag listTag = tag.getList(key, Tag.TAG_STRING);
         for (Tag element : listTag) {
             if (!(element instanceof StringTag stringTag)) {
                 continue;
             }
 
-            ResourceLocation id = ResourceLocation.tryParse(stringTag.getAsString());
+            Identifier id = Identifier.tryParse(stringTag.getAsString());
             if (id != null) {
                 values.add(id);
             }
@@ -126,9 +126,9 @@ public record ResearchNoteData(
         return values;
     }
 
-    private static ListTag writeResourceLocationList(List<ResourceLocation> values) {
+    private static ListTag writeResourceLocationList(List<Identifier> values) {
         ListTag listTag = new ListTag();
-        for (ResourceLocation value : values) {
+        for (Identifier value : values) {
             listTag.add(StringTag.valueOf(value.toString()));
         }
         return listTag;

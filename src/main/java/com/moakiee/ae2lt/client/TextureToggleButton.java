@@ -8,7 +8,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import appeng.client.gui.Icon;
 import appeng.client.gui.style.Blitter;
@@ -34,7 +34,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
  */
 public class TextureToggleButton extends Button implements ITooltip {
 
-    private final List<ResourceLocation> textures;
+    private final List<Identifier> textures;
     private final List<List<Component>> tooltips;
     private final Listener listener;
 
@@ -50,8 +50,8 @@ public class TextureToggleButton extends Button implements ITooltip {
         this.listener = listener;
     }
 
-    private static ResourceLocation texture(String path) {
-        return ResourceLocation.fromNamespaceAndPath(
+    private static Identifier texture(String path) {
+        return Identifier.fromNamespaceAndPath(
                 AE2LightningTech.MODID, "textures/gui/buttons/" + path + ".png");
     }
 
@@ -185,17 +185,17 @@ public class TextureToggleButton extends Button implements ITooltip {
         CRYSTAL_CATALYZER_MODE(texture("catalyzer_crystal_mode"), texture("catalyzer_dust_mode")),
         FREQUENCY_BIND(texture("frequency_select"));
 
-        private final List<ResourceLocation> textures;
+        private final List<Identifier> textures;
 
-        ButtonType(ResourceLocation texture) {
+        ButtonType(Identifier texture) {
             this.textures = List.of(texture);
         }
 
-        ButtonType(ResourceLocation textureOff, ResourceLocation textureOn) {
+        ButtonType(Identifier textureOff, Identifier textureOn) {
             this.textures = List.of(textureOff, textureOn);
         }
 
-        ButtonType(ResourceLocation textureOff, ResourceLocation textureOn, ResourceLocation textureEject) {
+        ButtonType(Identifier textureOff, Identifier textureOn, Identifier textureEject) {
             this.textures = List.of(textureOff, textureOn, textureEject);
         }
     }

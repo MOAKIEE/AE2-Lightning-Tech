@@ -5,7 +5,7 @@ import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import snownee.jade.api.BlockAccessor;
 import snownee.jade.api.IBlockComponentProvider;
 import snownee.jade.api.IServerDataProvider;
@@ -13,11 +13,11 @@ import snownee.jade.api.ITooltip;
 import snownee.jade.api.config.IPluginConfig;
 
 public class LightningCollectorJadeProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor> {
-    private static final ResourceLocation UID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning_collector");
+    private static final Identifier UID =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning_collector");
 
     @Override
-    public ResourceLocation getUid() {
+    public Identifier getUid() {
         return UID;
     }
 

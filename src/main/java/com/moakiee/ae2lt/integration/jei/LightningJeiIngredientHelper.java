@@ -7,7 +7,7 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import mezz.jei.api.ingredients.IIngredientHelper;
 import mezz.jei.api.ingredients.IIngredientType;
 import mezz.jei.api.ingredients.subtypes.UidContext;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 public class LightningJeiIngredientHelper implements IIngredientHelper<LightningKey> {
@@ -43,7 +43,7 @@ public class LightningJeiIngredientHelper implements IIngredientHelper<Lightning
     }
 
     @Override
-    public ResourceLocation getResourceLocation(LightningKey ingredient) {
+    public Identifier getIdentifier(LightningKey ingredient) {
         return ingredient.getId();
     }
 

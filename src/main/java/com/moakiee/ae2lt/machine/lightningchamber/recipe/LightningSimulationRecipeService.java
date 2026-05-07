@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
@@ -71,7 +71,7 @@ public final class LightningSimulationRecipeService {
         return Optional.empty();
     }
 
-    public static Optional<RecipeHolder<LightningSimulationRecipe>> findRecipeById(Level level, ResourceLocation recipeId) {
+    public static Optional<RecipeHolder<LightningSimulationRecipe>> findRecipeById(Level level, Identifier recipeId) {
         if (level == null || recipeId == null) {
             return Optional.empty();
         }

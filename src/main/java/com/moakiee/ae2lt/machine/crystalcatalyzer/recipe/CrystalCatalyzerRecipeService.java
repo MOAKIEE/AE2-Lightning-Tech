@@ -49,7 +49,7 @@ public final class CrystalCatalyzerRecipeService {
 
     public static Optional<CrystalCatalyzerRecipeCandidate> findRecipeById(
             @Nullable Level level,
-            net.minecraft.resources.ResourceLocation recipeId) {
+            net.minecraft.resources.Identifier recipeId) {
         if (level == null) {
             return Optional.empty();
         }

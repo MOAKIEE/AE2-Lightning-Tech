@@ -14,7 +14,7 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
@@ -49,7 +49,7 @@ public final class OverloadCpuState {
 
     private final OverloadCpuOwner owner;
     private final Map<PendingOverloadOutputKey, PendingOverloadOutput> pendingByKey = new LinkedHashMap<>();
-    private final Map<ResourceLocation, LinkedHashSet<PendingOverloadOutputKey>> pendingByItemId = new LinkedHashMap<>();
+    private final Map<Identifier, LinkedHashSet<PendingOverloadOutputKey>> pendingByItemId = new LinkedHashMap<>();
     private long nextSequence = 1L;
 
     public OverloadCpuState(OverloadCpuOwner owner) {
@@ -114,7 +114,7 @@ public final class OverloadCpuState {
         }
     }
 
-    public OverloadClaimResult claimByItemId(ResourceLocation itemId, long amount, boolean mutate) {
+    public OverloadClaimResult claimByItemId(Identifier itemId, long amount, boolean mutate) {
         Objects.requireNonNull(itemId, "itemId");
         if (amount <= 0) {
             return OverloadClaimResult.EMPTY;
@@ -163,7 +163,7 @@ public final class OverloadCpuState {
         return claimedAmount > 0 ? new OverloadClaimResult(claimedAmount, claims) : OverloadClaimResult.EMPTY;
     }
 
-    public long getRemainingForItem(ResourceLocation itemId) {
+    public long getRemainingForItem(Identifier itemId) {
         Objects.requireNonNull(itemId, "itemId");
         var keys = pendingByItemId.get(itemId);
         if (keys == null || keys.isEmpty()) {
@@ -230,7 +230,7 @@ public final class OverloadCpuState {
                     key,
                     owner,
                     patternReference,
-                    ResourceLocation.parse(pendingTag.getString(TAG_ITEM_ID)),
+                    Identifier.parse(pendingTag.getString(TAG_ITEM_ID)),
                     loadExactExpectedKey(pendingTag, registries),
                     pendingTag.getLong(TAG_REMAINING),
                     pendingTag.getBoolean(TAG_ROUTES_TO_REQUESTER),
@@ -266,7 +266,7 @@ public final class OverloadCpuState {
         }
     }
 
-    private static ResourceLocation itemIdOf(OverloadPatternDetails.OutputSlot output) {
+    private static Identifier itemIdOf(OverloadPatternDetails.OutputSlot output) {
         var key = AEItemKey.of(output.template());
         if (key == null) {
             throw new IllegalArgumentException("output template must resolve to an item key");

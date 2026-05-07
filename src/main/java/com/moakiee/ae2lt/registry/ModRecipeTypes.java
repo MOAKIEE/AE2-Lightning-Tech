@@ -8,7 +8,7 @@ import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecip
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipe;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -27,7 +27,7 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningTransformRecipe>> LIGHTNING_TRANSFORM_TYPE =
             RECIPE_TYPES.register(
                     "lightning_transform",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "lightning_transform")));
 
@@ -38,7 +38,7 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningSimulationRecipe>> LIGHTNING_SIMULATION_TYPE =
             RECIPE_TYPES.register(
                     "lightning_simulation",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "lightning_simulation")));
 
@@ -49,7 +49,7 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningAssemblyRecipe>> LIGHTNING_ASSEMBLY_TYPE =
             RECIPE_TYPES.register(
                     "lightning_assembly",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "lightning_assembly")));
 
@@ -60,7 +60,7 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeType<?>, RecipeType<OverloadProcessingRecipe>> OVERLOAD_PROCESSING_TYPE =
             RECIPE_TYPES.register(
                     "overload_processing",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "overload_processing")));
 
@@ -75,14 +75,14 @@ public final class ModRecipeTypes {
     public static final DeferredHolder<RecipeType<?>, RecipeType<LightningStrikeRecipe>> LIGHTNING_STRIKE_TYPE =
             RECIPE_TYPES.register(
                     "lightning_strike",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "lightning_strike")));
 
     public static final DeferredHolder<RecipeType<?>, RecipeType<CrystalCatalyzerRecipe>> CRYSTAL_CATALYZER_TYPE =
             RECIPE_TYPES.register(
                     "crystal_catalyzer",
-                    () -> RecipeType.simple(ResourceLocation.fromNamespaceAndPath(
+                    () -> RecipeType.simple(Identifier.fromNamespaceAndPath(
                             AE2LightningTech.MODID,
                             "crystal_catalyzer")));
 

@@ -12,7 +12,7 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -157,7 +157,7 @@ public final class ResearchNoteGenerator {
         }
 
         shuffle(selected, rng);
-        List<ResourceLocation> recipeItems = selected.stream().map(ResolvedCandidate::id).toList();
+        List<Identifier> recipeItems = selected.stream().map(ResolvedCandidate::id).toList();
         List<String> descriptionKeys = selected.stream().map(entry -> entry.pickDescriptionKey(rng)).toList();
         LOG.info("[ae2lt/note] generated: goal={} items(ordered)={}", goal, recipeItems);
         return new ResearchNoteData(ritualSeed, goal, recipeItems, descriptionKeys, false);
@@ -213,7 +213,7 @@ public final class ResearchNoteGenerator {
         }
     }
 
-    private static boolean isItemAvailable(ResourceLocation id) {
+    private static boolean isItemAvailable(Identifier id) {
         return BuiltInRegistries.ITEM.getOptional(id).filter(item -> item != Items.AIR).isPresent();
     }
 
@@ -235,18 +235,18 @@ public final class ResearchNoteGenerator {
                 ^ SALT_RESEARCH_NOTE;
     }
 
-    private static ResourceLocation id(String namespace, String path) {
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+    private static Identifier id(String namespace, String path) {
+        return Identifier.fromNamespaceAndPath(namespace, path);
     }
 
-    private record Candidate(ResourceLocation id, Tier tier, int baseWeight, int descriptionVariants) {
+    private record Candidate(Identifier id, Tier tier, int baseWeight, int descriptionVariants) {
     }
 
-    private record ResolvedCandidate(ResourceLocation id, Tier tier, int weight, int descriptionVariants) {
+    private record ResolvedCandidate(Identifier id, Tier tier, int weight, int descriptionVariants) {
         private String pickDescriptionKey(RandomSource rng) {
             int variant = Math.max(1, descriptionVariants);
             // lang key 形式: ae2lt.research_note.desc.<mod_id>.<path>.<variant>
-            // path 内的 '/' 被替换为 '.',避免 ResourceLocation 里的子目录破坏 lang key 的分段。
+            // path 内的 '/' 被替换为 '.',避免 Identifier 里的子目录破坏 lang key 的分段。
             String pathSegment = id.getPath().replace('/', '.');
             return "ae2lt.research_note.desc." + id.getNamespace() + "." + pathSegment + "." + rng.nextInt(variant);
         }

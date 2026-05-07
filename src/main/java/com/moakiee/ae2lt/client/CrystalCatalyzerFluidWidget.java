@@ -14,7 +14,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.world.level.material.Fluids;
 import net.neoforged.fml.ModList;
@@ -56,8 +56,8 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     private static final int MAJOR_TICK_WIDTH = 5;
     private static final int[] MAJOR_TICK_SRC_YS = { 26, 36, 46, 56, 66 };
 
-    private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+    private static final Identifier BACKGROUND_TEXTURE =
+            Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
 
     private final Supplier<FluidStack> fluidSupplier;
     private final IntSupplier capacitySupplier;

@@ -14,7 +14,7 @@ import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 
 import net.minecraft.core.Direction;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -45,7 +45,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
     public static final MenuType<OverloadedInterfaceMenu> TYPE = MenuTypeBuilder
             .create(FACTORY, InterfaceLogicHost.class)
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
+            .buildUnregistered(Identifier.fromNamespaceAndPath(
                     AE2LightningTech.MODID, "overloaded_interface"));
 
     private static final int SLOTS_PER_PAGE = 18;

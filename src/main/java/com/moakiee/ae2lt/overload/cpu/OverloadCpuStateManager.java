@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import appeng.api.config.Actionable;
 import appeng.api.stacks.AEItemKey;
@@ -137,7 +137,7 @@ public final class OverloadCpuStateManager {
         Objects.requireNonNull(patternDetails, "patternDetails");
 
         var state = states.get(logic);
-        var batch = new java.util.LinkedHashMap<ResourceLocation, OutputRegistrationCandidate>();
+        var batch = new java.util.LinkedHashMap<Identifier, OutputRegistrationCandidate>();
 
         for (var output : patternDetails.outputs()) {
             if (output.matchMode() != MatchMode.ID_ONLY) {
@@ -205,11 +205,11 @@ public final class OverloadCpuStateManager {
         return result;
     }
 
-    public synchronized long getRemainingForItem(CraftingCpuLogic logic, ResourceLocation itemId) {
+    public synchronized long getRemainingForItem(CraftingCpuLogic logic, Identifier itemId) {
         return getRemainingForItem((Object) logic, itemId);
     }
 
-    public synchronized long getRemainingForItem(Object logic, ResourceLocation itemId) {
+    public synchronized long getRemainingForItem(Object logic, Identifier itemId) {
         Objects.requireNonNull(logic, "logic");
         Objects.requireNonNull(itemId, "itemId");
         var state = states.get(logic);
@@ -292,7 +292,7 @@ public final class OverloadCpuStateManager {
         return key instanceof AEItemKey itemKey ? itemKey : null;
     }
 
-    private static ResourceLocation itemIdOf(OverloadPatternDetails.OutputSlot output) {
+    private static Identifier itemIdOf(OverloadPatternDetails.OutputSlot output) {
         var key = AEItemKey.of(output.template());
         if (key == null) {
             throw new IllegalArgumentException("output template must resolve to an item key");
