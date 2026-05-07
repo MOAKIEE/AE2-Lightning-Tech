@@ -11,7 +11,6 @@ import net.minecraft.nbt.IntArrayTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
@@ -60,13 +59,13 @@ public final class LightningSimulationLockedRecipe {
     }
 
     public static LightningSimulationLockedRecipe fromCandidate(LightningSimulationRecipeCandidate candidate) {
-        RecipeHolder<LightningSimulationRecipe> holder = candidate.recipe();
+        LightningSimulationRecipe recipe = candidate.recipe();
         return new LightningSimulationLockedRecipe(
-                holder.id(),
-                holder.value().getResultStack(),
-                holder.value().totalEnergy(),
-                holder.value().lightningCost(),
-                holder.value().lightningTier(),
+                recipe.getId(),
+                recipe.getResultStack(),
+                recipe.totalEnergy(),
+                recipe.lightningCost(),
+                recipe.lightningTier(),
                 candidate.match().inputConsumptions());
     }
 
@@ -105,7 +104,7 @@ public final class LightningSimulationLockedRecipe {
     public CompoundTag toTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_RECIPE_ID, recipeId.toString());
-        tag.put(TAG_RESULT, result.save(registries, new CompoundTag()));
+        tag.put(TAG_RESULT, result.save(new CompoundTag()));
         tag.putLong(TAG_TOTAL_ENERGY, totalEnergy);
         tag.putInt(TAG_LIGHTNING_COST, lightningCost);
         tag.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
@@ -119,7 +118,7 @@ public final class LightningSimulationLockedRecipe {
             return null;
         }
 
-        ItemStack result = ItemStack.parseOptional(registries, tag.getCompound(TAG_RESULT));
+        ItemStack result = ItemStack.of(tag.getCompound(TAG_RESULT));
         if (result.isEmpty()) {
             return null;
         }
@@ -141,7 +140,7 @@ public final class LightningSimulationLockedRecipe {
         }
 
         return new LightningSimulationLockedRecipe(
-                ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
+                new ResourceLocation(tag.getString(TAG_RECIPE_ID)),
                 result,
                 totalEnergy,
                 lightningCost,

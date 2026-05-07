@@ -13,7 +13,6 @@ import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -104,8 +103,8 @@ public final class NaturalLightningTransformationHandler {
 
     private static void tryTransformFromNearbyLightningRod(
             ServerLevel level, BlockPos lightningPos, boolean naturalWeather) {
-        List<RecipeHolder<LightningStrikeRecipe>> allRecipes = level.getRecipeManager()
-                .getAllRecipesFor(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get());
+        List<LightningStrikeRecipe> allRecipes = new java.util.ArrayList<>(
+                level.getRecipeManager().byType(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get()).values());
         if (allRecipes.isEmpty()) {
             return;
         }
@@ -121,8 +120,7 @@ public final class NaturalLightningTransformationHandler {
             // is always the block directly below it. Recipes therefore only describe the
             // surrounding structure, never the rod itself.
             BlockPos centerPos = rodPos.below();
-            for (RecipeHolder<LightningStrikeRecipe> holder : allRecipes) {
-                LightningStrikeRecipe recipe = holder.value();
+            for (LightningStrikeRecipe recipe : allRecipes) {
                 if (recipe.requiresNaturalLightning() && !naturalWeather) {
                     continue;
                 }

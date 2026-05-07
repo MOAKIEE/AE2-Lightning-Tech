@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -24,16 +23,12 @@ public final class LightningTransformService {
      */
     private static final int MAX_ROUNDS_PER_STRIKE = 32;
 
-    private static final Comparator<RecipeHolder<LightningTransformRecipe>> RECIPE_ORDER = Comparator
-            .<RecipeHolder<LightningTransformRecipe>>comparingInt(holder -> holder.value().priority())
+    private static final Comparator<LightningTransformRecipe> RECIPE_ORDER = Comparator
+            .comparingInt(LightningTransformRecipe::priority)
             .reversed()
-            .thenComparing(Comparator.comparingInt(
-                            (RecipeHolder<LightningTransformRecipe> holder) -> holder.value().ingredientCount())
-                    .reversed())
-            .thenComparing(Comparator.comparingInt(
-                            (RecipeHolder<LightningTransformRecipe> holder) -> holder.value().totalInputCount())
-                    .reversed())
-            .thenComparing(holder -> holder.id().toString());
+            .thenComparing(Comparator.comparingInt(LightningTransformRecipe::ingredientCount).reversed())
+            .thenComparing(Comparator.comparingInt(LightningTransformRecipe::totalInputCount).reversed())
+            .thenComparing(recipe -> recipe.getId().toString());
 
     private LightningTransformService() {
     }
@@ -49,7 +44,7 @@ public final class LightningTransformService {
             return;
         }
 
-        List<RecipeHolder<LightningTransformRecipe>> sortedRecipes = getSortedRecipes(level);
+        List<LightningTransformRecipe> sortedRecipes = getSortedRecipes(level);
         if (sortedRecipes.isEmpty()) {
             return;
         }
@@ -79,7 +74,7 @@ public final class LightningTransformService {
 
             spawnResult(
                     level,
-                    matchedRecipe.get().recipe().value().getResultItem(level.registryAccess()),
+                    matchedRecipe.get().recipe().getResultItem(level.registryAccess()),
                     plan.spawnPosition(),
                     gameTime);
             executedPlans.add(plan);
@@ -117,19 +112,19 @@ public final class LightningTransformService {
         return result;
     }
 
-    private static List<RecipeHolder<LightningTransformRecipe>> getSortedRecipes(ServerLevel level) {
-        List<RecipeHolder<LightningTransformRecipe>> recipes =
+    private static List<LightningTransformRecipe> getSortedRecipes(ServerLevel level) {
+        List<LightningTransformRecipe> recipes =
                 new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
         recipes.sort(RECIPE_ORDER);
         return recipes;
     }
 
     private static Optional<MatchedRecipe> selectRecipe(
-            List<RecipeHolder<LightningTransformRecipe>> sortedRecipes, LightningTransformRecipeInput input) {
-        for (RecipeHolder<LightningTransformRecipe> recipeHolder : sortedRecipes) {
-            Optional<LightningTransformPlan> plan = recipeHolder.value().planMatch(input);
+            List<LightningTransformRecipe> sortedRecipes, LightningTransformRecipeInput input) {
+        for (LightningTransformRecipe recipe : sortedRecipes) {
+            Optional<LightningTransformPlan> plan = recipe.planMatch(input);
             if (plan.isPresent()) {
-                return Optional.of(new MatchedRecipe(recipeHolder, plan.get()));
+                return Optional.of(new MatchedRecipe(recipe, plan.get()));
             }
         }
 
@@ -154,6 +149,6 @@ public final class LightningTransformService {
         }
     }
 
-    private record MatchedRecipe(RecipeHolder<LightningTransformRecipe> recipe, LightningTransformPlan plan) {
+    private record MatchedRecipe(LightningTransformRecipe recipe, LightningTransformPlan plan) {
     }
 }

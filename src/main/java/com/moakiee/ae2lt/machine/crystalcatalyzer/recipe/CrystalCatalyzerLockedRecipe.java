@@ -9,7 +9,6 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 
 public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_RECIPE_ID = "RecipeId";
@@ -45,10 +44,9 @@ public final class CrystalCatalyzerLockedRecipe {
     public static CrystalCatalyzerLockedRecipe fromCandidate(
             CrystalCatalyzerRecipeCandidate candidate,
             int outputMultiplier) {
-        RecipeHolder<CrystalCatalyzerRecipe> holder = candidate.recipe();
-        CrystalCatalyzerRecipe recipe = holder.value();
+        CrystalCatalyzerRecipe recipe = candidate.recipe();
         return new CrystalCatalyzerLockedRecipe(
-                holder.id(),
+                recipe.getId(),
                 recipe.getOutputTemplate(),
                 recipe.energyPerCycle(),
                 outputMultiplier);
@@ -77,7 +75,7 @@ public final class CrystalCatalyzerLockedRecipe {
     public CompoundTag toTag(HolderLookup.Provider registries) {
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_RECIPE_ID, recipeId.toString());
-        tag.put(TAG_OUTPUT, output.save(registries, new CompoundTag()));
+        tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
         tag.putInt(TAG_ENERGY, energyPerCycle);
         tag.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
         return tag;
@@ -97,7 +95,7 @@ public final class CrystalCatalyzerLockedRecipe {
             return null;
         }
 
-        ItemStack output = ItemStack.parseOptional(registries, tag.getCompound(TAG_OUTPUT));
+        ItemStack output = ItemStack.of(tag.getCompound(TAG_OUTPUT));
         if (output.isEmpty()) {
             return null;
         }
@@ -115,7 +113,7 @@ public final class CrystalCatalyzerLockedRecipe {
         }
 
         return new CrystalCatalyzerLockedRecipe(
-                ResourceLocation.parse(tag.getString(TAG_RECIPE_ID)),
+                new ResourceLocation(tag.getString(TAG_RECIPE_ID)),
                 output,
                 energy,
                 outputMultiplier);

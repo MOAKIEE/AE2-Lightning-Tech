@@ -5,9 +5,8 @@ import java.util.Optional;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
@@ -32,8 +31,7 @@ public final class CrystalCatalyzerRecipeService {
         }
 
         CrystalCatalyzerRecipeInput input = CrystalCatalyzerRecipeInput.fromMachine(inventory);
-        for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            CrystalCatalyzerRecipe recipe = holder.value();
+        for (CrystalCatalyzerRecipe recipe : getRecipes(level)) {
             if (recipe.mode() != mode) {
                 continue;
             }
@@ -41,7 +39,7 @@ public final class CrystalCatalyzerRecipeService {
                 continue;
             }
             if (recipe.matches(input, level)) {
-                return Optional.of(new CrystalCatalyzerRecipeCandidate(holder));
+                return Optional.of(new CrystalCatalyzerRecipeCandidate(recipe));
             }
         }
         return Optional.empty();
@@ -49,13 +47,12 @@ public final class CrystalCatalyzerRecipeService {
 
     public static Optional<CrystalCatalyzerRecipeCandidate> findRecipeById(
             @Nullable Level level,
-            net.minecraft.resources.ResourceLocation recipeId) {
+            ResourceLocation recipeId) {
         if (level == null) {
             return Optional.empty();
         }
-        return level.getRecipeManager()
-                .byKey(recipeId)
-                .flatMap(CrystalCatalyzerRecipeService::toCrystalCatalyzerCandidate);
+        var recipe = level.getRecipeManager().byType(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get()).get(recipeId);
+        return recipe == null ? Optional.empty() : Optional.of(new CrystalCatalyzerRecipeCandidate(recipe));
     }
 
     public static boolean isKnownCatalyst(@Nullable Level level, ItemStack stack) {
@@ -66,8 +63,7 @@ public final class CrystalCatalyzerRecipeService {
         if (level == null || stack.isEmpty()) {
             return false;
         }
-        for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            CrystalCatalyzerRecipe recipe = holder.value();
+        for (CrystalCatalyzerRecipe recipe : getRecipes(level)) {
             if (recipe.mode() != mode) {
                 continue;
             }
@@ -82,18 +78,7 @@ public final class CrystalCatalyzerRecipeService {
         return false;
     }
 
-    private static List<RecipeHolder<CrystalCatalyzerRecipe>> getRecipes(Level level) {
+    private static List<CrystalCatalyzerRecipe> getRecipes(Level level) {
         return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get());
-    }
-
-    private static Optional<CrystalCatalyzerRecipeCandidate> toCrystalCatalyzerCandidate(RecipeHolder<?> holder) {
-        Recipe<?> recipe = holder.value();
-        if (!(recipe instanceof CrystalCatalyzerRecipe crystalCatalyzerRecipe)
-                || recipe.getType() != ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get()) {
-            return Optional.empty();
-        }
-
-        return Optional.of(new CrystalCatalyzerRecipeCandidate(
-                new RecipeHolder<>(holder.id(), crystalCatalyzerRecipe)));
     }
 }

@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
 
@@ -18,32 +17,30 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
 public final class LightningAssemblyRecipeService {
     public static final int EXTREME_TO_HIGH_RATIO = 4;
 
-    private static final Comparator<RecipeHolder<LightningAssemblyRecipe>> RECIPE_ORDER = Comparator
-            .<RecipeHolder<LightningAssemblyRecipe>>comparingInt(holder -> holder.value().priority())
+    private static final Comparator<LightningAssemblyRecipe> RECIPE_ORDER = Comparator
+            .comparingInt(LightningAssemblyRecipe::priority)
             .reversed()
-            .thenComparing(Comparator.comparingInt(
-                    (RecipeHolder<LightningAssemblyRecipe> holder) -> holder.value().inputs().size()).reversed())
-            .thenComparing(Comparator.comparingInt(
-                    (RecipeHolder<LightningAssemblyRecipe> holder) -> holder.value().totalInputCount()).reversed())
-            .thenComparing(holder -> holder.id().toString());
+            .thenComparing(Comparator.comparingInt((LightningAssemblyRecipe recipe) -> recipe.inputs().size()).reversed())
+            .thenComparing(Comparator.comparingInt(LightningAssemblyRecipe::totalInputCount).reversed())
+            .thenComparing(recipe -> recipe.getId().toString());
 
-    private static List<RecipeHolder<LightningAssemblyRecipe>> cachedRawRecipeList;
+    private static Object cachedRawRecipeList;
     private static RecipeManager cachedRecipeManager;
-    private static List<RecipeHolder<LightningAssemblyRecipe>> sortedRecipeCache;
+    private static List<LightningAssemblyRecipe> sortedRecipeCache;
     private static int cachedRecipeOrderFingerprint;
 
     private LightningAssemblyRecipeService() {
     }
 
-    private static synchronized List<RecipeHolder<LightningAssemblyRecipe>> getSortedRecipes(Level level) {
+    private static synchronized List<LightningAssemblyRecipe> getSortedRecipes(Level level) {
         RecipeManager recipeManager = level.getRecipeManager();
-        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
+        var raw = recipeManager.byType(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
         int orderFingerprint = computeRecipeOrderFingerprint(raw);
         if (recipeManager != cachedRecipeManager
                 || raw != cachedRawRecipeList
                 || orderFingerprint != cachedRecipeOrderFingerprint
                 || sortedRecipeCache == null) {
-            sortedRecipeCache = new ArrayList<>(raw);
+            sortedRecipeCache = new ArrayList<>(raw.values());
             sortedRecipeCache.sort(RECIPE_ORDER);
             cachedRecipeManager = recipeManager;
             cachedRawRecipeList = raw;
@@ -52,11 +49,10 @@ public final class LightningAssemblyRecipeService {
         return sortedRecipeCache;
     }
 
-    private static int computeRecipeOrderFingerprint(List<RecipeHolder<LightningAssemblyRecipe>> recipes) {
+    private static int computeRecipeOrderFingerprint(java.util.Map<ResourceLocation, LightningAssemblyRecipe> recipes) {
         int hash = 1;
-        for (var holder : recipes) {
-            var recipe = holder.value();
-            hash = 31 * hash + holder.id().hashCode();
+        for (var recipe : recipes.values()) {
+            hash = 31 * hash + recipe.getId().hashCode();
             hash = 31 * hash + recipe.priority();
             hash = 31 * hash + recipe.inputs().size();
             hash = 31 * hash + recipe.totalInputCount();
@@ -85,23 +81,23 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        List<RecipeHolder<LightningAssemblyRecipe>> recipes = getSortedRecipes(level);
+        List<LightningAssemblyRecipe> recipes = getSortedRecipes(level);
 
-        for (RecipeHolder<LightningAssemblyRecipe> recipe : recipes) {
-            Optional<LightningAssemblyRecipeMatch> match = recipe.value().planMatch(input);
+        for (LightningAssemblyRecipe recipe : recipes) {
+            Optional<LightningAssemblyRecipeMatch> match = recipe.planMatch(input);
             if (match.isEmpty()) {
                 continue;
             }
             if (resolveLightningConsumption(
                     inventory,
-                    recipe.value().lightningTier(),
-                    recipe.value().lightningCost(),
+                    recipe.lightningTier(),
+                    recipe.lightningCost(),
                     availableHighVoltage,
                     availableExtremeHighVoltage).isEmpty()) {
                 continue;
             }
 
-            if (!canAcceptOutput(inventory, recipe.value().getResultStack())) {
+            if (!canAcceptOutput(inventory, recipe.getResultStack())) {
                 continue;
             }
 
@@ -111,19 +107,12 @@ public final class LightningAssemblyRecipeService {
         return Optional.empty();
     }
 
-    public static Optional<RecipeHolder<LightningAssemblyRecipe>> findRecipeById(Level level, ResourceLocation recipeId) {
+    public static Optional<LightningAssemblyRecipe> findRecipeById(Level level, ResourceLocation recipeId) {
         if (level == null || recipeId == null) {
             return Optional.empty();
         }
 
-        for (RecipeHolder<LightningAssemblyRecipe> recipe
-                : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())) {
-            if (recipe.id().equals(recipeId)) {
-                return Optional.of(recipe);
-            }
-        }
-
-        return Optional.empty();
+        return Optional.ofNullable(level.getRecipeManager().byType(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get()).get(recipeId));
     }
 
     public static Optional<LightningAssemblyRecipeCandidate> findLockedRecipeMatch(
@@ -136,7 +125,7 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        Optional<RecipeHolder<LightningAssemblyRecipe>> recipe = findRecipeById(level, lockedRecipe.recipeId());
+        Optional<LightningAssemblyRecipe> recipe = findRecipeById(level, lockedRecipe.recipeId());
         if (recipe.isEmpty()) {
             return Optional.empty();
         }
@@ -146,7 +135,7 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        Optional<LightningAssemblyRecipeMatch> match = recipe.get().value().planMatch(input);
+        Optional<LightningAssemblyRecipeMatch> match = recipe.get().planMatch(input);
         if (match.isEmpty()) {
             return Optional.empty();
         }
@@ -170,7 +159,7 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        Optional<RecipeHolder<LightningAssemblyRecipe>> recipe = findRecipeById(level, lockedRecipe.recipeId());
+        Optional<LightningAssemblyRecipe> recipe = findRecipeById(level, lockedRecipe.recipeId());
         if (recipe.isEmpty()) {
             return Optional.empty();
         }
@@ -180,7 +169,7 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        Optional<LightningAssemblyRecipeMatch> match = recipe.get().value().planMatch(input);
+        Optional<LightningAssemblyRecipeMatch> match = recipe.get().planMatch(input);
         if (match.isEmpty()) {
             return Optional.empty();
         }
