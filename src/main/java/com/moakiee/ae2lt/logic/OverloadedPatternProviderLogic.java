@@ -44,11 +44,11 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
 import appeng.api.upgrades.IUpgradeableObject;
+import appeng.api.storage.AEKeyFilter;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
 import appeng.helpers.patternprovider.PatternProviderTarget;
 import appeng.me.helpers.MachineSource;
-import appeng.api.storage.AEKeySlotFilter;
 import appeng.util.inv.filter.IAEItemFilter;
 
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
@@ -457,7 +457,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     grid.getTickManager().alertDevice(node));
             overloadedHost.saveChanges();
         };
-        AEKeySlotFilter returnFilter = (slot, key) -> {
+        AEKeyFilter returnFilter = key -> {
             if (!overloadedHost.isFilteredImport()) return true;
             var filter = getOrBuildOutputFilter();
             return !filter.isEmpty() && filter.matches(key);

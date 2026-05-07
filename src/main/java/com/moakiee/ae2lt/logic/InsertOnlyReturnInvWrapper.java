@@ -70,12 +70,10 @@ public class InsertOnlyReturnInvWrapper implements GenericInternalInventory {
         return false;
     }
 
-    @Override
     public boolean isSupportedType(AEKeyType type) {
         return true;
     }
 
-    @Override
     public boolean isAllowedIn(int slot, AEKey what) {
         return delegate.isAllowedIn(slot, what);
     }

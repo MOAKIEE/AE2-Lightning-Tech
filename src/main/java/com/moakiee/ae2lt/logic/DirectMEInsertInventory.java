@@ -72,12 +72,10 @@ public class DirectMEInsertInventory implements GenericInternalInventory {
         return false;
     }
 
-    @Override
     public boolean isSupportedType(AEKeyType type) {
         return true;
     }
 
-    @Override
     public boolean isAllowedIn(int slot, AEKey what) {
         return filter == null || filter.test(what);
     }

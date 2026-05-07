@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.logic;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.function.BiPredicate;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -22,7 +23,6 @@ import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.AEKeySlotFilter;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
@@ -262,12 +262,29 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     static class OverloadedConfigInv extends ConfigInventory {
         @Nullable OverloadedInterfaceBlockEntity owner;
         boolean suppressUnlimitedCancel;
+        private final Set<AEKeyType> supportedTypes;
+        @Nullable
+        private final BiPredicate<Integer, AEKey> slotFilter;
 
         OverloadedConfigInv(Set<AEKeyType> supportedTypes,
-                            @Nullable AEKeySlotFilter slotFilter,
+                            @Nullable BiPredicate<Integer, AEKey> slotFilter,
                             GenericStackInv.Mode mode, int size,
                             @Nullable Runnable listener) {
-            super(supportedTypes, slotFilter, mode, size, listener, false);
+            super(key -> supportedTypes.contains(key.getType()), mode, size, listener, false);
+            this.supportedTypes = supportedTypes;
+            this.slotFilter = slotFilter;
+        }
+
+        public boolean isSupportedType(AEKeyType type) {
+            return supportedTypes.contains(type);
+        }
+
+        public boolean isSupportedKey(AEKey what) {
+            return what != null && isSupportedType(what.getType());
+        }
+
+        public boolean isAllowedIn(int slot, AEKey what) {
+            return isSupportedKey(what) && (slotFilter == null || slotFilter.test(slot, what));
         }
 
         @Override
@@ -276,7 +293,18 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
 
         @Override
+        public long insert(int slot, AEKey what, long amount, Actionable mode) {
+            if (!isAllowedIn(slot, what)) {
+                return 0;
+            }
+            return super.insert(slot, what, amount, mode);
+        }
+
+        @Override
         public void setStack(int slot, @Nullable GenericStack stack) {
+            if (stack != null && !isAllowedIn(slot, stack.what())) {
+                return;
+            }
             super.setStack(slot, stack);
             if (!suppressUnlimitedCancel && owner != null && owner.isSlotUnlimited(slot)) {
                 var level = owner.getLevel();
@@ -307,7 +335,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         ProxiedStorageInv(OverloadedInterfaceLogic logic,
                           Set<AEKeyType> supportedTypes,
-                          @Nullable AEKeySlotFilter slotFilter,
+                          @Nullable BiPredicate<Integer, AEKey> slotFilter,
                           int size, @Nullable Runnable listener) {
             super(supportedTypes, slotFilter, GenericStackInv.Mode.STORAGE, size, listener);
             this.logic = logic;
@@ -405,7 +433,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         @Override
         public boolean isAllowedIn(int slot, AEKey what) {
-            return what != null && isSupportedType(what);
+            return isSupportedKey(what);
         }
 
         @Override
