@@ -38,7 +38,7 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadedControllerBlockEntity be) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 

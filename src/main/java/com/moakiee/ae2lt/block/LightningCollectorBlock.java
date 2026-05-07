@@ -66,6 +66,6 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
             blockEntity.openMenu(player, MenuLocators.forBlockEntity(blockEntity));
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 }

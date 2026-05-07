@@ -89,6 +89,6 @@ public class LightningSimulationChamberBlock extends AEBaseEntityBlock<Lightning
             be.openMenu(player, MenuLocators.forBlockEntity(be));
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 }

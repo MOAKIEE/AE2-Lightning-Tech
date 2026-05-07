@@ -75,7 +75,7 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
             be.openMenu(player, MenuLocators.forBlockEntity(be));
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -89,7 +89,7 @@ public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadPr
             BlockHitResult hit) {
         if (heldItem.getItem() instanceof BucketItem) {
             if (useBucket(player, level, pos, heldItem, hand)) {
-                return InteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.SUCCESS;
             }
         }
 

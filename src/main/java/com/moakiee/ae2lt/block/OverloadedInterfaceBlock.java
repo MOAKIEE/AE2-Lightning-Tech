@@ -26,7 +26,7 @@ public class OverloadedInterfaceBlock extends AEBaseEntityBlock<OverloadedInterf
             if (!level.isClientSide()) {
                 be.openMenu(player, MenuLocators.forBlockEntity(be));
             }
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
     }

@@ -227,7 +227,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void saveChanges() {
         super.saveChanges();
         var level = getLevel();
-        if (level != null && !level.isClientSide) {
+        if (level != null && !level.isClientSide()) {
             var logic = getOverloadedLogic();
             if (logic != null) {
                 logic.onPersistentStateChanged();

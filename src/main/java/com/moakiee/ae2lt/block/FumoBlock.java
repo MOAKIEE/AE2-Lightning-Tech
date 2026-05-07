@@ -135,7 +135,7 @@ public class FumoBlock extends Block implements EntityBlock {
         if (!level.isClientSide() && level.getBlockEntity(pos) instanceof FumoBlockEntity be) {
             be.toggleSpinning();
         }
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 
     @Nullable

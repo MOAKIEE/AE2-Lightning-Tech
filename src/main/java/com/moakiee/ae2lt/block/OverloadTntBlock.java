@@ -49,7 +49,7 @@ public class OverloadTntBlock extends TntBlock {
         }
 
         player.awardStat(net.minecraft.stats.Stats.ITEM_USED.get(stack.getItem()));
-        return InteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResult.SUCCESS;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class OverloadTntBlock extends TntBlock {
 
     @Override
     public void wasExploded(Level level, BlockPos pos, Explosion explosion) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 
@@ -114,7 +114,7 @@ public class OverloadTntBlock extends TntBlock {
     }
 
     private static void prime(Level level, BlockPos pos, @Nullable LivingEntity igniter) {
-        if (level.isClientSide) {
+        if (level.isClientSide()) {
             return;
         }
 

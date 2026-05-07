@@ -115,7 +115,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
+        if (!level.isClientSide() && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
             BlockState upperState = state.setValue(HALF, DoubleBlockHalf.UPPER);
             level.setBlock(pos.above(), upperState, Block.UPDATE_ALL);
         }
@@ -173,7 +173,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+        if (!level.isClientSide() && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
             BlockPos lowerPos = pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
             if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
@@ -187,7 +187,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!level.isClientSide && !state.is(newState.getBlock())) {
+        if (!level.isClientSide() && !state.is(newState.getBlock())) {
             // 两半之间的联动清理只应把另一半静默设为 AIR,
             // 不要调用 destroyBlock(..., true) —— 那会强制让另一半按"正常破坏"流程掉落物品,
             // 破坏时 playerWillDestroy 已经按 player.isCreative() 正确处理过了,此处不能再额外掉落。
@@ -237,7 +237,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
             be.openMenu(player, MenuLocators.forBlockEntity(be));
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 
     @Override

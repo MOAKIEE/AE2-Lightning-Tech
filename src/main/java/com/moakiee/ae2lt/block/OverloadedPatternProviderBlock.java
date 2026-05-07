@@ -69,7 +69,7 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
                                               BlockHitResult hit) {
         if (InteractionUtil.canWrenchRotate(heldItem)) {
             setSide(level, pos, hit.getDirection());
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.SUCCESS;
         }
         return super.useItemOn(heldItem, state, level, pos, player, hand, hit);
     }
@@ -82,7 +82,7 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
             if (!level.isClientSide()) {
                 be.openMenu(player, MenuLocators.forBlockEntity(be));
             }
-            return InteractionResult.sidedSuccess(level.isClientSide());
+            return InteractionResult.SUCCESS;
         }
         return InteractionResult.PASS;
     }

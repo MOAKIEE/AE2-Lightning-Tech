@@ -27,7 +27,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 /**
  * Client event: binds MenuType to Screen.
  */
-@EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public class ModScreens {
 
     @SubscribeEvent

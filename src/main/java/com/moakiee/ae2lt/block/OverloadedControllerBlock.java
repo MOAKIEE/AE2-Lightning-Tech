@@ -90,14 +90,14 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
             BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof OverloadedControllerBlockEntity be) {
-            if (!level.isClientSide) {
+            if (!level.isClientSide()) {
                 // AE2 1.21.1 uses NetworkStatusMenu.CONTROLLER_TYPE for controller right-click.
                 // If menu/locator names differ in another version, verify this hook first.
                 // This only adds the same network-status entry point to AE2LT's controller
                 // and does not modify vanilla controller interaction.
                 MenuOpener.open(NetworkStatusMenu.CONTROLLER_TYPE, player, MenuLocators.forBlockEntity(be));
             }
-            return InteractionResult.sidedSuccess(level.isClientSide);
+            return InteractionResult.SUCCESS;
         }
 
         return super.useWithoutItem(state, level, pos, player, hitResult);

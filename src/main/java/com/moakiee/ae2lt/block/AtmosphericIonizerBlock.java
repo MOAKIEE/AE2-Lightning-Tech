@@ -100,7 +100,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     @Override
     public void setPlacedBy(Level level, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
         super.setPlacedBy(level, pos, state, placer, stack);
-        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
+        if (!level.isClientSide() && state.getValue(HALF) == DoubleBlockHalf.LOWER) {
             BlockState upperState = state.setValue(HALF, DoubleBlockHalf.UPPER);
             level.setBlock(pos.above(), upperState, Block.UPDATE_ALL);
         }
@@ -161,7 +161,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
     @Override
     public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
-        if (!level.isClientSide && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
+        if (!level.isClientSide() && state.getValue(HALF) == DoubleBlockHalf.UPPER) {
             BlockPos lowerPos = pos.below();
             BlockState lowerState = level.getBlockState(lowerPos);
             if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER)) {
@@ -173,7 +173,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!level.isClientSide && !state.is(newState.getBlock())) {
+        if (!level.isClientSide() && !state.is(newState.getBlock())) {
             boolean lower = state.getValue(HALF) == DoubleBlockHalf.LOWER;
             BlockPos otherPos = lower ? pos.above() : pos.below();
             DoubleBlockHalf otherHalf = lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
@@ -223,7 +223,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             blockEntity.openMenu(player, MenuLocators.forBlockEntity(blockEntity));
         }
 
-        return InteractionResult.sidedSuccess(level.isClientSide());
+        return InteractionResult.SUCCESS;
     }
 
     @Override
