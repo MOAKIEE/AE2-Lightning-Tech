@@ -9,7 +9,7 @@ import appeng.api.stacks.AEKeyType;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.StringRepresentable;
@@ -157,7 +157,7 @@ public final class LightningKey extends AEKey {
     }
 
     @Override
-    public void writeToPacket(RegistryFriendlyByteBuf data) {
+    public void writeToPacket(FriendlyByteBuf data) {
         data.writeByte(this.tier.ordinal());
     }
 

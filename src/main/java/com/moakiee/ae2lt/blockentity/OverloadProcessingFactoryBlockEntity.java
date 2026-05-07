@@ -600,13 +600,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
-        upgrades.writeToNBT(data, TAG_UPGRADES, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
+        upgrades.writeToNBT(data, TAG_UPGRADES);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
-        data.put(TAG_INPUT_TANK, inputTank.writeToNBT(registries, new CompoundTag()));
-        data.put(TAG_OUTPUT_TANK, outputTank.writeToNBT(registries, new CompoundTag()));
+        data.put(TAG_INPUT_TANK, inputTank.writeToNBT(new CompoundTag()));
+        data.put(TAG_OUTPUT_TANK, outputTank.writeToNBT(new CompoundTag()));
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         data.putBoolean(TAG_AUTO_EXPORT, autoExport);
@@ -616,6 +616,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         }
         data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         if (lockedRecipe != null) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
         } else {
             data.remove(TAG_LOCKED_RECIPE);
@@ -624,13 +625,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        upgrades.readFromNBT(data, TAG_UPGRADES, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        upgrades.readFromNBT(data, TAG_UPGRADES);
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
-        inputTank.readFromNBT(registries, data.getCompound(TAG_INPUT_TANK));
-        outputTank.readFromNBT(registries, data.getCompound(TAG_OUTPUT_TANK));
+        inputTank.readFromNBT(data.getCompound(TAG_INPUT_TANK));
+        outputTank.readFromNBT(data.getCompound(TAG_OUTPUT_TANK));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
         frequencyBinding.load(data);
@@ -644,6 +645,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             lockedRecipe = OverloadProcessingLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
         } else {
             lockedRecipe = null;
@@ -873,7 +875,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     private void requestClientUpdate() {
         if (level == null) {
-            markForClientUpdate();
+            markForUpdate();
             return;
         }
 
@@ -883,6 +885,6 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         }
 
         lastClientUpdateTick = gameTime;
-        markForClientUpdate();
+        markForUpdate();
     }
 }

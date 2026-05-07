@@ -13,7 +13,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -268,7 +268,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     public void cycleMode() {
         mode = mode.next();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
         // Always pair OVERLOADED with the current mode; POWERED stays where
         // it is (the next tick will refresh it). Clearing it here would
@@ -491,7 +491,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     private void notifyConnectionsChanged() {
         connectionVersion++;
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
@@ -514,7 +514,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     @Override
     public void saveChangedInventory(AppEngInternalInventory inv) {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     @Override
@@ -597,12 +597,12 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
+    public void saveAdditional(CompoundTag data) {
         logic.persistCellCache();
         AppFluxBridge.persistCellStorage(cachedCellView);
-        super.saveAdditional(data, registries);
+        super.saveAdditional(data);
         data.putString(TAG_MODE, mode.name());
-        cellInv.writeToNBT(data, TAG_CELL_INV, registries);
+        cellInv.writeToNBT(data, TAG_CELL_INV);
 
         var list = new ListTag();
         for (var connection : connections) {
@@ -613,8 +613,8 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
 
         if (data.contains(TAG_MODE, Tag.TAG_STRING)) {
             try {
@@ -626,7 +626,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
             mode = PowerMode.NORMAL;
         }
 
-        cellInv.readFromNBT(data, TAG_CELL_INV, registries);
+        cellInv.readFromNBT(data, TAG_CELL_INV);
         cellViewDirty = true;
         cellCapacityDirty = true;
         cachedCellView = null;
@@ -644,7 +644,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         data.writeByte(mode.ordinal());
         data.writeVarInt(connections.size());
@@ -656,7 +656,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
 
         int modeOrdinal = data.readByte();

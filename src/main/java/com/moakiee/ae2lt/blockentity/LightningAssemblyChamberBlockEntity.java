@@ -12,7 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
@@ -195,7 +195,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
             this.consumedEnergy += amount;
         }
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public void incrementProcessingTicksSpent() {
@@ -209,7 +209,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
         this.processingTicksSpent = 0;
         if (changed) {
             saveChanges();
-            markForClientUpdate();
+            markForUpdate();
         }
     }
 
@@ -423,7 +423,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
                     && state.getValue(LightningAssemblyChamberBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(LightningAssemblyChamberBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                markForUpdate();
             }
         }
     }
@@ -473,7 +473,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
@@ -505,10 +505,10 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
-        upgrades.writeToNBT(data, TAG_UPGRADES, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
+        upgrades.writeToNBT(data, TAG_UPGRADES);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
@@ -519,6 +519,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
         }
         data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         if (lockedRecipe != null) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
         } else {
             data.remove(TAG_LOCKED_RECIPE);
@@ -527,10 +528,10 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        upgrades.readFromNBT(data, TAG_UPGRADES, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        upgrades.readFromNBT(data, TAG_UPGRADES);
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
@@ -545,6 +546,7 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
             }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             lockedRecipe = LightningAssemblyLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
         } else {
             lockedRecipe = null;
@@ -561,31 +563,30 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
              slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
              slot++) {
-            ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
+            data.writeItem(inventory.getStackInSlot(slot));
         }
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(data,
-                lockedRecipe != null ? lockedRecipe.result() : ItemStack.EMPTY);
+        data.writeItem(lockedRecipe != null ? lockedRecipe.result() : ItemStack.EMPTY);
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
              slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
-            ItemStack newStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+            ItemStack newStack = data.readItem();
             if (!ItemStack.matches(oldStack, newStack)) {
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;
             }
         }
-        ItemStack newResult = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+        ItemStack newResult = data.readItem();
         if (!ItemStack.matches(clientRecipeResult, newResult)) {
             clientRecipeResult = newResult;
             changed = true;

@@ -114,14 +114,14 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         frequencyBinding.save(tag);
     }
 
     @Override
-    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadTag(tag, registries);
+    public void loadTag(CompoundTag tag) {
+        super.loadTag(tag);
         frequencyBinding.load(tag);
     }
 

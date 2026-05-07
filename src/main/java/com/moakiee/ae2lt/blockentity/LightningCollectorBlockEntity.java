@@ -34,7 +34,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -81,7 +81,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
             blockEntity.cooldownTicks--;
             if (blockEntity.cooldownTicks == 0) {
                 blockEntity.saveChanges();
-                blockEntity.markForClientUpdate();
+                blockEntity.markForUpdate();
             }
         }
 
@@ -242,7 +242,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
         this.workingTicks = WORKING_DURATION_TICKS;
         updateWorkingBlockState(true);
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         return true;
     }
 
@@ -251,35 +251,35 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putInt(TAG_COOLDOWN, cooldownTicks);
         data.putInt(TAG_WORKING_TICKS, workingTicks);
         frequencyBinding.save(data);
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         cooldownTicks = Math.max(0, data.getInt(TAG_COOLDOWN));
         workingTicks = Math.max(0, data.getInt(TAG_WORKING_TICKS));
         frequencyBinding.load(data);
     }
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(data, getInstalledCrystal());
+        data.writeItem(getInstalledCrystal());
         data.writeVarInt(cooldownTicks);
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         ItemStack oldCrystal = getInstalledCrystal();
-        ItemStack newCrystal = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+        ItemStack newCrystal = data.readItem();
         if (!ItemStack.matches(oldCrystal, newCrystal)) {
             inventory.setClientRenderStack(newCrystal);
             changed = true;
@@ -390,7 +390,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     private void updateWorkingBlockState(boolean working) {

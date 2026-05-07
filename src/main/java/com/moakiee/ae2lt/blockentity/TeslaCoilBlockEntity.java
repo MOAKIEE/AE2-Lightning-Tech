@@ -144,7 +144,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
 
         selectedMode = selectedMode.next();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
@@ -164,7 +164,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             return false;
         }
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
         return true;
     }
@@ -252,7 +252,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         consumedEnergy = Math.min(getLockedTotalEnergy(), consumedEnergy + amount);
         processingTicksSpent = Math.min(TeslaCoilMode.PROCESS_TICKS, processingTicksSpent + 1);
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public TeslaCoilStatus getStatus() {
@@ -316,7 +316,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
         consumedEnergy = 0L;
         processingTicksSpent = 0;
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
         setWorking(false);
         return true;
@@ -339,7 +339,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
                     && state.getValue(TeslaCoilBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(TeslaCoilBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                markForUpdate();
             }
         }
     }
@@ -364,9 +364,9 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
@@ -382,9 +382,9 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         selectedMode = TeslaCoilMode.fromName(data.getString(TAG_SELECTED_MODE));
         lockedMode = data.contains(TAG_LOCKED_MODE)
@@ -580,13 +580,13 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
     private void onEnergyChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 

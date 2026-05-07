@@ -6,7 +6,7 @@ import com.mojang.serialization.MapCodec;
 
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 
 public final class LightningKeyType extends AEKeyType {
@@ -37,7 +37,7 @@ public final class LightningKeyType extends AEKeyType {
     }
 
     @Override
-    public @Nullable AEKey readFromPacket(RegistryFriendlyByteBuf input) {
+    public @Nullable AEKey readFromPacket(FriendlyByteBuf input) {
         return LightningKey.fromOrdinal(input.readByte());
     }
 }

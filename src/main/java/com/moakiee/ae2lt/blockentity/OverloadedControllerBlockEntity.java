@@ -16,6 +16,7 @@ import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.util.AECableType;
 import appeng.blockentity.networking.ControllerBlockEntity;
+import appeng.helpers.ForgeEnergyAdapter;
 
 /**
  * Minimal custom controller node owner.
@@ -46,7 +47,7 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
     }
 
     public IEnergyStorage getEnergyStorageCapability(Direction side) {
-        return this.getEnergyStorage(side);
+        return new ForgeEnergyAdapter(this);
     }
 
     @Override

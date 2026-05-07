@@ -15,7 +15,7 @@ import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -261,7 +261,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public ReturnMode getReturnMode() {
@@ -275,7 +275,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.returnMode = mode;
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public boolean isAutoReturn() {
@@ -293,7 +293,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.wirelessDispatchMode = wirelessDispatchMode;
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public WirelessSpeedMode getWirelessSpeedMode() {
@@ -307,7 +307,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.wirelessSpeedMode = wirelessSpeedMode;
         recomputeIdlePower();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public boolean isFilteredImport() {
@@ -320,7 +320,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         }
         this.filteredImport = filteredImport;
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     /**
@@ -350,7 +350,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 connections.set(i, updated);
                 notifyLogicStateChanged();
                 saveChanges();
-                markForClientUpdate();
+                markForUpdate();
                 return true;
             }
         }
@@ -361,7 +361,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         return true;
     }
 
@@ -376,7 +376,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
-            markForClientUpdate();
+            markForUpdate();
         }
         return removed;
     }
@@ -427,7 +427,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
-            markForClientUpdate();
+            markForUpdate();
         }
         return removed;
     }
@@ -439,7 +439,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     // -- Client sync (writeToStream / readFromStream) --
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         data.writeByte(providerMode.ordinal());
         data.writeByte(returnMode.ordinal());
@@ -455,7 +455,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         var modeOrd = data.readByte();
         var newMode = modeOrd >= 0 && modeOrd < ProviderMode.values().length
@@ -510,8 +510,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putString(TAG_RETURN_MODE, returnMode.name());
         data.putString(TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode.name());
@@ -527,8 +527,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
         if (data.contains(TAG_PROVIDER_MODE)) {
             try {
                 providerMode = ProviderMode.valueOf(data.getString(TAG_PROVIDER_MODE));

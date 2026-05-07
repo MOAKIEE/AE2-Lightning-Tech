@@ -36,7 +36,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -1775,7 +1775,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ══════════════════════════════════════════════════════════════════════
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         data.writeByte(interfaceMode.ordinal());
         data.writeByte(ioSpeedMode.ordinal());
@@ -1800,7 +1800,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
 
         int interfaceOrd = data.readByte();
@@ -1870,8 +1870,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag d, HolderLookup.Provider r) {
-        super.saveAdditional(d, r);
+    public void saveAdditional(CompoundTag d) {
+        super.saveAdditional(d);
         d.putString(TAG_INTERFACE_MODE, interfaceMode.name());
         d.putString(TAG_IO_SPEED_MODE, ioSpeedMode.name());
         d.putString(TAG_EXPORT_MODE, exportMode.name());
@@ -1883,7 +1883,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var cl = new ListTag();
         for (var c : connections) cl.add(c.toTag());
         d.put(TAG_CONNECTIONS, cl);
-        filterInv.writeToNBT(d, TAG_FILTER_INV, r);
+        filterInv.writeToNBT(d, TAG_FILTER_INV);
         if (!importBuffer.isEmpty()) {
             var buffered = new ListTag();
             for (var entry : importBuffer.entrySet()) {
@@ -1896,8 +1896,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag d, HolderLookup.Provider r) {
-        super.loadTag(d, r);
+    public void loadTag(CompoundTag d) {
+        super.loadTag(d);
         if (d.contains(TAG_INTERFACE_MODE)) {
             try { interfaceMode = InterfaceMode.valueOf(d.getString(TAG_INTERFACE_MODE)); }
             catch (IllegalArgumentException e) { interfaceMode = InterfaceMode.NORMAL; }
@@ -1924,7 +1924,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             for (int i = 0; i < cl.size(); i++)
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
-        filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        filterInv.readFromNBT(d, TAG_FILTER_INV);
         importBuffer.clear();
         if (d.contains(TAG_IMPORT_BUFFER, Tag.TAG_LIST)) {
             var buffered = d.getList(TAG_IMPORT_BUFFER, Tag.TAG_COMPOUND);

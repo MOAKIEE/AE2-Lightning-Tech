@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 
 import appeng.menu.guisync.PacketWritable;
 
@@ -35,7 +35,7 @@ public record OverloadPatternEditState(
         outputSlots = List.copyOf(Objects.requireNonNull(outputSlots, "outputSlots"));
     }
 
-    public OverloadPatternEditState(RegistryFriendlyByteBuf buffer) {
+    public OverloadPatternEditState(FriendlyByteBuf buffer) {
         this(
                 buffer.readBoolean(),
                 buffer.readBoolean(),
@@ -134,7 +134,7 @@ public record OverloadPatternEditState(
     }
 
     @Override
-    public void writeToPacket(RegistryFriendlyByteBuf buffer) {
+    public void writeToPacket(FriendlyByteBuf buffer) {
         buffer.writeBoolean(hasSourcePattern);
         buffer.writeBoolean(sourceWasOverloadPattern);
         buffer.writeVarInt(inputCount);
@@ -160,7 +160,7 @@ public record OverloadPatternEditState(
         return matchMode == MatchMode.STRICT ? MatchMode.ID_ONLY : MatchMode.STRICT;
     }
 
-    private static void writeSlots(RegistryFriendlyByteBuf buffer, List<ConfiguredSlot> slots) {
+    private static void writeSlots(FriendlyByteBuf buffer, List<ConfiguredSlot> slots) {
         buffer.writeVarInt(slots.size());
         for (var slot : slots) {
             buffer.writeVarInt(slot.slotIndex());
@@ -169,7 +169,7 @@ public record OverloadPatternEditState(
         }
     }
 
-    private static List<ConfiguredSlot> readSlots(RegistryFriendlyByteBuf buffer) {
+    private static List<ConfiguredSlot> readSlots(FriendlyByteBuf buffer) {
         int size = buffer.readVarInt();
         var slots = new ArrayList<ConfiguredSlot>(size);
         for (int i = 0; i < size; i++) {

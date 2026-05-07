@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import appeng.block.AEBaseEntityBlock;
 
@@ -53,7 +54,7 @@ public class WirelessReceiverBlock extends AE2LTBaseEntityBlock<WirelessReceiver
                         return InteractionResult.sidedSuccess(false);
                     }
                 }
-                sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
+                NetworkHooks.openScreen(sp, new net.minecraft.world.SimpleMenuProvider(
                         (id, inv, p) -> new FrequencyMenu(id, inv, be),
                         be.getBlockState().getBlock().getName()
                 ), buf -> FrequencyMenu.writeExtraData(buf, be));

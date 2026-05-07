@@ -188,7 +188,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
 
         lockedType = selectedType;
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
         return true;
     }
@@ -201,7 +201,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         consumedEnergy = Math.min(lockedType.totalEnergy(), consumedEnergy + amount);
         processingTicksSpent = Math.min(PROCESS_TICKS, processingTicksSpent + 1);
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
     }
 
     public AtmosphericIonizerStatus getStatus() {
@@ -268,7 +268,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
         processingTicksSpent = 0;
         setWorking(false);
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
         return true;
     }
@@ -290,7 +290,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
                     && state.getValue(AtmosphericIonizerBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(AtmosphericIonizerBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                markForUpdate();
             }
         }
     }
@@ -335,9 +335,9 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         if (lockedType != null) {
@@ -349,9 +349,9 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         lockedType = data.contains(TAG_LOCKED_TYPE)
                 ? WeatherCondensateItem.Type.fromName(data.getString(TAG_LOCKED_TYPE))
                 : null;
@@ -431,7 +431,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implem
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 

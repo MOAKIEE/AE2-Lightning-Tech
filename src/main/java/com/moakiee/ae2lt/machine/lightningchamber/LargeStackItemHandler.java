@@ -4,7 +4,6 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -114,7 +113,7 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
         }
 
         ItemStack existing = stacks.get(slot);
-        if (!existing.isEmpty() && !ItemStack.isSameItemSameComponents(existing, stack)) {
+        if (!existing.isEmpty() && !ItemStack.isSameItemSameTags(existing, stack)) {
             return stack;
         }
 
@@ -215,7 +214,7 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
         }
     }
 
-    public final void saveToTag(CompoundTag tag, String key, HolderLookup.Provider registries) {
+    public final void saveToTag(CompoundTag tag, String key) {
         if (isEmpty()) {
             tag.remove(key);
             return;
@@ -238,7 +237,7 @@ public abstract class LargeStackItemHandler implements IItemHandlerModifiable, I
         tag.put(key, items);
     }
 
-    public final void loadFromTag(CompoundTag tag, String key, HolderLookup.Provider registries) {
+    public final void loadFromTag(CompoundTag tag, String key) {
         for (int slot = 0; slot < stacks.size(); slot++) {
             stacks.set(slot, ItemStack.EMPTY);
         }

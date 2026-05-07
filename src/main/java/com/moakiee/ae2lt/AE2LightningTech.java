@@ -32,6 +32,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.common.capabilities.Capability;
@@ -41,6 +42,7 @@ import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
 import net.minecraftforge.fml.ModContainer;
+import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
 import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
@@ -91,95 +93,95 @@ public class AE2LightningTech {
                     .icon(() -> ModItems.OVERLOAD_CRYSTAL.get().getDefaultInstance())
                     .displayItems((parameters, output) -> {
                         // 方块
-                        output.accept(ModBlocks.SILICON_BLOCK);
-                        output.accept(ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
-                        output.accept(ModBlocks.OVERLOAD_MACHINE_FRAME);
-                        output.accept(ModBlocks.OVERLOAD_TNT);
+                        acceptCreative(output, ModBlocks.SILICON_BLOCK);
+                        acceptCreative(output, ModBlocks.OVERLOAD_CRYSTAL_BLOCK);
+                        acceptCreative(output, ModBlocks.OVERLOAD_MACHINE_FRAME);
+                        acceptCreative(output, ModBlocks.OVERLOAD_TNT);
                         // 机器
-                        output.accept(ModBlocks.LIGHTNING_COLLECTOR);
-                        output.accept(ModBlocks.TESLA_COIL);
-                        output.accept(ModBlocks.ATMOSPHERIC_IONIZER);
-                        output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
-                        output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
-                        output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
-                        output.accept(ModBlocks.CRYSTAL_CATALYZER);
+                        acceptCreative(output, ModBlocks.LIGHTNING_COLLECTOR);
+                        acceptCreative(output, ModBlocks.TESLA_COIL);
+                        acceptCreative(output, ModBlocks.ATMOSPHERIC_IONIZER);
+                        acceptCreative(output, ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
+                        acceptCreative(output, ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
+                        acceptCreative(output, ModBlocks.OVERLOAD_PROCESSING_FACTORY);
+                        acceptCreative(output, ModBlocks.CRYSTAL_CATALYZER);
                         // 网络设备
-                        output.accept(ModBlocks.OVERLOADED_CONTROLLER);
-                        output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
-                        output.accept(ModBlocks.OVERLOADED_INTERFACE);
+                        acceptCreative(output, ModBlocks.OVERLOADED_CONTROLLER);
+                        acceptCreative(output, ModBlocks.OVERLOADED_PATTERN_PROVIDER);
+                        acceptCreative(output, ModBlocks.OVERLOADED_INTERFACE);
                         if (ModBlocks.hasOverloadedPowerSupply()) {
-                            output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
+                            acceptCreative(output, ModBlocks.OVERLOADED_POWER_SUPPLY);
                         }
-                        output.accept(ModBlocks.WIRELESS_RECEIVER);
-                        output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
-                        output.accept(ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
+                        acceptCreative(output, ModBlocks.WIRELESS_RECEIVER);
+                        acceptCreative(output, ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
+                        acceptCreative(output, ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER);
                         // 线缆
-                        output.accept(ModItems.OVERLOADED_CABLE);
-                        output.accept(ModItems.OVERLOADED_CABLE_WHITE);
-                        output.accept(ModItems.OVERLOADED_CABLE_ORANGE);
-                        output.accept(ModItems.OVERLOADED_CABLE_MAGENTA);
-                        output.accept(ModItems.OVERLOADED_CABLE_LIGHT_BLUE);
-                        output.accept(ModItems.OVERLOADED_CABLE_YELLOW);
-                        output.accept(ModItems.OVERLOADED_CABLE_LIME);
-                        output.accept(ModItems.OVERLOADED_CABLE_PINK);
-                        output.accept(ModItems.OVERLOADED_CABLE_GRAY);
-                        output.accept(ModItems.OVERLOADED_CABLE_LIGHT_GRAY);
-                        output.accept(ModItems.OVERLOADED_CABLE_CYAN);
-                        output.accept(ModItems.OVERLOADED_CABLE_PURPLE);
-                        output.accept(ModItems.OVERLOADED_CABLE_BLUE);
-                        output.accept(ModItems.OVERLOADED_CABLE_BROWN);
-                        output.accept(ModItems.OVERLOADED_CABLE_GREEN);
-                        output.accept(ModItems.OVERLOADED_CABLE_RED);
-                        output.accept(ModItems.OVERLOADED_CABLE_BLACK);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_WHITE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_ORANGE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_MAGENTA);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_LIGHT_BLUE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_YELLOW);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_LIME);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_PINK);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_GRAY);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_LIGHT_GRAY);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_CYAN);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_PURPLE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_BLUE);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_BROWN);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_GREEN);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_RED);
+                        acceptCreative(output, ModItems.OVERLOADED_CABLE_BLACK);
                         // 材料
-                        output.accept(ModItems.OVERLOAD_CRYSTAL);
-                        output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
-                        output.accept(ModItems.OVERLOAD_ALLOY);
-                        output.accept(ModItems.OVERLOAD_ALLOY_BLANK);
-                        output.accept(ModItems.OVERLOAD_ALLOY_PLATE);
-                        output.accept(ModItems.OVERLOAD_SINGULARITY);
-                        output.accept(ModItems.ULTIMATE_OVERLOAD_CORE);
-                        output.accept(ModItems.LIGHTNING_COLLAPSE_MATRIX);
-                        output.accept(ModItems.UNOVERLOADED_CIRCUIT_BOARD);
-                        output.accept(ModItems.OVERLOAD_CIRCUIT_BOARD);
-                        output.accept(ModItems.OVERLOAD_PROCESSOR);
-                        output.accept(ModItems.OVERLOAD_INSCRIBER_PRESS);
-                        output.accept(ModItems.ELECTRO_CHIME_CRYSTAL);
-                        output.accept(ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL);
-                        output.accept(ModItems.CLEAR_CONDENSATE);
-                        output.accept(ModItems.RAIN_CONDENSATE);
-                        output.accept(ModItems.THUNDERSTORM_CONDENSATE);
+                        acceptCreative(output, ModItems.OVERLOAD_CRYSTAL);
+                        acceptCreative(output, ModItems.OVERLOAD_CRYSTAL_DUST);
+                        acceptCreative(output, ModItems.OVERLOAD_ALLOY);
+                        acceptCreative(output, ModItems.OVERLOAD_ALLOY_BLANK);
+                        acceptCreative(output, ModItems.OVERLOAD_ALLOY_PLATE);
+                        acceptCreative(output, ModItems.OVERLOAD_SINGULARITY);
+                        acceptCreative(output, ModItems.ULTIMATE_OVERLOAD_CORE);
+                        acceptCreative(output, ModItems.LIGHTNING_COLLAPSE_MATRIX);
+                        acceptCreative(output, ModItems.UNOVERLOADED_CIRCUIT_BOARD);
+                        acceptCreative(output, ModItems.OVERLOAD_CIRCUIT_BOARD);
+                        acceptCreative(output, ModItems.OVERLOAD_PROCESSOR);
+                        acceptCreative(output, ModItems.OVERLOAD_INSCRIBER_PRESS);
+                        acceptCreative(output, ModItems.ELECTRO_CHIME_CRYSTAL);
+                        acceptCreative(output, ModItems.PERFECT_ELECTRO_CHIME_CRYSTAL);
+                        acceptCreative(output, ModItems.CLEAR_CONDENSATE);
+                        acceptCreative(output, ModItems.RAIN_CONDENSATE);
+                        acceptCreative(output, ModItems.THUNDERSTORM_CONDENSATE);
                         // 存储组件
-                        output.accept(ModItems.LIGHTNING_ITEM_CELL_HOUSING);
-                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_I);
-                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_II);
-                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
-                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
-                        output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
+                        acceptCreative(output, ModItems.LIGHTNING_ITEM_CELL_HOUSING);
+                        acceptCreative(output, ModItems.LIGHTNING_STORAGE_COMPONENT_I);
+                        acceptCreative(output, ModItems.LIGHTNING_STORAGE_COMPONENT_II);
+                        acceptCreative(output, ModItems.LIGHTNING_STORAGE_COMPONENT_III);
+                        acceptCreative(output, ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
+                        acceptCreative(output, ModItems.LIGHTNING_STORAGE_COMPONENT_V);
                         // 元件
-                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_I);
-                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_II);
-                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_III);
-                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_IV);
-                        output.accept(ModItems.LIGHTNING_CELL_COMPONENT_V);
+                        acceptCreative(output, ModItems.LIGHTNING_CELL_COMPONENT_I);
+                        acceptCreative(output, ModItems.LIGHTNING_CELL_COMPONENT_II);
+                        acceptCreative(output, ModItems.LIGHTNING_CELL_COMPONENT_III);
+                        acceptCreative(output, ModItems.LIGHTNING_CELL_COMPONENT_IV);
+                        acceptCreative(output, ModItems.LIGHTNING_CELL_COMPONENT_V);
                         // 无限存储单元
-                        output.accept(ModItems.INFINITE_STORAGE_CELL);
+                        acceptCreative(output, ModItems.INFINITE_STORAGE_CELL);
                         output.accept(FixedInfiniteCellItem.createDisplayedResultStack(CellOutcome.HIGH_VOLTAGE));
                         output.accept(FixedInfiniteCellItem.createDisplayedResultStack(CellOutcome.EXTREME_HIGH_VOLTAGE));
                         // 工具
-                        output.accept(ModItems.OVERLOAD_PATTERN);
-                        output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
-                        output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
-                        output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        acceptCreative(output, ModItems.OVERLOAD_PATTERN);
+                        acceptCreative(output, ModItems.OVERLOAD_PATTERN_ENCODER);
+                        acceptCreative(output, ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
+                        acceptCreative(output, ModItems.OVERLOADED_FILTER_COMPONENT);
                         // 水晶生长
-                        output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
-                        output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
-                        output.accept(ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
-                        output.accept(ModBlocks.DAMAGED_BUDDING_OVERLOAD_CRYSTAL);
-                        output.accept(ModBlocks.SMALL_OVERLOAD_CRYSTAL_BUD);
-                        output.accept(ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
-                        output.accept(ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
-                        output.accept(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
+                        acceptCreative(output, ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
+                        acceptCreative(output, ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
+                        acceptCreative(output, ModBlocks.CRACKED_BUDDING_OVERLOAD_CRYSTAL);
+                        acceptCreative(output, ModBlocks.DAMAGED_BUDDING_OVERLOAD_CRYSTAL);
+                        acceptCreative(output, ModBlocks.SMALL_OVERLOAD_CRYSTAL_BUD);
+                        acceptCreative(output, ModBlocks.MEDIUM_OVERLOAD_CRYSTAL_BUD);
+                        acceptCreative(output, ModBlocks.LARGE_OVERLOAD_CRYSTAL_BUD);
+                        acceptCreative(output, ModBlocks.OVERLOAD_CRYSTAL_CLUSTER);
                         // Fumo
                         output.accept(ModFumos.MOAKIEE_FUMO_ITEM.get());
                         output.accept(ModFumos.CYSTRYSU_FUMO_ITEM.get());
@@ -200,7 +202,7 @@ public class AE2LightningTech {
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
         modEventBus.addListener(this::commonSetup);
-        modContainer.registerConfig(ModConfig.Type.COMMON, AE2LTCommonConfig.SPEC);
+        ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, AE2LTCommonConfig.SPEC);
 
         MinecraftForge.EVENT_BUS.addGenericListener(BlockEntity.class, this::attachBlockEntityCapabilities);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
@@ -569,7 +571,7 @@ public class AE2LightningTech {
                 new net.minecraft.core.dispenser.DefaultDispenseItemBehavior() {
                     @Override
                     protected net.minecraft.world.item.ItemStack execute(
-                            net.minecraft.core.dispenser.BlockSource source,
+                            net.minecraft.core.BlockSource source,
                             net.minecraft.world.item.ItemStack stack) {
                         var level = source.level();
                         var pos = source.pos().relative(
@@ -619,6 +621,10 @@ public class AE2LightningTech {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
         ResearchNoteGenerator.onServerStopped();
+    }
+
+    private static void acceptCreative(CreativeModeTab.Output output, RegistryObject<? extends ItemLike> holder) {
+        output.accept(holder.get());
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

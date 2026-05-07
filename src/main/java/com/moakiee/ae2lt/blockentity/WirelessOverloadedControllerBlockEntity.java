@@ -289,14 +289,14 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     // ── Persistence ──
 
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         tag.putInt("FrequencyId", frequencyId);
     }
 
     @Override
-    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadTag(tag, registries);
+    public void loadTag(CompoundTag tag) {
+        super.loadTag(tag);
         frequencyId = tag.contains("FrequencyId") ? tag.getInt("FrequencyId") : -1;
     }
 

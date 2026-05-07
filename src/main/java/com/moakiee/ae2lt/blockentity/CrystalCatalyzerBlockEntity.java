@@ -12,7 +12,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -97,7 +97,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     private final OverloadProcessingFactoryEnergyStorage energyStorage =
             new OverloadProcessingFactoryEnergyStorage(ENERGY_CAPACITY, this::onEnergyChanged);
     private final IUpgradeInventory upgrades =
-            UpgradeInventories.forMachine(ModBlocks.CRYSTAL_CATALYZER, 0, this::onUpgradesChanged);
+            UpgradeInventories.forMachine(ModBlocks.CRYSTAL_CATALYZER.get(), 0, this::onUpgradesChanged);
     private final CrystalCatalyzerLogic logic;
     private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
@@ -265,7 +265,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         this.mode = previous.next();
         abortProcessing();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
@@ -579,10 +579,10 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
-        data.put(TAG_TANK, tank.writeToNBT(registries, new CompoundTag()));
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
+        data.put(TAG_TANK, tank.writeToNBT(new CompoundTag()));
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
@@ -594,6 +594,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         data.putString(TAG_MODE, mode.getSerializedName());
         if (lockedRecipe != null) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
         } else {
             data.remove(TAG_LOCKED_RECIPE);
@@ -602,10 +603,10 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        tank.readFromNBT(registries, data.getCompound(TAG_TANK));
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        tank.readFromNBT(data.getCompound(TAG_TANK));
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
@@ -632,6 +633,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             mode = Mode.CRYSTAL;
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
+            var registries = level != null ? level.registryAccess() : net.minecraft.core.RegistryAccess.EMPTY;
             lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(
                     data.getCompound(TAG_LOCKED_RECIPE),
                     registries,
@@ -649,23 +651,23 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
              slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
-            ItemStack.OPTIONAL_STREAM_CODEC.encode(data, inventory.getStackInSlot(slot));
+            data.writeItem(inventory.getStackInSlot(slot));
         }
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
              slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
-            ItemStack newStack = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+            ItemStack newStack = data.readItem();
             if (!ItemStack.matches(oldStack, newStack)) {
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;
@@ -696,7 +698,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         allowedOutputs.clear();
         exportTargetCache.invalidate();
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
@@ -721,7 +723,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
                 () -> {
                     exportTargetCache.invalidate();
                     saveChanges();
-                    markForClientUpdate();
+                    markForUpdate();
                 });
     }
 
@@ -742,13 +744,13 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 
     private void onTankChanged() {
         saveChanges();
-        markForClientUpdate();
+        markForUpdate();
         logic.onStateChanged();
     }
 

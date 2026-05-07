@@ -225,7 +225,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(MIN_TICKS, MAX_TICKS, false);
+            return new TickingRequest(MIN_TICKS, MAX_TICKS, false, false);
         }
 
         @Override
@@ -585,14 +585,12 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         // ── NBT: no persistent state ────────────────────────────────────
 
         @Override
-        public void writeToChildTag(CompoundTag tag, String name,
-                                    HolderLookup.Provider registries) {
+        public void writeToChildTag(CompoundTag tag, String name) {
             tag.remove(name);
         }
 
         @Override
-        public void readFromChildTag(CompoundTag tag, String name,
-                                     HolderLookup.Provider registries) {
+        public void readFromChildTag(CompoundTag tag, String name) {
         }
     }
 
