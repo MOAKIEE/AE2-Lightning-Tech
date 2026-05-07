@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -183,7 +183,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
     }
 
     @Override
-    public void drawFG(GuiGraphics guiGraphics, int offsetX, int offsetY,
+    public void drawFG(GuiGraphicsExtractor guiGraphics, int offsetX, int offsetY,
                         int mouseX, int mouseY) {
         super.drawFG(guiGraphics, offsetX, offsetY, mouseX, mouseY);
 

@@ -22,7 +22,7 @@ public final class EasterEggClientTick {
      * easter-egg image does not flash on the next world's HUD. This also avoids
      * keeping the counter pinned at a non-zero value across logical client
      * sessions, which would otherwise cause the {@code render(...)} layer to
-     * keep doing work (allocating a {@code GuiGraphics} blit path each frame)
+     * keep doing work (allocating a {@code GuiGraphicsExtractor} blit path each frame)
      * even though the player has already left.
      */
     @SubscribeEvent

@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.integration.jei.category;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -111,7 +111,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     public void draw(
             Page page,
             IRecipeSlotsView recipeSlotsView,
-            GuiGraphics guiGraphics,
+            GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
         TeslaCoilMode mode = page.mode;
@@ -153,12 +153,12 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
         drawCentered(guiGraphics, font, outputText, TEXT_LINES[3]);
     }
 
-    private static void drawCentered(GuiGraphics guiGraphics, Font font, Component text, int y) {
+    private static void drawCentered(GuiGraphicsExtractor guiGraphics, Font font, Component text, int y) {
         int x = (WIDTH - font.width(text)) / 2;
         guiGraphics.drawString(font, text, x, y, TEXT_COLOR, false);
     }
 
-    private static void drawArrow(GuiGraphics guiGraphics) {
+    private static void drawArrow(GuiGraphicsExtractor guiGraphics) {
         long elapsed = Util.getMillis() % PROCESS_CYCLE_MS;
         double progress = elapsed / (double) PROCESS_CYCLE_MS;
         int fillW = Mth.clamp((int) Math.ceil(progress * ARROW_W), 0, ARROW_W);
@@ -177,7 +177,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
                 ARROW_TEX_H);
     }
 
-    private static void drawLightningIcon(GuiGraphics guiGraphics, Identifier texture, int x, int y) {
+    private static void drawLightningIcon(GuiGraphicsExtractor guiGraphics, Identifier texture, int x, int y) {
         int frame = (int) ((Util.getMillis() / ICON_FRAME_MS) % ICON_FRAMES);
         guiGraphics.blit(
                 texture,

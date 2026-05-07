@@ -22,7 +22,7 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 import com.moakiee.ae2lt.network.*;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -692,7 +692,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        public void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+        public void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
             // Super paints the BOX background sprite and — only when
             // the super icon field is non-null — the AE2 glyph. Passing
             // {@code null} for tabs that have a custom PNG means super
@@ -1350,7 +1350,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     // Rendering
 
     @Override
-    protected void renderBg(GuiGraphics g, float partialTick, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphicsExtractor g, float partialTick, int mouseX, int mouseY) {
         // Per-tab AE2 chassis. Each tab uses a different 195×157 texture
         // so the recessed wells (list rows / info shelf / blank panel) are
         // baked into the art instead of redrawn with {@code g.fill} on top.
@@ -1404,7 +1404,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * just below, and a Cancel/Submit row. Kept separate so the delete
      * modal and password modal each own their own footprint.
      */
-    private void drawPasswordPromptPanel(GuiGraphics g) {
+    private void drawPasswordPromptPanel(GuiGraphicsExtractor g) {
         int px0 = leftPos + 16;
         int py0 = topPos + 50;
         int pw = 144;
@@ -1422,7 +1422,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * title line, a hint line, and a single row of Confirm/Cancel
      * buttons without crowding the Settings tab chrome above.
      */
-    private void drawDeleteConfirmPanel(GuiGraphics g) {
+    private void drawDeleteConfirmPanel(GuiGraphicsExtractor g) {
         int px0 = leftPos + 16;
         int py0 = topPos + 50;
         int pw = 144;
@@ -1441,7 +1441,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
      * {@link #rebuildMemberPopupWidgets()} sit on top of this panel
      * instead of being occluded by it.
      */
-    private void drawMemberPopupPanel(GuiGraphics g) {
+    private void drawMemberPopupPanel(GuiGraphicsExtractor g) {
         int px0 = leftPos + 10;
         int py0 = topPos + 26;
         int pw = 156;
@@ -1472,7 +1472,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     }
 
     @Override
-    protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         drawFlatCentered(g,
                 Component.translatable(currentTab.getTranslationKey()),
                 imageWidth / 2, 6, AE2_TEXT_TITLE);
@@ -1570,26 +1570,26 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     /**
      * AE2 draws panel-surface text flat (no drop-shadow) so the character
      * glyphs read cleanly against the light-lavender chassis. Minecraft's
-     * default {@link GuiGraphics#drawString(net.minecraft.client.gui.Font,
+     * default {@link GuiGraphicsExtractor#drawString(net.minecraft.client.gui.Font,
      * Component, int, int, int)} draws WITH a shadow, which on a light
      * panel produces an unpleasant embossed look. All label rendering in
      * this screen goes through this helper (and
      * {@link #drawFlatCentered}) to match AE2's native visual weight.
      */
-    private void drawFlat(GuiGraphics g, Component text, int x, int y, int color) {
+    private void drawFlat(GuiGraphicsExtractor g, Component text, int x, int y, int color) {
         g.drawString(font, text, x, y, color, false);
     }
 
-    private void drawFlat(GuiGraphics g, String text, int x, int y, int color) {
+    private void drawFlat(GuiGraphicsExtractor g, String text, int x, int y, int color) {
         g.drawString(font, text, x, y, color, false);
     }
 
-    private void drawFlatCentered(GuiGraphics g, Component text, int centerX, int y, int color) {
+    private void drawFlatCentered(GuiGraphicsExtractor g, Component text, int centerX, int y, int color) {
         int w = font.width(text);
         g.drawString(font, text, centerX - w / 2, y, color, false);
     }
 
-    private void renderHomeLabels(GuiGraphics g) {
+    private void renderHomeLabels(GuiGraphicsExtractor g) {
         // Five info lines sit inside the wide info shelf baked into
         // wireless_overloaded_home.png (shelf y=39..111). 14-px row pitch
         // gives clean spacing between glyphs and avoids touching the
@@ -1651,7 +1651,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
     }
 
-    private void renderSelectionLabels(GuiGraphics g) {
+    private void renderSelectionLabels(GuiGraphicsExtractor g) {
         // Single subtitle row between title (y=6) and shelf (y=28).
         // Text at y=18 renders glyphs on y=18..26, keeping a 2-px gap
         // above the shelf and well clear of the title descenders — the
@@ -1674,7 +1674,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         // shelf's bottom bevel avoids the prior clipping/overlap.
     }
 
-    private void renderConnectionLabels(GuiGraphics g) {
+    private void renderConnectionLabels(GuiGraphicsExtractor g) {
         int currentId = freqMenu().getCurrentFrequencyId();
         if (currentId <= 0) {
             drawFlatCentered(g, Component.translatable("ae2lt.gui.error.no_frequency"),
@@ -1731,7 +1731,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
     }
 
-    private void renderMemberLabels(GuiGraphics g) {
+    private void renderMemberLabels(GuiGraphicsExtractor g) {
         int currentId = freqMenu().getCurrentFrequencyId();
         if (currentId <= 0) {
             drawFlatCentered(g, Component.translatable("ae2lt.gui.error.no_frequency"),
@@ -1760,7 +1760,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         // is already taken by pagination.
     }
 
-    private void renderCreateLabels(GuiGraphics g) {
+    private void renderCreateLabels(GuiGraphicsExtractor g) {
         drawFlat(g, Component.translatable("ae2lt.gui.frequency.name").append(":"),
                 16, 22, AE2_TEXT_MUTED);
         drawFlat(g, Component.translatable("ae2lt.gui.frequency.security").append(":"),
@@ -1800,7 +1800,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
     }
 
-    private void renderSettingLabels(GuiGraphics g) {
+    private void renderSettingLabels(GuiGraphicsExtractor g) {
         if (ClientFrequencyCache.getFrequency(freqMenu().getCurrentFrequencyId()) == null) {
             drawFlatCentered(g, Component.translatable("ae2lt.gui.error.no_frequency"),
                     imageWidth / 2, 40, AE2_TEXT_MUTED);
@@ -1821,7 +1821,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     }
 
     @Override
-    public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         renderBackground(g, mouseX, mouseY, partialTick);
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
@@ -1882,7 +1882,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
             boolean hover = active && (isHoveredOrFocused());
             int srcV = hover ? ROW_SPRITE_HOVER_V : ROW_SPRITE_IDLE_V;
             // BG_LIST and BG_SELECTION carry an identical sprite library
@@ -1966,7 +1966,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
             boolean enabled = maxOffset() > 0;
             Identifier sprite = enabled
                     ? Identifier.fromNamespaceAndPath("ae2", "big_scroller")

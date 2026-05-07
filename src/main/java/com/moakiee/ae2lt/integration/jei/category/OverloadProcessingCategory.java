@@ -5,7 +5,7 @@ import java.util.List;
 
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
@@ -161,7 +161,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     public void draw(
             OverloadProcessingRecipe recipe,
             IRecipeSlotsView recipeSlotsView,
-            GuiGraphics guiGraphics,
+            GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
         background.draw(guiGraphics);
@@ -184,7 +184,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
         guiGraphics.drawString(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
     }
 
-    private void drawProcessOverlay(GuiGraphics guiGraphics) {
+    private void drawProcessOverlay(GuiGraphicsExtractor guiGraphics) {
         long elapsed = Util.getMillis() % PROCESS_CYCLE_MS;
         double progress = elapsed / (double) PROCESS_CYCLE_MS;
         int width = Mth.clamp((int) Math.ceil(progress * PROCESS_OVERLAY_WIDTH), 0, PROCESS_OVERLAY_WIDTH);

@@ -7,7 +7,7 @@ import java.util.function.Supplier;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.Screen;
@@ -113,7 +113,7 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         FluidStack fluid = fluidSupplier.get();
         if (!fluid.isEmpty()) {
             int capacity = Math.max(1, capacitySupplier.getAsInt());
@@ -148,7 +148,7 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
         }
     }
 
-    private void drawTick(GuiGraphics guiGraphics, int srcX, int srcY, int tickWidth) {
+    private void drawTick(GuiGraphicsExtractor guiGraphics, int srcX, int srcY, int tickWidth) {
         int offsetX = srcX - TANK_SRC_X;
         int offsetY = srcY - TANK_SRC_Y;
         Blitter.texture(BACKGROUND_TEXTURE)

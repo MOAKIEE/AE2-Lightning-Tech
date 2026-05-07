@@ -2,7 +2,7 @@ package com.moakiee.ae2lt.client;
 
 import java.util.List;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
@@ -24,7 +24,7 @@ public class AtmosphericIonizerEnergyBar extends AbstractWidget implements ITool
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         fill.copy().opacity(0.2f).dest(getX(), getY(), width, height).blit(guiGraphics);
 
         long totalEnergy = Math.max(1L, menu.getTotalEnergyRequired());

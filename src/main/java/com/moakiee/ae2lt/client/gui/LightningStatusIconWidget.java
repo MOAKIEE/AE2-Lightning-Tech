@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.client.gui;
 import java.util.List;
 import java.util.function.Supplier;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.renderer.Rect2i;
@@ -36,7 +36,7 @@ public class LightningStatusIconWidget extends AbstractWidget implements IToolti
     }
 
     @Override
-    protected void renderWidget(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         guiGraphics.blit(ICON, getX(), getY(), 0, 0, SIZE, SIZE, SIZE, SIZE);
     }
 

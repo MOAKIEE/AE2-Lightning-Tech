@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.client;
 import com.moakiee.ae2lt.AE2LightningTech;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.resources.Identifier;
 
@@ -44,7 +44,7 @@ public final class EasterEggOverlay implements LayeredDraw.Layer {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+    public void render(GuiGraphicsExtractor guiGraphics, DeltaTracker deltaTracker) {
         if (ticksRemaining <= 0) {
             return;
         }

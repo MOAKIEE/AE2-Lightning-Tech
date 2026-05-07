@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.client;
 import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -38,7 +38,7 @@ public final class LightningKeyRenderHandler implements AEKeyRenderHandler<Light
     }
 
     @Override
-    public void drawInGui(Minecraft minecraft, GuiGraphics guiGraphics, int x, int y, LightningKey stack) {
+    public void drawInGui(Minecraft minecraft, GuiGraphicsExtractor guiGraphics, int x, int y, LightningKey stack) {
         Blitter.sprite(spriteFor(stack))
                 .dest(x, y, 16, 16)
                 .blit(guiGraphics);

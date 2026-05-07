@@ -10,7 +10,7 @@ import com.mojang.math.Axis;
 
 import mezz.jei.api.gui.widgets.IRecipeWidget;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenPosition;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -107,7 +107,7 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
     }
 
     @Override
-    public void drawWidget(GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void drawWidget(GuiGraphicsExtractor guiGraphics, double mouseX, double mouseY) {
         if (blocks.isEmpty() || scale <= 0F) {
             return;
         }

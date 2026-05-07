@@ -11,7 +11,7 @@ import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.ingredients.IIngredientRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.TooltipFlag;
 
@@ -28,12 +28,12 @@ public class LightningJeiIngredientRenderer implements IIngredientRenderer<Light
     };
 
     @Override
-    public void render(GuiGraphics guiGraphics, LightningKey ingredient) {
+    public void render(GuiGraphicsExtractor guiGraphics, LightningKey ingredient) {
         render(guiGraphics, ingredient, 0, 0);
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, LightningKey ingredient, int posX, int posY) {
+    public void render(GuiGraphicsExtractor guiGraphics, LightningKey ingredient, int posX, int posY) {
         if (ingredient == null) {
             return;
         }

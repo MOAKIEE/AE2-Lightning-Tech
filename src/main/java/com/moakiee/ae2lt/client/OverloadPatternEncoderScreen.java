@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -83,20 +83,20 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     @Override
-    protected void renderBg(GuiGraphics graphics, float partialTick, int mouseX, int mouseY) {
+    protected void renderBg(GuiGraphicsExtractor graphics, float partialTick, int mouseX, int mouseY) {
         graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, TEXTURE_SIZE, TEXTURE_SIZE);
         renderEntries(graphics, mouseX, mouseY);
         renderScrollbar(graphics);
     }
 
     @Override
-    protected void renderLabels(GuiGraphics graphics, int mouseX, int mouseY) {
+    protected void renderLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         graphics.drawString(font, SCREEN_TITLE, 8, 6, 0x404040, false);
         graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
         renderBackground(graphics, mouseX, mouseY, partialTick);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderEntryTooltip(graphics, mouseX, mouseY);
@@ -144,7 +144,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
-    private void renderEntries(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderEntries(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         var entries = buildEntries();
         int start = Math.min(scrollOffset, Math.max(0, entries.size() - VISIBLE_ROWS));
         int end = Math.min(entries.size(), start + VISIBLE_ROWS);
@@ -158,7 +158,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         graphics.disableScissor();
     }
 
-    private void renderEntry(GuiGraphics graphics, int mouseX, int mouseY, Entry entry, int visibleRow, int rowY) {
+    private void renderEntry(GuiGraphicsExtractor graphics, int mouseX, int mouseY, Entry entry, int visibleRow, int rowY) {
         int slotX = leftPos + ENTRY_SLOT_X;
         int textX = leftPos + ENTRY_TEXT_X;
         int switchX = leftPos + ENTRY_SWITCH_X;
@@ -173,12 +173,12 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         renderModeSwitch(graphics, switchX, contentY + 3, entry.mode());
     }
 
-    private void renderModeSwitch(GuiGraphics graphics, int x, int y, MatchMode mode) {
+    private void renderModeSwitch(GuiGraphicsExtractor graphics, int x, int y, MatchMode mode) {
         int v = mode.ignoresComponents() ? 40 : 28;
         graphics.blit(CHECKBOX_TEXTURE, x, y, 0, v, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT, CHECKBOX_TEXTURE_SIZE, CHECKBOX_TEXTURE_SIZE);
     }
 
-    private void renderScrollbar(GuiGraphics graphics) {
+    private void renderScrollbar(GuiGraphicsExtractor graphics) {
         if (maxScrollOffset() <= 0) {
             graphics.blit(TEXTURE, leftPos + TRACK_X - 1, topPos + TRACK_Y, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
             return;
@@ -189,7 +189,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         graphics.blit(TEXTURE, leftPos + TRACK_X - 1, sliderY, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
     }
 
-    private void renderEntryTooltip(GuiGraphics graphics, int mouseX, int mouseY) {
+    private void renderEntryTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         var entry = getEntryAt(mouseX, mouseY);
         if (entry == null) {
             renderTooltip(graphics, mouseX, mouseY);

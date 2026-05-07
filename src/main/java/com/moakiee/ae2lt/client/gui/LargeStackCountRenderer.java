@@ -7,7 +7,7 @@ import org.joml.Matrix4f;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
 
@@ -34,7 +34,7 @@ public final class LargeStackCountRenderer {
      * Renders the abbreviated stack count on a slot if it is a
      * {@link LargeStackAppEngSlot} with a count greater than 1.
      */
-    public static void renderSlotCount(GuiGraphics guiGraphics, Font font, Slot slot) {
+    public static void renderSlotCount(GuiGraphicsExtractor guiGraphics, Font font, Slot slot) {
         if (!(slot instanceof LargeStackAppEngSlot)) {
             return;
         }
@@ -55,7 +55,7 @@ public final class LargeStackCountRenderer {
      * instance, but we still want to reuse the exact same large-stack count
      * visuals as the machine GUI.
      */
-    public static void renderCountAt(GuiGraphics guiGraphics, Font font, int slotX, int slotY, long count) {
+    public static void renderCountAt(GuiGraphicsExtractor guiGraphics, Font font, int slotX, int slotY, long count) {
         if (count <= 1) {
             return;
         }
@@ -131,7 +131,7 @@ public final class LargeStackCountRenderer {
         return Math.round(value) + suffix;
     }
 
-    private static void renderLabel(GuiGraphics guiGraphics, Font font, int slotX, int slotY, String text) {
+    private static void renderLabel(GuiGraphicsExtractor guiGraphics, Font font, int slotX, int slotY, String text) {
         float inverseScale = 1.0F / SCALE;
         int drawX = (int) ((slotX + 18.0F - font.width(text) * SCALE) * inverseScale);
         int drawY = (int) ((slotY + 16.0F - 5.0F * SCALE) * inverseScale);
