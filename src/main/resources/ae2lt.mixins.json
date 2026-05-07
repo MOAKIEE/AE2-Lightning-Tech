@@ -1,6 +1,6 @@
 {
   "required": true,
-  "minVersion": "0.8",
+  "minVersion": "0.8.7",
   "package": "com.moakiee.ae2lt.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [

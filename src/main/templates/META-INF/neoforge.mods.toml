@@ -80,56 +80,7 @@ ordering = "AFTER"
 side = "BOTH"
 
 [[dependencies."${mod_id}"]]
-modId = "flywheel"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "CLIENT"
-
-[[dependencies."${mod_id}"]]
-modId = "ponder"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "CLIENT"
-
-[[dependencies."${mod_id}"]]
 modId = "jade"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "CLIENT"
-
-[[dependencies."${mod_id}"]]
-modId = "advanced_ae"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies."${mod_id}"]]
-modId = "extendedae"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies."${mod_id}"]]
-modId = "extendedae_plus"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies."${mod_id}"]]
-modId = "appflux"
-type = "optional"
-versionRange = "[0,)"
-ordering = "AFTER"
-side = "BOTH"
-
-[[dependencies."${mod_id}"]]
-modId = "ae2jeiintegration"
 type = "optional"
 versionRange = "[0,)"
 ordering = "AFTER"

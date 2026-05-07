@@ -2,7 +2,7 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'idea'
-    id 'net.neoforged.moddev' version '2.0.140'
+    id 'net.neoforged.moddev' version '2.0.141'
 }
 
 version = mod_version
@@ -36,16 +36,11 @@ base {
     archivesName = mod_id
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(java_version as Integer)
 
 neoForge {
     // Specify the version of NeoForge to use.
     version = project.neo_version
-
-    parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
 
     // This line is optional. Access Transformers are automatically detected
     // accessTransformers.add('src/main/resources/META-INF/accesstransformer.cfg')
@@ -145,56 +140,15 @@ neoForge {
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
-    implementation "curse.maven:applied-energistics-2-223794:7027323"
+    implementation "curse.maven:applied-energistics-2-223794:8049397"
     runtimeOnly "org.appliedenergistics:guideme:${guideme_version}"
-    compileOnly "curse.maven:jei-238222:7391682"
-    runtimeOnly "curse.maven:jei-238222:7391682"
-    compileOnly "curse.maven:jade-324717:5427817"
-    runtimeOnly "curse.maven:jade-324717:5427817"
-    runtimeOnly "curse.maven:mekanism-268560:7621971"
-    runtimeOnly "curse.maven:mekanism-generators-268566:7621974"
-    compileOnly "curse.maven:glodium-957920:5821676"
-    runtimeOnly "curse.maven:glodium-957920:5821676"
-    runtimeOnly "curse.maven:geckolib-388172:7707149"
-    compileOnly "dev.technici4n:GrandPower:3.0.0"
-    compileOnly "mekanism:Mekanism:1.21.1-10.7.15.81"
-    compileOnly "curse.maven:flux-networks-248020:6089446"
-    runtimeOnly "curse.maven:applied-mekanistics-574300:7096962"
-    runtimeOnly "curse.maven:mekanism-extras-1026040:7628313"
-    runtimeOnly "curse.maven:just-enough-characters-250702:7320033"
-    runtimeOnly "curse.maven:building-gadgets-298187:6850515"
-    runtimeOnly "curse.maven:ftb-ultimine-forge-386134:7570482"
-    runtimeOnly "curse.maven:ftb-library-forge-404465:7746959"
-    runtimeOnly "curse.maven:architectury-api-419699:5786327"
-    runtimeOnly "curse.maven:spark-361579:6225208"
-    runtimeOnly "curse.maven:construction-sticks-1156098:7687867"
-    runtimeOnly "curse.maven:toms-storage-378609:7659872"
-    runtimeOnly "curse.maven:kubejs-238086:7278501"
-    runtimeOnly "curse.maven:rhino-416294:7104526"
+    compileOnly "curse.maven:jei-238222:8014757"
+    runtimeOnly "curse.maven:jei-238222:8014757"
+    compileOnly "curse.maven:jade-324717:7938398"
+    runtimeOnly "curse.maven:jade-324717:7938398"
 
     runtimeOnly files("libs/observable-5.4.4.jar")
     runtimeOnly "curse.maven:kotlin-for-forge-351264:7471280"
-
-    // Example mod dependency with JEI
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-forge-api:${jei_version}"
-    // runtimeOnly "mezz.jei:jei-${mc_version}-forge:${jei_version}"
-
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
-
-    // Example mod dependency using a file as dependency
-    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
-
-    // Example project dependency using a sister or child project:
-    // implementation project(":myproject")
-
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.
