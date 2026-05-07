@@ -21,7 +21,6 @@ import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
-import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
@@ -36,9 +35,6 @@ public class ModScreens {
         event.register(OverloadedPatternProviderMenu.TYPE, ModScreens::createOverloadedPatternProviderScreen);
         event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
         event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
-        if (ModBlocks.hasOverloadedPowerSupply()) {
-            event.register(OverloadedPowerSupplyMenu.TYPE, ModScreens::createOverloadedPowerSupplyScreen);
-        }
         event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
         event.register(LightningAssemblyChamberMenu.TYPE, ModScreens::createLightningAssemblyChamberScreen);
         event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
@@ -59,12 +55,6 @@ public class ModScreens {
             OverloadedInterfaceMenu menu, Inventory inv, Component title) {
         var style = StyleManager.loadStyleDoc("/screens/overloaded_interface.json");
         return new OverloadedInterfaceScreen(menu, inv, title, style);
-    }
-
-    private static OverloadedPowerSupplyScreen createOverloadedPowerSupplyScreen(
-            OverloadedPowerSupplyMenu menu, Inventory inv, Component title) {
-        var style = StyleManager.loadStyleDoc("/screens/overloaded_power_supply.json");
-        return new OverloadedPowerSupplyScreen(menu, inv, title, style);
     }
 
     private static LightningSimulationChamberScreen createLightningSimulationChamberScreen(

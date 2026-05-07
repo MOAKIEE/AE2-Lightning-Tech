@@ -10,7 +10,6 @@ import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
 import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
-import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.menu.TeslaCoilMenu;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.core.registries.Registries;
@@ -36,13 +35,6 @@ public final class ModMenuTypes {
             OVERLOADED_INTERFACE = MENU_TYPES.register(
                     "overloaded_interface",
                     () -> OverloadedInterfaceMenu.TYPE);
-
-    public static final DeferredHolder<MenuType<?>, MenuType<OverloadedPowerSupplyMenu>>
-            OVERLOADED_POWER_SUPPLY = ModBlocks.hasOverloadedPowerSupply()
-                    ? MENU_TYPES.register(
-                            "overloaded_power_supply",
-                            () -> OverloadedPowerSupplyMenu.TYPE)
-                    : null;
 
     public static final DeferredHolder<MenuType<?>, MenuType<LightningSimulationChamberMenu>>
             LIGHTNING_SIMULATION_CHAMBER = MENU_TYPES.register(

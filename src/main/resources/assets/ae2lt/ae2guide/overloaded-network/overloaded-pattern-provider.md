@@ -7,7 +7,6 @@ item_ids:
   - ae2lt:overloaded_pattern_provider
   - ae2lt:overload_pattern
   - ae2lt:overload_pattern_encoder
-  - ae2lt:overloaded_wireless_connect_tool
 ---
 
 # Overloaded Pattern Provider
@@ -34,13 +33,7 @@ In Normal Mode, the Overloaded Pattern Provider pushes materials into **physical
 
 ### Wireless Mode
 
-<ItemImage id="ae2lt:overloaded_wireless_connect_tool" scale="2" float="left" />
-
-In Wireless Mode, the Overloaded Pattern Provider can dispatch materials to remote machines across a distance. Use the **Overloaded Wireless Connect Tool** to establish wireless connections:
-
-1. Hold the Overloaded Wireless Connect Tool and **Shift + right-click** the Overloaded Pattern Provider to select it
-2. Right-click a specific face of a target machine to connect
-3. One provider can bind to multiple remote machines
+In Wireless Mode, the Overloaded Pattern Provider can dispatch materials to remote machines across a distance. Bind remote machines via the provider's in-game UI; one provider can bind to multiple remote machines.
 
 Once connections are in place, the provider dispatches materials to the remote machines according to the selected distribution strategy.
 

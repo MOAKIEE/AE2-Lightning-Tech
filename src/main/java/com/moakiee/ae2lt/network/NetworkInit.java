@@ -16,10 +16,6 @@ public final class NetworkInit {
         var registrar = event.registrar(AE2LightningTech.MODID);
 
         registrar.playToServer(
-                WirelessConnectorUsePacket.TYPE,
-                WirelessConnectorUsePacket.STREAM_CODEC,
-                WirelessConnectorUsePacket::handle);
-        registrar.playToServer(
                 OpenFrequencyMenuPacket.TYPE,
                 OpenFrequencyMenuPacket.STREAM_CODEC,
                 OpenFrequencyMenuPacket::handle);

@@ -13,7 +13,6 @@ import com.moakiee.ae2lt.block.OverloadCrystalClusterBlock;
 import com.moakiee.ae2lt.block.OverloadedControllerBlock;
 import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
-import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
@@ -25,13 +24,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
-import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 public final class ModBlocks {
-    private static final String APPFLUX_MODID = "appflux";
-
     public static final DeferredRegister.Blocks BLOCKS = DeferredRegister.createBlocks(AE2LightningTech.MODID);
 
     private static final BlockBehaviour.Properties BUDDING_PROPERTIES = BlockBehaviour.Properties.of()
@@ -143,12 +139,6 @@ public final class ModBlocks {
     public static final DeferredBlock<OverloadedInterfaceBlock> OVERLOADED_INTERFACE =
             registerBlock("overloaded_interface", OverloadedInterfaceBlock::new);
 
-    public static final DeferredBlock<OverloadedPowerSupplyBlock> OVERLOADED_POWER_SUPPLY =
-            registerBlock(
-                    "overloaded_power_supply",
-                    OverloadedPowerSupplyBlock::new,
-                    ModBlocks::isAppFluxLoaded);
-
     public static final DeferredBlock<WirelessReceiverBlock> WIRELESS_RECEIVER =
             registerBlock("wireless_receiver", WirelessReceiverBlock::new);
 
@@ -186,13 +176,5 @@ public final class ModBlocks {
             ModItems.ITEMS.register(name, () -> new BlockItem(registered.get(), new Item.Properties()));
         }
         return registered;
-    }
-
-    public static boolean hasOverloadedPowerSupply() {
-        return OVERLOADED_POWER_SUPPLY != null;
-    }
-
-    private static boolean isAppFluxLoaded() {
-        return ModList.get().isLoaded(APPFLUX_MODID);
     }
 }

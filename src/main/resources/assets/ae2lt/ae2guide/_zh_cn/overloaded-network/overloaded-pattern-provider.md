@@ -7,7 +7,6 @@ item_ids:
   - ae2lt:overloaded_pattern_provider
   - ae2lt:overload_pattern
   - ae2lt:overload_pattern_encoder
-  - ae2lt:overloaded_wireless_connect_tool
 ---
 
 # 过载样板供应器
@@ -34,13 +33,7 @@ item_ids:
 
 ### 无线模式
 
-<ItemImage id="ae2lt:overloaded_wireless_connect_tool" scale="2" float="left" />
-
-无线模式下，过载样板供应器可以跨距离将材料派发到远程机器。建立无线连接需要使用**过载无线连接工具**：
-
-1. 手持过载无线连接工具，**Shift + 右击**过载样板供应器以完成选中
-2. 再对目标机器的特定面**右击**以建立连接
-3. 同一台供应器可以绑定多台远程机器
+无线模式下，过载样板供应器可以跨距离将材料派发到远程机器。在供应器自身的 GUI 中绑定远程机器，同一台供应器可以绑定多台远程机器。
 
 连接完成后，供应器将按所选分配策略向远程机器派发材料。
 
