@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.client;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 
-import net.minecraft.client.renderer.RenderType;
+import net.minecraft.client.renderer.rendertype.RenderType;
 
 /**
  * Custom RenderType definitions for ae2lt overlays.

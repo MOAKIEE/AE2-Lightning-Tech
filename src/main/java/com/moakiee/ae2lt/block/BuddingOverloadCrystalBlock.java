@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.block;
 
 import com.moakiee.ae2lt.registry.ModBlocks;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
