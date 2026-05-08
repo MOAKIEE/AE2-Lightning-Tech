@@ -4,10 +4,10 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.LayeredDraw;
 import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.gui.GuiLayer;
 
-public final class EasterEggOverlay implements LayeredDraw.Layer {
+public final class EasterEggOverlay implements GuiLayer {
     public static final EasterEggOverlay INSTANCE = new EasterEggOverlay();
 
     private static final Identifier TEXTURE =
