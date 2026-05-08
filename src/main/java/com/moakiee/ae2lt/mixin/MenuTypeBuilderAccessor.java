@@ -18,21 +18,21 @@ import appeng.menu.locator.MenuLocator;
 // behavior can be reimplemented without registering the type into ae2's queue.
 @Mixin(MenuTypeBuilder.class)
 public interface MenuTypeBuilderAccessor<M extends AEBaseMenu, I> {
-    @Accessor("id")
+    @Accessor(value = "id", remap = false)
     void ae2lt$setId(ResourceLocation id);
 
-    @Accessor("id")
+    @Accessor(value = "id", remap = false)
     ResourceLocation ae2lt$getId();
 
-    @Accessor("menuType")
+    @Accessor(value = "menuType", remap = false)
     void ae2lt$setMenuType(MenuType<M> menuType);
 
-    @Accessor("menuType")
+    @Accessor(value = "menuType", remap = false)
     MenuType<M> ae2lt$getMenuType();
 
-    @Invoker("fromNetwork")
+    @Invoker(value = "fromNetwork", remap = false)
     M ae2lt$invokeFromNetwork(int containerId, Inventory inv, FriendlyByteBuf packetBuf);
 
-    @Invoker("open")
+    @Invoker(value = "open", remap = false)
     boolean ae2lt$invokeOpen(Player player, MenuLocator locator, boolean fromSubMenu);
 }

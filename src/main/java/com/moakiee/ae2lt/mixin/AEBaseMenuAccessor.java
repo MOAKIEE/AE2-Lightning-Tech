@@ -10,6 +10,6 @@ import appeng.menu.AEBaseMenu;
 // Re-exposes the private `isPlayerSideSlot` helper that's already public in 1.21.
 @Mixin(AEBaseMenu.class)
 public interface AEBaseMenuAccessor {
-    @Invoker("isPlayerSideSlot")
+    @Invoker(value = "isPlayerSideSlot", remap = false)
     boolean ae2lt$isPlayerSideSlot(Slot slot);
 }
