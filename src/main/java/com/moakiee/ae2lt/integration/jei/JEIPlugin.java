@@ -19,6 +19,7 @@ import com.moakiee.ae2lt.integration.jei.category.OverloadProcessingCategory;
 import com.moakiee.ae2lt.integration.jei.category.TeslaCoilCategory;
 import com.moakiee.ae2lt.integration.jei.compat.ae2jeiintegration.AE2JeiIntegrationCompat;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
@@ -58,8 +59,7 @@ public class JEIPlugin implements IModPlugin {
                 LightningJeiIngredients.TYPE,
                 LightningJeiIngredients.INGREDIENTS,
                 LightningJeiIngredients.HELPER,
-                LightningJeiIngredients.RENDERER,
-                LightningJeiIngredients.CODEC);
+                LightningJeiIngredients.RENDERER);
     }
 
     @Override
@@ -88,44 +88,50 @@ public class JEIPlugin implements IModPlugin {
 
         registration.addRecipes(
                 CrystalCatalyzerCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
                         .values()
                         .stream()
                         .filter(recipe -> !recipe.getOutputTemplate().isEmpty())
                         .toList());
         registration.addRecipes(
                 LightningAssemblyCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())
                         .values()
                         .stream()
                         .toList());
         registration.addRecipes(
                 LightningSimulationCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())
                         .values()
                         .stream()
                         .toList());
         registration.addRecipes(
                 LightningTransformCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get())
                         .values()
                         .stream()
                         .toList());
         registration.addRecipes(
                 LightningStrikeCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get())
                         .values()
                         .stream()
                         .toList());
         registration.addRecipes(
                 OverloadProcessingCategory.TYPE,
-                level.getRecipeManager()
-                        .byType(com.moakiee.ae2lt.registry.ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get())
+                RecipeManagerByTypeAccess.byType(
+                                level.getRecipeManager(),
+                                com.moakiee.ae2lt.registry.ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get())
                         .values()
                         .stream()
                         .toList());

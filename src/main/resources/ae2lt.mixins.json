@@ -20,6 +20,7 @@
     "GridGetMachineNodesMixin",
     "PathingCalculationCapMixin",
     "ControllerValidatorMixin",
+    "RecipeManagerMixin",
     "EjectGhostBEMixin",
     "MenuTypeBuilderAccessor",
     "AEBaseMenuAccessor"

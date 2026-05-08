@@ -6,6 +6,7 @@ import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 import com.mojang.logging.LogUtils;
 import java.util.List;
 import net.minecraft.core.BlockPos;
@@ -104,7 +105,8 @@ public final class NaturalLightningTransformationHandler {
     private static void tryTransformFromNearbyLightningRod(
             ServerLevel level, BlockPos lightningPos, boolean naturalWeather) {
         List<LightningStrikeRecipe> allRecipes = new java.util.ArrayList<>(
-                level.getRecipeManager().byType(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get()).values());
+                RecipeManagerByTypeAccess.byType(level.getRecipeManager(), ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get())
+                        .values());
         if (allRecipes.isEmpty()) {
             return;
         }

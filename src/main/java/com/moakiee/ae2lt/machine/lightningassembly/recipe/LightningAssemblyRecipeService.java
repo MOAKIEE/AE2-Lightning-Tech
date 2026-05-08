@@ -13,6 +13,7 @@ import net.minecraft.world.level.Level;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 
 public final class LightningAssemblyRecipeService {
     public static final int EXTREME_TO_HIGH_RATIO = 4;
@@ -34,7 +35,7 @@ public final class LightningAssemblyRecipeService {
 
     private static synchronized List<LightningAssemblyRecipe> getSortedRecipes(Level level) {
         RecipeManager recipeManager = level.getRecipeManager();
-        var raw = recipeManager.byType(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
+        var raw = RecipeManagerByTypeAccess.byType(recipeManager, ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
         int orderFingerprint = computeRecipeOrderFingerprint(raw);
         if (recipeManager != cachedRecipeManager
                 || raw != cachedRawRecipeList
@@ -112,7 +113,10 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(level.getRecipeManager().byType(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get()).get(recipeId));
+        return RecipeManagerByTypeAccess.findById(
+                level.getRecipeManager(),
+                ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get(),
+                recipeId);
     }
 
     public static Optional<LightningAssemblyRecipeCandidate> findLockedRecipeMatch(

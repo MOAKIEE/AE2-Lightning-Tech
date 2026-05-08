@@ -11,6 +11,7 @@ import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 
 public final class CrystalCatalyzerRecipeService {
     private CrystalCatalyzerRecipeService() {
@@ -51,7 +52,10 @@ public final class CrystalCatalyzerRecipeService {
         if (level == null) {
             return Optional.empty();
         }
-        var recipe = level.getRecipeManager().byType(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get()).get(recipeId);
+        var recipe = RecipeManagerByTypeAccess.findById(
+                level.getRecipeManager(),
+                ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get(),
+                recipeId).orElse(null);
         return recipe == null ? Optional.empty() : Optional.of(new CrystalCatalyzerRecipeCandidate(recipe));
     }
 

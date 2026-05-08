@@ -13,7 +13,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.navigation.ScreenPosition;
 import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Block;
@@ -146,9 +145,7 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
 
         // Flush the per-block batches before re-enabling GUI lighting so the
         // remainder of the recipe layout renders normally.
-        if (bufferSource instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch();
-        }
+        bufferSource.endBatch();
         Lighting.setupFor3DItems();
     }
 

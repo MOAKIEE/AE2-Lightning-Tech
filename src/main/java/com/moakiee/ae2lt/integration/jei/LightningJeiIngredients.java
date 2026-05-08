@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.integration.jei;
 
 import java.util.List;
 
-import com.mojang.serialization.Codec;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.me.key.LightningKey;
 
@@ -20,8 +19,6 @@ public final class LightningJeiIngredients {
             return LightningKey.class;
         }
     };
-
-    public static final Codec<LightningKey> CODEC = LightningKey.MAP_CODEC.codec();
 
     /**
      * Register the type without adding synthetic "lightning entries" to JEI's main ingredient list.

@@ -12,6 +12,7 @@ import net.minecraft.world.level.Level;
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 
 public final class LightningSimulationRecipeService {
     public static final int EXTREME_TO_HIGH_RATIO = 4;
@@ -73,7 +74,10 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(level.getRecipeManager().byType(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get()).get(recipeId));
+        return RecipeManagerByTypeAccess.findById(
+                level.getRecipeManager(),
+                ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get(),
+                recipeId);
     }
 
     public static Optional<LightningSimulationRecipeCandidate> findLockedRecipeMatch(

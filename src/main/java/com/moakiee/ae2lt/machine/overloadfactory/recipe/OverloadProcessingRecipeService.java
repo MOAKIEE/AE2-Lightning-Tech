@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.util.RecipeManagerByTypeAccess;
 
 public final class OverloadProcessingRecipeService {
     public static final int EXTREME_TO_HIGH_RATIO = 4;
@@ -34,7 +35,7 @@ public final class OverloadProcessingRecipeService {
 
     private static List<OverloadProcessingRecipe> getSortedRecipes(Level level) {
         RecipeManager recipeManager = level.getRecipeManager();
-        var raw = recipeManager.byType(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
+        var raw = RecipeManagerByTypeAccess.byType(recipeManager, ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
         if (recipeManager != cachedRecipeManager || raw != cachedRawRecipeList || sortedRecipeCache == null) {
             sortedRecipeCache = new ArrayList<>(raw.values());
             sortedRecipeCache.sort(RECIPE_ORDER);
@@ -96,7 +97,10 @@ public final class OverloadProcessingRecipeService {
             return Optional.empty();
         }
 
-        return Optional.ofNullable(level.getRecipeManager().byType(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get()).get(recipeId));
+        return RecipeManagerByTypeAccess.findById(
+                level.getRecipeManager(),
+                ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get(),
+                recipeId);
     }
 
     public static Optional<OverloadProcessingRecipeCandidate> findLockedRecipeMatch(

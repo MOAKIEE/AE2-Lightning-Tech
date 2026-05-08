@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
@@ -44,8 +43,7 @@ public class LargeStackJeiItemRenderer implements IIngredientRenderer<ItemStack>
     @Override
     public List<Component> getTooltip(ItemStack ingredient, TooltipFlag tooltipFlag) {
         Minecraft minecraft = Minecraft.getInstance();
-        Item.TooltipContext tooltipContext = Item.TooltipContext.of(minecraft.level);
-        return ingredient.getTooltipLines(tooltipContext, minecraft.player, tooltipFlag);
+        return ingredient.getTooltipLines(minecraft.player, tooltipFlag);
     }
 
     @Override
