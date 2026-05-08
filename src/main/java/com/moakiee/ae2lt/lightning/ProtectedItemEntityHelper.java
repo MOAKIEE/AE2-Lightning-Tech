@@ -67,7 +67,7 @@ public final class ProtectedItemEntityHelper {
     }
 
     public static boolean isProtectedItem(ItemEntity itemEntity, long gameTime) {
-        return itemEntity.getPersistentData().getLong(PROTECT_UNTIL_TAG) > gameTime;
+        return itemEntity.getPersistentData().getLongOr(PROTECT_UNTIL_TAG, 0L) > gameTime;
     }
 
     public static boolean canParticipateInTransform(ItemEntity itemEntity, long gameTime) {
@@ -76,9 +76,9 @@ public final class ProtectedItemEntityHelper {
         }
 
         CompoundTag data = itemEntity.getPersistentData();
-        return data.getLong(PROTECT_UNTIL_TAG) <= gameTime
-                && data.getLong(NO_TRANSFORM_UNTIL_TAG) <= gameTime
-                && data.getLong(TRANSFORM_LOCK_UNTIL_TAG) <= gameTime;
+        return data.getLongOr(PROTECT_UNTIL_TAG, 0L) <= gameTime
+                && data.getLongOr(NO_TRANSFORM_UNTIL_TAG, 0L) <= gameTime
+                && data.getLongOr(TRANSFORM_LOCK_UNTIL_TAG, 0L) <= gameTime;
     }
 
     public static boolean shouldIgnoreDamage(ItemEntity itemEntity, DamageSource damageSource) {
@@ -131,13 +131,13 @@ public final class ProtectedItemEntityHelper {
     }
 
     private static void clearIfExpired(CompoundTag data, String key, long gameTime) {
-        if (data.getLong(key) <= gameTime) {
+        if (data.getLongOr(key, 0L) <= gameTime) {
             data.remove(key);
         }
     }
 
     private static void putMax(CompoundTag data, String key, long until) {
-        if (data.getLong(key) < until) {
+        if (data.getLongOr(key, 0L) < until) {
             data.putLong(key, until);
         }
     }

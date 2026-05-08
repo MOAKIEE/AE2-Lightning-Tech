@@ -119,7 +119,7 @@ public final class LightningTransformService {
 
     private static List<RecipeHolder<LightningTransformRecipe>> getSortedRecipes(ServerLevel level) {
         List<RecipeHolder<LightningTransformRecipe>> recipes =
-                new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
+                new ArrayList<>(level.recipeAccess().recipeMap().byType(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
         recipes.sort(RECIPE_ORDER);
         return recipes;
     }
