@@ -32,13 +32,13 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
@@ -364,9 +364,9 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(ValueOutput data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
@@ -375,24 +375,26 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
             data.putString(TAG_LOCKED_MODE, lockedMode.getSerializedName());
             data.putLong(TAG_LOCKED_BATCH_SIZE, lockedBatchSize);
         } else {
-            data.remove(TAG_LOCKED_MODE);
-            data.remove(TAG_LOCKED_BATCH_SIZE);
+            data.discard(TAG_LOCKED_MODE);
+            data.discard(TAG_LOCKED_BATCH_SIZE);
         }
         frequencyBinding.save(data);
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
-        selectedMode = TeslaCoilMode.fromName(data.getString(TAG_SELECTED_MODE));
-        lockedMode = data.contains(TAG_LOCKED_MODE)
-                ? TeslaCoilMode.fromName(data.getString(TAG_LOCKED_MODE))
-                : null;
-        lockedBatchSize = Math.max(0L, data.getLong(TAG_LOCKED_BATCH_SIZE));
-        consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
-        processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+    public void loadTag(ValueInput data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        energyStorage.loadStoredEnergy(data.getLongOr(TAG_ENERGY, 0L));
+        selectedMode = TeslaCoilMode.fromName(data.getStringOr(
+                TAG_SELECTED_MODE,
+                TeslaCoilMode.HIGH_VOLTAGE.getSerializedName()));
+        lockedMode = data.getString(TAG_LOCKED_MODE)
+                .map(TeslaCoilMode::fromName)
+                .orElse(null);
+        lockedBatchSize = Math.max(0L, data.getLongOr(TAG_LOCKED_BATCH_SIZE, 0L));
+        consumedEnergy = Math.max(0L, data.getLongOr(TAG_CONSUMED_ENERGY, 0L));
+        processingTicksSpent = Math.max(0, data.getIntOr(TAG_PROCESSING_TICKS, 0));
         frequencyBinding.load(data);
 
         if (lockedMode == null) {
