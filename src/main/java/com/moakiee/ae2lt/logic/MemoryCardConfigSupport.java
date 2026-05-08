@@ -10,7 +10,6 @@ import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.component.CustomData;
 
 import appeng.api.orientation.RelativeSide;
@@ -134,13 +133,13 @@ public final class MemoryCardConfigSupport {
 
     public static EnumSet<RelativeSide> readRelativeSideSet(CompoundTag tag, String key) {
         var result = EnumSet.noneOf(RelativeSide.class);
-        if (!tag.contains(key, Tag.TAG_LIST)) {
+        if (!tag.contains(key)) {
             return result;
         }
-        var list = tag.getList(key, Tag.TAG_STRING);
+        var list = tag.getListOrEmpty(key);
         for (int i = 0; i < list.size(); i++) {
             try {
-                result.add(RelativeSide.valueOf(list.getString(i)));
+                result.add(RelativeSide.valueOf(list.getStringOr(i, "")));
             } catch (IllegalArgumentException ignored) {
                 // forward-compatible: skip sides that no longer exist
             }
@@ -162,7 +161,7 @@ public final class MemoryCardConfigSupport {
         if (!tag.contains(key)) {
             return null;
         }
-        int idx = tag.getByte(key);
+        int idx = tag.getByteOr(key, (byte) -1);
         if (idx < 0 || idx >= 6) {
             return null;
         }
@@ -183,7 +182,7 @@ public final class MemoryCardConfigSupport {
             return fallback;
         }
         try {
-            return Enum.valueOf(type, tag.getString(key));
+            return Enum.valueOf(type, tag.getStringOr(key, ""));
         } catch (IllegalArgumentException ignored) {
             return fallback;
         }
@@ -193,7 +192,7 @@ public final class MemoryCardConfigSupport {
 
     public static void ifBoolean(CompoundTag tag, String key, Consumer<Boolean> setter) {
         if (tag.contains(key)) {
-            setter.accept(tag.getBoolean(key));
+            setter.accept(tag.getBooleanOr(key, false));
         }
     }
 }
