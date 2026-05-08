@@ -4,6 +4,7 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
@@ -104,7 +105,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
         BlockPos pos = context.getClickedPos();
         BlockPos above = pos.above();
         Level level = context.getLevel();
-        if (above.getY() >= level.getMaxBuildHeight() || !level.getBlockState(above).canBeReplaced(context)) {
+        if (level.isOutsideBuildHeight(above.getY()) || !level.getBlockState(above).canBeReplaced(context)) {
             return null;
         }
         BlockState state = super.getStateForPlacement(context);
@@ -185,21 +186,19 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!level.isClientSide() && !state.is(newState.getBlock())) {
-            // 两半之间的联动清理只应把另一半静默设为 AIR,
-            // 不要调用 destroyBlock(..., true) —— 那会强制让另一半按"正常破坏"流程掉落物品,
-            // 破坏时 playerWillDestroy 已经按 player.isCreative() 正确处理过了,此处不能再额外掉落。
-            BlockPos otherPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
-            DoubleBlockHalf otherHalf = state.getValue(HALF) == DoubleBlockHalf.LOWER
-                    ? DoubleBlockHalf.UPPER
-                    : DoubleBlockHalf.LOWER;
-            BlockState otherState = level.getBlockState(otherPos);
-            if (otherState.is(this) && otherState.getValue(HALF) == otherHalf) {
-                level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-            }
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos, boolean movedByPiston) {
+        // 两半之间的联动清理只应把另一半静默设为 AIR,
+        // 不要调用 destroyBlock(..., true) —— 那会强制让另一半按"正常破坏"流程掉落物品,
+        // 破坏时 playerWillDestroy 已经按 player.isCreative() 正确处理过了,此处不能再额外掉落。
+        BlockPos otherPos = state.getValue(HALF) == DoubleBlockHalf.LOWER ? pos.above() : pos.below();
+        DoubleBlockHalf otherHalf = state.getValue(HALF) == DoubleBlockHalf.LOWER
+                ? DoubleBlockHalf.UPPER
+                : DoubleBlockHalf.LOWER;
+        BlockState otherState = level.getBlockState(otherPos);
+        if (otherState.is(this) && otherState.getValue(HALF) == otherHalf) {
+            level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
         }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
@@ -248,7 +247,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
             if (lowerState.is(this) && lowerState.getValue(HALF) == DoubleBlockHalf.LOWER) {
                 return super.useItemOn(stack, lowerState, level, lowerPos, player, hand, hit);
             }
-            return InteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
