@@ -5,12 +5,10 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.IntArrayTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -61,7 +59,7 @@ public final class OverloadProcessingLockedRecipe {
     public static OverloadProcessingLockedRecipe fromCandidate(OverloadProcessingRecipeCandidate candidate) {
         RecipeHolder<OverloadProcessingRecipe> holder = candidate.recipe();
         return new OverloadProcessingLockedRecipe(
-                holder.id(),
+                holder.id().identifier(),
                 candidate.totalEnergy(),
                 candidate.totalLightningCost(),
                 holder.value().lightningTier(),
@@ -97,43 +95,56 @@ public final class OverloadProcessingLockedRecipe {
         return inputConsumptions[slot];
     }
 
-    public CompoundTag toTag(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
-        tag.putString(TAG_RECIPE_ID, recipeId.toString());
-        tag.putLong(TAG_TOTAL_ENERGY, totalEnergy);
-        tag.putLong(TAG_TOTAL_LIGHTNING_COST, totalLightningCost);
-        tag.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
-        tag.putInt(TAG_PARALLEL, parallel);
-        tag.put(TAG_INPUTS, new IntArrayTag(Arrays.copyOf(inputConsumptions, inputConsumptions.length)));
-        return tag;
+    public void writeTo(ValueOutput data) {
+        data.putString(TAG_RECIPE_ID, recipeId.toString());
+        data.putLong(TAG_TOTAL_ENERGY, totalEnergy);
+        data.putLong(TAG_TOTAL_LIGHTNING_COST, totalLightningCost);
+        data.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
+        data.putInt(TAG_PARALLEL, parallel);
+        data.putIntArray(TAG_INPUTS, Arrays.copyOf(inputConsumptions, inputConsumptions.length));
     }
 
     @Nullable
-    public static OverloadProcessingLockedRecipe fromTag(CompoundTag tag, HolderLookup.Provider registries) {
-        if (!tag.contains(TAG_RECIPE_ID, Tag.TAG_STRING)) {
-            return null;
-        }
-
-        long totalEnergy = tag.getLong(TAG_TOTAL_ENERGY);
-        long totalLightningCost = tag.getLong(TAG_TOTAL_LIGHTNING_COST);
-        int parallel = tag.getInt(TAG_PARALLEL);
-        int[] inputConsumptions = tag.getIntArray(TAG_INPUTS);
-        if (inputConsumptions.length != OverloadProcessingFactoryInventory.INPUT_SLOT_COUNT) {
-            return null;
-        }
-        if (totalEnergy <= 0L || totalLightningCost <= 0L || parallel <= 0) {
-            return null;
-        }
-
-        LightningKey.Tier lightningTier = tag.contains(TAG_LIGHTNING_TIER, Tag.TAG_STRING)
-                ? LightningKey.Tier.fromSerializedName(tag.getString(TAG_LIGHTNING_TIER))
-                : OverloadProcessingRecipe.DEFAULT_LIGHTNING_TIER;
-        return new OverloadProcessingLockedRecipe(
-                Identifier.parse(tag.getString(TAG_RECIPE_ID)),
-                totalEnergy,
-                totalLightningCost,
+    public static OverloadProcessingLockedRecipe fromInput(ValueInput data) {
+        LightningKey.Tier lightningTier = LightningKey.Tier.fromSerializedName(
+                data.getStringOr(
+                        TAG_LIGHTNING_TIER,
+                        OverloadProcessingRecipe.DEFAULT_LIGHTNING_TIER.getSerializedName()));
+        return createOrNull(
+                data.getStringOr(TAG_RECIPE_ID, ""),
+                data.getLongOr(TAG_TOTAL_ENERGY, 0L),
+                data.getLongOr(TAG_TOTAL_LIGHTNING_COST, 0L),
                 lightningTier,
-                parallel,
-                inputConsumptions);
+                data.getIntOr(TAG_PARALLEL, 0),
+                data.getIntArray(TAG_INPUTS).orElse(new int[0]));
+    }
+
+    @Nullable
+    private static OverloadProcessingLockedRecipe createOrNull(
+            String recipeId,
+            long totalEnergy,
+            long totalLightningCost,
+            LightningKey.Tier lightningTier,
+            int parallel,
+            int[] inputConsumptions) {
+        if (recipeId.isEmpty()
+                || totalEnergy <= 0L
+                || totalLightningCost <= 0L
+                || parallel <= 0
+                || inputConsumptions.length != OverloadProcessingFactoryInventory.INPUT_SLOT_COUNT) {
+            return null;
+        }
+
+        try {
+            return new OverloadProcessingLockedRecipe(
+                    Identifier.parse(recipeId),
+                    totalEnergy,
+                    totalLightningCost,
+                    lightningTier,
+                    parallel,
+                    inputConsumptions);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 }
