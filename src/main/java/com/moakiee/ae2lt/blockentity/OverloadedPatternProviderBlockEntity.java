@@ -10,11 +10,8 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
@@ -24,6 +21,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNodeListener;
@@ -113,17 +112,31 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
         public CompoundTag toTag() {
             var tag = new CompoundTag();
-            tag.putString(TAG_DIM, dimension.location().toString());
+            tag.putString(TAG_DIM, dimension.identifier().toString());
             tag.putLong(TAG_POS, pos.asLong());
             tag.putInt(TAG_FACE, boundFace.get3DDataValue());
             return tag;
         }
 
+        public void writeTo(ValueOutput output) {
+            output.putString(TAG_DIM, dimension.identifier().toString());
+            output.putLong(TAG_POS, pos.asLong());
+            output.putInt(TAG_FACE, boundFace.get3DDataValue());
+        }
+
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(Registries.DIMENSION,
-                    Identifier.parse(tag.getString(TAG_DIM)));
-            var pos = BlockPos.of(tag.getLong(TAG_POS));
-            var face = Direction.from3DDataValue(tag.getInt(TAG_FACE));
+                    Identifier.parse(tag.getStringOr(TAG_DIM, Level.OVERWORLD.identifier().toString())));
+            var pos = BlockPos.of(tag.getLongOr(TAG_POS, 0L));
+            var face = Direction.from3DDataValue(tag.getIntOr(TAG_FACE, Direction.NORTH.get3DDataValue()));
+            return new WirelessConnection(dim, pos, face);
+        }
+
+        public static WirelessConnection fromInput(ValueInput input) {
+            var dim = ResourceKey.create(Registries.DIMENSION,
+                    Identifier.parse(input.getStringOr(TAG_DIM, Level.OVERWORLD.identifier().toString())));
+            var pos = BlockPos.of(input.getLongOr(TAG_POS, 0L));
+            var face = Direction.from3DDataValue(input.getIntOr(TAG_FACE, Direction.NORTH.get3DDataValue()));
             return new WirelessConnection(dim, pos, face);
         }
     }
@@ -448,7 +461,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         data.writeBoolean(filteredImport);
         data.writeVarInt(connections.size());
         for (var conn : connections) {
-            data.writeIdentifier(conn.dimension().location());
+            data.writeIdentifier(conn.dimension().identifier());
             data.writeBlockPos(conn.pos());
             data.writeByte(conn.boundFace().get3DDataValue());
         }
@@ -510,62 +523,65 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
+    public void saveAdditional(ValueOutput data) {
+        super.saveAdditional(data);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putString(TAG_RETURN_MODE, returnMode.name());
         data.putString(TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode.name());
         data.putString(TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode.name());
         data.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
 
-        var connList = new ListTag();
+        var connList = data.childrenList(TAG_CONNECTIONS);
         for (var conn : connections) {
-            connList.add(conn.toTag());
+            conn.writeTo(connList.addChild());
         }
-        data.put(TAG_CONNECTIONS, connList);
         frequencyBinding.save(data);
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        if (data.contains(TAG_PROVIDER_MODE)) {
+    public void loadTag(ValueInput data) {
+        super.loadTag(data);
+        var providerModeName = data.getString(TAG_PROVIDER_MODE).orElse(null);
+        if (providerModeName != null) {
             try {
-                providerMode = ProviderMode.valueOf(data.getString(TAG_PROVIDER_MODE));
+                providerMode = ProviderMode.valueOf(providerModeName);
             } catch (IllegalArgumentException ignored) {
                 providerMode = ProviderMode.NORMAL;
             }
         }
-        if (data.contains(TAG_RETURN_MODE)) {
+        var returnModeName = data.getString(TAG_RETURN_MODE).orElse(null);
+        if (returnModeName != null) {
             try {
-                returnMode = ReturnMode.valueOf(data.getString(TAG_RETURN_MODE));
+                returnMode = ReturnMode.valueOf(returnModeName);
             } catch (IllegalArgumentException ignored) {
                 returnMode = ReturnMode.OFF;
             }
-        } else if (data.contains(TAG_AUTO_RETURN)) {
-            returnMode = data.getBoolean(TAG_AUTO_RETURN) ? ReturnMode.AUTO : ReturnMode.OFF;
+        } else if (data.getBooleanOr(TAG_AUTO_RETURN, false)) {
+            returnMode = ReturnMode.AUTO;
         }
-        if (data.contains(TAG_WIRELESS_DISPATCH_MODE)) {
+        var wirelessDispatchModeName = data.getString(TAG_WIRELESS_DISPATCH_MODE).orElse(null);
+        if (wirelessDispatchModeName != null) {
             try {
-                wirelessDispatchMode = WirelessDispatchMode.valueOf(data.getString(TAG_WIRELESS_DISPATCH_MODE));
+                wirelessDispatchMode = WirelessDispatchMode.valueOf(wirelessDispatchModeName);
             } catch (IllegalArgumentException ignored) {
                 wirelessDispatchMode = WirelessDispatchMode.EVEN_DISTRIBUTION;
             }
         }
-        if (data.contains(TAG_WIRELESS_SPEED_MODE)) {
+        var wirelessSpeedModeName = data.getString(TAG_WIRELESS_SPEED_MODE).orElse(null);
+        if (wirelessSpeedModeName != null) {
             try {
-                wirelessSpeedMode = WirelessSpeedMode.valueOf(data.getString(TAG_WIRELESS_SPEED_MODE));
+                wirelessSpeedMode = WirelessSpeedMode.valueOf(wirelessSpeedModeName);
             } catch (IllegalArgumentException ignored) {
                 wirelessSpeedMode = WirelessSpeedMode.NORMAL;
             }
         }
-        filteredImport = data.getBoolean(TAG_FILTERED_IMPORT);
+        filteredImport = data.getBooleanOr(TAG_FILTERED_IMPORT, false);
         connections.clear();
-        if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
-            var connList = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < connList.size() && connections.size() < MAX_WIRELESS_CONNECTIONS; i++) {
-                connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
+        for (var connInput : data.childrenListOrEmpty(TAG_CONNECTIONS)) {
+            if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
+                break;
             }
+            connections.add(WirelessConnection.fromInput(connInput));
         }
         frequencyBinding.load(data);
         recomputeIdlePower();
