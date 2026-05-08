@@ -122,7 +122,10 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixinextras_version}"))
-    runtimeOnly fg.deobf("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")
+    implementation fg.deobf("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")
+    jarJar(group: 'io.github.llamalad7', name: 'mixinextras-forge', version: "[${mixinextras_version},)") {
+        jarJar.pin(it, "${mixinextras_version}")
+    }
 }
 
 tasks.named('processResources', ProcessResources).configure {
@@ -163,6 +166,11 @@ tasks.named('jar', Jar).configure {
         ])
     }
 
+    finalizedBy 'reobfJar'
+}
+
+tasks.named('jarJar', Jar).configure {
+    archiveClassifier = ''
     finalizedBy 'reobfJar'
 }
 
