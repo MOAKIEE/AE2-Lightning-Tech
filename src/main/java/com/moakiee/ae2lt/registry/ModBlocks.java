@@ -80,7 +80,7 @@ public final class ModBlocks {
             registerBlock("overload_machine_frame", () -> new Block(OVERLOAD_MACHINE_FRAME_PROPERTIES));
 
     public static final RegistryObject<OverloadTntBlock> OVERLOAD_TNT =
-            registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.TNT)));
+            registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.copy(net.minecraft.world.level.block.Blocks.TNT)));
 
     public static final RegistryObject<LightningCollectorBlock> LIGHTNING_COLLECTOR =
             registerBlock("lightning_collector", LightningCollectorBlock::new);

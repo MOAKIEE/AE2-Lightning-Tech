@@ -1,13 +1,9 @@
 package com.moakiee.ae2lt.item;
 
-import java.util.Set;
-
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.config.FuzzyMode;
-import appeng.api.stacks.AEKeyType;
-import appeng.api.stacks.AEKeyTypes;
 import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.UpgradeInventories;
@@ -43,7 +39,7 @@ public class OverloadedFilterComponentItem extends AE2LTItem implements ICellWor
     @Override
     public ConfigInventory getConfigInventory(ItemStack stack) {
         return CellConfig.create(
-                AEKeyTypes.getAll(),
+                key -> true,
                 stack, CONFIG_SLOTS);
     }
 

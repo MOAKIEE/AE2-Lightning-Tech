@@ -129,7 +129,7 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
     @Override
     public boolean canAccept(ServerLevel level, BlockPos pos, Direction face,
                              IPatternDetails pattern) {
-        var machine = ICraftingMachine.of(level, pos, face);
+        var machine = findCraftingMachine(level, pos, face);
         if (machine != null) {
             return machine.acceptsPlans();
         }
@@ -145,7 +145,7 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
                                  IActionSource source,
                                  @Nullable PatternProviderTarget cachedTarget) {
         // 1. ICraftingMachine path — all-or-nothing
-        var machine = ICraftingMachine.of(level, pos, face);
+        var machine = findCraftingMachine(level, pos, face);
         if (machine != null && machine.acceptsPlans()) {
             if (machine.pushPattern(pattern, inputs, face)) {
                 return new PushResult(1, List.of());
@@ -231,6 +231,12 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
             }
         }
         return true;
+    }
+
+    @Nullable
+    private static ICraftingMachine findCraftingMachine(ServerLevel level, BlockPos pos, Direction face) {
+        var blockEntity = level.getBlockEntity(pos);
+        return blockEntity != null ? ICraftingMachine.of(level, pos, face, blockEntity) : null;
     }
 
     /**

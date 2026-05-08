@@ -34,7 +34,7 @@ public final class ArtificialLightningHandler {
         if (event.phase != TickEvent.Phase.START) {
             return;
         }
-        Player player = event.getEntity();
+        Player player = event.player;
         if (!(player.level() instanceof ServerLevel serverLevel) || player.isSpectator()) {
             return;
         }

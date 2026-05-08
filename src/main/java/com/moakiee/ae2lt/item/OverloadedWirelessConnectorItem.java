@@ -89,7 +89,7 @@ public class OverloadedWirelessConnectorItem extends AE2LTItem {
                     pos,
                     context.getClickedFace(),
                     net.minecraft.client.gui.screens.Screen.hasControlDown()));
-            return InteractionResult.SUCCESS_NO_ITEM_USED;
+            return InteractionResult.sidedSuccess(true);
         }
         return InteractionResult.SUCCESS;
     }

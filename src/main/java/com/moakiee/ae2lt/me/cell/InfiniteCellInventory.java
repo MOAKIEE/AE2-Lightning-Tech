@@ -192,7 +192,7 @@ public class InfiniteCellInventory implements StorageCell {
 
         if (storage.getTotalTypes() == 0) {
             if (storage.needsPersist()) {
-                storage.persist(null, resolveRegistries());
+                storage.persist(null);
             }
             if (cellId != null) {
                 savedData.removeCell(cellId);

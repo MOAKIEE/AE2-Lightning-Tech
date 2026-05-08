@@ -98,17 +98,6 @@ public final class ModItems {
     public static final RegistryObject<Item> LIGHTNING_ITEM_CELL_HOUSING =
             registerSimpleItem("lightning_item_cell_housing", new Item.Properties());
 
-    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
-            registerLightningStorageComponent("lightning_storage_component_i", 256, 32);
-    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
-            registerLightningStorageComponent("lightning_storage_component_ii", 1024, 128);
-    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
-            registerLightningStorageComponent("lightning_storage_component_iii", 4096, 512);
-    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
-            registerLightningStorageComponent("lightning_storage_component_iv", 16384, 2048);
-    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
-            registerLightningStorageComponent("lightning_storage_component_v", 65536, 8192);
-
     public static final RegistryObject<Item> LIGHTNING_CELL_COMPONENT_I =
             registerSimpleItem("lightning_cell_component_i", new Item.Properties());
     public static final RegistryObject<Item> LIGHTNING_CELL_COMPONENT_II =
@@ -119,6 +108,17 @@ public final class ModItems {
             registerSimpleItem("lightning_cell_component_iv", new Item.Properties());
     public static final RegistryObject<Item> LIGHTNING_CELL_COMPONENT_V =
             registerSimpleItem("lightning_cell_component_v", new Item.Properties());
+
+    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
+            registerLightningStorageComponent("lightning_storage_component_i", LIGHTNING_CELL_COMPONENT_I, 256, 32);
+    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_II =
+            registerLightningStorageComponent("lightning_storage_component_ii", LIGHTNING_CELL_COMPONENT_II, 1024, 128);
+    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_III =
+            registerLightningStorageComponent("lightning_storage_component_iii", LIGHTNING_CELL_COMPONENT_III, 4096, 512);
+    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_IV =
+            registerLightningStorageComponent("lightning_storage_component_iv", LIGHTNING_CELL_COMPONENT_IV, 16384, 2048);
+    public static final RegistryObject<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_V =
+            registerLightningStorageComponent("lightning_storage_component_v", LIGHTNING_CELL_COMPONENT_V, 65536, 8192);
 
     public static final RegistryObject<InfiniteStorageCellItem> INFINITE_STORAGE_CELL =
             ITEMS.register("infinite_storage_cell",
@@ -231,9 +231,10 @@ public final class ModItems {
 
     private static RegistryObject<LightningStorageComponentItem> registerLightningStorageComponent(
             String id,
+            RegistryObject<Item> coreItem,
             int totalBytes,
             double idleDrain) {
-        return ITEMS.register(id, () -> new LightningStorageComponentItem(totalBytes, idleDrain));
+        return ITEMS.register(id, () -> new LightningStorageComponentItem(coreItem.get(), totalBytes, idleDrain));
     }
 
     private static void registerStorageCellModel(RegistryObject<? extends Item> item) {

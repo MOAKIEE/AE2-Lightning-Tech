@@ -30,8 +30,7 @@ public final class PowerCostUtil {
             return 0.0;
         }
         long perOp = Math.max(1L, key.getAmountPerOperation());
-        // ceilDiv handles amount near Long.MAX_VALUE without (amount + perOp - 1) overflow.
-        long ops = Math.ceilDiv(amount, perOp);
+        long ops = 1L + ((amount - 1L) / perOp);
         return ops * AE_PER_OPERATION;
     }
 

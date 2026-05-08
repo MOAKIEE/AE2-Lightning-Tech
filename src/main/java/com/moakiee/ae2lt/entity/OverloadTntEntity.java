@@ -37,14 +37,12 @@ public class OverloadTntEntity extends PrimedTnt {
 
     public OverloadTntEntity(EntityType<? extends OverloadTntEntity> entityType, Level level) {
         super(entityType, level);
-        this.setBlockState(getDefaultBlockState());
     }
 
     public OverloadTntEntity(Level level, double x, double y, double z, @Nullable LivingEntity owner) {
         super(ModEntities.OVERLOAD_TNT.get(), level);
         this.setPos(x, y, z);
         this.setFuse(80);
-        this.setBlockState(getDefaultBlockState());
         this.owner = owner;
         this.ownerUuid = owner != null ? owner.getUUID() : null;
 
@@ -53,6 +51,10 @@ public class OverloadTntEntity extends PrimedTnt {
         this.xo = x;
         this.yo = y;
         this.zo = z;
+    }
+
+    public BlockState getRenderBlockState() {
+        return getDefaultBlockState();
     }
 
     @Override

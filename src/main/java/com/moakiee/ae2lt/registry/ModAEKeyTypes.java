@@ -1,7 +1,7 @@
 package com.moakiee.ae2lt.registry;
 
-import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
+import appeng.api.stacks.AEKeyTypesInternal;
 import net.minecraftforge.registries.RegisterEvent;
 
 import com.moakiee.ae2lt.me.key.LightningKeyType;
@@ -11,7 +11,8 @@ public final class ModAEKeyTypes {
     }
 
     public static void register(RegisterEvent event) {
-        if (event.getRegistryKey().equals(AEKeyType.REGISTRY_KEY)) {
+        if (AEKeyTypesInternal.getRegistry() != null
+                && java.util.Objects.equals(event.getForgeRegistry(), AEKeyTypesInternal.getRegistry())) {
             AEKeyTypes.register(LightningKeyType.INSTANCE);
         }
     }

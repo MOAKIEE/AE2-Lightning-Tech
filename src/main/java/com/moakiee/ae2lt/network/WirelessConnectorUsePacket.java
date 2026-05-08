@@ -18,6 +18,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.common.ForgeMod;
 import net.minecraftforge.network.NetworkEvent;
 
 public record WirelessConnectorUsePacket(
@@ -59,7 +60,8 @@ public record WirelessConnectorUsePacket(
 
         ItemStack stack = player.getItemInHand(hand);
         if (!(stack.getItem() instanceof OverloadedWirelessConnectorItem)) return;
-        if (!player.canInteractWithBlock(pos, 1.0D)) return;
+        double reach = player.getAttributeValue(ForgeMod.BLOCK_REACH.get()) + 1.0D;
+        if (player.distanceToSqr(pos.getX() + 0.5D, pos.getY() + 0.5D, pos.getZ() + 0.5D) > reach * reach) return;
 
         var state = level.getBlockState(pos);
         var targetBe = level.getBlockEntity(pos);
