@@ -1,13 +1,10 @@
 package com.moakiee.ae2lt.machine.crystalcatalyzer.recipe;
 
-import java.util.Iterator;
-
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
 import net.minecraft.core.Holder;
-import net.minecraft.core.HolderSet;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
@@ -32,13 +29,12 @@ import net.minecraft.world.item.ItemStack;
 public sealed interface CrystalCatalyzerOutput
         permits CrystalCatalyzerOutput.OfItem, CrystalCatalyzerOutput.OfTag {
 
-    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ItemStack.STRICT_CODEC)
+    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ItemStack.CODEC)
             .xmap(
                     either -> either.map(tag -> (CrystalCatalyzerOutput) tag, OfItem::new),
-                    output -> switch (output) {
-                        case OfTag tag -> Either.left(tag);
-                        case OfItem item -> Either.right(item.stack());
-                    });
+                    output -> output instanceof OfTag tag
+                            ? Either.left(tag)
+                            : Either.right(((OfItem) output).stack()));
 
     StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerOutput> STREAM_CODEC =
             StreamCodec.of(CrystalCatalyzerOutput::encode, CrystalCatalyzerOutput::decode);
@@ -116,15 +112,10 @@ public sealed interface CrystalCatalyzerOutput
 
         @Override
         public ItemStack resolve() {
-            HolderSet.Named<Item> holders = BuiltInRegistries.ITEM.getTag(tag).orElse(null);
-            if (holders == null || holders.size() == 0) {
-                return ItemStack.EMPTY;
+            for (Holder<Item> holder : BuiltInRegistries.ITEM.getTagOrEmpty(tag)) {
+                return new ItemStack(holder.value(), count);
             }
-            Iterator<Holder<Item>> iterator = holders.iterator();
-            if (!iterator.hasNext()) {
-                return ItemStack.EMPTY;
-            }
-            return new ItemStack(iterator.next().value(), count);
+            return ItemStack.EMPTY;
         }
     }
 }

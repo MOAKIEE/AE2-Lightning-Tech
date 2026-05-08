@@ -9,14 +9,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -135,21 +137,14 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
     }
 
     @Override
-    public ItemStack assemble(LightningTransformRecipeInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(LightningTransformRecipeInput input) {
         return result.copy();
     }
 
-    @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public ItemStack getResultItem() {
         return result.copy();
     }
 
-    @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> ingredients = NonNullList.create();
         for (CountedIngredient input : inputs) {
@@ -159,16 +154,40 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    @Override
+    public RecipeSerializer<LightningTransformRecipe> getSerializer() {
         return ModRecipeTypes.LIGHTNING_TRANSFORM_SERIALIZER.get();
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public RecipeType<LightningTransformRecipe> getType() {
         return ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get();
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
+
+    @Override
+    public String group() {
+        return "";
+    }
+
     public boolean isIncomplete() {
         return inputs.isEmpty()
                 || result.isEmpty()
@@ -278,7 +297,7 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
         public static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningTransformRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningTransformRecipe::inputs),
-                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
+                        ItemStack.CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
                 .apply(instance, LightningTransformRecipe::new));
         public static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT,

@@ -11,14 +11,16 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -195,21 +197,14 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     }
 
     @Override
-    public ItemStack assemble(LightningSimulationRecipeInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(LightningSimulationRecipeInput input) {
         return result.copy();
     }
 
-    @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public ItemStack getResultItem() {
         return result.copy();
     }
 
-    @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> ingredients = NonNullList.create();
         for (var input : inputs) {
@@ -219,16 +214,40 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    @Override
+    public RecipeSerializer<LightningSimulationRecipe> getSerializer() {
         return ModRecipeTypes.LIGHTNING_SIMULATION_SERIALIZER.get();
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public RecipeType<LightningSimulationRecipe> getType() {
         return ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get();
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
+
+    @Override
+    public String group() {
+        return "";
+    }
+
     public boolean isIncomplete() {
         return inputs.isEmpty()
                 || result.isEmpty()
@@ -343,7 +362,7 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
         public static final MapCodec<LightningSimulationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningSimulationRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningSimulationRecipe::inputs),
-                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningSimulationRecipe::rawResult),
+                        ItemStack.CODEC.fieldOf("result").forGetter(LightningSimulationRecipe::rawResult),
                         POSITIVE_ENERGY_CODEC.fieldOf("totalEnergy").forGetter(LightningSimulationRecipe::totalEnergy),
                         POSITIVE_LIGHTNING_COST_CODEC.optionalFieldOf("lightningCost", DEFAULT_LIGHTNING_COST)
                                 .forGetter(LightningSimulationRecipe::lightningCost),

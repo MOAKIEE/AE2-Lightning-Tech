@@ -11,14 +11,16 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -40,7 +42,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                             ? DataResult.error(() -> "overload processing supports at most 9 item inputs")
                             : DataResult.success(List.copyOf(inputs)));
 
-    private static final Codec<List<ItemStack>> OUTPUTS_CODEC = ItemStack.STRICT_CODEC.listOf().validate(outputs -> {
+    private static final Codec<List<ItemStack>> OUTPUTS_CODEC = ItemStack.CODEC.listOf().validate(outputs -> {
         if (outputs.size() > OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT) {
             return DataResult.error(() -> "overload processing supports at most 1 item output");
         }
@@ -265,21 +267,14 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
     }
 
     @Override
-    public ItemStack assemble(OverloadProcessingRecipeInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(OverloadProcessingRecipeInput input) {
         return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
     }
 
-    @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public ItemStack getResultItem() {
         return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
     }
 
-    @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> ingredients = NonNullList.create();
         for (var input : itemInputs) {
@@ -289,16 +284,40 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    @Override
+    public RecipeSerializer<OverloadProcessingRecipe> getSerializer() {
         return ModRecipeTypes.OVERLOAD_PROCESSING_SERIALIZER.get();
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public RecipeType<OverloadProcessingRecipe> getType() {
         return ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get();
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
+
+    @Override
+    public String group() {
+        return "";
+    }
+
     public boolean isIncomplete() {
         return totalEnergy < MIN_TOTAL_ENERGY
                 || lightningCost <= 0

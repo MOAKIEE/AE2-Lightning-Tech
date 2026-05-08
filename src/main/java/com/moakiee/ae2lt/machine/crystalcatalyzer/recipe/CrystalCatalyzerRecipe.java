@@ -8,14 +8,16 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.NonNullList;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.RecipeBookCategories;
+import net.minecraft.world.item.crafting.RecipeBookCategory;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -128,21 +130,14 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     @Override
-    public ItemStack assemble(CrystalCatalyzerRecipeInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CrystalCatalyzerRecipeInput input) {
         return output.resolve();
     }
 
-    @Override
-    public boolean canCraftInDimensions(int width, int height) {
-        return true;
-    }
-
-    @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public ItemStack getResultItem() {
         return output.resolve();
     }
 
-    @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> list = NonNullList.create();
         catalyst.ifPresent(list::add);
@@ -150,16 +145,40 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     @Override
-    public RecipeSerializer<?> getSerializer() {
+    public PlacementInfo placementInfo() {
+        return PlacementInfo.NOT_PLACEABLE;
+    }
+
+    @Override
+    public RecipeBookCategory recipeBookCategory() {
+        return RecipeBookCategories.CRAFTING_MISC;
+    }
+
+    @Override
+    public RecipeSerializer<CrystalCatalyzerRecipe> getSerializer() {
         return ModRecipeTypes.CRYSTAL_CATALYZER_SERIALIZER.get();
     }
 
     @Override
-    public RecipeType<?> getType() {
+    public RecipeType<CrystalCatalyzerRecipe> getType() {
         return ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get();
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
+    public boolean showNotification() {
+        return false;
+    }
+
+    @Override
+    public String group() {
+        return "";
+    }
+
     public boolean isIncomplete() {
         return output.resolve().isEmpty()
                 || energyPerCycle < MIN_ENERGY_PER_CYCLE
@@ -168,7 +187,7 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     public static final class Serializer {
         public static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        Ingredient.CODEC_NONEMPTY.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
+                        Ingredient.CODEC.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
                         NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
                         CrystalCatalyzerOutput.CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::outputSpec),
                         POSITIVE_ENERGY_CODEC.fieldOf("energyPerCycle").forGetter(CrystalCatalyzerRecipe::energyPerCycle),

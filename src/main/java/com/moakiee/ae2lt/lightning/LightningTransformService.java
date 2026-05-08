@@ -79,7 +79,7 @@ public final class LightningTransformService {
 
             spawnResult(
                     level,
-                    matchedRecipe.get().recipe().value().getResultItem(level.registryAccess()),
+                    matchedRecipe.get().recipe().value().getResultItem(),
                     plan.spawnPosition(),
                     gameTime);
             executedPlans.add(plan);

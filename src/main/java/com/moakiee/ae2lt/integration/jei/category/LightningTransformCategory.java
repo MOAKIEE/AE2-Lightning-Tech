@@ -102,7 +102,7 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
                 .setCustomRenderer(LightningJeiIngredients.TYPE, LightningJeiIngredientRenderer.NO_TOOLTIP)
                 .addIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
 
-        var resultStack = recipe.getResultItem(Minecraft.getInstance().level.registryAccess());
+        var resultStack = recipe.getResultItem();
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X + 1, OUTPUT_Y + 1)
                 .setOutputSlotBackground()
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)

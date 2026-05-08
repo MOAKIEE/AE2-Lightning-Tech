@@ -15,7 +15,7 @@ public record LightningSimulationIngredient(Ingredient ingredient, int count) {
     private static final Codec<Integer> POSITIVE_COUNT_CODEC = Codec.intRange(1, Integer.MAX_VALUE);
 
     public static final MapCodec<LightningSimulationIngredient> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                    Ingredient.CODEC_NONEMPTY.fieldOf("ingredient").forGetter(LightningSimulationIngredient::ingredient),
+                    Ingredient.CODEC.fieldOf("ingredient").forGetter(LightningSimulationIngredient::ingredient),
                     POSITIVE_COUNT_CODEC.fieldOf("count").forGetter(LightningSimulationIngredient::count))
             .apply(instance, LightningSimulationIngredient::new));
 

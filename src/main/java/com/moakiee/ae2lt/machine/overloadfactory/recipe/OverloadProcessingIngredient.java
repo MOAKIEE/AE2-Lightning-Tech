@@ -15,7 +15,7 @@ public record OverloadProcessingIngredient(Ingredient ingredient, int count) {
     private static final Codec<Integer> POSITIVE_COUNT_CODEC = Codec.intRange(1, Integer.MAX_VALUE);
 
     public static final MapCodec<OverloadProcessingIngredient> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                    Ingredient.CODEC_NONEMPTY.fieldOf("ingredient").forGetter(OverloadProcessingIngredient::ingredient),
+                    Ingredient.CODEC.fieldOf("ingredient").forGetter(OverloadProcessingIngredient::ingredient),
                     POSITIVE_COUNT_CODEC.fieldOf("count").forGetter(OverloadProcessingIngredient::count))
             .apply(instance, OverloadProcessingIngredient::new));
 
