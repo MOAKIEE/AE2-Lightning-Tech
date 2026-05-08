@@ -30,7 +30,7 @@ public final class PigmeeFumoGiftHandler {
 
         var player = event.getEntity();
         var data = player.getPersistentData();
-        if (data.getBoolean(GIFTED_TAG)) {
+        if (data.getBooleanOr(GIFTED_TAG, false)) {
             return;
         }
 
@@ -45,7 +45,7 @@ public final class PigmeeFumoGiftHandler {
 
     @SubscribeEvent
     public static void onPlayerClone(PlayerEvent.Clone event) {
-        if (event.getOriginal().getPersistentData().getBoolean(GIFTED_TAG)) {
+        if (event.getOriginal().getPersistentData().getBooleanOr(GIFTED_TAG, false)) {
             event.getEntity().getPersistentData().putBoolean(GIFTED_TAG, true);
         }
     }
@@ -53,7 +53,7 @@ public final class PigmeeFumoGiftHandler {
     private static void insertGift(Inventory inventory, ItemStack gift) {
         tryInsertIntoSlots(inventory, gift, HOTBAR_START, HOTBAR_END_EXCLUSIVE);
         if (!gift.isEmpty()) {
-            tryInsertIntoSlots(inventory, gift, HOTBAR_END_EXCLUSIVE, inventory.items.size());
+            tryInsertIntoSlots(inventory, gift, HOTBAR_END_EXCLUSIVE, inventory.getNonEquipmentItems().size());
         }
     }
 
@@ -70,7 +70,7 @@ public final class PigmeeFumoGiftHandler {
 
     private static void tryInsertIntoSlots(Inventory inventory, ItemStack gift, int start, int endExclusive) {
         for (int slot = start; slot < endExclusive && !gift.isEmpty(); slot++) {
-            ItemStack stack = inventory.items.get(slot);
+            ItemStack stack = inventory.getItem(slot);
             if (canMerge(stack, gift)) {
                 int amount = Math.min(gift.getCount(), stack.getMaxStackSize() - stack.getCount());
                 stack.grow(amount);
@@ -79,8 +79,8 @@ public final class PigmeeFumoGiftHandler {
         }
 
         for (int slot = start; slot < endExclusive && !gift.isEmpty(); slot++) {
-            if (inventory.items.get(slot).isEmpty()) {
-                inventory.items.set(slot, gift.copy());
+            if (inventory.getItem(slot).isEmpty()) {
+                inventory.setItem(slot, gift.copy());
                 gift.setCount(0);
             }
         }

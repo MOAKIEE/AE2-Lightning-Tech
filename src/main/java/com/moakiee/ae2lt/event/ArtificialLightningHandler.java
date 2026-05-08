@@ -6,6 +6,7 @@ import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import javax.annotation.Nullable;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.player.Player;
@@ -50,7 +51,7 @@ public final class ArtificialLightningHandler {
             return;
         }
 
-        int heldTicks = player.getPersistentData().getInt(HELD_TICKS_TAG) + HELD_TICK_INTERVAL;
+        int heldTicks = player.getPersistentData().getIntOr(HELD_TICKS_TAG, 0) + HELD_TICK_INTERVAL;
         if (heldTicks < SUMMON_DELAY_TICKS) {
             player.getPersistentData().putInt(HELD_TICKS_TAG, heldTicks);
             return;
@@ -61,12 +62,12 @@ public final class ArtificialLightningHandler {
     }
 
     public static void spawnArtificialLightning(ServerLevel level, Vec3 position, @Nullable ServerPlayer cause) {
-        LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(level);
+        LightningBolt lightningBolt = EntityType.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
         if (lightningBolt == null) {
             return;
         }
 
-        lightningBolt.moveTo(position);
+        lightningBolt.setPos(position);
         lightningBolt.setVisualOnly(false);
         // Intentionally do not mark this bolt as natural weather lightning.
         // It may be captured by lightning collectors, but only real weather lightning
@@ -85,15 +86,15 @@ public final class ArtificialLightningHandler {
             }
 
             for (int slot = 0; slot < 9; slot++) {
-                if (player.getInventory().items.get(slot).getItem() instanceof OverloadCrystalItem) {
+                if (player.getInventory().getItem(slot).getItem() instanceof OverloadCrystalItem) {
                     return true;
                 }
             }
         }
 
         if (AE2LTCommonConfig.artificialLightningTriggerFromBackpack()) {
-            for (int slot = 9; slot < player.getInventory().items.size(); slot++) {
-                if (player.getInventory().items.get(slot).getItem() instanceof OverloadCrystalItem) {
+            for (int slot = 9; slot < player.getInventory().getNonEquipmentItems().size(); slot++) {
+                if (player.getInventory().getItem(slot).getItem() instanceof OverloadCrystalItem) {
                     return true;
                 }
             }

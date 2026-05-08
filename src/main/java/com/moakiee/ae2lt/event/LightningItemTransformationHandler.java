@@ -38,7 +38,7 @@ public final class LightningItemTransformationHandler {
         }
 
         var data = lightningBolt.getPersistentData();
-        if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)) {
+        if (data.getBooleanOr(TRANSFORMATION_CHECKED_TAG, false)) {
             return;
         }
 

@@ -21,7 +21,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.tick.EntityTickEvent;
-import org.joml.Vector3f;
 import org.slf4j.Logger;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
@@ -41,11 +40,11 @@ public final class NaturalLightningTransformationHandler {
     private static volatile boolean warnedTakeover;
 
     private static final DustParticleOptions PINK_DUST =
-            new DustParticleOptions(new Vector3f(1.0F, 0.45F, 0.78F), 1.6F);
+            new DustParticleOptions(0xFF73C7, 1.6F);
     private static final DustParticleOptions PURPLE_DUST =
-            new DustParticleOptions(new Vector3f(0.78F, 0.34F, 1.0F), 1.4F);
+            new DustParticleOptions(0xC757FF, 1.4F);
     private static final DustParticleOptions CERTUS_DUST =
-            new DustParticleOptions(new Vector3f(0.85F, 0.92F, 1.0F), 1.4F);
+            new DustParticleOptions(0xD9EBFF, 1.4F);
 
     private NaturalLightningTransformationHandler() {
     }
@@ -58,14 +57,14 @@ public final class NaturalLightningTransformationHandler {
         }
 
         var data = lightningBolt.getPersistentData();
-        if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)) {
+        if (data.getBooleanOr(TRANSFORMATION_CHECKED_TAG, false)) {
             // The transformation_checked tag is set but our own marker isn't — another
             // mod (e.g. Thunderbolt_lib) intercepted the lightning at higher priority
             // and ran its own pipeline. The collector's captureLightning() will not be
             // called for this strike, which means LightningCollectedEvent will not
             // fire either. Warn once so server operators can correlate missing
             // capture-side effects with a third-party takeover.
-            if (!data.getBoolean(MAIN_HANDLED_TAG) && !warnedTakeover) {
+            if (!data.getBooleanOr(MAIN_HANDLED_TAG, false) && !warnedTakeover) {
                 warnedTakeover = true;
                 LOG.warn(
                         "AE2 Lightning Tech: a LightningBolt arrived with "
@@ -82,7 +81,7 @@ public final class NaturalLightningTransformationHandler {
 
         data.putBoolean(TRANSFORMATION_CHECKED_TAG, true);
         data.putBoolean(MAIN_HANDLED_TAG, true);
-        boolean naturalWeatherLightning = data.getBoolean(NATURAL_WEATHER_LIGHTNING_TAG);
+        boolean naturalWeatherLightning = data.getBooleanOr(NATURAL_WEATHER_LIGHTNING_TAG, false);
         tryCaptureLightning(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
         tryTransformFromNearbyLightningRod(serverLevel, lightningBolt.blockPosition(), naturalWeatherLightning);
     }
@@ -104,8 +103,10 @@ public final class NaturalLightningTransformationHandler {
 
     private static void tryTransformFromNearbyLightningRod(
             ServerLevel level, BlockPos lightningPos, boolean naturalWeather) {
-        List<RecipeHolder<LightningStrikeRecipe>> allRecipes = level.getRecipeManager()
-                .getAllRecipesFor(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get());
+        List<RecipeHolder<LightningStrikeRecipe>> allRecipes = List.copyOf(level.getServer()
+                .getRecipeManager()
+                .recipeMap()
+                .byType(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get()));
         if (allRecipes.isEmpty()) {
             return;
         }
