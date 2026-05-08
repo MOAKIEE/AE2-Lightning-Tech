@@ -7,7 +7,7 @@ import com.moakiee.ae2lt.network.OpenFrequencyMenuPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import org.lwjgl.glfw.GLFW;
 
 public final class FrequencyBindingClient {
@@ -28,7 +28,7 @@ public final class FrequencyBindingClient {
                 TextureToggleButton.ButtonType.FREQUENCY_BIND,
                 ignored -> {
                     rememberCursorPosition(menu.getFrequencyBindingBlockPos());
-                    PacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
+                    ClientPacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
                             menu.getFrequencyBindingToken(),
                             menu.getFrequencyBindingBlockPos()));
                 });
@@ -37,7 +37,7 @@ public final class FrequencyBindingClient {
     }
 
     private static void rememberCursorPosition(BlockPos blockPos) {
-        long window = Minecraft.getInstance().getWindow().getWindow();
+        long window = Minecraft.getInstance().getWindow().handle();
         double[] x = new double[1];
         double[] y = new double[1];
         GLFW.glfwGetCursorPos(window, x, y);
@@ -59,7 +59,7 @@ public final class FrequencyBindingClient {
             return;
         }
 
-        long window = Minecraft.getInstance().getWindow().getWindow();
+        long window = Minecraft.getInstance().getWindow().handle();
         GLFW.glfwSetCursorPos(window, restoreCursorX, restoreCursorY);
         clearRestoreState();
     }
