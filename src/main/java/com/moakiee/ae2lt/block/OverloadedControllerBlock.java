@@ -3,12 +3,15 @@ package com.moakiee.ae2lt.block;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
@@ -31,7 +34,7 @@ import appeng.menu.me.networktool.NetworkStatusMenu;
 public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedControllerBlockEntity> {
 
     public OverloadedControllerBlock() {
-        super(metalProps().forceSolidOn().strength(6.0F));
+        super(metalProps(Properties.of()).forceSolidOn().strength(6.0F));
         registerDefaultState(defaultBlockState()
                 .setValue(ControllerBlock.CONTROLLER_STATE, ControllerBlock.ControllerBlockState.offline)
                 .setValue(ControllerBlock.CONTROLLER_TYPE, ControllerBlock.ControllerRenderType.block));
@@ -50,12 +53,12 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
     }
 
     @Override
-    public BlockState updateShape(BlockState state, Direction facing, BlockState facingState, LevelAccessor level,
-            BlockPos pos, BlockPos facingPos) {
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess scheduledTickAccess,
+            BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
         return updateControllerType(state, level, pos);
     }
 
-    private BlockState updateControllerType(BlockState baseState, LevelAccessor level, BlockPos pos) {
+    private BlockState updateControllerType(BlockState baseState, LevelReader level, BlockPos pos) {
         // Only connect render-state to AE2LT's own controller block instances.
         var type = ControllerBlock.ControllerRenderType.block;
 
@@ -82,7 +85,7 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
         return baseState.setValue(ControllerBlock.CONTROLLER_TYPE, type);
     }
 
-    private boolean isOverloadedController(LevelAccessor level, int x, int y, int z) {
+    private boolean isOverloadedController(LevelReader level, int x, int y, int z) {
         return level.getBlockState(new BlockPos(x, y, z)).getBlock() instanceof OverloadedControllerBlock;
     }
 
