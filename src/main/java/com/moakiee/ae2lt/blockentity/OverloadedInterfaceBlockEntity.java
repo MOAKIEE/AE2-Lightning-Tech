@@ -32,10 +32,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.Identifier;
@@ -46,6 +43,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.behaviors.ExternalStorageStrategy;
 import appeng.api.behaviors.GenericInternalInventory;
@@ -160,19 +159,34 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         public CompoundTag toTag() {
             var tag = new CompoundTag();
-            tag.putString(TAG_DIM, dimension.location().toString());
+            tag.putString(TAG_DIM, dimension.identifier().toString());
             tag.putLong(TAG_POS, pos.asLong());
             tag.putInt(TAG_FACE, boundFace.get3DDataValue());
             return tag;
         }
 
+        public void writeTo(ValueOutput output) {
+            output.putString(TAG_DIM, dimension.identifier().toString());
+            output.putLong(TAG_POS, pos.asLong());
+            output.putInt(TAG_FACE, boundFace.get3DDataValue());
+        }
+
         public static WirelessConnection fromTag(CompoundTag tag) {
             var dim = ResourceKey.create(
                     net.minecraft.core.registries.Registries.DIMENSION,
-                    Identifier.parse(tag.getString(TAG_DIM)));
+                    Identifier.parse(tag.getStringOr(TAG_DIM, Level.OVERWORLD.identifier().toString())));
             return new WirelessConnection(
-                    dim, BlockPos.of(tag.getLong(TAG_POS)),
-                    Direction.from3DDataValue(tag.getInt(TAG_FACE)));
+                    dim, BlockPos.of(tag.getLongOr(TAG_POS, 0L)),
+                    Direction.from3DDataValue(tag.getIntOr(TAG_FACE, Direction.NORTH.get3DDataValue())));
+        }
+
+        public static WirelessConnection fromInput(ValueInput input) {
+            var dim = ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION,
+                    Identifier.parse(input.getStringOr(TAG_DIM, Level.OVERWORLD.identifier().toString())));
+            return new WirelessConnection(
+                    dim, BlockPos.of(input.getLongOr(TAG_POS, 0L)),
+                    Direction.from3DDataValue(input.getIntOr(TAG_FACE, Direction.NORTH.get3DDataValue())));
         }
     }
 
@@ -1790,7 +1804,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
         data.writeVarInt(connections.size());
         for (var c : connections) {
-            data.writeIdentifier(c.dimension().location());
+            data.writeIdentifier(c.dimension().identifier());
             data.writeBlockPos(c.pos());
             data.writeByte(c.boundFace().get3DDataValue());
         }
@@ -1867,8 +1881,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag d, HolderLookup.Provider r) {
-        super.saveAdditional(d, r);
+    public void saveAdditional(ValueOutput d) {
+        super.saveAdditional(d);
         d.putString(TAG_INTERFACE_MODE, interfaceMode.name());
         d.putString(TAG_IO_SPEED_MODE, ioSpeedMode.name());
         d.putString(TAG_EXPORT_MODE, exportMode.name());
@@ -1877,65 +1891,60 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         long bits = 0;
         for (int i = 0; i < SLOT_COUNT; i++) if (unlimitedSlots[i]) bits |= (1L << i);
         d.putLong(TAG_UNLIMITED_SLOTS, bits);
-        var cl = new ListTag();
-        for (var c : connections) cl.add(c.toTag());
-        d.put(TAG_CONNECTIONS, cl);
-        filterInv.writeToNBT(d, TAG_FILTER_INV, r);
+        var cl = d.childrenList(TAG_CONNECTIONS);
+        for (var c : connections) c.writeTo(cl.addChild());
+        filterInv.writeToNBT(d, TAG_FILTER_INV);
         if (!importBuffer.isEmpty()) {
-            var buffered = new ListTag();
+            var buffered = d.childrenList(TAG_IMPORT_BUFFER);
             for (var entry : importBuffer.entrySet()) {
-                buffered.add(GenericStack.writeTag(r, new GenericStack(entry.getKey(), entry.getValue())));
+                GenericStack.writeTag(buffered.addChild(), new GenericStack(entry.getKey(), entry.getValue()));
             }
-            d.put(TAG_IMPORT_BUFFER, buffered);
         }
         d.putLong(TAG_IMPORT_FLUSH_TICK, importBufferLastFlushTick);
         frequencyBinding.save(d);
     }
 
     @Override
-    public void loadTag(CompoundTag d, HolderLookup.Provider r) {
-        super.loadTag(d, r);
-        if (d.contains(TAG_INTERFACE_MODE)) {
-            try { interfaceMode = InterfaceMode.valueOf(d.getString(TAG_INTERFACE_MODE)); }
+    public void loadTag(ValueInput d) {
+        super.loadTag(d);
+        var interfaceModeName = d.getString(TAG_INTERFACE_MODE).orElse(null);
+        if (interfaceModeName != null) {
+            try { interfaceMode = InterfaceMode.valueOf(interfaceModeName); }
             catch (IllegalArgumentException e) { interfaceMode = InterfaceMode.NORMAL; }
         }
-        if (d.contains(TAG_IO_SPEED_MODE)) {
-            try { ioSpeedMode = IOSpeedMode.valueOf(d.getString(TAG_IO_SPEED_MODE)); }
+        var ioSpeedModeName = d.getString(TAG_IO_SPEED_MODE).orElse(null);
+        if (ioSpeedModeName != null) {
+            try { ioSpeedMode = IOSpeedMode.valueOf(ioSpeedModeName); }
             catch (IllegalArgumentException e) { ioSpeedMode = IOSpeedMode.NORMAL; }
         }
-        if (d.contains(TAG_EXPORT_MODE)) {
-            try { exportMode = ExportMode.valueOf(d.getString(TAG_EXPORT_MODE)); }
+        var exportModeName = d.getString(TAG_EXPORT_MODE).orElse(null);
+        if (exportModeName != null) {
+            try { exportMode = ExportMode.valueOf(exportModeName); }
             catch (IllegalArgumentException e) { exportMode = ExportMode.OFF; }
         }
-        if (d.contains(TAG_IMPORT_MODE)) {
-            try { importMode = ImportMode.valueOf(d.getString(TAG_IMPORT_MODE)); }
+        var importModeName = d.getString(TAG_IMPORT_MODE).orElse(null);
+        if (importModeName != null) {
+            try { importMode = ImportMode.valueOf(importModeName); }
             catch (IllegalArgumentException e) { importMode = ImportMode.OFF; }
         }
-        long bits = d.getLong(TAG_UNLIMITED_SLOTS);
+        long bits = d.getLongOr(TAG_UNLIMITED_SLOTS, 0L);
         for (int i = 0; i < SLOT_COUNT; i++) unlimitedSlots[i] = (bits & (1L << i)) != 0;
-        int ev = d.contains(TAG_ENERGY_DIR) ? d.getInt(TAG_ENERGY_DIR) : -1;
+        int ev = d.getIntOr(TAG_ENERGY_DIR, -1);
         energyOutputDir = ev>=0 && ev<6 ? Direction.from3DDataValue(ev) : null;
         connections.clear();
-        if (d.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
-            var cl = d.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < cl.size(); i++)
-                connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
+        for (var connInput : d.childrenListOrEmpty(TAG_CONNECTIONS)) {
+            connections.add(WirelessConnection.fromInput(connInput));
         }
-        filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        filterInv.readFromNBT(d, TAG_FILTER_INV);
         importBuffer.clear();
-        if (d.contains(TAG_IMPORT_BUFFER, Tag.TAG_LIST)) {
-            var buffered = d.getList(TAG_IMPORT_BUFFER, Tag.TAG_COMPOUND);
-            for (int i = 0; i < buffered.size(); i++) {
-                var stack = GenericStack.readTag(r, buffered.getCompound(i));
-                if (stack != null && stack.amount() > 0) {
-                    importBuffer.merge(stack.what(), stack.amount(), (oldAmount, added) ->
-                            oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
-                }
+        for (var stackInput : d.childrenListOrEmpty(TAG_IMPORT_BUFFER)) {
+            var stack = GenericStack.readTag(stackInput);
+            if (stack != null && stack.amount() > 0) {
+                importBuffer.merge(stack.what(), stack.amount(), (oldAmount, added) ->
+                        oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
             }
         }
-        importBufferLastFlushTick = d.contains(TAG_IMPORT_FLUSH_TICK)
-                ? d.getLong(TAG_IMPORT_FLUSH_TICK)
-                : Long.MIN_VALUE;
+        importBufferLastFlushTick = d.getLongOr(TAG_IMPORT_FLUSH_TICK, Long.MIN_VALUE);
         keyTypeLockUntil.clear();
         invalidateConnectionCache();
         refreshEjectRegistrations();
@@ -1993,7 +2002,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 this.energyOutputDir = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readDirection(tag, TAG_ENERGY_DIR);
             }
             if (tag.contains(TAG_UNLIMITED_SLOTS)) {
-                long bits = tag.getLong(TAG_UNLIMITED_SLOTS);
+                long bits = tag.getLongOr(TAG_UNLIMITED_SLOTS, 0L);
                 for (int i = 0; i < SLOT_COUNT; i++) {
                     unlimitedSlots[i] = (bits & (1L << i)) != 0;
                 }
