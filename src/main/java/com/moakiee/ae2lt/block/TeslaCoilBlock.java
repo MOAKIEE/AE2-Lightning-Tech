@@ -4,8 +4,8 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -13,20 +13,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
-import net.minecraft.world.level.block.state.properties.EnumProperty;
 import net.minecraft.world.level.storage.loot.LootParams;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -74,7 +73,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
             Block.box(1, 10, 7.5, 6, 12, 8.5));
 
     public TeslaCoilBlock() {
-        super(metalProps().noOcclusion().forceSolidOn());
+        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH)
@@ -132,7 +131,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+    protected VoxelShape getOcclusionShape(BlockState state) {
         return Shapes.empty();
     }
 
@@ -142,7 +141,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
 
@@ -156,8 +155,8 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
-            LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess scheduledTickAccess,
+            BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
         DoubleBlockHalf half = state.getValue(HALF);
         if (half == DoubleBlockHalf.LOWER && direction == Direction.UP) {
             if (!neighborState.is(this) || neighborState.getValue(HALF) != DoubleBlockHalf.UPPER) {
@@ -168,7 +167,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
                 return Blocks.AIR.defaultBlockState();
             }
         }
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
     @Override
@@ -212,7 +211,7 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         return new ItemStack(asItem());
     }
 

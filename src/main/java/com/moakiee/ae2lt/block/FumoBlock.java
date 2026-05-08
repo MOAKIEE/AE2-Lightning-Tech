@@ -4,12 +4,14 @@ import com.moakiee.ae2lt.blockentity.FumoBlockEntity;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.HorizontalDirectionalBlock;
@@ -24,7 +26,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.MapColor;
@@ -75,17 +76,12 @@ public class FumoBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected int getLightBlock(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
-        return 2;
-    }
-
-    @Override
     protected float getShadeBrightness(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
         return 1.0F;
     }
 
     @Override
-    protected boolean propagatesSkylightDown(@NotNull BlockState state, @NotNull BlockGetter level, @NotNull BlockPos pos) {
+    protected boolean propagatesSkylightDown(@NotNull BlockState state) {
         return true;
     }
 
@@ -97,11 +93,19 @@ public class FumoBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected @NotNull BlockState updateShape(BlockState state, @NotNull Direction facing, @NotNull BlockState facingState, @NotNull LevelAccessor level, @NotNull BlockPos currentPos, @NotNull BlockPos facingPos) {
+    protected @NotNull BlockState updateShape(
+            BlockState state,
+            @NotNull LevelReader level,
+            @NotNull ScheduledTickAccess scheduledTickAccess,
+            @NotNull BlockPos currentPos,
+            @NotNull Direction facing,
+            @NotNull BlockPos facingPos,
+            @NotNull BlockState facingState,
+            @NotNull RandomSource random) {
         if (state.getValue(WATERLOGGED)) {
-            level.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            scheduledTickAccess.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
-        return super.updateShape(state, facing, facingState, level, currentPos, facingPos);
+        return super.updateShape(state, level, scheduledTickAccess, currentPos, facing, facingPos, facingState, random);
     }
 
     @Override
@@ -125,7 +129,7 @@ public class FumoBlock extends Block implements EntityBlock {
 
     @Override
     protected @NotNull RenderShape getRenderShape(@NotNull BlockState state) {
-        return RenderShape.ENTITYBLOCK_ANIMATED;
+        return RenderShape.INVISIBLE;
     }
 
     @Override

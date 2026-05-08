@@ -12,8 +12,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.Mirror;
@@ -24,7 +24,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
-import net.minecraft.core.Direction;
 import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.material.PushReaction;
@@ -91,18 +90,21 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
     @Override
     protected BlockState updateShape(
             BlockState state,
-            Direction direction,
-            BlockState neighborState,
-            LevelAccessor level,
+            LevelReader level,
+            ScheduledTickAccess scheduledTickAccess,
             BlockPos currentPos,
-            BlockPos neighborPos) {
+            Direction direction,
+            BlockPos neighborPos,
+            BlockState neighborState,
+            RandomSource random) {
         if (state.getValue(WATERLOGGED)) {
-            level.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
+            scheduledTickAccess.scheduleTick(currentPos, Fluids.WATER, Fluids.WATER.getTickDelay(level));
         }
 
         return direction == state.getValue(FACING).getOpposite() && !state.canSurvive(level, currentPos)
                 ? Blocks.AIR.defaultBlockState()
-                : super.updateShape(state, direction, neighborState, level, currentPos, neighborPos);
+                : super.updateShape(state, level, scheduledTickAccess, currentPos, direction, neighborPos,
+                        neighborState, random);
     }
 
     @Nullable
@@ -160,8 +162,5 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
 
         var particle = Minecraft.getInstance().particleEngine.createParticle(
                 ParticleTypes.LIGHTNING, x, y, z, 0, 0, 0);
-        if (particle != null) {
-            particle.setColor(1.0F, 0.95F, 0.45F);
-        }
     }
 }

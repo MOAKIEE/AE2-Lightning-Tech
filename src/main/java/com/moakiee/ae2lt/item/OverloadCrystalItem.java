@@ -114,8 +114,5 @@ public class OverloadCrystalItem extends Item {
     private static void spawnParticle(double x, double y, double z) {
         var particle = Minecraft.getInstance().particleEngine.createParticle(
                 ParticleTypes.LIGHTNING, x, y, z, 0.0D, 0.0D, 0.0D);
-        if (particle != null) {
-            particle.setColor(1.0F, 0.95F, 0.45F);
-        }
     }
 }

@@ -6,15 +6,16 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.redstone.Orientation;
 import net.minecraft.world.phys.BlockHitResult;
+import org.jetbrains.annotations.Nullable;
 
 import appeng.block.AEBaseEntityBlock;
 import appeng.block.crafting.PatternProviderBlock;
@@ -43,7 +44,7 @@ import appeng.util.Platform;
 public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<OverloadedPatternProviderBlockEntity> {
 
     public OverloadedPatternProviderBlock() {
-        super(metalProps().forceSolidOn());
+        super(metalProps(Properties.of()).forceSolidOn());
         registerDefaultState(defaultBlockState().setValue(PatternProviderBlock.PUSH_DIRECTION, PushDirection.ALL));
     }
 
@@ -54,8 +55,8 @@ public class OverloadedPatternProviderBlock extends AEBaseEntityBlock<Overloaded
     }
 
     @Override
-    public void neighborChanged(BlockState state, Level level, BlockPos pos,
-                                Block block, BlockPos fromPos, boolean isMoving) {
+    protected void neighborChanged(BlockState state, Level level, BlockPos pos,
+            Block block, @Nullable Orientation orientation, boolean movedByPiston) {
         var be = this.getBlockEntity(level, pos);
         if (be != null) {
             be.getLogic().updateRedstoneState();

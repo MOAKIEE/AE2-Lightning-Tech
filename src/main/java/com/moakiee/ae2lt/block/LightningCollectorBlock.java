@@ -11,6 +11,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
@@ -29,7 +30,7 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
             Block.box(12, 12, 6, 16, 16, 10));
 
     public LightningCollectorBlock() {
-        super(metalProps().noOcclusion().forceSolidOn());
+        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState().setValue(WORKING, false));
     }
 
