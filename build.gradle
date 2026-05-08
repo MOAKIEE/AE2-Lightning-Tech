@@ -71,6 +71,8 @@ mixin {
     config "${mod_id}.mixins.json"
 }
 
+jarJar.enable()
+
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
@@ -131,7 +133,12 @@ dependencies {
 
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixinextras_version}"))
-    implementation(jarJar("io.github.llamalad7:mixinextras-forge:${mixinextras_version}"))
+    jarJar(implementation("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")) {
+        version {
+            strictly "[${mixinextras_version},0.3.6)"
+            prefer "${mixinextras_version}"
+        }
+    }
 }
 
 tasks.named('processResources', ProcessResources).configure {

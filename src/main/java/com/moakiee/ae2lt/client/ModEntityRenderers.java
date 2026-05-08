@@ -1,9 +1,9 @@
 package com.moakiee.ae2lt.client;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.client.render.OverloadTntRenderer;
 import com.moakiee.ae2lt.registry.ModEntities;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
-import net.minecraft.client.renderer.entity.TntRenderer;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -16,7 +16,7 @@ public final class ModEntityRenderers {
 
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerEntityRenderer(ModEntities.OVERLOAD_TNT.get(), TntRenderer::new);
+        event.registerEntityRenderer(ModEntities.OVERLOAD_TNT.get(), OverloadTntRenderer::new);
         event.registerBlockEntityRenderer(
                 ModBlockEntities.LIGHTNING_SIMULATION_CHAMBER.get(),
                 LightningSimulationChamberRenderer::new);
