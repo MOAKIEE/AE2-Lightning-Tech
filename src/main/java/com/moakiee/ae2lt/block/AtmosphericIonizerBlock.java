@@ -4,8 +4,9 @@ import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -13,12 +14,13 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.BlockPlaceContext;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.ScheduledTickAccess;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -60,7 +62,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             Block.box(6, 4, 6, 10, 8, 10));
 
     public AtmosphericIonizerBlock() {
-        super(metalProps().noOcclusion().forceSolidOn());
+        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(HALF, DoubleBlockHalf.LOWER));
@@ -89,7 +91,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
 
         Level level = context.getLevel();
         BlockPos extensionPos = context.getClickedPos().above();
-        if (extensionPos.getY() >= level.getMaxBuildHeight()
+        if (level.isOutsideBuildHeight(extensionPos.getY())
                 || !level.getBlockState(extensionPos).canBeReplaced(context)) {
             return null;
         }
@@ -118,7 +120,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     }
 
     @Override
-    protected VoxelShape getOcclusionShape(BlockState state, BlockGetter level, BlockPos pos) {
+    protected VoxelShape getOcclusionShape(BlockState state) {
         return Shapes.empty();
     }
 
@@ -128,7 +130,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     }
 
     @Override
-    protected boolean propagatesSkylightDown(BlockState state, BlockGetter level, BlockPos pos) {
+    protected boolean propagatesSkylightDown(BlockState state) {
         return true;
     }
 
@@ -142,8 +144,8 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     }
 
     @Override
-    protected BlockState updateShape(BlockState state, Direction direction, BlockState neighborState,
-            LevelAccessor level, BlockPos pos, BlockPos neighborPos) {
+    protected BlockState updateShape(BlockState state, LevelReader level, ScheduledTickAccess scheduledTickAccess,
+            BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, RandomSource random) {
         DoubleBlockHalf half = state.getValue(HALF);
 
         if (half == DoubleBlockHalf.LOWER && direction == Direction.UP) {
@@ -156,7 +158,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             }
         }
 
-        return super.updateShape(state, direction, neighborState, level, pos, neighborPos);
+        return super.updateShape(state, level, scheduledTickAccess, pos, direction, neighborPos, neighborState, random);
     }
 
     @Override
@@ -172,17 +174,16 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     }
 
     @Override
-    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
-        if (!level.isClientSide() && !state.is(newState.getBlock())) {
-            boolean lower = state.getValue(HALF) == DoubleBlockHalf.LOWER;
-            BlockPos otherPos = lower ? pos.above() : pos.below();
-            DoubleBlockHalf otherHalf = lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
-            BlockState otherState = level.getBlockState(otherPos);
-            if (isSameIonizerHalf(otherState, otherHalf)) {
-                level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
-            }
+    protected void affectNeighborsAfterRemoval(BlockState state, ServerLevel level, BlockPos pos,
+            boolean movedByPiston) {
+        boolean lower = state.getValue(HALF) == DoubleBlockHalf.LOWER;
+        BlockPos otherPos = lower ? pos.above() : pos.below();
+        DoubleBlockHalf otherHalf = lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
+        BlockState otherState = level.getBlockState(otherPos);
+        if (isSameIonizerHalf(otherState, otherHalf)) {
+            level.setBlock(otherPos, Blocks.AIR.defaultBlockState(), Block.UPDATE_CLIENTS);
         }
-        super.onRemove(state, level, pos, newState, movedByPiston);
+        super.affectNeighborsAfterRemoval(state, level, pos, movedByPiston);
     }
 
     @Override
@@ -194,7 +195,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     }
 
     @Override
-    public ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state) {
+    protected ItemStack getCloneItemStack(LevelReader level, BlockPos pos, BlockState state, boolean includeData) {
         return new ItemStack(asItem());
     }
 
@@ -235,7 +236,7 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             if (isSameIonizerHalf(lowerState, DoubleBlockHalf.LOWER)) {
                 return super.useItemOn(stack, lowerState, level, lowerPos, player, hand, hit);
             }
-            return InteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
+            return InteractionResult.TRY_WITH_EMPTY_HAND;
         }
         return super.useItemOn(stack, state, level, pos, player, hand, hit);
     }
