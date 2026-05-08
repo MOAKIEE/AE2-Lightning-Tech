@@ -66,6 +66,7 @@ import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 import com.moakiee.ae2lt.util.LegacyTransferAdapters;
 
 import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 
@@ -193,7 +194,18 @@ public class AE2LightningTech {
 
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
+        NeoForge.EVENT_BUS.addListener(this::onDatapackSync);
         NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
+    }
+
+    private void onDatapackSync(OnDatapackSyncEvent event) {
+        event.sendRecipes(
+                ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get(),
+                ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get(),
+                ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get(),
+                ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get(),
+                ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get(),
+                ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
     }
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {

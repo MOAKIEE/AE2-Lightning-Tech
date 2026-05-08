@@ -32,7 +32,6 @@ import mezz.jei.api.registration.IRecipeRegistration;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.neoforged.fml.ModList;
 
 @JeiPlugin
@@ -88,47 +87,30 @@ public class JEIPlugin implements IModPlugin {
 
         registration.addRecipes(
                 CrystalCatalyzerCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
+                ClientRecipeSyncCache.getRecipes(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
                         .stream()
-                        .map(RecipeHolder::value)
                         .filter(recipe -> !recipe.getOutputTemplate().isEmpty())
                         .toList());
         registration.addRecipes(
                 LightningAssemblyCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())
-                        .stream()
-                        .map(RecipeHolder::value)
-                        .toList());
+                ClientRecipeSyncCache.getRecipes(
+                        com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get()));
         registration.addRecipes(
                 LightningSimulationCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())
-                        .stream()
-                        .map(RecipeHolder::value)
-                        .toList());
+                ClientRecipeSyncCache.getRecipes(
+                        com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get()));
         registration.addRecipes(
                 LightningTransformCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get())
-                        .stream()
-                        .map(RecipeHolder::value)
-                        .toList());
+                ClientRecipeSyncCache.getRecipes(
+                        com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
         registration.addRecipes(
                 LightningStrikeCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get())
-                        .stream()
-                        .map(RecipeHolder::value)
-                        .toList());
+                ClientRecipeSyncCache.getRecipes(
+                        com.moakiee.ae2lt.registry.ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get()));
         registration.addRecipes(
                 OverloadProcessingCategory.TYPE,
-                level.getRecipeManager()
-                        .getAllRecipesFor(com.moakiee.ae2lt.registry.ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get())
-                        .stream()
-                        .map(RecipeHolder::value)
-                        .toList());
+                ClientRecipeSyncCache.getRecipes(
+                        com.moakiee.ae2lt.registry.ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get()));
     }
 
     @Override
