@@ -6,10 +6,12 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_RECIPE_ID = "RecipeId";
@@ -48,7 +50,7 @@ public final class CrystalCatalyzerLockedRecipe {
         RecipeHolder<CrystalCatalyzerRecipe> holder = candidate.recipe();
         CrystalCatalyzerRecipe recipe = holder.value();
         return new CrystalCatalyzerLockedRecipe(
-                holder.id(),
+                holder.id().identifier(),
                 recipe.getOutputTemplate(),
                 recipe.energyPerCycle(),
                 outputMultiplier);
@@ -75,12 +77,22 @@ public final class CrystalCatalyzerLockedRecipe {
     }
 
     public CompoundTag toTag(HolderLookup.Provider registries) {
+        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
         CompoundTag tag = new CompoundTag();
         tag.putString(TAG_RECIPE_ID, recipeId.toString());
-        tag.put(TAG_OUTPUT, output.save(registries, new CompoundTag()));
+        CompoundTag outputTag = new CompoundTag();
+        outputTag.store(ItemStack.MAP_CODEC, ops, output);
+        tag.put(TAG_OUTPUT, outputTag);
         tag.putInt(TAG_ENERGY, energyPerCycle);
         tag.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
         return tag;
+    }
+
+    public void writeTo(ValueOutput data) {
+        data.putString(TAG_RECIPE_ID, recipeId.toString());
+        data.child(TAG_OUTPUT).store(ItemStack.MAP_CODEC, output);
+        data.putInt(TAG_ENERGY, energyPerCycle);
+        data.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
     }
 
     @Nullable
@@ -93,31 +105,59 @@ public final class CrystalCatalyzerLockedRecipe {
             CompoundTag tag,
             HolderLookup.Provider registries,
             int defaultOutputMultiplier) {
-        if (!tag.contains(TAG_RECIPE_ID) || !tag.contains(TAG_OUTPUT, Tag.TAG_COMPOUND)) {
-            return null;
-        }
-
-        ItemStack output = ItemStack.parseOptional(registries, tag.getCompound(TAG_OUTPUT));
+        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        ItemStack output = tag.getCompound(TAG_OUTPUT)
+                .flatMap(outputTag -> outputTag.read(ItemStack.MAP_CODEC, ops))
+                .orElse(ItemStack.EMPTY);
         if (output.isEmpty()) {
             return null;
         }
 
-        int energy = tag.getInt(TAG_ENERGY);
+        int energy = tag.getIntOr(TAG_ENERGY, 0);
         if (energy <= 0) {
             return null;
         }
 
-        int outputMultiplier = tag.contains(TAG_OUTPUT_MULTIPLIER, Tag.TAG_INT)
-                ? tag.getInt(TAG_OUTPUT_MULTIPLIER)
-                : defaultOutputMultiplier;
+        int outputMultiplier = tag.getIntOr(TAG_OUTPUT_MULTIPLIER, defaultOutputMultiplier);
         if (outputMultiplier <= 0) {
             return null;
         }
 
-        return new CrystalCatalyzerLockedRecipe(
-                Identifier.parse(tag.getString(TAG_RECIPE_ID)),
-                output,
-                energy,
-                outputMultiplier);
+        return createOrNull(tag.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier);
+    }
+
+    @Nullable
+    public static CrystalCatalyzerLockedRecipe fromInput(ValueInput data, int defaultOutputMultiplier) {
+        ItemStack output = data.child(TAG_OUTPUT)
+                .flatMap(outputTag -> outputTag.read(ItemStack.MAP_CODEC))
+                .orElse(ItemStack.EMPTY);
+        if (output.isEmpty()) {
+            return null;
+        }
+
+        int energy = data.getIntOr(TAG_ENERGY, 0);
+        int outputMultiplier = data.getIntOr(TAG_OUTPUT_MULTIPLIER, defaultOutputMultiplier);
+        return createOrNull(data.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier);
+    }
+
+    @Nullable
+    private static CrystalCatalyzerLockedRecipe createOrNull(
+            String recipeId,
+            ItemStack output,
+            int energy,
+            int outputMultiplier) {
+        if (recipeId.isEmpty() || energy <= 0 || outputMultiplier <= 0) {
+            return null;
+        }
+
+        try {
+            return new CrystalCatalyzerLockedRecipe(
+                    Identifier.parse(recipeId),
+                    output,
+                    energy,
+                    outputMultiplier);
+        } catch (RuntimeException e) {
+            return null;
+        }
     }
 }

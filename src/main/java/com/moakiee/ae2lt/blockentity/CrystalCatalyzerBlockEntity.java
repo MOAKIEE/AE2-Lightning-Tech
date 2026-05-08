@@ -5,15 +5,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import com.mojang.serialization.Codec;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +18,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -581,66 +579,55 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
-        data.put(TAG_TANK, tank.writeToNBT(registries, new CompoundTag()));
+    public void saveAdditional(ValueOutput data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
+        tank.serialize(data.child(TAG_TANK));
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         data.putBoolean(TAG_AUTO_EXPORT, autoExport);
-        ListTag outputTags = new ListTag();
+        var outputTags = data.list(TAG_ALLOWED_OUTPUTS, Codec.STRING);
         for (var side : allowedOutputs) {
-            outputTags.add(StringTag.valueOf(side.name()));
+            outputTags.add(side.name());
         }
-        data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         data.putString(TAG_MODE, mode.getSerializedName());
         if (lockedRecipe != null) {
-            data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
+            lockedRecipe.writeTo(data.child(TAG_LOCKED_RECIPE));
         } else {
-            data.remove(TAG_LOCKED_RECIPE);
+            data.discard(TAG_LOCKED_RECIPE);
         }
         frequencyBinding.save(data);
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        tank.readFromNBT(registries, data.getCompound(TAG_TANK));
-        energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
-        consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
-        processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
+    public void loadTag(ValueInput data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        tank.deserialize(data.childOrEmpty(TAG_TANK));
+        energyStorage.loadStoredEnergy(data.getLongOr(TAG_ENERGY, 0L));
+        consumedEnergy = Math.max(0L, data.getLongOr(TAG_CONSUMED_ENERGY, 0L));
+        processingTicksSpent = Math.max(0, data.getIntOr(TAG_PROCESSING_TICKS, 0));
         frequencyBinding.load(data);
-        autoExport = data.getBoolean(TAG_AUTO_EXPORT);
+        autoExport = data.getBooleanOr(TAG_AUTO_EXPORT, false);
         allowedOutputs.clear();
-        ListTag outputTags = data.getList(TAG_ALLOWED_OUTPUTS, Tag.TAG_STRING);
-        for (int i = 0; i < outputTags.size(); i++) {
+        for (String sideName : data.listOrEmpty(TAG_ALLOWED_OUTPUTS, Codec.STRING)) {
             try {
-                allowedOutputs.add(RelativeSide.valueOf(outputTags.getString(i)));
+                allowedOutputs.add(RelativeSide.valueOf(sideName));
             } catch (IllegalArgumentException ignored) {
             }
         }
-        if (data.contains(TAG_MODE, Tag.TAG_STRING)) {
-            String modeName = data.getString(TAG_MODE);
-            mode = Mode.CRYSTAL;
-            for (Mode m : Mode.values()) {
-                if (m.getSerializedName().equals(modeName)) {
-                    mode = m;
-                    break;
-                }
+        String modeName = data.getStringOr(TAG_MODE, Mode.CRYSTAL.getSerializedName());
+        mode = Mode.CRYSTAL;
+        for (Mode m : Mode.values()) {
+            if (m.getSerializedName().equals(modeName)) {
+                mode = m;
+                break;
             }
-        } else {
-            mode = Mode.CRYSTAL;
         }
-        if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
-            lockedRecipe = CrystalCatalyzerLockedRecipe.fromTag(
-                    data.getCompound(TAG_LOCKED_RECIPE),
-                    registries,
-                    getCurrentOutputMultiplier());
-        } else {
-            lockedRecipe = null;
-        }
+        lockedRecipe = data.child(TAG_LOCKED_RECIPE)
+                .map(recipeData -> CrystalCatalyzerLockedRecipe.fromInput(recipeData, getCurrentOutputMultiplier()))
+                .orElse(null);
         if (lockedRecipe == null) {
             consumedEnergy = 0L;
             processingTicksSpent = 0;
