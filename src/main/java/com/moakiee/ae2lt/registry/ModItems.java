@@ -28,71 +28,73 @@ public final class ModItems {
 
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL = ITEMS.registerItem(
             "overload_crystal",
-            OverloadCrystalItem::new,
-            new Item.Properties());
+            OverloadCrystalItem::new);
 
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL_DUST =
-            ITEMS.registerSimpleItem("overload_crystal_dust", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_crystal_dust");
 
     public static final DeferredItem<Item> UNOVERLOADED_CIRCUIT_BOARD =
-            ITEMS.registerSimpleItem("unoverloaded_circuit_board", new Item.Properties());
+            ITEMS.registerSimpleItem("unoverloaded_circuit_board");
 
     public static final DeferredItem<Item> OVERLOAD_CIRCUIT_BOARD =
-            ITEMS.registerSimpleItem("overload_circuit_board", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_circuit_board");
 
     public static final DeferredItem<Item> OVERLOAD_PROCESSOR =
-            ITEMS.registerSimpleItem("overload_processor", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_processor");
 
     public static final DeferredItem<Item> OVERLOAD_INSCRIBER_PRESS =
-            ITEMS.registerSimpleItem("overload_inscriber_press", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_inscriber_press");
 
     public static final DeferredItem<Item> OVERLOAD_ALLOY =
-            ITEMS.registerSimpleItem("overload_alloy", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_alloy");
 
     public static final DeferredItem<Item> OVERLOAD_ALLOY_BLANK =
-            ITEMS.registerSimpleItem("overload_alloy_blank", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_alloy_blank");
 
     public static final DeferredItem<Item> OVERLOAD_ALLOY_PLATE =
-            ITEMS.registerSimpleItem("overload_alloy_plate", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_alloy_plate");
 
     public static final DeferredItem<Item> OVERLOAD_SINGULARITY =
-            ITEMS.registerSimpleItem("overload_singularity", new Item.Properties());
+            ITEMS.registerSimpleItem("overload_singularity");
 
     public static final DeferredItem<Item> ULTIMATE_OVERLOAD_CORE =
-            ITEMS.registerSimpleItem("ultimate_overload_core", new Item.Properties());
+            ITEMS.registerSimpleItem("ultimate_overload_core");
 
     public static final DeferredItem<Item> LIGHTNING_COLLAPSE_MATRIX =
-            ITEMS.registerSimpleItem("lightning_collapse_matrix", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_collapse_matrix");
 
     public static final DeferredItem<DebugLightningRodItem> DEBUG_LIGHTNING_ROD = ITEMS.registerItem(
             "debug_lightning_rod",
             DebugLightningRodItem::new,
-            new Item.Properties().stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC));
+            properties -> properties.stacksTo(16).rarity(net.minecraft.world.item.Rarity.EPIC));
 
     public static final DeferredItem<ElectroChimeCrystalItem> ELECTRO_CHIME_CRYSTAL = ITEMS.registerItem(
             "electro_chime_crystal",
             ElectroChimeCrystalItem::new,
-            new Item.Properties().stacksTo(1));
+            properties -> properties.stacksTo(1));
 
     public static final DeferredItem<PerfectElectroChimeCrystalItem> PERFECT_ELECTRO_CHIME_CRYSTAL = ITEMS.registerItem(
             "perfect_electro_chime_crystal",
             PerfectElectroChimeCrystalItem::new,
-            new Item.Properties().stacksTo(1));
+            properties -> properties.stacksTo(1));
 
-    public static final DeferredItem<WeatherCondensateItem> CLEAR_CONDENSATE = ITEMS.register(
+    public static final DeferredItem<WeatherCondensateItem> CLEAR_CONDENSATE = ITEMS.registerItem(
             "clear_condensate",
-            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.CLEAR, new Item.Properties().stacksTo(1)));
+            properties -> new WeatherCondensateItem(WeatherCondensateItem.Type.CLEAR, properties),
+            properties -> properties.stacksTo(1));
 
-    public static final DeferredItem<WeatherCondensateItem> RAIN_CONDENSATE = ITEMS.register(
+    public static final DeferredItem<WeatherCondensateItem> RAIN_CONDENSATE = ITEMS.registerItem(
             "rain_condensate",
-            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.RAIN, new Item.Properties().stacksTo(1)));
+            properties -> new WeatherCondensateItem(WeatherCondensateItem.Type.RAIN, properties),
+            properties -> properties.stacksTo(1));
 
-    public static final DeferredItem<WeatherCondensateItem> THUNDERSTORM_CONDENSATE = ITEMS.register(
+    public static final DeferredItem<WeatherCondensateItem> THUNDERSTORM_CONDENSATE = ITEMS.registerItem(
             "thunderstorm_condensate",
-            () -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, new Item.Properties().stacksTo(1)));
+            properties -> new WeatherCondensateItem(WeatherCondensateItem.Type.THUNDERSTORM, properties),
+            properties -> properties.stacksTo(1));
 
     public static final DeferredItem<Item> LIGHTNING_ITEM_CELL_HOUSING =
-            ITEMS.registerSimpleItem("lightning_item_cell_housing", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_item_cell_housing");
 
     public static final DeferredItem<LightningStorageComponentItem> LIGHTNING_STORAGE_COMPONENT_I =
             registerLightningStorageComponent("lightning_storage_component_i", 256, 32);
@@ -106,49 +108,46 @@ public final class ModItems {
             registerLightningStorageComponent("lightning_storage_component_v", 65536, 8192);
 
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_I =
-            ITEMS.registerSimpleItem("lightning_cell_component_i", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_cell_component_i");
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_II =
-            ITEMS.registerSimpleItem("lightning_cell_component_ii", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_cell_component_ii");
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_III =
-            ITEMS.registerSimpleItem("lightning_cell_component_iii", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_cell_component_iii");
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_IV =
-            ITEMS.registerSimpleItem("lightning_cell_component_iv", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_cell_component_iv");
     public static final DeferredItem<Item> LIGHTNING_CELL_COMPONENT_V =
-            ITEMS.registerSimpleItem("lightning_cell_component_v", new Item.Properties());
+            ITEMS.registerSimpleItem("lightning_cell_component_v");
 
     public static final DeferredItem<InfiniteStorageCellItem> INFINITE_STORAGE_CELL =
-            ITEMS.register("infinite_storage_cell",
-                    () -> new InfiniteStorageCellItem(
-                            new Item.Properties(),
+            ITEMS.registerItem("infinite_storage_cell",
+                    properties -> new InfiniteStorageCellItem(
+                            properties,
                             Long.MAX_VALUE, Long.MAX_VALUE,
                             8, Integer.MAX_VALUE,
                             32));
 
     /** Easter egg cell: behaviour determined by NBT (CellType / CellSeed). */
     public static final DeferredItem<FixedInfiniteCellItem> MYSTERIOUS_CELL =
-            ITEMS.register("mysterious_cell",
-                    () -> new FixedInfiniteCellItem(new Item.Properties()));
+            ITEMS.registerItem("mysterious_cell", FixedInfiniteCellItem::new);
 
     public static final DeferredItem<ResearchNoteItem> RESEARCH_NOTE =
-            ITEMS.registerItem("research_note", ResearchNoteItem::new, new Item.Properties().stacksTo(16));
+            ITEMS.registerItem("research_note", ResearchNoteItem::new, properties -> properties.stacksTo(16));
 
     public static final DeferredItem<Item> CHARRED_RITUAL_FRAGMENT =
-            ITEMS.registerSimpleItem("charred_ritual_fragment", new Item.Properties());
+            ITEMS.registerSimpleItem("charred_ritual_fragment");
 
     public static final DeferredItem<Item> OVERLOAD_PATTERN = ITEMS.registerItem(
             "overload_pattern",
-            OverloadPatternItem::new,
-            new Item.Properties());
+            OverloadPatternItem::new);
 
     public static final DeferredItem<Item> OVERLOAD_PATTERN_ENCODER = ITEMS.registerItem(
             "overload_pattern_encoder",
-            OverloadPatternEncoderItem::new,
-            new Item.Properties());
+            OverloadPatternEncoderItem::new);
 
     public static final DeferredItem<Item> OVERLOADED_FILTER_COMPONENT = ITEMS.registerItem(
             "overloaded_filter_component",
             OverloadedFilterComponentItem::new,
-            new Item.Properties().stacksTo(1));
+            properties -> properties.stacksTo(1));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);
@@ -224,7 +223,9 @@ public final class ModItems {
             String id,
             int totalBytes,
             double idleDrain) {
-        return ITEMS.register(id, () -> new LightningStorageComponentItem(totalBytes, idleDrain));
+        return ITEMS.registerItem(
+                id,
+                properties -> new LightningStorageComponentItem(properties, totalBytes, idleDrain));
     }
 
     private static void registerStorageCellModel(DeferredItem<? extends Item> item) {
@@ -242,10 +243,10 @@ public final class ModItems {
     }
 
     private static DeferredItem<ColoredPartItem<OverloadedCablePart>> registerOverloadedCable(String id, AEColor color) {
-        return ITEMS.register(
+        return ITEMS.registerItem(
                 id,
-                () -> new ColoredPartItem<>(
-                        new Item.Properties(),
+                properties -> new ColoredPartItem<>(
+                        properties,
                         OverloadedCablePart.class,
                         OverloadedCablePart::new,
                         color));

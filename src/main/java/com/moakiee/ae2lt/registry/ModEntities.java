@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.entity.OverloadTntEntity;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.neoforged.neoforge.registries.DeferredHolder;
@@ -15,12 +16,12 @@ public final class ModEntities {
     public static final DeferredHolder<EntityType<?>, EntityType<OverloadTntEntity>> OVERLOAD_TNT =
             ENTITY_TYPES.register(
                     "overload_tnt",
-                    () -> EntityType.Builder.<OverloadTntEntity>of(OverloadTntEntity::new, MobCategory.MISC)
+                    key -> EntityType.Builder.<OverloadTntEntity>of(OverloadTntEntity::new, MobCategory.MISC)
                             .sized(0.98F, 0.98F)
                             .fireImmune()
                             .clientTrackingRange(10)
                             .updateInterval(10)
-                            .build("overload_tnt"));
+                            .build(ResourceKey.create(Registries.ENTITY_TYPE, key)));
 
     private ModEntities() {
     }

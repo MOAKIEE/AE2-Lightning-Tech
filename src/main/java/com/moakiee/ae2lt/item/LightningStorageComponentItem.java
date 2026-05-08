@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.item;
 
 import appeng.items.storage.BasicStorageCell;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.me.key.LightningKeyType;
@@ -11,9 +12,9 @@ public final class LightningStorageComponentItem extends BasicStorageCell {
     private final int usableCapacity;
     private final int totalBytes;
 
-    public LightningStorageComponentItem(int usableCapacity, double idleDrain) {
+    public LightningStorageComponentItem(Item.Properties properties, int usableCapacity, double idleDrain) {
         super(
-                new Properties().stacksTo(1),
+                properties.stacksTo(1),
                 idleDrain,
                 1,
                 BYTES_PER_TYPE,
