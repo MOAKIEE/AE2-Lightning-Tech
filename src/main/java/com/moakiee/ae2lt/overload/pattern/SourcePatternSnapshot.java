@@ -8,7 +8,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
@@ -47,7 +47,10 @@ public final class SourcePatternSnapshot {
         }
 
         var itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        var serializedStack = stack.saveOptional(registries);
+        var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+        var serializedStack = ItemStack.OPTIONAL_CODEC.encodeStart(ops, stack)
+                .result()
+                .orElseThrow(() -> new IllegalStateException("failed to serialize source pattern stack"));
         if (!(serializedStack instanceof CompoundTag stackTag)) {
             throw new IllegalStateException("serialized source pattern stack was not a compound tag");
         }
@@ -70,12 +73,19 @@ public final class SourcePatternSnapshot {
         Objects.requireNonNull(registries, "registries");
 
         if (serializedStackTag != null && !serializedStackTag.isEmpty()) {
-            return ItemStack.parseOptional(registries, serializedStackTag.copy());
+            var ops = registries.createSerializationContext(NbtOps.INSTANCE);
+            return ItemStack.OPTIONAL_CODEC.decode(ops, serializedStackTag.copy())
+                    .result()
+                    .map(com.mojang.datafixers.util.Pair::getFirst)
+                    .orElse(ItemStack.EMPTY);
         }
 
         // Backward compatibility for older overload patterns that only stored
         // item id + custom data.
-        var item = BuiltInRegistries.ITEM.get(itemId);
+        var item = BuiltInRegistries.ITEM.getValue(itemId);
+        if (item == null) {
+            return ItemStack.EMPTY;
+        }
         var stack = new ItemStack(item);
         if (customDataTag != null && !customDataTag.isEmpty()) {
             stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customDataTag.copy()));
@@ -96,23 +106,22 @@ public final class SourcePatternSnapshot {
 
     public static SourcePatternSnapshot fromTag(CompoundTag tag) {
         Identifier itemId;
-        if (tag.contains(TAG_ITEM, Tag.TAG_STRING)) {
-            itemId = Identifier.parse(tag.getString(TAG_ITEM));
-        } else if (tag.contains(TAG_STACK, Tag.TAG_COMPOUND)) {
-            itemId = Identifier.parse(tag.getCompound(TAG_STACK).getString("id"));
+        var itemIdString = tag.getString(TAG_ITEM);
+        if (itemIdString.isPresent()) {
+            itemId = Identifier.parse(itemIdString.get());
         } else {
-            throw new IllegalArgumentException("source pattern snapshot is missing an item id");
+            var stackTag = tag.getCompound(TAG_STACK)
+                    .orElseThrow(() -> new IllegalArgumentException("source pattern snapshot is missing an item id"));
+            itemId = Identifier.parse(stackTag.getString("id")
+                    .orElseThrow(() -> new IllegalArgumentException("source pattern stack is missing an item id")));
         }
 
-        CompoundTag serializedStack = null;
-        if (tag.contains(TAG_STACK, Tag.TAG_COMPOUND)) {
-            serializedStack = tag.getCompound(TAG_STACK).copy();
-        }
-
-        CompoundTag customData = null;
-        if (tag.contains(TAG_CUSTOM_DATA, CompoundTag.TAG_COMPOUND)) {
-            customData = tag.getCompound(TAG_CUSTOM_DATA).copy();
-        }
+        CompoundTag serializedStack = tag.getCompound(TAG_STACK)
+                .map(CompoundTag::copy)
+                .orElse(null);
+        CompoundTag customData = tag.getCompound(TAG_CUSTOM_DATA)
+                .map(CompoundTag::copy)
+                .orElse(null);
         return new SourcePatternSnapshot(itemId, serializedStack, customData);
     }
 }

@@ -90,10 +90,10 @@ public class EjectModeSavedData extends SavedData {
         var list = new ListTag();
         for (var e : entries) {
             var ct = new CompoundTag();
-            ct.putString(TAG_I_DIM, e.interceptDim().location().toString());
+            ct.putString(TAG_I_DIM, e.interceptDim().identifier().toString());
             ct.putLong(TAG_I_POS, e.interceptPos().asLong());
             ct.putInt(TAG_I_FACE, e.interceptFace().get3DDataValue());
-            ct.putString(TAG_P_DIM, e.hostDim().location().toString());
+            ct.putString(TAG_P_DIM, e.hostDim().identifier().toString());
             ct.putLong(TAG_P_POS, e.hostPos().asLong());
             list.add(ct);
         }
