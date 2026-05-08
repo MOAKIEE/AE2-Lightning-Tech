@@ -46,15 +46,15 @@ public record OpenFrequencyMenuPacket(int token, BlockPos blockPos) implements C
                     || menu.getFrequencyBindingToken() != pkt.token
                     || !menu.getFrequencyBindingBlockPos().equals(pkt.blockPos)
                     || !((AbstractContainerMenu) menu).stillValid(player)) {
-                player.displayClientMessage(
+                player.sendSystemMessage(
                         Component.translatable("ae2lt.gui.error.rejected").withStyle(ChatFormatting.RED),
                         true);
                 return;
             }
 
-            var be = player.serverLevel().getBlockEntity(pkt.blockPos);
+            var be = player.level().getBlockEntity(pkt.blockPos);
             if (!(be instanceof FrequencyBindingHost bindingHost)) {
-                player.displayClientMessage(
+                player.sendSystemMessage(
                         Component.translatable("ae2lt.gui.error.rejected").withStyle(ChatFormatting.RED),
                         true);
                 return;
@@ -67,7 +67,7 @@ public record OpenFrequencyMenuPacket(int token, BlockPos blockPos) implements C
                 if (freq != null
                         && !freq.getPlayerAccess(player).canUse()
                         && freq.getSecurity() != FrequencySecurityLevel.ENCRYPTED) {
-                    player.displayClientMessage(
+                    player.sendSystemMessage(
                             Component.translatable("ae2lt.gui.error.no_access").withStyle(ChatFormatting.RED),
                             true);
                     return;

@@ -119,7 +119,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
             var filterSlot = new OverloadedFilterSlot(be.getFilterInv(), 0);
             filterSlot.setNotDraggable();
             this.filterSlot = this.addSlot(filterSlot, SlotSemantics.UPGRADE);
-            Ae2ltSlotBackgrounds.withBackground(this.filterSlot, Ae2ltSlotBackgrounds.FILTER_COMPONENT);
         }
 
         var logic = host.getInterfaceLogic();
@@ -595,6 +594,11 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
         @Override
         public int getMaxStackSize() {
             return 1;
+        }
+
+        @Override
+        public Identifier getNoItemIcon() {
+            return Ae2ltSlotBackgrounds.FILTER_COMPONENT;
         }
     }
 }

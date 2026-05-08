@@ -75,9 +75,9 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
                 new LargeStackAppEngSlot(host.getInventory(), TeslaCoilInventory.SLOT_DUST),
                 Ae2ltSlotSemantics.TESLA_COIL_DUST);
         this.matrixSlot = addSlot(
-                new LargeStackAppEngSlot(host.getInventory(), TeslaCoilInventory.SLOT_MATRIX),
+                new LargeStackAppEngSlot(host.getInventory(), TeslaCoilInventory.SLOT_MATRIX,
+                        Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX),
                 Ae2ltSlotSemantics.TESLA_COIL_MATRIX);
-        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
 
         createPlayerInventorySlots(playerInventory);
 

@@ -1,21 +1,14 @@
 package com.moakiee.ae2lt.menu;
 
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.inventory.Slot;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 
 /**
- * 集中管理所有自定义槽位的"空槽背景"贴图。
+ * 集中管理所有自定义槽位的空槽图标。
  *
- * <p>这些 sprite 来自 {@code assets/ae2lt/textures/block/slot/*.png},
- * 默认会被自动 stitch 进方块图集 ({@link InventoryMenu#BLOCK_ATLAS}),
- * 通过 vanilla {@link Slot#setBackground(Identifier, Identifier)} 渲染。</p>
- *
- * <p>渲染流程:AE2 的 {@code AEBaseScreen.renderSlot} 在画完 {@code AppEngSlot.setIcon(Icon)}
- * 之后会回调 {@code super.renderSlot},vanilla 会用这里设置的 sprite 作为空槽提示。
- * 因此本工具与 AE2 自带 Icon 互不冲突——但同一个槽位最好只用其中一种,避免叠加。</p>
+ * <p>26.1 的槽位不再保存 atlas + sprite 二元组,而是通过
+ * {@link net.minecraft.world.inventory.Slot#getNoItemIcon()} 返回 GUI sprite id。</p>
  */
 public final class Ae2ltSlotBackgrounds {
 
@@ -25,12 +18,6 @@ public final class Ae2ltSlotBackgrounds {
 
     private static Identifier sprite(String name) {
         return Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "block/slot/" + name);
-    }
-
-    /** 给一个普通槽位绑定空槽背景图,sprite 必须已被 stitch 进 {@link InventoryMenu#BLOCK_ATLAS}。 */
-    public static <T extends Slot> T withBackground(T slot, Identifier sprite) {
-        slot.setBackground(InventoryMenu.BLOCK_ATLAS, sprite);
-        return slot;
     }
 
     private Ae2ltSlotBackgrounds() {

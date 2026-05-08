@@ -56,7 +56,7 @@ public record SelectFrequencyPacket(
                 return;
             }
 
-            var level = player.serverLevel();
+            var level = player.level();
             var be = level.getBlockEntity(pkt.blockPos);
 
             // Resolve the device's CURRENT frequency so the block-op
@@ -144,7 +144,7 @@ public record SelectFrequencyPacket(
             // member list consistent with "who actually uses this freq".
             if (!freq.isMember(player) && freq.enrollAsUser(player)) {
                 manager.markModified();
-                SyncFrequencyDetailPacket.broadcastMembersTo(player.getServer(), pkt.frequencyId);
+                SyncFrequencyDetailPacket.broadcastMembersTo(player.level().getServer(), pkt.frequencyId);
             }
 
             if (be instanceof WirelessOverloadedControllerBlockEntity

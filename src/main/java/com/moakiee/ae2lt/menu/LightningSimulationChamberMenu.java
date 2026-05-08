@@ -97,9 +97,9 @@ public class LightningSimulationChamberMenu extends AEBaseMenu implements Freque
 
         addMachineSlots();
         this.catalystSlot = addSlot(
-                new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_CATALYST),
+                new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_CATALYST,
+                        Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX),
                 Ae2ltSlotSemantics.LIGHTNING_SIMULATION_CATALYST);
-        Ae2ltSlotBackgrounds.withBackground(this.catalystSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         addSlot(
                 new LargeStackAppEngSlot(host.getInventory(), LightningSimulationChamberInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);

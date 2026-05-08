@@ -60,7 +60,7 @@ public record ChangeMemberPacket(
             int result = freq.changeMembership(player, pkt.targetUUID, pkt.operationType);
             if (result == WirelessFrequency.RESPONSE_SUCCESS) {
                 manager.markModified();
-                SyncFrequencyDetailPacket.broadcastMembersTo(player.getServer(), pkt.frequencyId);
+                SyncFrequencyDetailPacket.broadcastMembersTo(player.level().getServer(), pkt.frequencyId);
                 return;
             }
 

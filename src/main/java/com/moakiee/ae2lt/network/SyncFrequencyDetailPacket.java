@@ -97,7 +97,7 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
                 }
 
                 CompoundTag e = new CompoundTag();
-                e.putString("dim", d.dimension().location().toString());
+                e.putString("dim", d.dimension().identifier().toString());
                 e.putLong("pos", d.pos().asLong());
                 e.putBoolean("controller", d.isController());
                 e.putBoolean("advanced", d.advanced());
@@ -123,7 +123,7 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
 
     public static void sendInitialConnectionsIfNeeded(ServerPlayer player, int frequencyId) {
         if (frequencyId <= 0) return;
-        PacketDistributor.sendToPlayer(player, forConnections(frequencyId, player.getServer()));
+        PacketDistributor.sendToPlayer(player, forConnections(frequencyId, player.level().getServer()));
     }
 
     // ── Handler ──

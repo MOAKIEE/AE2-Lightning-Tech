@@ -120,9 +120,9 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
 
         addMachineSlots();
         this.matrixSlot = addSlot(
-                new LargeStackAppEngSlot(host.getInventory(), OverloadProcessingFactoryInventory.SLOT_MATRIX),
+                new LargeStackAppEngSlot(host.getInventory(), OverloadProcessingFactoryInventory.SLOT_MATRIX,
+                        Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX),
                 Ae2ltSlotSemantics.OVERLOAD_FACTORY_MATRIX);
-        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         setupUpgrades(host.getUpgrades());
         createPlayerInventorySlots(playerInventory);
 

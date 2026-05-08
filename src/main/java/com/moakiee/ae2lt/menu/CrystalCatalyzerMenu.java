@@ -24,7 +24,6 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
-import appeng.menu.slot.AppEngSlot;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
@@ -82,9 +81,9 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
                 new LargeStackAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_CATALYST),
                 Ae2ltSlotSemantics.CRYSTAL_CATALYZER_CATALYST);
         this.matrixSlot = addSlot(
-                new AppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_MATRIX),
+                new IconAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_MATRIX,
+                        Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX),
                 Ae2ltSlotSemantics.CRYSTAL_CATALYZER_MATRIX);
-        Ae2ltSlotBackgrounds.withBackground(this.matrixSlot, Ae2ltSlotBackgrounds.LIGHTNING_COLLAPSE_MATRIX);
         this.outputSlot = addSlot(
                 new LargeStackAppEngSlot(inventory, CrystalCatalyzerInventory.SLOT_OUTPUT),
                 SlotSemantics.MACHINE_OUTPUT);

@@ -9,15 +9,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.capabilities.BlockCapability;
 import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.transfer.ResourceHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.item.ItemResource;
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 
@@ -38,24 +38,25 @@ public abstract class EjectCapabilityMixin<T, C> {
     private static boolean proxying = false;
 
     @Unique
-    private static final IItemHandler REJECTING_ITEM_HANDLER = new IItemHandler() {
-        @Override public int getSlots() { return 1; }
-        @Override public ItemStack getStackInSlot(int slot) { return ItemStack.EMPTY; }
-        @Override public ItemStack insertItem(int slot, ItemStack stack, boolean simulate) { return stack; }
-        @Override public ItemStack extractItem(int slot, int amount, boolean simulate) { return ItemStack.EMPTY; }
-        @Override public int getSlotLimit(int slot) { return 0; }
-        @Override public boolean isItemValid(int slot, ItemStack stack) { return false; }
+    private static final ResourceHandler<ItemResource> REJECTING_ITEM_HANDLER = new ResourceHandler<>() {
+        @Override public int size() { return 1; }
+        @Override public ItemResource getResource(int index) { return ItemResource.EMPTY; }
+        @Override public long getAmountAsLong(int index) { return 0; }
+        @Override public long getCapacityAsLong(int index, ItemResource resource) { return 0; }
+        @Override public boolean isValid(int index, ItemResource resource) { return false; }
+        @Override public int insert(int index, ItemResource resource, int amount, TransactionContext transaction) { return 0; }
+        @Override public int extract(int index, ItemResource resource, int amount, TransactionContext transaction) { return 0; }
     };
 
     @Unique
-    private static final IFluidHandler REJECTING_FLUID_HANDLER = new IFluidHandler() {
-        @Override public int getTanks() { return 1; }
-        @Override public FluidStack getFluidInTank(int tank) { return FluidStack.EMPTY; }
-        @Override public int getTankCapacity(int tank) { return 0; }
-        @Override public boolean isFluidValid(int tank, FluidStack stack) { return false; }
-        @Override public int fill(FluidStack resource, FluidAction action) { return 0; }
-        @Override public FluidStack drain(FluidStack resource, FluidAction action) { return FluidStack.EMPTY; }
-        @Override public FluidStack drain(int maxDrain, FluidAction action) { return FluidStack.EMPTY; }
+    private static final ResourceHandler<FluidResource> REJECTING_FLUID_HANDLER = new ResourceHandler<>() {
+        @Override public int size() { return 1; }
+        @Override public FluidResource getResource(int index) { return FluidResource.EMPTY; }
+        @Override public long getAmountAsLong(int index) { return 0; }
+        @Override public long getCapacityAsLong(int index, FluidResource resource) { return 0; }
+        @Override public boolean isValid(int index, FluidResource resource) { return false; }
+        @Override public int insert(int index, FluidResource resource, int amount, TransactionContext transaction) { return 0; }
+        @Override public int extract(int index, FluidResource resource, int amount, TransactionContext transaction) { return 0; }
     };
 
     @SuppressWarnings("unchecked")
@@ -92,9 +93,9 @@ public abstract class EjectCapabilityMixin<T, C> {
             }
         } else {
             BlockCapability<T, C> cap = (BlockCapability<T, C>) (Object) this;
-            if (cap == Capabilities.ItemHandler.BLOCK) {
+            if ((Object) cap == Capabilities.Item.BLOCK) {
                 cir.setReturnValue((T) REJECTING_ITEM_HANDLER);
-            } else if (cap == Capabilities.FluidHandler.BLOCK) {
+            } else if ((Object) cap == Capabilities.Fluid.BLOCK) {
                 cir.setReturnValue((T) REJECTING_FLUID_HANDLER);
             }
         }

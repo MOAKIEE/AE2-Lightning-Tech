@@ -52,8 +52,8 @@ public record FrequencyResponsePacket(int responseCode) implements CustomPacketP
             if (!(ctx.player() instanceof LocalPlayer player)) return;
             Component message = pkt.toMessage();
             // Container screens cover the hotbar / action-bar region, so
-            // a stock {@code displayClientMessage(..., true)} is painted
-            // underneath the GUI and the player never sees it. Route
+            // a stock overlay message is painted underneath the GUI and
+            // the player never sees it. Route
             // the toast into the FrequencyScreen's inline banner when
             // it's open, and fall back to the action-bar only when it
             // isn't (e.g. an error arrives after the user closed the
@@ -61,7 +61,7 @@ public record FrequencyResponsePacket(int responseCode) implements CustomPacketP
             if (Minecraft.getInstance().screen instanceof FrequencyScreen fs) {
                 fs.showInlineError(message);
             } else {
-                player.displayClientMessage(message, true);
+                player.sendOverlayMessage(message);
             }
         });
     }
