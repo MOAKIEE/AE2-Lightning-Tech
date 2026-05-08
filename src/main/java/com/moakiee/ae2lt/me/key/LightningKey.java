@@ -7,14 +7,13 @@ import com.mojang.serialization.MapCodec;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.StringRepresentable;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.api.lightning.LightningTier;
@@ -140,10 +139,8 @@ public final class LightningKey extends AEKey {
     }
 
     @Override
-    public CompoundTag toTag(HolderLookup.Provider registries) {
-        CompoundTag tag = new CompoundTag();
-        tag.putString("tier", this.tier.getSerializedName());
-        return tag;
+    public void toTag(ValueOutput output) {
+        output.putString("tier", this.tier.getSerializedName());
     }
 
     @Override
