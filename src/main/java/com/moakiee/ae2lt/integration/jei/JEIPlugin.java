@@ -22,7 +22,7 @@ import mezz.jei.api.IModPlugin;
 import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.gui.handlers.IGuiClickableArea;
 import mezz.jei.api.gui.handlers.IGuiContainerHandler;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.registration.IGuiHandlerRegistration;
 import mezz.jei.api.registration.IModIngredientRegistration;
 import mezz.jei.api.registration.IRecipeCatalystRegistration;
@@ -80,7 +80,7 @@ public class JEIPlugin implements IModPlugin {
                 CrystalCatalyzerCategory.TYPE,
                 ClientRecipeSyncCache.getRecipes(com.moakiee.ae2lt.registry.ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get())
                         .stream()
-                        .filter(recipe -> !recipe.getOutputTemplate().isEmpty())
+                        .filter(holder -> !holder.value().getOutputTemplate().isEmpty())
                         .toList());
         registration.addRecipes(
                 LightningAssemblyCategory.TYPE,
@@ -106,11 +106,11 @@ public class JEIPlugin implements IModPlugin {
 
     @Override
     public void registerRecipeCatalysts(IRecipeCatalystRegistration registration) {
-        registration.addRecipeCatalyst(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.toStack(), LightningAssemblyCategory.TYPE);
-        registration.addRecipeCatalyst(ModBlocks.LIGHTNING_SIMULATION_CHAMBER.toStack(), LightningSimulationCategory.TYPE);
-        registration.addRecipeCatalyst(ModBlocks.OVERLOAD_PROCESSING_FACTORY.toStack(), OverloadProcessingCategory.TYPE);
-        registration.addRecipeCatalyst(ModBlocks.TESLA_COIL.toStack(), TeslaCoilCategory.TYPE);
-        registration.addRecipeCatalyst(ModBlocks.CRYSTAL_CATALYZER.toStack(), CrystalCatalyzerCategory.TYPE);
+        registration.addCraftingStation(LightningAssemblyCategory.TYPE, ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER.toStack());
+        registration.addCraftingStation(LightningSimulationCategory.TYPE, ModBlocks.LIGHTNING_SIMULATION_CHAMBER.toStack());
+        registration.addCraftingStation(OverloadProcessingCategory.TYPE, ModBlocks.OVERLOAD_PROCESSING_FACTORY.toStack());
+        registration.addCraftingStation(TeslaCoilCategory.TYPE, ModBlocks.TESLA_COIL.toStack());
+        registration.addCraftingStation(CrystalCatalyzerCategory.TYPE, ModBlocks.CRYSTAL_CATALYZER.toStack());
     }
 
     @Override
@@ -128,7 +128,7 @@ public class JEIPlugin implements IModPlugin {
     }
 
     private static <T extends AbstractContainerScreen<?>> IGuiContainerHandler<T> clickableAreaHandler(
-            int x, int y, int width, int height, RecipeType<?> recipeType) {
+            int x, int y, int width, int height, IRecipeType<?> recipeType) {
         return new IGuiContainerHandler<T>() {
             @Override
             public Collection<IGuiClickableArea> getGuiClickableAreas(T screen, double mouseX, double mouseY) {

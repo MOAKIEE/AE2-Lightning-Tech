@@ -8,6 +8,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
@@ -15,6 +16,7 @@ import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecipe;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -23,12 +25,12 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 
-public class LightningAssemblyCategory implements IRecipeCategory<LightningAssemblyRecipe> {
-    public static final RecipeType<LightningAssemblyRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "lightning_assembly", LightningAssemblyRecipe.class);
+public class LightningAssemblyCategory implements IRecipeCategory<RecipeHolder<LightningAssemblyRecipe>> {
+    public static final IRecipeType<RecipeHolder<LightningAssemblyRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
 
     private static final Identifier BACKGROUND_TEXTURE =
             Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
@@ -62,7 +64,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
     }
 
     @Override
-    public RecipeType<LightningAssemblyRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<LightningAssemblyRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -87,7 +89,8 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, LightningAssemblyRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LightningAssemblyRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         for (int index = 0; index < recipe.inputs().size() && index < 9; index++) {
             var input = recipe.inputs().get(index);
             int col = index % 3;
@@ -104,18 +107,19 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                .addItemStack(recipe.getResultStack())
+                .addIngredientsUnsafe(List.of(recipe.getResultStack()))
                 .addRichTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, recipe.getResultStack().getCount()));
     }
 
     @Override
     public void draw(
-            LightningAssemblyRecipe recipe,
+            RecipeHolder<LightningAssemblyRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
+        var recipe = holder.value();
         background.draw(guiGraphics);
         // Do not draw the runtime process overlay in JEI; it is only useful for the live machine screen.
 

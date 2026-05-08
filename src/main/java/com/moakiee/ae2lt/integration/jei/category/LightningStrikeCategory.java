@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.integration.jei.category;
 
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.moakiee.ae2lt.AE2LightningTech;
@@ -10,6 +11,7 @@ import com.moakiee.ae2lt.integration.jei.MultiblockPreviewWidget;
 import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
 import com.moakiee.ae2lt.me.key.LightningKey;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
@@ -18,7 +20,7 @@ import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -26,6 +28,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 
@@ -36,9 +39,9 @@ import net.minecraft.world.level.block.Blocks;
  * structure on the left and a column with the consumed center input,
  * the produced center output and the unique material blocks on the right.</p>
  */
-public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeRecipe> {
-    public static final RecipeType<LightningStrikeRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "lightning_strike", LightningStrikeRecipe.class);
+public class LightningStrikeCategory implements IRecipeCategory<RecipeHolder<LightningStrikeRecipe>> {
+    public static final IRecipeType<RecipeHolder<LightningStrikeRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get());
 
     private static final int WIDTH = 178;
     private static final int HEIGHT = 110;
@@ -70,7 +73,7 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
     }
 
     @Override
-    public RecipeType<LightningStrikeRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<LightningStrikeRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -95,14 +98,15 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LightningStrikeRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         builder.addSlot(RecipeIngredientRole.INPUT, CENTER_INPUT_X, CENTER_INPUT_Y)
                 .setStandardSlotBackground()
-                .addItemStack(new ItemStack(recipe.centerInput()));
+                .addIngredientsUnsafe(List.of(new ItemStack(recipe.centerInput())));
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, CENTER_OUTPUT_X, CENTER_OUTPUT_Y)
                 .setOutputSlotBackground()
-                .addItemStack(new ItemStack(recipe.centerOutput()));
+                .addIngredientsUnsafe(List.of(new ItemStack(recipe.centerOutput())));
 
         // Aggregate the requirements by block so each unique block is shown once
         // with the total count needed across the structure. Insertion order is
@@ -129,13 +133,14 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
                             slotX,
                             slotY)
                     .setStandardSlotBackground()
-                    .addItemStack(new ItemStack(block, count));
+                    .addIngredientsUnsafe(List.of(new ItemStack(block, count)));
             index++;
         }
     }
 
     @Override
-    public void createRecipeExtras(IRecipeExtrasBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
+    public void createRecipeExtras(IRecipeExtrasBuilder builder, RecipeHolder<LightningStrikeRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         builder.addRecipeArrow().setPosition(ARROW_X, ARROW_Y);
 
         var widgetBuilder = MultiblockPreviewWidget.builder(PREVIEW_X, PREVIEW_Y, PREVIEW_W, PREVIEW_H);
@@ -154,11 +159,12 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
 
     @Override
     public void draw(
-            LightningStrikeRecipe recipe,
+            RecipeHolder<LightningStrikeRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
+        var recipe = holder.value();
         var font = Minecraft.getInstance().font;
 
         Component lightningLabel = recipe.requiresNaturalLightning()

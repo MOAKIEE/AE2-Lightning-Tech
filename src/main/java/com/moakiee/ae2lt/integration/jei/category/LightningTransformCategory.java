@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.integration.jei.LightningJeiIngredientRenderer;
 import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
 import com.moakiee.ae2lt.lightning.LightningTransformRecipe;
 import com.moakiee.ae2lt.me.key.LightningKey;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -18,17 +19,18 @@ import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
-public class LightningTransformCategory implements IRecipeCategory<LightningTransformRecipe> {
-    public static final RecipeType<LightningTransformRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "lightning_transform", LightningTransformRecipe.class);
+public class LightningTransformCategory implements IRecipeCategory<RecipeHolder<LightningTransformRecipe>> {
+    public static final IRecipeType<RecipeHolder<LightningTransformRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get());
 
     private static final int WIDTH = 134;
     private static final int HEIGHT = 66;
@@ -52,7 +54,7 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
     }
 
     @Override
-    public RecipeType<LightningTransformRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<LightningTransformRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -77,7 +79,8 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, LightningTransformRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LightningTransformRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         int inputCount = recipe.inputs().size();
         int x = INPUT_START_X;
         int y = INPUT_START_Y;
@@ -102,26 +105,26 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
         builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, CATALYST_X + 1, CATALYST_Y + 1)
                 .setStandardSlotBackground()
                 .setCustomRenderer(LightningJeiIngredients.TYPE, LightningJeiIngredientRenderer.NO_TOOLTIP)
-                .addIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
+                .addIngredientsUnsafe(List.of(LightningKey.HIGH_VOLTAGE));
 
         var resultStack = recipe.getResultItem();
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X + 1, OUTPUT_Y + 1)
                 .setOutputSlotBackground()
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                .addItemStack(resultStack)
+                .addIngredientsUnsafe(List.of(resultStack))
                 .addRichTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, resultStack.getCount()));
     }
 
     @Override
-    public void createRecipeExtras(IRecipeExtrasBuilder builder, LightningTransformRecipe recipe, IFocusGroup focuses) {
+    public void createRecipeExtras(IRecipeExtrasBuilder builder, RecipeHolder<LightningTransformRecipe> holder, IFocusGroup focuses) {
         builder.addRecipeArrow().setPosition(ARROW_LEFT_X, ARROW_Y);
         builder.addRecipeArrow().setPosition(ARROW_RIGHT_X, ARROW_Y);
     }
 
     @Override
     public void draw(
-            LightningTransformRecipe recipe,
+            RecipeHolder<LightningTransformRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,

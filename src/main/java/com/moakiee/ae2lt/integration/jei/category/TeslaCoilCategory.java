@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
+import java.util.List;
+
 import net.minecraft.util.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -23,12 +25,12 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 
 public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page> {
-    public static final RecipeType<Page> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "tesla_coil", Page.class);
+    public static final IRecipeType<Page> TYPE =
+            IRecipeType.create(AE2LightningTech.MODID, "tesla_coil", Page.class);
 
     private static final int WIDTH = 150;
     private static final int HEIGHT = 90;
@@ -70,7 +72,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     }
 
     @Override
-    public RecipeType<Page> getRecipeType() {
+    public IRecipeType<Page> getRecipeType() {
         return TYPE;
     }
 
@@ -101,7 +103,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
             int dustCount = Math.max(1, mode.requiredDust());
             builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, ROW_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                    .addItemStack(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get(), dustCount))
+                    .addIngredientsUnsafe(List.of(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get(), dustCount)))
                     .addRichTooltipCallback((slotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, dustCount));
         }

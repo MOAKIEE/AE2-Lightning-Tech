@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationReci
 import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationRecipeService;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -24,12 +25,13 @@ import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
-public class LightningSimulationCategory implements IRecipeCategory<LightningSimulationRecipe> {
-    public static final RecipeType<LightningSimulationRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "lightning_simulation", LightningSimulationRecipe.class);
+public class LightningSimulationCategory implements IRecipeCategory<RecipeHolder<LightningSimulationRecipe>> {
+    public static final IRecipeType<RecipeHolder<LightningSimulationRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get());
 
     private static final Identifier BACKGROUND_TEXTURE =
             Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
@@ -62,7 +64,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     }
 
     @Override
-    public RecipeType<LightningSimulationRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<LightningSimulationRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -87,7 +89,8 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, LightningSimulationRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<LightningSimulationRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         for (int index = 0; index < recipe.inputs().size(); index++) {
             var input = recipe.inputs().get(index);
             builder.addSlot(RecipeIngredientRole.INPUT, SLOT_INPUT_X, SLOT_INPUT_Y + index * SLOT_INPUT_SPACING)
@@ -99,18 +102,19 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                .addItemStack(recipe.getResultStack())
+                .addIngredientsUnsafe(List.of(recipe.getResultStack()))
                 .addRichTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, recipe.getResultStack().getCount()));
     }
 
     @Override
     public void draw(
-            LightningSimulationRecipe recipe,
+            RecipeHolder<LightningSimulationRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
+        var recipe = holder.value();
         background.draw(guiGraphics);
         // Do not draw the runtime process overlay in JEI; the background already shows the static chamber.
 

@@ -18,6 +18,7 @@ import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -27,12 +28,13 @@ import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
-public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyzerRecipe> {
-    public static final RecipeType<CrystalCatalyzerRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "crystal_catalyzer", CrystalCatalyzerRecipe.class);
+public class CrystalCatalyzerCategory implements IRecipeCategory<RecipeHolder<CrystalCatalyzerRecipe>> {
+    public static final IRecipeType<RecipeHolder<CrystalCatalyzerRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get());
 
     private static final Identifier BACKGROUND_TEXTURE =
             Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
@@ -83,7 +85,7 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     }
 
     @Override
-    public RecipeType<CrystalCatalyzerRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<CrystalCatalyzerRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -108,13 +110,14 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, CrystalCatalyzerRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<CrystalCatalyzerRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         // 水现在是机器级固定开销,所有配方共用一份 1000 mB 的 water。
         var fluid = CrystalCatalyzerBlockEntity.getFixedFluidPerCycle();
         int fluidDisplayCapacity = Math.max(1, fluid.getAmount());
         builder.addSlot(RecipeIngredientRole.INPUT, FLUID_X, FLUID_Y)
                 .setFluidRenderer(fluidDisplayCapacity, false, FLUID_WIDTH, FLUID_HEIGHT)
-                .addIngredient(NeoForgeTypes.FLUID_STACK, fluid)
+                .addIngredientsUnsafe(List.of(fluid))
                 .addRichTooltipCallback((slotView, tooltip) -> tooltip.add(
                         Component.translatable(
                                 "jei.ae2lt.crystal_catalyzer.fluid_fixed",
@@ -140,7 +143,7 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
         int catalystPerInstance = Math.max(1, recipe.catalystCount());
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                .addItemStack(baseOutput)
+                .addIngredientsUnsafe(List.of(baseOutput))
                 .addRichTooltipCallback((recipeSlotView, tooltip) -> {
                     LargeStackCountRenderer.appendCountTooltip(tooltip, baseCount);
                     tooltip.add(Component.translatable(
@@ -152,11 +155,12 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
 
     @Override
     public void draw(
-            CrystalCatalyzerRecipe recipe,
+            RecipeHolder<CrystalCatalyzerRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
+        var recipe = holder.value();
         background.draw(guiGraphics);
         drawProcessOverlay(guiGraphics);
 

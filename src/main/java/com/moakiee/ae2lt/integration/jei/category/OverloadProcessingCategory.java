@@ -18,6 +18,7 @@ import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
@@ -27,12 +28,13 @@ import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
+import net.minecraft.world.item.crafting.RecipeHolder;
 
-public class OverloadProcessingCategory implements IRecipeCategory<OverloadProcessingRecipe> {
-    public static final RecipeType<OverloadProcessingRecipe> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "overload_processing", OverloadProcessingRecipe.class);
+public class OverloadProcessingCategory implements IRecipeCategory<RecipeHolder<OverloadProcessingRecipe>> {
+    public static final IRecipeType<RecipeHolder<OverloadProcessingRecipe>> TYPE =
+            IRecipeType.create(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
 
     private static final Identifier BACKGROUND_TEXTURE =
             Identifier.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/overload_processing_factory.png");
@@ -82,7 +84,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     }
 
     @Override
-    public RecipeType<OverloadProcessingRecipe> getRecipeType() {
+    public IRecipeType<RecipeHolder<OverloadProcessingRecipe>> getRecipeType() {
         return TYPE;
     }
 
@@ -107,7 +109,8 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     }
 
     @Override
-    public void setRecipe(IRecipeLayoutBuilder builder, OverloadProcessingRecipe recipe, IFocusGroup focuses) {
+    public void setRecipe(IRecipeLayoutBuilder builder, RecipeHolder<OverloadProcessingRecipe> holder, IFocusGroup focuses) {
+        var recipe = holder.value();
         for (int index = 0; index < recipe.itemInputs().size(); index++) {
             var input = recipe.itemInputs().get(index);
             int col = index % 3;
@@ -131,14 +134,14 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                             false,
                             FLUID_WIDTH,
                             FLUID_HEIGHT)
-                    .addIngredient(NeoForgeTypes.FLUID_STACK, fluidInput);
+                    .addIngredientsUnsafe(List.of(fluidInput));
         }
 
         if (!recipe.itemResults().isEmpty()) {
             var result = recipe.itemResults().getFirst();
             builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
-                    .addItemStack(result)
+                    .addIngredientsUnsafe(List.of(result))
                     .addRichTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, result.getCount()));
         }
@@ -152,17 +155,18 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                             false,
                             FLUID_WIDTH,
                             FLUID_HEIGHT)
-                    .addIngredient(NeoForgeTypes.FLUID_STACK, fluidResult);
+                    .addIngredientsUnsafe(List.of(fluidResult));
         }
     }
 
     @Override
     public void draw(
-            OverloadProcessingRecipe recipe,
+            RecipeHolder<OverloadProcessingRecipe> holder,
             IRecipeSlotsView recipeSlotsView,
             GuiGraphicsExtractor guiGraphics,
             double mouseX,
             double mouseY) {
+        var recipe = holder.value();
         background.draw(guiGraphics);
         drawProcessOverlay(guiGraphics);
 

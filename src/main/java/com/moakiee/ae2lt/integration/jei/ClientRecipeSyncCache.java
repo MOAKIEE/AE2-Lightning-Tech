@@ -32,9 +32,8 @@ public final class ClientRecipeSyncCache {
         recipeMap = RecipeMap.EMPTY;
     }
 
-    public static <I extends RecipeInput, T extends Recipe<I>> List<T> getRecipes(RecipeType<T> recipeType) {
+    public static <I extends RecipeInput, T extends Recipe<I>> List<RecipeHolder<T>> getRecipes(RecipeType<T> recipeType) {
         return recipeMap.byType(recipeType).stream()
-                .map(RecipeHolder::value)
                 .toList();
     }
 }

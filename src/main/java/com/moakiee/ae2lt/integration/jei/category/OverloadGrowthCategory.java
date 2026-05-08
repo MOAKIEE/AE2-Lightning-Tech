@@ -12,7 +12,7 @@ import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
-import mezz.jei.api.recipe.RecipeType;
+import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.AbstractRecipeCategory;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -20,8 +20,8 @@ import net.minecraft.world.item.ItemStack;
 import java.util.List;
 
 public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowthCategory.Page> {
-    public static final RecipeType<Page> TYPE =
-            RecipeType.create(AE2LightningTech.MODID, "overload_growth", Page.class);
+    public static final IRecipeType<Page> TYPE =
+            IRecipeType.create(AE2LightningTech.MODID, "overload_growth", Page.class);
 
     private static final int WIDTH = 150;
     private static final int HEIGHT = 60;
@@ -161,15 +161,15 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
 
                 builder.addOutputSlot(centerX + 22, 25)
                         .setStandardSlotBackground()
-                        .addItemStack(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get()));
+                        .addIngredientsUnsafe(List.of(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get())));
             } else {
                 builder.addInputSlot(centerX - 40, 25)
                         .setStandardSlotBackground()
-                        .addItemStack(new ItemStack(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER.get()));
+                        .addIngredientsUnsafe(List.of(new ItemStack(ModBlocks.OVERLOAD_CRYSTAL_CLUSTER.get())));
 
                 builder.addOutputSlot(centerX + 22, 25)
                         .setStandardSlotBackground()
-                        .addItemStack(new ItemStack(ModItems.OVERLOAD_CRYSTAL.get(), 4));
+                        .addIngredientsUnsafe(List.of(new ItemStack(ModItems.OVERLOAD_CRYSTAL.get(), 4)));
             }
         }
     }
@@ -255,7 +255,7 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
 
             builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, centerX + 8, 40)
                     .setStandardSlotBackground()
-                    .addItemLike(AEBlocks.GROWTH_ACCELERATOR);
+                    .addIngredientsUnsafe(List.of(AEBlocks.GROWTH_ACCELERATOR.stack()));
         }
     }
 }
