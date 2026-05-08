@@ -63,11 +63,9 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
 
     private static final int TEXT_COLOR = 0x404040;
 
-    private final IDrawable background;
     private final IDrawable icon;
 
     public LightningStrikeCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
         this.icon = guiHelper.createDrawableIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
     }
 
@@ -77,13 +75,18 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
     }
 
     @Override
-    public Component getTitle() {
-        return Component.translatable("jei.ae2lt.lightning_strike.title");
+    public int getWidth() {
+        return WIDTH;
     }
 
     @Override
-    public IDrawable getBackground() {
-        return background;
+    public int getHeight() {
+        return HEIGHT;
+    }
+
+    @Override
+    public Component getTitle() {
+        return Component.translatable("jei.ae2lt.lightning_strike.title");
     }
 
     @Override
@@ -122,7 +125,7 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
             builder.addSlot(
                             blockConsumes.getOrDefault(block, false)
                                     ? RecipeIngredientRole.INPUT
-                                    : RecipeIngredientRole.CATALYST,
+                                    : RecipeIngredientRole.CRAFTING_STATION,
                             slotX,
                             slotY)
                     .setStandardSlotBackground()
@@ -163,9 +166,9 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
                         .withStyle(ChatFormatting.DARK_PURPLE)
                 : Component.translatable("jei.ae2lt.lightning_strike.any_lightning")
                         .withStyle(ChatFormatting.DARK_AQUA);
-        guiGraphics.drawString(font, lightningLabel, PREVIEW_X, 2, TEXT_COLOR, false);
+        guiGraphics.text(font, lightningLabel, PREVIEW_X, 2, TEXT_COLOR, false);
 
-        guiGraphics.drawString(
+        guiGraphics.text(
                 font,
                 Component.translatable("jei.ae2lt.lightning_strike.materials"),
                 MATERIALS_X,

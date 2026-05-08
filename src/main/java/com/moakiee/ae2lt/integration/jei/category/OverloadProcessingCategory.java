@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.util.Util;
@@ -172,7 +171,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                 "jei.ae2lt.overload_processing.energy",
                 formatCompactEnergy(recipe.totalEnergy()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
-        guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
 
         var lightningText = Component.translatable(
                 "jei.ae2lt.overload_processing.lightning",
@@ -181,7 +180,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                         ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
                         : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
         int lightningX = (WIDTH - font.width(lightningText)) / 2;
-        guiGraphics.drawString(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
     }
 
     private void drawProcessOverlay(GuiGraphicsExtractor guiGraphics) {
@@ -204,8 +203,8 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
-        return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+        return ingredient.items()
+                .map(holder -> new ItemStack(holder.value(), count))
                 .toList();
     }
 

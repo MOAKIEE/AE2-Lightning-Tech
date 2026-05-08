@@ -155,7 +155,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
 
     private static void drawCentered(GuiGraphicsExtractor guiGraphics, Font font, Component text, int y) {
         int x = (WIDTH - font.width(text)) / 2;
-        guiGraphics.drawString(font, text, x, y, TEXT_COLOR, false);
+        guiGraphics.text(font, text, x, y, TEXT_COLOR, false);
     }
 
     private static void drawArrow(GuiGraphicsExtractor guiGraphics) {

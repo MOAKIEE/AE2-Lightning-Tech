@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
-import java.util.Arrays;
 import java.util.List;
 
 import com.moakiee.ae2lt.AE2LightningTech;
@@ -46,11 +45,9 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
     private static final int LABEL_Y = 4;
     private static final int TEXT_COLOR = 0x404040;
 
-    private final IDrawable background;
     private final IDrawable icon;
 
     public LightningTransformCategory(IGuiHelper guiHelper) {
-        this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
         this.icon = guiHelper.createDrawableIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
     }
 
@@ -60,13 +57,18 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
     }
 
     @Override
-    public Component getTitle() {
-        return Component.translatable("jei.ae2lt.lightning_transform.title");
+    public int getWidth() {
+        return WIDTH;
     }
 
     @Override
-    public IDrawable getBackground() {
-        return background;
+    public int getHeight() {
+        return HEIGHT;
+    }
+
+    @Override
+    public Component getTitle() {
+        return Component.translatable("jei.ae2lt.lightning_transform.title");
     }
 
     @Override
@@ -97,7 +99,7 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
             }
         }
 
-        builder.addSlot(RecipeIngredientRole.CATALYST, CATALYST_X + 1, CATALYST_Y + 1)
+        builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, CATALYST_X + 1, CATALYST_Y + 1)
                 .setStandardSlotBackground()
                 .setCustomRenderer(LightningJeiIngredients.TYPE, LightningJeiIngredientRenderer.NO_TOOLTIP)
                 .addIngredient(LightningJeiIngredients.TYPE, LightningKey.HIGH_VOLTAGE);
@@ -127,12 +129,12 @@ public class LightningTransformCategory implements IRecipeCategory<LightningTran
         var font = Minecraft.getInstance().font;
         var label = Component.translatable("jei.ae2lt.lightning_transform.label");
         int labelX = (WIDTH - font.width(label)) / 2;
-        guiGraphics.drawString(font, label, labelX, LABEL_Y, TEXT_COLOR, false);
+        guiGraphics.text(font, label, labelX, LABEL_Y, TEXT_COLOR, false);
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
-        return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+        return ingredient.items()
+                .map(holder -> new ItemStack(holder.value(), count))
                 .toList();
     }
 }

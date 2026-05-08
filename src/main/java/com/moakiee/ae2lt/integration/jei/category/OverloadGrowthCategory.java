@@ -114,7 +114,7 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
 
         @Override
         public void buildSlots(IRecipeLayoutBuilder builder) {
-            builder.addSlot(RecipeIngredientRole.CATALYST, centerX - 40, 25)
+            builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, centerX - 40, 25)
                     .setStandardSlotBackground()
                     .addItemStacks(buddingOverloadVariants);
 
@@ -253,7 +253,7 @@ public class OverloadGrowthCategory extends AbstractRecipeCategory<OverloadGrowt
                     .setStandardSlotBackground()
                     .addItemStacks(buddingOverloadVariants);
 
-            builder.addSlot(RecipeIngredientRole.CATALYST, centerX + 8, 40)
+            builder.addSlot(RecipeIngredientRole.CRAFTING_STATION, centerX + 8, 40)
                     .setStandardSlotBackground()
                     .addItemLike(AEBlocks.GROWTH_ACCELERATOR);
         }

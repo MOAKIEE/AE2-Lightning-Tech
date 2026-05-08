@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.client.Minecraft;
@@ -120,7 +119,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                 "jei.ae2lt.lightning_simulation.energy",
                 formatCompactEnergy(recipe.totalEnergy()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
-        guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
         var lightningText = Component.translatable(
                 "jei.ae2lt.lightning_simulation.lightning",
                 recipe.lightningCost(),
@@ -128,7 +127,7 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                         ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
                         : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
         int lightningX = (WIDTH - font.width(lightningText)) / 2;
-        guiGraphics.drawString(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
         if (recipe.lightningTier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
             var substitutionText = Component.translatable(
                     "jei.ae2lt.lightning_simulation.substitution",
@@ -136,13 +135,13 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
                             recipe.lightningTier(),
                             recipe.lightningCost()));
             int substitutionX = (WIDTH - font.width(substitutionText)) / 2;
-            guiGraphics.drawString(font, substitutionText, substitutionX, SUBSTITUTION_TEXT_Y, 0x404040, false);
+            guiGraphics.text(font, substitutionText, substitutionX, SUBSTITUTION_TEXT_Y, 0x404040, false);
         }
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
-        return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+        return ingredient.items()
+                .map(holder -> new ItemStack(holder.value(), count))
                 .toList();
     }
 

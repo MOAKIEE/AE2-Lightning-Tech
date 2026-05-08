@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.integration.jei.category;
 
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.util.Util;
@@ -166,17 +165,17 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
                 "jei.ae2lt.crystal_catalyzer.energy",
                 formatCompactEnergy(recipe.energyPerCycle()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
-        guiGraphics.drawString(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
 
         var matrixLine1 = Component.translatable("jei.ae2lt.crystal_catalyzer.matrix_note_line1");
         int matrixLine1X = (WIDTH - font.width(matrixLine1)) / 2;
-        guiGraphics.drawString(font, matrixLine1, matrixLine1X, MATRIX_LINE1_Y, 0x404040, false);
+        guiGraphics.text(font, matrixLine1, matrixLine1X, MATRIX_LINE1_Y, 0x404040, false);
 
         var matrixLine2 = Component.translatable(
                 "jei.ae2lt.crystal_catalyzer.matrix_note_line2",
                 CrystalCatalyzerBlockEntity.MATRIX_OUTPUT_MULTIPLIER);
         int matrixLine2X = (WIDTH - font.width(matrixLine2)) / 2;
-        guiGraphics.drawString(font, matrixLine2, matrixLine2X, MATRIX_LINE2_Y, 0x404040, false);
+        guiGraphics.text(font, matrixLine2, matrixLine2X, MATRIX_LINE2_Y, 0x404040, false);
     }
 
     private void drawProcessOverlay(GuiGraphicsExtractor guiGraphics) {
@@ -199,8 +198,8 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
-        return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+        return ingredient.items()
+                .map(holder -> new ItemStack(holder.value(), count))
                 .toList();
     }
 
