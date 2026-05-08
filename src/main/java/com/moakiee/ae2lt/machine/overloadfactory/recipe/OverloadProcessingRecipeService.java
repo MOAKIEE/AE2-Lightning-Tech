@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
@@ -35,8 +36,12 @@ public final class OverloadProcessingRecipeService {
     }
 
     private static List<RecipeHolder<OverloadProcessingRecipe>> getSortedRecipes(Level level) {
-        RecipeManager recipeManager = level.getRecipeManager();
-        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+
+        RecipeManager recipeManager = serverLevel.getServer().getRecipeManager();
+        var raw = recipeManager.recipeMap().byType(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get());
         if (recipeManager != cachedRecipeManager || raw != cachedRawRecipeList || sortedRecipeCache == null) {
             sortedRecipeCache = new ArrayList<>(raw);
             sortedRecipeCache.sort(RECIPE_ORDER);
@@ -98,9 +103,8 @@ public final class OverloadProcessingRecipeService {
             return Optional.empty();
         }
 
-        for (RecipeHolder<OverloadProcessingRecipe> recipe
-                : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.OVERLOAD_PROCESSING_TYPE.get())) {
-            if (recipe.id().equals(recipeId)) {
+        for (RecipeHolder<OverloadProcessingRecipe> recipe : getSortedRecipes(level)) {
+            if (recipe.id().identifier().equals(recipeId)) {
                 return Optional.of(recipe);
             }
         }

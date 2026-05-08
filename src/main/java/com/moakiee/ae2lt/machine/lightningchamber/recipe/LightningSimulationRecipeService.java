@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
@@ -43,8 +44,7 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        List<RecipeHolder<LightningSimulationRecipe>> recipes =
-                new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get()));
+        List<RecipeHolder<LightningSimulationRecipe>> recipes = new ArrayList<>(getRecipes(level));
         recipes.sort(RECIPE_ORDER);
 
         for (RecipeHolder<LightningSimulationRecipe> recipe : recipes) {
@@ -76,14 +76,23 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        for (RecipeHolder<LightningSimulationRecipe> recipe
-                : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())) {
-            if (recipe.id().equals(recipeId)) {
+        for (RecipeHolder<LightningSimulationRecipe> recipe : getRecipes(level)) {
+            if (recipe.id().identifier().equals(recipeId)) {
                 return Optional.of(recipe);
             }
         }
 
         return Optional.empty();
+    }
+
+    private static List<RecipeHolder<LightningSimulationRecipe>> getRecipes(Level level) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+        return List.copyOf(serverLevel.getServer()
+                .getRecipeManager()
+                .recipeMap()
+                .byType(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get()));
     }
 
     public static Optional<LightningSimulationRecipeCandidate> findLockedRecipeMatch(

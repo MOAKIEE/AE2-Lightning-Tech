@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
@@ -27,7 +28,7 @@ public final class LightningAssemblyRecipeService {
                     (RecipeHolder<LightningAssemblyRecipe> holder) -> holder.value().totalInputCount()).reversed())
             .thenComparing(holder -> holder.id().toString());
 
-    private static List<RecipeHolder<LightningAssemblyRecipe>> cachedRawRecipeList;
+    private static Object cachedRawRecipeList;
     private static RecipeManager cachedRecipeManager;
     private static List<RecipeHolder<LightningAssemblyRecipe>> sortedRecipeCache;
     private static int cachedRecipeOrderFingerprint;
@@ -36,8 +37,12 @@ public final class LightningAssemblyRecipeService {
     }
 
     private static synchronized List<RecipeHolder<LightningAssemblyRecipe>> getSortedRecipes(Level level) {
-        RecipeManager recipeManager = level.getRecipeManager();
-        var raw = recipeManager.getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return List.of();
+        }
+
+        RecipeManager recipeManager = serverLevel.getServer().getRecipeManager();
+        var raw = recipeManager.recipeMap().byType(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get());
         int orderFingerprint = computeRecipeOrderFingerprint(raw);
         if (recipeManager != cachedRecipeManager
                 || raw != cachedRawRecipeList
@@ -52,7 +57,7 @@ public final class LightningAssemblyRecipeService {
         return sortedRecipeCache;
     }
 
-    private static int computeRecipeOrderFingerprint(List<RecipeHolder<LightningAssemblyRecipe>> recipes) {
+    private static int computeRecipeOrderFingerprint(Iterable<RecipeHolder<LightningAssemblyRecipe>> recipes) {
         int hash = 1;
         for (var holder : recipes) {
             var recipe = holder.value();
@@ -116,9 +121,8 @@ public final class LightningAssemblyRecipeService {
             return Optional.empty();
         }
 
-        for (RecipeHolder<LightningAssemblyRecipe> recipe
-                : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_ASSEMBLY_TYPE.get())) {
-            if (recipe.id().equals(recipeId)) {
+        for (RecipeHolder<LightningAssemblyRecipe> recipe : getSortedRecipes(level)) {
+            if (recipe.id().identifier().equals(recipeId)) {
                 return Optional.of(recipe);
             }
         }
