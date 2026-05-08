@@ -13,7 +13,7 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.BlockOrientation;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 
@@ -47,7 +47,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
-public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
+public class LightningCollectorBlockEntity extends AENetworkBlockEntity implements IActionHost, FrequencyBindingHost {
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";

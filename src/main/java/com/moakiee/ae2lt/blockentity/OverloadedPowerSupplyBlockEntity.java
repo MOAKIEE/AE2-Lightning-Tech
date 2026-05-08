@@ -32,7 +32,7 @@ import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
@@ -49,7 +49,7 @@ import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
-public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
+public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
         implements InternalInventoryHost, FrequencyBindingHost {
 
     public static final int MAX_WIRELESS_CONNECTIONS = 64;

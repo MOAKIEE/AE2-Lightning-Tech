@@ -11,7 +11,7 @@ import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -29,7 +29,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * by {@link FrequencyBindingHelper} so regular machines can reuse the same
  * receiver-side frequency binding.
  */
-public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
+public class WirelessReceiverBlockEntity extends AENetworkBlockEntity
         implements OverloadedGridNodeOwner, FrequencyBindingHost, ServerTickingBlockEntity {
 
     private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);

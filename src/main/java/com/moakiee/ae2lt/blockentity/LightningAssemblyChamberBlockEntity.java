@@ -37,7 +37,7 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 
@@ -60,7 +60,7 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
-public class LightningAssemblyChamberBlockEntity extends AENetworkedBlockEntity
+public class LightningAssemblyChamberBlockEntity extends AENetworkBlockEntity
     implements IUpgradeableObject, FrequencyBindingHost,
         GridRecipeMachineHost<LightningAssemblyLockedRecipe, LightningAssemblyRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";

@@ -2,14 +2,31 @@ package com.moakiee.ae2lt.machine.overloadfactory.recipe;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraftforge.fluids.FluidStack;
 
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
+import com.moakiee.ae2lt.recipe.RecipeContainerInput;
 
-public record OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidStack inputFluid) implements RecipeInput {
+public final class OverloadProcessingRecipeInput extends RecipeContainerInput {
+    private final List<SlotStack> slotStacks;
+    private final FluidStack inputFluid;
+
+    public OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidStack inputFluid) {
+        this.slotStacks = List.copyOf(slotStacks);
+        this.inputFluid = Objects.requireNonNull(inputFluid, "inputFluid");
+    }
+
+    public List<SlotStack> slotStacks() {
+        return slotStacks;
+    }
+
+    public FluidStack inputFluid() {
+        return inputFluid;
+    }
+
     public static OverloadProcessingRecipeInput fromInventory(
             OverloadProcessingFactoryInventory inventory,
             FluidStack inputFluid) {
@@ -25,6 +42,7 @@ public record OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidSta
         return new OverloadProcessingRecipeInput(List.copyOf(slotStacks), inputFluid.copy());
     }
 
+    @Override
     public boolean isEmpty() {
         return slotStacks.isEmpty() && inputFluid.isEmpty();
     }

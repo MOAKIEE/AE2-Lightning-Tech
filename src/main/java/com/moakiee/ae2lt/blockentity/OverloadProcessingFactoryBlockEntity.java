@@ -38,7 +38,7 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 
@@ -64,7 +64,7 @@ import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
-public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
+public class OverloadProcessingFactoryBlockEntity extends AENetworkBlockEntity
     implements IUpgradeableObject, FrequencyBindingHost,
         GridRecipeMachineHost<OverloadProcessingLockedRecipe, OverloadProcessingRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";

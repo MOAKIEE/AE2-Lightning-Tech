@@ -8,7 +8,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.BucketItem;
 import net.minecraft.world.item.ItemStack;
@@ -79,7 +78,7 @@ public class OverloadProcessingFactoryBlock extends AE2LTBaseEntityBlock<Overloa
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(
+    protected InteractionResult useItemOn(
             ItemStack heldItem,
             BlockState state,
             Level level,
@@ -89,7 +88,7 @@ public class OverloadProcessingFactoryBlock extends AE2LTBaseEntityBlock<Overloa
             BlockHitResult hit) {
         if (heldItem.getItem() instanceof BucketItem) {
             if (useBucket(player, level, pos, heldItem, hand)) {
-                return ItemInteractionResult.sidedSuccess(level.isClientSide());
+                return InteractionResult.sidedSuccess(level.isClientSide());
             }
         }
 

@@ -7,13 +7,13 @@ import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 import appeng.api.upgrades.IUpgradeableObject;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.core.definitions.AEItems;
 
 import com.moakiee.ae2lt.logic.AppFluxHelper;
 
 public abstract class AbstractGridRecipeMachineLogic<
-        H extends AENetworkedBlockEntity & GridRecipeMachineHost<L, C> & IUpgradeableObject,
+        H extends AENetworkBlockEntity & GridRecipeMachineHost<L, C> & IUpgradeableObject,
         L,
         C> implements IGridTickable {
 

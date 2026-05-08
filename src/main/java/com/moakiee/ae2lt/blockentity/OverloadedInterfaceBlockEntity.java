@@ -62,7 +62,7 @@ import appeng.api.storage.cells.ICellWorkbenchItem;
 import appeng.api.util.AECableType;
 import appeng.blockentity.misc.InterfaceBlockEntity;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
 import appeng.util.inv.AppEngInternalInventory;

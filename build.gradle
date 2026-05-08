@@ -71,8 +71,6 @@ mixin {
     config "${mod_id}.mixins.json"
 }
 
-jarJar.enable()
-
 sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
@@ -88,14 +86,7 @@ repositories {
         }
     }
     maven {
-        name = 'Curios'
-        url = 'https://maven.theillusivec4.top/'
-    }
-    maven {
         url = 'https://maven.blamejared.com/'
-    }
-    maven {
-        url = 'https://dvs1.progwml6.com/files/maven/'
     }
     maven {
         url = 'https://www.cursemaven.com'
@@ -129,16 +120,9 @@ dependencies {
     compileOnly fg.deobf("mekanism:Mekanism:${mekanism_version}:all")
     runtimeOnly fg.deobf("mekanism:Mekanism:${mekanism_version}:all")
 
-    runtimeOnly fg.deobf("org.appliedenergistics:guideme:${guideme_version}")
-
     annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${mixinextras_version}"))
-    jarJar(implementation("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")) {
-        version {
-            strictly "[${mixinextras_version},0.3.6)"
-            prefer "${mixinextras_version}"
-        }
-    }
+    runtimeOnly fg.deobf("io.github.llamalad7:mixinextras-forge:${mixinextras_version}")
 }
 
 tasks.named('processResources', ProcessResources).configure {

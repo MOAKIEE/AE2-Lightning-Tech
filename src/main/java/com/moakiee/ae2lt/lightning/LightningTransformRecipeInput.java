@@ -8,10 +8,11 @@ import java.util.Map;
 import java.util.Objects;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeInput;
 import net.minecraft.world.phys.Vec3;
 
-public final class LightningTransformRecipeInput implements RecipeInput {
+import com.moakiee.ae2lt.recipe.RecipeContainerInput;
+
+public final class LightningTransformRecipeInput extends RecipeContainerInput {
     private final List<GroupedStack> groupedStacks;
     private final List<ItemStack> displayStacks;
 

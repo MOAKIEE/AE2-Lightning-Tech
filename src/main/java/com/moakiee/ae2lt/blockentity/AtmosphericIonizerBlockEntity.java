@@ -15,7 +15,7 @@ import appeng.api.networking.security.IActionHost;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 
@@ -47,7 +47,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.items.IItemHandlerModifiable;
 
-public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
+public class AtmosphericIonizerBlockEntity extends AENetworkBlockEntity implements IActionHost, FrequencyBindingHost {
     private static final Logger LOG = LogUtils.getLogger();
     public static final int PROCESS_TICKS = 100;
     private static final double POWER_EPSILON = 0.01D;

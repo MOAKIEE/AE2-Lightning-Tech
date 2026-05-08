@@ -41,7 +41,6 @@ import net.minecraftforge.common.capabilities.ICapabilityProvider;
 import net.minecraftforge.common.capabilities.RegisterCapabilitiesEvent;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.event.AttachCapabilitiesEvent;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -53,7 +52,6 @@ import net.minecraftforge.items.IItemHandlerModifiable;
 import net.minecraftforge.registries.RegistryObject;
 import net.minecraftforge.registries.DeferredRegister;
 
-import appeng.api.AECapabilities;
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.networking.IInWorldGridNodeHost;
@@ -61,6 +59,7 @@ import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
 import appeng.block.AEBaseEntityBlock;
 import appeng.blockentity.AEBaseBlockEntity;
+import appeng.capabilities.Capabilities;
 import appeng.core.definitions.AEItems;
 
 import com.moakiee.ae2lt.api.AE2LTCapabilities;
@@ -189,7 +188,9 @@ public class AE2LightningTech {
                     })
                     .build());
 
-    public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
+    public AE2LightningTech() {
+        IEventBus modEventBus = net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext.get().getModEventBus();
+
         ModFumos.register();
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
@@ -239,7 +240,7 @@ public class AE2LightningTech {
                     return energyHandler != null ? LazyOptional.of(() -> energyHandler).cast() : LazyOptional.empty();
                 }
 
-                if (capability == AECapabilities.IN_WORLD_GRID_NODE_HOST
+                if (capability == Capabilities.IN_WORLD_GRID_NODE_HOST
                         && blockEntity instanceof IInWorldGridNodeHost host) {
                     return LazyOptional.of(() -> host).cast();
                 }
@@ -251,7 +252,7 @@ public class AE2LightningTech {
                             : LazyOptional.empty();
                 }
 
-                if (capability == AECapabilities.GENERIC_INTERNAL_INV) {
+                if (capability == Capabilities.GENERIC_INTERNAL_INV) {
                     var genericInventory = getGenericInternalInventoryCapability(blockEntity);
                     return genericInventory != null
                             ? LazyOptional.of(() -> genericInventory).cast()
