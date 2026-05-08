@@ -10,9 +10,9 @@ import java.util.UUID;
 
 import javax.annotation.Nonnull;
 
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -323,7 +323,7 @@ public class WirelessFrequency {
             tag.putInt(TAG_ID, id);
             tag.putString(TAG_NAME, name);
             tag.putInt(TAG_COLOR, color);
-            tag.putUUID(TAG_OWNER, ownerUUID);
+            tag.store(TAG_OWNER, UUIDUtil.CODEC, ownerUUID);
             tag.putByte(TAG_SECURITY, security.getId());
         }
         if (type == NBT_SAVE_ALL) {
@@ -352,11 +352,11 @@ public class WirelessFrequency {
 
     public void readFromTag(@Nonnull CompoundTag tag, byte type) {
         if (type == NBT_BASIC || type == NBT_SAVE_ALL) {
-            id = tag.getInt(TAG_ID);
-            name = tag.getString(TAG_NAME);
-            color = tag.getInt(TAG_COLOR);
-            ownerUUID = tag.getUUID(TAG_OWNER);
-            security = FrequencySecurityLevel.fromId(tag.getByte(TAG_SECURITY));
+            id = tag.getIntOr(TAG_ID, -1);
+            name = tag.getStringOr(TAG_NAME, "");
+            color = tag.getIntOr(TAG_COLOR, 0xFFFFFF);
+            ownerUUID = tag.read(TAG_OWNER, UUIDUtil.CODEC).orElse(new UUID(0, 0));
+            security = FrequencySecurityLevel.fromId(tag.getByteOr(TAG_SECURITY, (byte) 0));
         }
         if (type == NBT_SAVE_ALL) {
             // Auto-migrate legacy plaintext saves: pre-hash worlds stored
@@ -365,22 +365,22 @@ public class WirelessFrequency {
             // 16, so anything that doesn't match {@link #isHashShape}
             // must be legacy plaintext — we re-hash it on load so old
             // worlds keep working without a manual password reset.
-            String stored = tag.getString(TAG_PASSWORD);
+            String stored = tag.getStringOr(TAG_PASSWORD, "");
             password = (stored.isEmpty() || isHashShape(stored))
                     ? stored
                     : hashPassword(stored, id);
             members.clear();
-            ListTag list = tag.getList(TAG_MEMBERS, Tag.TAG_COMPOUND);
+            ListTag list = tag.getListOrEmpty(TAG_MEMBERS);
             for (int i = 0; i < list.size(); i++) {
-                FrequencyMember m = new FrequencyMember(list.getCompound(i));
+                FrequencyMember m = new FrequencyMember(list.getCompoundOrEmpty(i));
                 members.put(m.getPlayerUUID(), m);
             }
         }
         if (type == NBT_MEMBERS_ONLY) {
             members.clear();
-            ListTag list = tag.getList(TAG_MEMBERS, Tag.TAG_COMPOUND);
+            ListTag list = tag.getListOrEmpty(TAG_MEMBERS);
             for (int i = 0; i < list.size(); i++) {
-                FrequencyMember m = new FrequencyMember(list.getCompound(i));
+                FrequencyMember m = new FrequencyMember(list.getCompoundOrEmpty(i));
                 members.put(m.getPlayerUUID(), m);
             }
         }

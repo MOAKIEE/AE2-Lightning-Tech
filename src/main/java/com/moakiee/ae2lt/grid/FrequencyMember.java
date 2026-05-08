@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.grid;
 
 import java.util.UUID;
 
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 
@@ -18,13 +19,13 @@ public class FrequencyMember {
     }
 
     public FrequencyMember(CompoundTag tag) {
-        this.playerUUID = tag.getUUID("uuid");
-        this.cachedName = tag.getString("name");
-        this.accessLevel = FrequencyAccessLevel.fromId(tag.getByte("access"));
+        this.playerUUID = tag.read("uuid", UUIDUtil.CODEC).orElse(new UUID(0, 0));
+        this.cachedName = tag.getStringOr("name", "");
+        this.accessLevel = FrequencyAccessLevel.fromId(tag.getByteOr("access", (byte) 0));
     }
 
     public static FrequencyMember create(Player player, FrequencyAccessLevel access) {
-        return new FrequencyMember(player.getUUID(), player.getGameProfile().getName(), access);
+        return new FrequencyMember(player.getUUID(), player.getGameProfile().name(), access);
     }
 
     public UUID getPlayerUUID() {
@@ -48,7 +49,7 @@ public class FrequencyMember {
     }
 
     public void writeNBT(CompoundTag tag) {
-        tag.putUUID("uuid", playerUUID);
+        tag.store("uuid", UUIDUtil.CODEC, playerUUID);
         tag.putString("name", cachedName);
         tag.putByte("access", accessLevel.getId());
     }

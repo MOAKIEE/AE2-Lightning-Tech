@@ -392,7 +392,7 @@ public final class WirelessFrequencyManager extends SavedData {
         for (var e : transmitters.int2ObjectEntrySet()) {
             CompoundTag tag = new CompoundTag();
             tag.putInt("freqId", e.getIntKey());
-            tag.putString("dim", e.getValue().dimension().location().toString());
+            tag.putString("dim", e.getValue().dimension().identifier().toString());
             tag.putLong("pos", e.getValue().pos().asLong());
             tag.putBoolean("advanced", e.getValue().advanced());
             txList.add(tag);
@@ -405,7 +405,7 @@ public final class WirelessFrequencyManager extends SavedData {
             for (var d : e.getValue()) {
                 CompoundTag tag = new CompoundTag();
                 tag.putInt("freqId", freqId);
-                tag.putString("dim", d.dimension().location().toString());
+                tag.putString("dim", d.dimension().identifier().toString());
                 tag.putLong("pos", d.pos().asLong());
                 tag.putBoolean("controller", d.isController());
                 tag.putBoolean("advanced", d.advanced());
