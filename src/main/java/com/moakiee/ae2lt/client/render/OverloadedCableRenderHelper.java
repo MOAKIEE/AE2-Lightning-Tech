@@ -2,9 +2,9 @@ package com.moakiee.ae2lt.client.render;
 
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
@@ -13,7 +13,6 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
 
-import appeng.api.parts.IPartModel;
 import appeng.api.util.AECableType;
 import appeng.api.util.AEColor;
 import appeng.block.networking.CableBusRenderState;
@@ -28,7 +27,7 @@ public final class OverloadedCableRenderHelper {
     private OverloadedCableRenderHelper() {
     }
 
-    public static void addCableQuads(CableBusRenderState renderState, List<BakedQuad> quadsOut) {
+    public static void addCableQuads(CableBusRenderState renderState, Consumer<BakedQuad> quadsOut) {
         var cableType = renderState.getCableType();
         if (cableType == AECableType.NONE) {
             return;
@@ -38,9 +37,8 @@ public final class OverloadedCableRenderHelper {
         var textureLine = getLineTexture(renderState.getCableColor());
         var connectionTypes = renderState.getConnectionTypes();
 
-        boolean noAttachments = !renderState.getAttachments().values().stream()
-                .anyMatch(IPartModel::requireCableConnection);
-        if (noAttachments && isStraightLine(cableType, connectionTypes)) {
+        boolean hasAttachments = !renderState.getAttachments().isEmpty();
+        if (!hasAttachments && isStraightLine(cableType, connectionTypes)) {
             addStraightDenseConnection(connectionTypes.keySet().iterator().next(), textureLine, quadsOut);
             return;
         }
@@ -100,13 +98,13 @@ public final class OverloadedCableRenderHelper {
         return firstType == secondType && cableType == firstType;
     }
 
-    private static void addDenseCore(TextureAtlasSprite texture, List<BakedQuad> quadsOut) {
+    private static void addDenseCore(TextureAtlasSprite texture, Consumer<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
         cubeBuilder.setTexture(texture);
         cubeBuilder.addCube(3, 3, 3, 13, 13, 13);
     }
 
-    private static void addDenseConnection(Direction facing, TextureAtlasSprite texture, List<BakedQuad> quadsOut) {
+    private static void addDenseConnection(Direction facing, TextureAtlasSprite texture, Consumer<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
         cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing)));
         cubeBuilder.setTexture(texture);
@@ -114,7 +112,7 @@ public final class OverloadedCableRenderHelper {
     }
 
     private static void addCoveredConnection(Direction facing, AECableType connectionType,
-            boolean cableBusAdjacent, TextureAtlasSprite texture, List<BakedQuad> quadsOut) {
+            boolean cableBusAdjacent, TextureAtlasSprite texture, Consumer<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
         cubeBuilder.setDrawFaces(EnumSet.complementOf(EnumSet.of(facing)));
         cubeBuilder.setTexture(texture);
@@ -127,7 +125,7 @@ public final class OverloadedCableRenderHelper {
     }
 
     private static void addStraightDenseConnection(Direction facing, TextureAtlasSprite texture,
-            List<BakedQuad> quadsOut) {
+            Consumer<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
         cubeBuilder.setTexture(texture);
         setStraightCableUVs(cubeBuilder, facing, 3 / 16f, 13 / 16f);

@@ -1,6 +1,6 @@
 package com.moakiee.ae2lt.mixin.client;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -9,16 +9,16 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 
-import appeng.client.render.cablebus.CableBusBakedModel;
+import appeng.client.render.cablebus.CableBusModel;
 import appeng.block.networking.CableBusRenderState;
 
 import com.moakiee.ae2lt.client.render.OverloadedCableRenderHelper;
 import com.moakiee.ae2lt.client.render.OverloadedCableRenderStateAccess;
 
-@Mixin(CableBusBakedModel.class)
-public class CableBusBakedModelMixin {
-    @Inject(method = "addCableQuads", at = @At("HEAD"), cancellable = true)
-    private void ae2lt$renderOverloadedCable(CableBusRenderState renderState, List<BakedQuad> quadsOut,
+@Mixin(CableBusModel.class)
+public class CableBusModelMixin {
+    @Inject(method = "getCableQuads", at = @At("HEAD"), cancellable = true)
+    private void ae2lt$renderOverloadedCable(CableBusRenderState renderState, Consumer<BakedQuad> quadsOut,
             CallbackInfo ci) {
         if (renderState == null) {
             return;
