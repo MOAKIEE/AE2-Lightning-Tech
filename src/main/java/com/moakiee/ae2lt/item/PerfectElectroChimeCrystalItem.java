@@ -1,12 +1,13 @@
 package com.moakiee.ae2lt.item;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 public class PerfectElectroChimeCrystalItem extends Item {
     public PerfectElectroChimeCrystalItem(Properties properties) {
@@ -22,9 +23,10 @@ public class PerfectElectroChimeCrystalItem extends Item {
     public void appendHoverText(
             ItemStack stack,
             TooltipContext context,
-            List<Component> tooltipComponents,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 "item.ae2lt.perfect_electro_chime_crystal.complete").withStyle(ChatFormatting.AQUA));
     }
 }

@@ -1,6 +1,6 @@
 package com.moakiee.ae2lt.item;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
@@ -10,6 +10,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 public final class InfiniteStorageCellItem extends Item {
 
@@ -32,21 +33,25 @@ public final class InfiniteStorageCellItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context,
-                                List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
+    public void appendHoverText(
+            ItemStack stack,
+            TooltipContext context,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltipComponents,
+            TooltipFlag tooltipFlag) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         // 空壳(创造物品栏里的初始 cell)上显示 "0 types / 0 B" 只是噪音,
         // 完全没带 ae2lt:types / ae2lt:bytes 数据时直接不画 tooltip。
         if (!tag.contains("ae2lt:types") && !tag.contains("ae2lt:bytes")) {
             return;
         }
-        int types = tag.getInt("ae2lt:types");
-        long bytes = tag.getLong("ae2lt:bytes");
+        int types = tag.getIntOr("ae2lt:types", 0);
+        long bytes = tag.getLongOr("ae2lt:bytes", 0L);
 
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 "tooltip.ae2lt.infinite_cell.types", String.format("%,d", types))
                 .withStyle(ChatFormatting.GRAY));
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 "tooltip.ae2lt.infinite_cell.bytes", formatBytes(bytes))
                 .withStyle(ChatFormatting.GRAY));
     }

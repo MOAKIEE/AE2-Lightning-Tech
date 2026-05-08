@@ -1,7 +1,8 @@
 package com.moakiee.ae2lt.item;
 
 import com.moakiee.ae2lt.event.NaturalLightningTransformationHandler;
-import java.util.List;
+import java.util.function.Consumer;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -15,10 +16,12 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.entity.EntitySpawnReason;
 
 /**
  * Debug-only item: right-click a lightning rod to summon a "natural" lightning bolt at
@@ -45,7 +48,7 @@ public class DebugLightningRodItem extends Item {
         }
 
         if (level instanceof ServerLevel serverLevel) {
-            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(serverLevel);
+            LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(serverLevel, EntitySpawnReason.TRIGGERED);
             if (bolt == null) {
                 return InteractionResult.FAIL;
             }
@@ -55,7 +58,7 @@ public class DebugLightningRodItem extends Item {
             // This mirrors what vanilla ServerLevel.findLightningTargetAround does
             // (it returns rodPos.above(1) for natural rod-attracted lightning).
             Vec3 target = Vec3.atBottomCenterOf(pos.above());
-            bolt.moveTo(target.x, target.y, target.z);
+            bolt.setPos(target);
             Player player = context.getPlayer();
             if (player instanceof ServerPlayer serverPlayer) {
                 bolt.setCause(serverPlayer);
@@ -75,9 +78,14 @@ public class DebugLightningRodItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
-        tooltip.add(Component.translatable("item.ae2lt.debug_lightning_rod.tooltip")
+    public void appendHoverText(
+            ItemStack stack,
+            TooltipContext context,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltip,
+            TooltipFlag tooltipFlag) {
+        tooltip.accept(Component.translatable("item.ae2lt.debug_lightning_rod.tooltip")
                 .withStyle(ChatFormatting.GRAY));
-        super.appendHoverText(stack, context, tooltip, tooltipFlag);
+        super.appendHoverText(stack, context, tooltipDisplay, tooltip, tooltipFlag);
     }
 }

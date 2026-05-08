@@ -1,6 +1,6 @@
 package com.moakiee.ae2lt.item;
 
-import java.util.List;
+import java.util.function.Consumer;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 
@@ -13,6 +13,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.item.component.TooltipDisplay;
 
 public class ElectroChimeCrystalItem extends Item {
     private static final String TAG_CATALYSIS = "ae2lt.catalysis_value";
@@ -30,7 +31,9 @@ public class ElectroChimeCrystalItem extends Item {
 
     public static int getCatalysisValue(ItemStack stack) {
         return Mth.clamp(
-                stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getInt(TAG_CATALYSIS),
+                stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY)
+                        .copyTag()
+                        .getIntOr(TAG_CATALYSIS, 0),
                 0,
                 getMaxCatalysis());
     }
@@ -79,12 +82,13 @@ public class ElectroChimeCrystalItem extends Item {
     public void appendHoverText(
             ItemStack stack,
             TooltipContext context,
-            List<Component> tooltipComponents,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.percent",
                 String.format("%.1f", getCatalysisPercent(stack) * 100.0D)).withStyle(ChatFormatting.AQUA));
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 "item.ae2lt.electro_chime_crystal.stage",
                 getStageName(stack)).withStyle(ChatFormatting.LIGHT_PURPLE));
     }

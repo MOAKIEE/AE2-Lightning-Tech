@@ -3,17 +3,17 @@ package com.moakiee.ae2lt.item;
 import appeng.core.particles.ParticleTypes;
 import com.moakiee.ae2lt.event.ArtificialLightningHandler;
 import net.minecraft.client.Minecraft;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.api.distmarker.OnlyIn;
-import net.minecraft.server.level.ServerLevel;
 
 public class OverloadCrystalItem extends Item {
     private static final String DROPPED_TICKS_TAG = "ae2lt.overload_dropped_ticks";
@@ -30,19 +30,8 @@ public class OverloadCrystalItem extends Item {
     }
 
     @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        if (!level.isClientSide() || !(entity instanceof Player player)) {
-            return;
-        }
-
-        boolean inMainHand = player.getMainHandItem() == stack;
-        boolean inOffHand = player.getOffhandItem() == stack;
-        if (!inMainHand && !inOffHand) {
-            return;
-        }
-
-        spawnHeldLightning(level, player, inMainHand);
+    public void inventoryTick(ItemStack stack, ServerLevel level, Entity entity, EquipmentSlot slot) {
+        super.inventoryTick(stack, level, entity, slot);
     }
 
     @Override
@@ -58,7 +47,7 @@ public class OverloadCrystalItem extends Item {
                 return false;
             }
 
-            int droppedTicks = entity.getPersistentData().getInt(DROPPED_TICKS_TAG) + DROPPED_TICK_INTERVAL;
+            int droppedTicks = entity.getPersistentData().getIntOr(DROPPED_TICKS_TAG, 0) + DROPPED_TICK_INTERVAL;
             if (droppedTicks >= SUMMON_DELAY_TICKS) {
                 entity.getPersistentData().putInt(DROPPED_TICKS_TAG, 0);
                 ArtificialLightningHandler.spawnArtificialLightning(serverLevel, entity.position(), null);
@@ -70,8 +59,8 @@ public class OverloadCrystalItem extends Item {
     }
 
     @OnlyIn(Dist.CLIENT)
-    private static void spawnHeldLightning(Level level, Player player, boolean mainHand) {
-        RandomSource random = level.random;
+    public static void spawnHeldLightning(Level level, Entity player, boolean mainHand) {
+        RandomSource random = level.getRandom();
         if (random.nextInt(12) != 0) {
             return;
         }
@@ -98,7 +87,7 @@ public class OverloadCrystalItem extends Item {
 
     @OnlyIn(Dist.CLIENT)
     private static void spawnDroppedLightning(ItemEntity entity) {
-        RandomSource random = entity.level().random;
+        RandomSource random = entity.level().getRandom();
         if (random.nextInt(12) != 0) {
             return;
         }

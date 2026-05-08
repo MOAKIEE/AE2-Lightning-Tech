@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.item;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -12,6 +13,7 @@ import com.moakiee.ae2lt.logic.research.RitualGoal;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.component.DataComponents;
+import net.minecraft.network.chat.ResolutionContext;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
@@ -26,6 +28,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.WrittenBookItem;
+import net.minecraft.world.item.component.TooltipDisplay;
 import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.Level;
 
@@ -52,8 +55,13 @@ public class ResearchNoteItem extends Item {
             // 空白笔记:只负责"消耗 1 张、产出 1 张已生成笔记",不打开书。
             // 避免整叠处理带来的 merge/复制问题,也让玩家单独右键新笔记再查看。
             if (!ResearchNoteGenerator.hasValidPool()) {
-                player.displayClientMessage(Component.translatable("ae2lt.research_note.error.invalid_pool")
-                        .withStyle(ChatFormatting.RED), true);
+                if (player instanceof ServerPlayer serverPlayer) {
+                    serverPlayer.sendSystemMessage(Component.translatable("ae2lt.research_note.error.invalid_pool")
+                            .withStyle(ChatFormatting.RED), true);
+                } else {
+                    player.sendSystemMessage(Component.translatable("ae2lt.research_note.error.invalid_pool")
+                            .withStyle(ChatFormatting.RED));
+                }
                 return InteractionResult.FAIL;
             }
 
@@ -80,7 +88,10 @@ public class ResearchNoteItem extends Item {
         // ClientboundOpenBookPacket 直接发给客户端。客户端 handleOpenBook 会用玩家
         // 当前手持物 + WRITTEN_BOOK_CONTENT 组件构造 BookViewScreen。
         if (player instanceof ServerPlayer serverPlayer) {
-            WrittenBookItem.resolveBookComponents(heldStack, serverPlayer.createCommandSourceStack(), serverPlayer);
+            WrittenBookContent.resolveForItem(
+                    heldStack,
+                    ResolutionContext.create(serverPlayer.createCommandSourceStack()),
+                    serverLevel.registryAccess());
             serverPlayer.connection.send(new ClientboundOpenBookPacket(hand));
         }
         player.awardStat(Stats.ITEM_USED.get(this));
@@ -88,40 +99,44 @@ public class ResearchNoteItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents,
+    public void appendHoverText(
+            ItemStack stack,
+            TooltipContext context,
+            TooltipDisplay tooltipDisplay,
+            Consumer<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
         ResearchNoteData data = ResearchNoteData.read(stack);
         if (data == null) {
             RitualGoal forcedGoal = ResearchNoteData.readForcedGoal(stack);
             if (forcedGoal != null) {
-                tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.modulated",
+                tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.modulated",
                         forcedGoal.getDisplayName()).withStyle(ChatFormatting.AQUA));
-                tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.open_hint")
+                tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.open_hint")
                         .withStyle(ChatFormatting.DARK_GRAY));
                 return;
             }
-            tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.blank")
+            tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.blank")
                     .withStyle(ChatFormatting.GRAY));
-            tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.open_hint")
+            tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.open_hint")
                     .withStyle(ChatFormatting.DARK_GRAY));
-            tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.modulation_hint")
+            tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.modulation_hint")
                     .withStyle(ChatFormatting.DARK_AQUA));
             for (RitualGoal goal : RitualGoal.values()) {
                 Item catalyst = NoteModulationCatalysts.getCatalyst(goal);
                 if (catalyst == null) {
                     continue;
                 }
-                tooltipComponents.add(Component.literal("  ")
-                        .append(catalyst.getDescription().copy().withStyle(ChatFormatting.GRAY))
+                tooltipComponents.accept(Component.literal("  ")
+                        .append(catalyst.getName(catalyst.getDefaultInstance()).copy().withStyle(ChatFormatting.GRAY))
                         .append(Component.literal(" -> ").withStyle(ChatFormatting.DARK_GRAY))
                         .append(goal.getDisplayName().copy().withStyle(ChatFormatting.GRAY)));
             }
             return;
         }
 
-        tooltipComponents.add(Component.translatable("ae2lt.research_note.tooltip.goal", data.goal().getDisplayName())
+        tooltipComponents.accept(Component.translatable("ae2lt.research_note.tooltip.goal", data.goal().getDisplayName())
                 .withStyle(ChatFormatting.GOLD));
-        tooltipComponents.add(Component.translatable(
+        tooltipComponents.accept(Component.translatable(
                 data.consumed() ? "ae2lt.research_note.tooltip.completed" : "ae2lt.research_note.tooltip.generated")
                 .withStyle(data.consumed() ? ChatFormatting.RED : ChatFormatting.GRAY));
     }
