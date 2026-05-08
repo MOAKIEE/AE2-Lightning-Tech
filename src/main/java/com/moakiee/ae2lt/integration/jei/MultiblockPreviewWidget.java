@@ -1,23 +1,15 @@
 package com.moakiee.ae2lt.integration.jei;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
-import com.mojang.blaze3d.platform.Lighting;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.math.Axis;
-
 import mezz.jei.api.gui.widgets.IRecipeWidget;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.navigation.ScreenPosition;
-import net.minecraft.client.renderer.LightTexture;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.BlockPos;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
-import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
@@ -25,8 +17,8 @@ import net.minecraft.world.level.block.state.BlockState;
  *
  * <p>Each block is placed at its world-space {@link BlockPos} offset; the widget
  * auto-fits the structure to its rectangle, gently rotates around the Y axis, and
- * uses vanilla {@code BlockRenderDispatcher#renderSingleBlock} so the visual
- * matches what the player sees in-world.</p>
+ * uses isometric item icons so the structure remains readable in the 26.1 GUI
+ * render-state pipeline.</p>
  */
 public final class MultiblockPreviewWidget implements IRecipeWidget {
     private static final float X_ROTATION_DEG = 30.0F;
@@ -112,44 +104,41 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
             return;
         }
 
-        Minecraft client = Minecraft.getInstance();
-        var bufferSource = client.renderBuffers().bufferSource();
-        var blockRenderer = client.getBlockRenderer();
-        PoseStack pose = guiGraphics.pose();
+        float yaw = (float) Math.toRadians(225 + rotation);
+        float yawCos = (float) Math.cos(yaw);
+        float yawSin = (float) Math.sin(yaw);
+        float xRotCos = (float) Math.cos(Math.toRadians(X_ROTATION_DEG));
+        float xRotSin = (float) Math.sin(Math.toRadians(X_ROTATION_DEG));
+        float projectionScale = scale * 0.55F;
+        float iconScale = Math.max(0.5F, Math.min(1.0F, scale / 20.0F));
 
-        float cx = width / 2F;
-        float cy = height / 2F;
-
+        var projected = new ArrayList<ProjectedEntry>(blocks.size());
         for (Entry entry : blocks) {
-            pose.pushPose();
-            pose.translate(cx, cy, 400);
-            pose.scale(scale, -scale, scale);
-            pose.mulPose(Axis.XP.rotationDegrees(X_ROTATION_DEG));
-            pose.mulPose(Axis.YP.rotationDegrees(225 + rotation));
-            pose.translate(
-                    -0.5F + entry.offset.getX() - centerX,
-                    -0.5F + entry.offset.getY() - centerY,
-                    -0.5F + entry.offset.getZ() - centerZ);
+            var stack = entry.state.getBlock().asItem().getDefaultInstance();
+            if (stack.isEmpty()) {
+                continue;
+            }
 
-            RenderSystem.runAsFancy(() -> {
-                if (entry.state.getRenderShape() != RenderShape.ENTITYBLOCK_ANIMATED) {
-                    blockRenderer.renderSingleBlock(
-                            entry.state,
-                            pose,
-                            bufferSource,
-                            LightTexture.FULL_BRIGHT,
-                            OverlayTexture.NO_OVERLAY);
-                }
-            });
-            pose.popPose();
+            float localX = entry.offset.getX() - centerX;
+            float localY = entry.offset.getY() - centerY;
+            float localZ = entry.offset.getZ() - centerZ;
+            float rotatedX = localX * yawCos - localZ * yawSin;
+            float rotatedZ = localX * yawSin + localZ * yawCos;
+
+            int drawX = Math.round(width / 2F + rotatedX * projectionScale - 8 * iconScale);
+            int drawY = Math.round(height / 2F + (rotatedZ * xRotSin - localY * xRotCos) * projectionScale
+                    - 8 * iconScale);
+            projected.add(new ProjectedEntry(stack, drawX, drawY, rotatedZ + localY * 0.01F));
         }
 
-        // Flush the per-block batches before re-enabling GUI lighting so the
-        // remainder of the recipe layout renders normally.
-        if (bufferSource instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch();
+        projected.sort(Comparator.comparingDouble(ProjectedEntry::depth));
+        for (ProjectedEntry entry : projected) {
+            guiGraphics.pose().pushMatrix();
+            guiGraphics.pose().translate(entry.x(), entry.y());
+            guiGraphics.pose().scale(iconScale);
+            guiGraphics.item(entry.stack(), 0, 0);
+            guiGraphics.pose().popMatrix();
         }
-        Lighting.setupFor3DItems();
     }
 
     @Override
@@ -165,6 +154,8 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
     }
 
     private record Entry(BlockState state, BlockPos offset) {}
+
+    private record ProjectedEntry(ItemStack stack, int x, int y, float depth) {}
 
     public static final class Builder {
         private final int x;
