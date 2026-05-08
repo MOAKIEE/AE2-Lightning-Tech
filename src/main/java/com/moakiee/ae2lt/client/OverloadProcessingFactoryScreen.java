@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -32,8 +33,6 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     public OverloadProcessingFactoryScreen(
             OverloadProcessingFactoryMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        this.imageWidth = 176;
-        this.imageHeight = 178;
 
         widgets.add("upgrades", new UpgradesPanel(
                 menu.getSlots(SlotSemantics.UPGRADE),
@@ -96,21 +95,21 @@ public class OverloadProcessingFactoryScreen extends AEBaseScreen<OverloadProces
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (inputFluidWidget != null && inputFluidWidget.isMouseOver(mouseX, mouseY)
-                && inputFluidWidget.handleClick(button)) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (inputFluidWidget != null && inputFluidWidget.isMouseOver(event.x(), event.y())
+                && inputFluidWidget.handleClick(event.button(), event.hasShiftDown())) {
             return true;
         }
-        if (outputFluidWidget != null && outputFluidWidget.isMouseOver(mouseX, mouseY)
-                && outputFluidWidget.handleClick(button)) {
+        if (outputFluidWidget != null && outputFluidWidget.isMouseOver(event.x(), event.y())
+                && outputFluidWidget.handleClick(event.button(), event.hasShiftDown())) {
             return true;
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public void renderSlot(GuiGraphicsExtractor guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
+    public void extractSlot(GuiGraphicsExtractor guiGraphics, Slot slot, int mouseX, int mouseY) {
+        super.extractSlot(guiGraphics, slot, mouseX, mouseY);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 

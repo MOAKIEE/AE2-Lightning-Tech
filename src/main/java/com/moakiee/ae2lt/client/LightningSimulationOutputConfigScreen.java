@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.client;
 
 import org.lwjgl.glfw.GLFW;
 
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.ItemLike;
@@ -76,13 +77,13 @@ public class LightningSimulationOutputConfigScreen
     }
 
     @Override
-    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_ESCAPE || this.minecraft.options.keyInventory.matches(keyCode, scanCode)) {
+    public boolean keyPressed(KeyEvent event) {
+        if (event.key() == GLFW.GLFW_KEY_ESCAPE || this.minecraft.options.keyInventory.matches(event)) {
             returnToParent();
             return true;
         }
 
-        return super.keyPressed(keyCode, scanCode, modifiers);
+        return super.keyPressed(event);
     }
 
     private LightningSimulationOutputButton addSideButton(String widgetId, RelativeSide side, String labelKey) {

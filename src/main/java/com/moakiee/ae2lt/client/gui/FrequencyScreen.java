@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import appeng.util.Icon;
+import appeng.client.gui.style.Blitter;
 import appeng.client.gui.style.Color;
 import appeng.client.gui.style.PaletteColor;
 import appeng.client.gui.style.ScreenStyle;
@@ -27,7 +28,11 @@ import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+import net.minecraft.client.input.CharacterEvent;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
@@ -200,7 +205,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // match AE2's own Quartz Knife field and use near-white text.
             palette.put(PaletteColor.TEXTFIELD_TEXT,        new Color(0xFF, 0xFF, 0xFF, 0xFF));
             palette.put(PaletteColor.TEXTFIELD_PLACEHOLDER, new Color(0x60, 0x60, 0x60, 0xFF));
-            palette.put(PaletteColor.TEXTFIELD_SELECTION,   new Color(0x78, 0xAA, 0xFF, 0x78));
+            palette.put(PaletteColor.SELECTION_COLOR,       new Color(0x78, 0xAA, 0xFF, 0x78));
             palette.put(PaletteColor.TEXTFIELD_ERROR,       new Color(0xC8, 0x46, 0x46, 0xFF));
             palette.put(PaletteColor.ERROR,                 new Color(0xC8, 0x46, 0x46, 0xFF));
         } catch (ReflectiveOperationException e) {
@@ -296,9 +301,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     private int token() { return getMenu().containerId; }
 
     public FrequencyScreen(FrequencyMenu menu, Inventory playerInv, Component title) {
-        super(menu, playerInv, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInv, title, GUI_WIDTH, GUI_HEIGHT);
     }
 
     @Override
@@ -415,21 +418,21 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        public boolean keyPressed(int key, int scan, int mods) {
+        public boolean keyPressed(KeyEvent event) {
             if (settingsPasswordPristine) {
                 settingsPasswordPristine = false;
                 setValue("");
             }
-            return super.keyPressed(key, scan, mods);
+            return super.keyPressed(event);
         }
 
         @Override
-        public boolean charTyped(char c, int mods) {
+        public boolean charTyped(CharacterEvent event) {
             if (settingsPasswordPristine) {
                 settingsPasswordPristine = false;
                 setValue("");
             }
-            return super.charTyped(c, mods);
+            return super.charTyped(event);
         }
     }
 
@@ -692,24 +695,25 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        public void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
             // Super paints the BOX background sprite and — only when
             // the super icon field is non-null — the AE2 glyph. Passing
             // {@code null} for tabs that have a custom PNG means super
             // leaves the icon surface untouched, so we can overlay our
             // own 16×16 without the AE2 glyph bleeding through the
             // transparent pixels of the overlay.
-            super.renderWidget(guiGraphics, mouseX, mouseY, partialTick);
+            super.extractContents(guiGraphics, mouseX, mouseY, partialTick);
             if (customIcon != null) {
                 // Match AE2's own (+2, +1) icon offset used by
-                // TabButton for the BOX style — see its renderWidget
+                // TabButton for the BOX style — see its extractContents
                 // bytecode: it draws the Icon at (getX()+offset, getY()+offset-1)
                 // where offset=2 for BOX. Using the same position keeps
                 // our custom PNG visually aligned with the AE2 COG that
                 // TAB_SETTING still renders through the base class.
-                guiGraphics.blit(customIcon,
-                        getX() + 2, getY() + 1,
-                        0, 0, 16, 16, 16, 16);
+                Blitter.texture(customIcon, 16, 16)
+                        .src(0, 0, 16, 16)
+                        .dest(getX() + 2, getY() + 1, 16, 16)
+                        .blit(guiGraphics);
             }
         }
     }
@@ -1350,21 +1354,21 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     // Rendering
 
     @Override
-    protected void renderBg(GuiGraphicsExtractor g, float partialTick, int mouseX, int mouseY) {
+    public void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        extractBg(g, partialTick, mouseX, mouseY);
+        super.extractContents(g, mouseX, mouseY, partialTick);
+    }
+
+    private void extractBg(GuiGraphicsExtractor g, float partialTick, int mouseX, int mouseY) {
         // Per-tab AE2 chassis. Each tab uses a different 195×157 texture
         // so the recessed wells (list rows / info shelf / blank panel) are
         // baked into the art instead of redrawn with {@code g.fill} on top.
         // The six top tab ears are still rendered by TabButton widgets
         // themselves (AE2's ``TAB_BUTTON_BACKGROUND`` sprite).
-        g.blit(
-                backgroundTextureForTab(currentTab),
-                leftPos,
-                topPos,
-                0, 0,
-                GUI_WIDTH,
-                GUI_HEIGHT,
-                TEXTURE_SIZE,
-                TEXTURE_SIZE);
+        Blitter.texture(backgroundTextureForTab(currentTab), TEXTURE_SIZE, TEXTURE_SIZE)
+                .src(0, 0, GUI_WIDTH, GUI_HEIGHT)
+                .dest(leftPos, topPos, GUI_WIDTH, GUI_HEIGHT)
+                .blit(g);
 
         // Member-edit popup panel background. This MUST be drawn from
         // {@link #renderBg} (before widgets render) — if drawn from
@@ -1472,7 +1476,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     }
 
     @Override
-    protected void renderLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
+    protected void extractLabels(GuiGraphicsExtractor g, int mouseX, int mouseY) {
         drawFlatCentered(g,
                 Component.translatable(currentTab.getTranslationKey()),
                 imageWidth / 2, 6, AE2_TEXT_TITLE);
@@ -1570,23 +1574,22 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     /**
      * AE2 draws panel-surface text flat (no drop-shadow) so the character
      * glyphs read cleanly against the light-lavender chassis. Minecraft's
-     * default {@link GuiGraphicsExtractor#drawString(net.minecraft.client.gui.Font,
-     * Component, int, int, int)} draws WITH a shadow, which on a light
-     * panel produces an unpleasant embossed look. All label rendering in
-     * this screen goes through this helper (and
-     * {@link #drawFlatCentered}) to match AE2's native visual weight.
+     * default text rendering can include a shadow, which on a light panel
+     * produces an unpleasant embossed look. All label rendering in this
+     * screen goes through this helper (and {@link #drawFlatCentered}) to
+     * match AE2's native visual weight.
      */
     private void drawFlat(GuiGraphicsExtractor g, Component text, int x, int y, int color) {
-        g.drawString(font, text, x, y, color, false);
+        g.text(font, text, x, y, color, false);
     }
 
     private void drawFlat(GuiGraphicsExtractor g, String text, int x, int y, int color) {
-        g.drawString(font, text, x, y, color, false);
+        g.text(font, text, x, y, color, false);
     }
 
     private void drawFlatCentered(GuiGraphicsExtractor g, Component text, int centerX, int y, int color) {
         int w = font.width(text);
-        g.drawString(font, text, centerX - w / 2, y, color, false);
+        g.text(font, text, centerX - w / 2, y, color, false);
     }
 
     private void renderHomeLabels(GuiGraphicsExtractor g) {
@@ -1820,13 +1823,6 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         };
     }
 
-    @Override
-    public void render(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
-        renderBackground(g, mouseX, mouseY, partialTick);
-        super.render(g, mouseX, mouseY, partialTick);
-        renderTooltip(g, mouseX, mouseY);
-    }
-
     // Helpers
 
     private boolean isSelf(UUID uuid) {
@@ -1882,18 +1878,17 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        protected void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
             boolean hover = active && (isHoveredOrFocused());
             int srcV = hover ? ROW_SPRITE_HOVER_V : ROW_SPRITE_IDLE_V;
             // BG_LIST and BG_SELECTION carry an identical sprite library
             // below the chassis, so sourcing from BG_LIST works for every
             // tab that uses this widget regardless of which chassis is
             // currently bound for the panel itself.
-            g.blit(BG_LIST,
-                    getX(), getY(),
-                    0, srcV,
-                    ROW_SPRITE_WIDTH, ROW_SPRITE_HEIGHT,
-                    TEXTURE_SIZE, TEXTURE_SIZE);
+            Blitter.texture(BG_LIST, TEXTURE_SIZE, TEXTURE_SIZE)
+                    .src(0, srcV, ROW_SPRITE_WIDTH, ROW_SPRITE_HEIGHT)
+                    .dest(getX(), getY(), ROW_SPRITE_WIDTH, ROW_SPRITE_HEIGHT)
+                    .blit(g);
 
             // Vanilla MC's drawString honours the Component's per-style
             // colour, so the access tint / frequency RGB baked into
@@ -1903,7 +1898,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int fallback = active ? 0x000000 : 0x404040;
             int textY = getY() + (getHeight() - 8) / 2;
             int textX = getX() + (getWidth() - font.width(getMessage())) / 2;
-            g.drawString(font, getMessage(), textX, textY, fallback, false);
+            g.text(font, getMessage(), textX, textY, fallback, false);
         }
     }
 
@@ -1966,7 +1961,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+        protected void extractWidgetRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
             boolean enabled = maxOffset() > 0;
             Identifier sprite = enabled
                     ? Identifier.fromNamespaceAndPath("ae2", "big_scroller")
@@ -1975,12 +1970,14 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int handleY = enabled
                     ? getY() + scrollOffset * availH / maxOffset()
                     : getY();
-            g.blitSprite(sprite, getX(), handleY, SCROLLBAR_WIDTH, SCROLLBAR_HANDLE_HEIGHT);
+            g.blitSprite(RenderPipelines.GUI_TEXTURED, sprite, getX(), handleY, SCROLLBAR_WIDTH, SCROLLBAR_HANDLE_HEIGHT);
         }
 
         @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (button != 0 || !visible || !active) return false;
+        public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+            if (event.button() != 0 || !visible || !active) return false;
+            double mouseX = event.x();
+            double mouseY = event.y();
             if (!isMouseOver(mouseX, mouseY)) return false;
             if (maxOffset() == 0) return true;
             int availH = Math.max(0, getHeight() - SCROLLBAR_HANDLE_HEIGHT);
@@ -1998,17 +1995,17 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         }
 
         @Override
-        public boolean mouseReleased(double mouseX, double mouseY, int button) {
-            if (button == 0) dragging = false;
-            return super.mouseReleased(mouseX, mouseY, button);
+        public boolean mouseReleased(MouseButtonEvent event) {
+            if (event.button() == 0) dragging = false;
+            return super.mouseReleased(event);
         }
 
         @Override
-        protected void onDrag(double mouseX, double mouseY, double dx, double dy) {
+        protected void onDrag(MouseButtonEvent event, double dx, double dy) {
             if (!dragging || maxOffset() == 0) return;
             int availH = getHeight() - SCROLLBAR_HANDLE_HEIGHT;
             if (availH <= 0) return;
-            double rel = (mouseY - getY() - dragYOffset) / availH;
+            double rel = (event.y() - getY() - dragYOffset) / availH;
             rel = Math.max(0, Math.min(1, rel));
             setOffset((int) Math.round(rel * maxOffset()));
         }

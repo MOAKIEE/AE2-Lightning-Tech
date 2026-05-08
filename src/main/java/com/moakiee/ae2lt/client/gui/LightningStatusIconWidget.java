@@ -10,6 +10,7 @@ import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 
+import appeng.client.gui.style.Blitter;
 import appeng.client.gui.widgets.ITooltip;
 
 /**
@@ -36,8 +37,11 @@ public class LightningStatusIconWidget extends AbstractWidget implements IToolti
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
-        guiGraphics.blit(ICON, getX(), getY(), 0, 0, SIZE, SIZE, SIZE, SIZE);
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+        Blitter.texture(ICON, SIZE, SIZE)
+                .src(0, 0, SIZE, SIZE)
+                .dest(getX(), getY(), SIZE, SIZE)
+                .blit(guiGraphics);
     }
 
     @Override

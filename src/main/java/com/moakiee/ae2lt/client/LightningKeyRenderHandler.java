@@ -5,10 +5,10 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.texture.TextureAtlas;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
-import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.level.Level;
 
 import appeng.client.api.AEKeyRenderer;
@@ -35,7 +35,10 @@ public final class LightningKeyRenderHandler implements AEKeyRenderer<LightningK
         Identifier id = stack.tier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
                 ? EXTREME_HIGH_VOLTAGE_SPRITE
                 : HIGH_VOLTAGE_SPRITE;
-        return Minecraft.getInstance().getTextureAtlas(InventoryMenu.BLOCK_ATLAS).apply(id);
+        return Minecraft.getInstance()
+                .getAtlasManager()
+                .getAtlasOrThrow(TextureAtlas.LOCATION_BLOCKS)
+                .getSprite(id);
     }
 
     @Override

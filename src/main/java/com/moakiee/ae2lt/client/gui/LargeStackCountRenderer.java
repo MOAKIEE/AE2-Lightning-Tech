@@ -2,10 +2,7 @@ package com.moakiee.ae2lt.client.gui;
 
 import java.util.List;
 
-import org.joml.Matrix4f;
-
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
@@ -23,7 +20,6 @@ import mezz.jei.api.gui.builder.ITooltipBuilder;
  * {@link #appendCountTooltip}.
  */
 public final class LargeStackCountRenderer {
-    private static final float SCALE = 0.75F;
     private static final int SHADOW_COLOR = 0x413f54;
     private static final int TEXT_COLOR = 0xFFFFFF;
 
@@ -132,31 +128,9 @@ public final class LargeStackCountRenderer {
     }
 
     private static void renderLabel(GuiGraphicsExtractor guiGraphics, Font font, int slotX, int slotY, String text) {
-        float inverseScale = 1.0F / SCALE;
-        int drawX = (int) ((slotX + 18.0F - font.width(text) * SCALE) * inverseScale);
-        int drawY = (int) ((slotY + 16.0F - 5.0F * SCALE) * inverseScale);
-
-        var pose = guiGraphics.pose();
-        pose.pushPose();
-        pose.translate(0, 0, 300);
-        pose.scale(SCALE, SCALE, SCALE);
-
-        drawShadowedText(pose.last().pose(), font, drawX, drawY, text);
-
-        pose.popPose();
-    }
-
-    private static void drawShadowedText(Matrix4f matrix, Font font, int x, int y, String text) {
-        // Use the vanilla buffered text path; RenderType.text() manages its own
-        // blend / depth state, so we deliberately do NOT toggle RenderSystem
-        // blend here -- doing so would pollute the caller's GL state machine
-        // (a common source of "exit-game-but-DWM-still-laggy" symptoms when
-        // combined with other mods that assume blend remains enabled).
-        var buffer = Minecraft.getInstance().renderBuffers().bufferSource();
-        font.drawInBatch(text, x + 1, y + 1, SHADOW_COLOR, false, matrix, buffer,
-                Font.DisplayMode.NORMAL, 0, 15728880);
-        font.drawInBatch(text, x, y, TEXT_COLOR, false, matrix, buffer,
-                Font.DisplayMode.NORMAL, 0, 15728880);
-        buffer.endBatch();
+        int drawX = slotX + 18 - font.width(text);
+        int drawY = slotY + 11;
+        guiGraphics.text(font, text, drawX + 1, drawY + 1, SHADOW_COLOR, false);
+        guiGraphics.text(font, text, drawX, drawY, TEXT_COLOR, false);
     }
 }

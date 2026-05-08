@@ -10,20 +10,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
-import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
-import net.minecraft.world.inventory.InventoryMenu;
-import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.fml.ModList;
 
-import appeng.client.gui.style.Blitter;
+import appeng.client.gui.style.FluidBlitter;
 import appeng.core.localization.Tooltips;
 import appeng.client.gui.widgets.ITooltip;
 
@@ -34,9 +30,6 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     private final IntSupplier capacitySupplier;
     private final OverloadProcessingFactoryMenu menu;
     private final int tankIndex;
-
-    private Fluid cachedFluid;
-    private TextureAtlasSprite cachedSprite;
 
     public OverloadProcessingFactoryFluidWidget(
             OverloadProcessingFactoryMenu menu,
@@ -51,21 +44,21 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         // AE2 WidgetContainer 只分发 button=0;右键/中键由 Screen 层的 mouseClicked
         // 拦截后调用 {@link #handleClick(int)}。
-        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY) || button != 0) {
+        if (!this.active || !this.visible || !isMouseOver(event.x(), event.y()) || event.button() != 0) {
             return false;
         }
-        return handleClick(button);
+        return handleClick(event.button(), event.hasShiftDown());
     }
 
     /** 由 Screen 层拦截后调用,支持左键/右键/shift。 */
-    public boolean handleClick(int button) {
+    public boolean handleClick(int button, boolean shiftDown) {
         if (!this.active || !this.visible) {
             return false;
         }
-        if (Screen.hasShiftDown()) {
+        if (shiftDown) {
             menu.clientClearFluidTank(tankIndex);
             playClickSound();
             return true;
@@ -89,7 +82,7 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         FluidStack fluid = fluidSupplier.get();
         if (fluid.isEmpty()) {
             return;
@@ -102,36 +95,16 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
         }
         filled = Math.min(filled, height);
 
-        TextureAtlasSprite sprite = resolveSprite(fluid);
-        if (sprite == null) {
-            return;
-        }
-
-        var attributes = IClientFluidTypeExtensions.of(fluid.getFluid());
-        Blitter blitter = Blitter.sprite(sprite)
-                .colorRgb(attributes.getTintColor(fluid))
-                .blending(true);
-
         int x = getX();
         int yBottom = getY() + height;
         int drawn = 0;
         while (drawn < filled) {
-            int sliceH = Math.min(width, filled - drawn);
-            blitter.dest(x, yBottom - drawn - sliceH, width, sliceH).blit(guiGraphics);
+            int sliceH = Math.min(16, filled - drawn);
+            FluidBlitter.create(fluid)
+                    .dest(x, yBottom - drawn - sliceH, width, sliceH)
+                    .blit(guiGraphics);
             drawn += sliceH;
         }
-    }
-
-    private TextureAtlasSprite resolveSprite(FluidStack stack) {
-        Fluid fluid = stack.getFluid();
-        if (fluid != cachedFluid) {
-            cachedFluid = fluid;
-            var attributes = IClientFluidTypeExtensions.of(fluid);
-            cachedSprite = Minecraft.getInstance()
-                    .getTextureAtlas(InventoryMenu.BLOCK_ATLAS)
-                    .apply(attributes.getStillTexture(stack));
-        }
-        return cachedSprite;
     }
 
     @Override
@@ -175,7 +148,7 @@ public class OverloadProcessingFactoryFluidWidget extends AbstractWidget impleme
     private static String getModDisplayName(FluidStack fluid) {
         var key = fluid.getFluid() == Fluids.EMPTY
                 ? null
-                : fluid.getFluid().builtInRegistryHolder().key().location();
+                : fluid.getFluid().builtInRegistryHolder().key().identifier();
         if (key == null) {
             return "Minecraft";
         }

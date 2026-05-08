@@ -52,8 +52,8 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
     }
 
     @Override
-    public void renderSlot(GuiGraphicsExtractor guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
+    public void extractSlot(GuiGraphicsExtractor guiGraphics, Slot slot, int mouseX, int mouseY) {
+        super.extractSlot(guiGraphics, slot, mouseX, mouseY);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 

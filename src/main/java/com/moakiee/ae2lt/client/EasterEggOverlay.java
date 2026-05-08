@@ -7,6 +7,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 import net.neoforged.neoforge.client.gui.GuiLayer;
 
+import appeng.client.gui.style.Blitter;
+
 public final class EasterEggOverlay implements GuiLayer {
     public static final EasterEggOverlay INSTANCE = new EasterEggOverlay();
 
@@ -78,10 +80,11 @@ public final class EasterEggOverlay implements GuiLayer {
         int x = (screenWidth - drawW) / 2;
         int y = (screenHeight - drawH) / 2;
 
-        guiGraphics.pose().pushPose();
-        guiGraphics.setColor(1.0f, 1.0f, 1.0f, alpha);
-        guiGraphics.blit(TEXTURE, x, y, drawW, drawH, 0, 0, imgWidth, imgHeight, imgWidth, imgHeight);
-        guiGraphics.setColor(1.0f, 1.0f, 1.0f, 1.0f);
-        guiGraphics.pose().popPose();
+        Blitter.texture(TEXTURE, imgWidth, imgHeight)
+                .src(0, 0, imgWidth, imgHeight)
+                .dest(x, y, drawW, drawH)
+                .opacity(alpha)
+                .blending(true)
+                .blit(guiGraphics);
     }
 }

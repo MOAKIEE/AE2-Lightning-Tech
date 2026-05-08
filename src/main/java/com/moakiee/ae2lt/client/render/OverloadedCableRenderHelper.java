@@ -61,15 +61,15 @@ public final class OverloadedCableRenderHelper {
     }
 
     private static TextureAtlasSprite getCoreTexture(AEColor color) {
-        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-        return atlas.apply(Identifier.fromNamespaceAndPath(
+        var atlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(TextureAtlas.LOCATION_BLOCKS);
+        return atlas.getSprite(Identifier.fromNamespaceAndPath(
                 AE2LightningTech.MODID,
                 OVERLOAD_CABLE_CORE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
     }
 
     private static TextureAtlasSprite getLineTexture(AEColor color) {
-        var atlas = Minecraft.getInstance().getTextureAtlas(TextureAtlas.LOCATION_BLOCKS);
-        return atlas.apply(Identifier.fromNamespaceAndPath(
+        var atlas = Minecraft.getInstance().getAtlasManager().getAtlasOrThrow(TextureAtlas.LOCATION_BLOCKS);
+        return atlas.getSprite(Identifier.fromNamespaceAndPath(
                 AE2LightningTech.MODID,
                 OVERLOAD_CABLE_LINE_TEXTURE_FOLDER + color.name().toLowerCase(Locale.ROOT)));
     }

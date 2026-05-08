@@ -24,7 +24,7 @@ public class AtmosphericIonizerEnergyBar extends AbstractWidget implements ITool
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         fill.copy().opacity(0.2f).dest(getX(), getY(), width, height).blit(guiGraphics);
 
         long totalEnergy = Math.max(1L, menu.getTotalEnergyRequired());

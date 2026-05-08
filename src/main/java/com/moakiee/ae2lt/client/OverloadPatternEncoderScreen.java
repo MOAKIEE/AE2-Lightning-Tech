@@ -6,12 +6,15 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
+
+import appeng.client.gui.style.Blitter;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.OverloadPatternEncoderMenu;
@@ -63,9 +66,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     private boolean draggingScrollbar;
 
     public OverloadPatternEncoderScreen(OverloadPatternEncoderMenu menu, Inventory playerInventory, Component title) {
-        super(menu, playerInventory, title);
-        this.imageWidth = GUI_WIDTH;
-        this.imageHeight = GUI_HEIGHT;
+        super(menu, playerInventory, title, GUI_WIDTH, GUI_HEIGHT);
         this.inventoryLabelX = 8;
         this.inventoryLabelY = 96;
     }
@@ -83,28 +84,28 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     @Override
-    protected void renderBg(GuiGraphicsExtractor graphics, float partialTick, int mouseX, int mouseY) {
-        graphics.blit(TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, TEXTURE_SIZE, TEXTURE_SIZE);
+    public void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        extractBg(graphics, partialTick, mouseX, mouseY);
+        super.extractContents(graphics, mouseX, mouseY, partialTick);
+    }
+
+    private void extractBg(GuiGraphicsExtractor graphics, float partialTick, int mouseX, int mouseY) {
+        blitTexture(graphics, TEXTURE, leftPos, topPos, 0, 0, imageWidth, imageHeight, TEXTURE_SIZE, TEXTURE_SIZE);
         renderEntries(graphics, mouseX, mouseY);
         renderScrollbar(graphics);
     }
 
     @Override
-    protected void renderLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        graphics.drawString(font, SCREEN_TITLE, 8, 6, 0x404040, false);
-        graphics.drawString(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
+    protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+        graphics.text(font, SCREEN_TITLE, 8, 6, 0x404040, false);
+        graphics.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
     }
 
     @Override
-    public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
-        super.render(graphics, mouseX, mouseY, partialTick);
-        renderEntryTooltip(graphics, mouseX, mouseY);
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        if (button == 0) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+        if (event.button() == 0) {
+            double mouseX = event.x();
+            double mouseY = event.y();
             if (isWithinScrollbar(mouseX, mouseY)) {
                 draggingScrollbar = true;
                 updateScrollFromMouse(mouseY);
@@ -117,22 +118,22 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public boolean mouseDragged(double mouseX, double mouseY, int button, double dragX, double dragY) {
+    public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
         if (draggingScrollbar) {
-            updateScrollFromMouse(mouseY);
+            updateScrollFromMouse(event.y());
             return true;
         }
-        return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+        return super.mouseDragged(event, dragX, dragY);
     }
 
     @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+    public boolean mouseReleased(MouseButtonEvent event) {
         draggingScrollbar = false;
-        return super.mouseReleased(mouseX, mouseY, button);
+        return super.mouseReleased(event);
     }
 
     @Override
@@ -164,51 +165,60 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         int switchX = leftPos + ENTRY_SWITCH_X;
         int contentY = rowY + ENTRY_CONTENT_Y_OFFSET;
 
-        graphics.blit(TEXTURE, slotX, contentY, SLOT_U, SLOT_V, SLOT_SIZE, SLOT_SIZE, TEXTURE_SIZE, TEXTURE_SIZE);
-        graphics.renderItem(entry.stack(), slotX + 1, contentY + 1);
-        graphics.renderItemDecorations(font, entry.stack(), slotX + 1, contentY + 1);
+        blitTexture(graphics, TEXTURE, slotX, contentY, SLOT_U, SLOT_V, SLOT_SIZE, SLOT_SIZE, TEXTURE_SIZE, TEXTURE_SIZE);
+        graphics.item(entry.stack(), slotX + 1, contentY + 1);
+        graphics.itemDecorations(font, entry.stack(), slotX + 1, contentY + 1);
 
-        graphics.drawString(font, entryLabel(entry), textX, contentY + 5, 0x404040, false);
+        graphics.text(font, entryLabel(entry), textX, contentY + 5, 0x404040, false);
 
         renderModeSwitch(graphics, switchX, contentY + 3, entry.mode());
     }
 
     private void renderModeSwitch(GuiGraphicsExtractor graphics, int x, int y, MatchMode mode) {
         int v = mode.ignoresComponents() ? 40 : 28;
-        graphics.blit(CHECKBOX_TEXTURE, x, y, 0, v, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT, CHECKBOX_TEXTURE_SIZE, CHECKBOX_TEXTURE_SIZE);
+        blitTexture(graphics, CHECKBOX_TEXTURE, x, y, 0, v, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT, CHECKBOX_TEXTURE_SIZE, CHECKBOX_TEXTURE_SIZE);
     }
 
     private void renderScrollbar(GuiGraphicsExtractor graphics) {
         if (maxScrollOffset() <= 0) {
-            graphics.blit(TEXTURE, leftPos + TRACK_X - 1, topPos + TRACK_Y, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
+            blitTexture(graphics, TEXTURE, leftPos + TRACK_X - 1, topPos + TRACK_Y, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
             return;
         }
 
         int sliderTravel = TRACK_HEIGHT - SLIDER_HEIGHT;
         int sliderY = topPos + TRACK_Y + Math.round((scrollOffset / (float) maxScrollOffset()) * sliderTravel);
-        graphics.blit(TEXTURE, leftPos + TRACK_X - 1, sliderY, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
+        blitTexture(graphics, TEXTURE, leftPos + TRACK_X - 1, sliderY, SLIDER_U, SLIDER_V, SLIDER_WIDTH, SLIDER_HEIGHT, TEXTURE_SIZE, TEXTURE_SIZE);
     }
 
-    private void renderEntryTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+    @Override
+    protected void extractTooltip(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
         var entry = getEntryAt(mouseX, mouseY);
         if (entry == null) {
-            renderTooltip(graphics, mouseX, mouseY);
+            super.extractTooltip(graphics, mouseX, mouseY);
             return;
         }
 
         int rowY = topPos + PANEL_Y + ENTRY_TOP_OFFSET + entry.row() * ENTRY_ROW_HEIGHT + ENTRY_CONTENT_Y_OFFSET;
         int slotX = leftPos + ENTRY_SLOT_X;
         if (isWithin(mouseX, mouseY, slotX, rowY, SLOT_SIZE, SLOT_SIZE)) {
-            graphics.renderTooltip(font, entry.stack(), mouseX, mouseY);
+            graphics.setTooltipForNextFrame(font, entry.stack(), mouseX, mouseY);
             return;
         }
 
         if (isWithinEntrySwitch(mouseX, mouseY, entry.row())) {
-            graphics.renderComponentTooltip(font, modeTooltip(entry), mouseX, mouseY);
+            graphics.setComponentTooltipForNextFrame(font, modeTooltip(entry), mouseX, mouseY);
             return;
         }
 
-        renderTooltip(graphics, mouseX, mouseY);
+        super.extractTooltip(graphics, mouseX, mouseY);
+    }
+
+    private static void blitTexture(GuiGraphicsExtractor graphics, Identifier texture,
+            int x, int y, int u, int v, int width, int height, int textureWidth, int textureHeight) {
+        Blitter.texture(texture, textureWidth, textureHeight)
+                .src(u, v, width, height)
+                .dest(x, y, width, height)
+                .blit(graphics);
     }
 
     private List<Component> modeTooltip(Entry entry) {

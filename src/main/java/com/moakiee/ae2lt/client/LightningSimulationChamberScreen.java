@@ -85,8 +85,8 @@ public class LightningSimulationChamberScreen extends AEBaseScreen<LightningSimu
     }
 
     @Override
-    public void renderSlot(GuiGraphicsExtractor guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
+    public void extractSlot(GuiGraphicsExtractor guiGraphics, Slot slot, int mouseX, int mouseY) {
+        super.extractSlot(guiGraphics, slot, mouseX, mouseY);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 

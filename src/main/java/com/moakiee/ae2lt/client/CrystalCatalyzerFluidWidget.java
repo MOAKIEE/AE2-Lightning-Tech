@@ -10,7 +10,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
-import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -74,22 +74,22 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         // AE2 WidgetContainer 只分发 button=0;真正的处理由 Screen 层的
         // mouseClicked 预拦截后调用 {@link #handleClick(int)} 完成。这里给
         // AE2 分发链一个稳妥的 fallback(纯左键语义),不处理 shift / 右键。
-        if (!this.active || !this.visible || !isMouseOver(mouseX, mouseY) || button != 0) {
+        if (!this.active || !this.visible || !isMouseOver(event.x(), event.y()) || event.button() != 0) {
             return false;
         }
-        return handleClick(button);
+        return handleClick(event.button(), event.hasShiftDown());
     }
 
     /** 由 Screen 层拦截后调用,支持左键/右键/中键/shift,统一返回是否处理了。 */
-    public boolean handleClick(int button) {
+    public boolean handleClick(int button, boolean shiftDown) {
         if (!this.active || !this.visible) {
             return false;
         }
-        if (Screen.hasShiftDown()) {
+        if (shiftDown) {
             menu.clientClearFluidTank();
             playClickSound();
             return true;
@@ -113,7 +113,7 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         FluidStack fluid = fluidSupplier.get();
         if (!fluid.isEmpty()) {
             int capacity = Math.max(1, capacitySupplier.getAsInt());
@@ -198,7 +198,7 @@ public class CrystalCatalyzerFluidWidget extends AbstractWidget implements ITool
     private static String getModDisplayName(FluidStack fluid) {
         var key = fluid.getFluid() == Fluids.EMPTY
                 ? null
-                : fluid.getFluid().builtInRegistryHolder().key().location();
+                : fluid.getFluid().builtInRegistryHolder().key().identifier();
         if (key == null) {
             return "Minecraft";
         }

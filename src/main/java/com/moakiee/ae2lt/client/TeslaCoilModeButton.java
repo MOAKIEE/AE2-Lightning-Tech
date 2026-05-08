@@ -63,7 +63,7 @@ public class TeslaCoilModeButton extends IconButton {
     }
 
     @Override
-    public void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partial) {
+    public void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partial) {
         if (!this.visible) {
             return;
         }
@@ -73,16 +73,14 @@ public class TeslaCoilModeButton extends IconButton {
                 : mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE
                         ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS
                         : Icon.TOOLBAR_BUTTON_BACKGROUND;
-        bgIcon.getBlitter()
+        Blitter.icon(bgIcon)
                 .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
                 .blit(guiGraphics);
 
         var texture = mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE ? EHV_TEXTURE : HV_TEXTURE;
         Blitter.texture(texture, 16, 16)
                 .src(0, 0, 16, 16)
                 .dest(getX(), getY() + 1 + yOffset, 16, 16)
-                .zOffset(3)
                 .blit(guiGraphics);
     }
 }

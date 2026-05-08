@@ -6,6 +6,7 @@ import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -117,12 +118,12 @@ public class TextureToggleButton extends Button implements ITooltip {
     }
 
     @Override
-    public void onPress() {
+    public void onPress(InputWithModifiers event) {
         this.listener.onChange(this.stateIndex);
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         if (!this.visible) {
             return;
         }
@@ -131,9 +132,8 @@ public class TextureToggleButton extends Button implements ITooltip {
         var background = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER
                 : isFocused() ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS : Icon.TOOLBAR_BUTTON_BACKGROUND;
 
-        background.getBlitter()
+        Blitter.icon(background)
                 .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
                 .blit(guiGraphics);
 
         if (this.textures.isEmpty()) {
@@ -145,7 +145,7 @@ public class TextureToggleButton extends Button implements ITooltip {
         if (!this.active) {
             blitter.opacity(0.5f);
         }
-        blitter.dest(getX(), getY() + 1 + yOffset).zOffset(3).blit(guiGraphics);
+        blitter.dest(getX(), getY() + 1 + yOffset).blit(guiGraphics);
     }
 
     @Override

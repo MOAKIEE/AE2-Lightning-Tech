@@ -24,7 +24,7 @@ public class CrystalCatalyzerEnergyBar extends AbstractWidget implements IToolti
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         fill.copy().opacity(0.2f).dest(getX(), getY(), width, height).blit(guiGraphics);
 
         long capacity = Math.max(1L, menu.getEnergyCapacity());

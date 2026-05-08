@@ -2,12 +2,14 @@ package com.moakiee.ae2lt.client;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -107,8 +109,8 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
         this.configSlots = menu.getAllConfigSlots();
         for (int i = 0; i < configSlots.size(); i++) {
             final int slotIdx = i;
-            var button = new SetAmountButton(btn -> {
-                if (hasShiftDown()) {
+            var button = new SetAmountButton(shiftDown -> {
+                if (shiftDown) {
                     menu.toggleUnlimited(configSlots.get(slotIdx).getContainerSlot());
                 } else {
                     menu.openSetAmountMenu(configSlots.get(slotIdx).getContainerSlot());
@@ -189,7 +191,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
 
         String pageText = (menu.currentPage + 1) + "/" + menu.totalPages;
         int textWidth = this.font.width(pageText);
-        guiGraphics.drawString(this.font, pageText, (176 - textWidth) / 2, 7,
+        guiGraphics.text(this.font, pageText, (176 - textWidth) / 2, 7,
                 style.getColor(PaletteColor.DEFAULT_TEXT_COLOR).toARGB(), false);
 
         int page = menu.currentPage;
@@ -199,7 +201,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
             if (menu.isSlotUnlimited(i)) {
                 var slot = configSlots.get(i);
                 if (!slot.getItem().isEmpty()) {
-                    guiGraphics.drawString(this.font, "\u221E",
+                    guiGraphics.text(this.font, "\u221E",
                             slot.x + 10, slot.y - 10, 0xFF00FF00, true);
                 }
             }
@@ -215,8 +217,17 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
 
 
     static class SetAmountButton extends appeng.client.gui.widgets.IconButton {
-        public SetAmountButton(OnPress onPress) {
-            super(onPress);
+        private final Consumer<Boolean> listener;
+
+        public SetAmountButton(Consumer<Boolean> listener) {
+            super(button -> {
+            });
+            this.listener = listener;
+        }
+
+        @Override
+        public void onPress(InputWithModifiers event) {
+            this.listener.accept(event.hasShiftDown());
         }
 
         @Override

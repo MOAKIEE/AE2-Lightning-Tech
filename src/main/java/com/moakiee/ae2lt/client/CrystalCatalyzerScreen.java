@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
@@ -30,8 +31,6 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
     public CrystalCatalyzerScreen(
             CrystalCatalyzerMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        this.imageWidth = 176;
-        this.imageHeight = 190;
 
         addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
 
@@ -90,20 +89,20 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
     }
 
     @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+    public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
         // AE2 的 WidgetContainer 会吞掉非左键事件;在此抢先拦截 tank 区域的右键/中键
         // 用于"右键倒入 / shift+右键清空"等 Adv AE 风格交互。
-        if (fluidWidget != null && fluidWidget.isMouseOver(mouseX, mouseY)) {
-            if (fluidWidget.handleClick(button)) {
+        if (fluidWidget != null && fluidWidget.isMouseOver(event.x(), event.y())) {
+            if (fluidWidget.handleClick(event.button(), event.hasShiftDown())) {
                 return true;
             }
         }
-        return super.mouseClicked(mouseX, mouseY, button);
+        return super.mouseClicked(event, doubleClick);
     }
 
     @Override
-    public void renderSlot(GuiGraphicsExtractor guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
+    public void extractSlot(GuiGraphicsExtractor guiGraphics, Slot slot, int mouseX, int mouseY) {
+        super.extractSlot(guiGraphics, slot, mouseX, mouseY);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 

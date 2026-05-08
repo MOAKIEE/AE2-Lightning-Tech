@@ -36,8 +36,6 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
     public LightningAssemblyChamberScreen(
             LightningAssemblyChamberMenu menu, Inventory playerInventory, Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
-        this.imageWidth = 176;
-        this.imageHeight = 198;
 
         widgets.add("upgrades", new UpgradesPanel(
                 menu.getSlots(SlotSemantics.UPGRADE),
@@ -85,8 +83,8 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
     }
 
     @Override
-    public void renderSlot(GuiGraphicsExtractor guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
+    public void extractSlot(GuiGraphicsExtractor guiGraphics, Slot slot, int mouseX, int mouseY) {
+        super.extractSlot(guiGraphics, slot, mouseX, mouseY);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 

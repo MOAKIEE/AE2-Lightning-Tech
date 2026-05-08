@@ -21,7 +21,7 @@ public class OverloadProcessingFactoryProgressWidget extends AbstractWidget {
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(GuiGraphicsExtractor guiGraphics, int mouseX, int mouseY, float partialTick) {
         int filled = Mth.clamp((int) Math.ceil(width * menu.getProgress()), 0, width);
         if (filled <= 0) {
             return;
@@ -39,16 +39,6 @@ public class OverloadProcessingFactoryProgressWidget extends AbstractWidget {
 
     @Override
     public boolean isMouseOver(double mouseX, double mouseY) {
-        return false;
-    }
-
-    @Override
-    public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        return false;
-    }
-
-    @Override
-    public boolean mouseReleased(double mouseX, double mouseY, int button) {
         return false;
     }
 }
