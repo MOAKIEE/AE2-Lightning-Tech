@@ -8,6 +8,7 @@ import net.minecraft.world.inventory.MenuType;
 
 import appeng.helpers.patternprovider.PatternProviderLogicHost;
 import appeng.menu.SlotSemantics;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.menu.implementations.PatternProviderMenu;
@@ -22,6 +23,16 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.Wirele
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 
 public class OverloadedPatternProviderMenu extends PatternProviderMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_TOGGLE_MODE = new ClientActionKey<>("toggleMode");
+    private static final ClientActionKey<Void> ACTION_TOGGLE_AUTO_RETURN = new ClientActionKey<>("toggleAutoReturn");
+    private static final ClientActionKey<Void> ACTION_TOGGLE_WIRELESS_DISPATCH_MODE =
+            new ClientActionKey<>("toggleWirelessDispatchMode");
+    private static final ClientActionKey<Void> ACTION_TOGGLE_WIRELESS_SPEED_MODE =
+            new ClientActionKey<>("toggleWirelessSpeedMode");
+    private static final ClientActionKey<Void> ACTION_TOGGLE_FILTERED_IMPORT =
+            new ClientActionKey<>("toggleFilteredImport");
+    private static final ClientActionKey<Void> ACTION_NEXT_PAGE = new ClientActionKey<>("nextPage");
+    private static final ClientActionKey<Void> ACTION_PREV_PAGE = new ClientActionKey<>("prevPage");
 
     public static final MenuType<OverloadedPatternProviderMenu> TYPE = MenuTypeBuilder
             .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class)
@@ -58,13 +69,13 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu implement
         super(TYPE, id, playerInventory, host);
         this.host = host;
 
-        registerClientAction("toggleMode", this::toggleMode);
-        registerClientAction("toggleAutoReturn", this::toggleAutoReturn);
-        registerClientAction("toggleWirelessDispatchMode", this::toggleWirelessDispatchMode);
-        registerClientAction("toggleWirelessSpeedMode", this::toggleWirelessSpeedMode);
-        registerClientAction("toggleFilteredImport", this::toggleFilteredImport);
-        registerClientAction("nextPage", this::nextPage);
-        registerClientAction("prevPage", this::prevPage);
+        registerClientAction(ACTION_TOGGLE_MODE, this::toggleMode);
+        registerClientAction(ACTION_TOGGLE_AUTO_RETURN, this::toggleAutoReturn);
+        registerClientAction(ACTION_TOGGLE_WIRELESS_DISPATCH_MODE, this::toggleWirelessDispatchMode);
+        registerClientAction(ACTION_TOGGLE_WIRELESS_SPEED_MODE, this::toggleWirelessSpeedMode);
+        registerClientAction(ACTION_TOGGLE_FILTERED_IMPORT, this::toggleFilteredImport);
+        registerClientAction(ACTION_NEXT_PAGE, this::nextPage);
+        registerClientAction(ACTION_PREV_PAGE, this::prevPage);
 
         showPage(0);
         lastShownPage = -1;
@@ -162,23 +173,23 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu implement
     // -- Public forwarding methods for Screen button callbacks --
 
     public void clientToggleMode() {
-        sendClientAction("toggleMode");
+        sendClientAction(ACTION_TOGGLE_MODE);
     }
 
     public void clientToggleAutoReturn() {
-        sendClientAction("toggleAutoReturn");
+        sendClientAction(ACTION_TOGGLE_AUTO_RETURN);
     }
 
     public void clientToggleWirelessDispatchMode() {
-        sendClientAction("toggleWirelessDispatchMode");
+        sendClientAction(ACTION_TOGGLE_WIRELESS_DISPATCH_MODE);
     }
 
     public void clientToggleWirelessSpeedMode() {
-        sendClientAction("toggleWirelessSpeedMode");
+        sendClientAction(ACTION_TOGGLE_WIRELESS_SPEED_MODE);
     }
 
     public void clientToggleFilteredImport() {
-        sendClientAction("toggleFilteredImport");
+        sendClientAction(ACTION_TOGGLE_FILTERED_IMPORT);
     }
 
     // -- Client helpers --
@@ -208,11 +219,11 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu implement
     }
 
     public void clientNextPage() {
-        sendClientAction("nextPage");
+        sendClientAction(ACTION_NEXT_PAGE);
     }
 
     public void clientPrevPage() {
-        sendClientAction("prevPage");
+        sendClientAction(ACTION_PREV_PAGE);
     }
 
     @Override

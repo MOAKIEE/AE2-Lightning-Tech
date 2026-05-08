@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 
 import net.minecraft.core.Direction;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
@@ -31,6 +32,7 @@ import appeng.helpers.InterfaceLogicHost;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.InterfaceMenu;
 import appeng.menu.implementations.MenuTypeBuilder;
@@ -39,6 +41,17 @@ import appeng.api.inventories.InternalInventory;
 import appeng.menu.slot.AppEngSlot;
 
 public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_NEXT_PAGE = new ClientActionKey<>("nextPage");
+    private static final ClientActionKey<Void> ACTION_PREV_PAGE = new ClientActionKey<>("prevPage");
+    private static final ClientActionKey<Void> ACTION_CYCLE_INTERFACE_MODE =
+            new ClientActionKey<>("cycleInterfaceMode");
+    private static final ClientActionKey<Void> ACTION_CYCLE_EXPORT_MODE = new ClientActionKey<>("cycleExportMode");
+    private static final ClientActionKey<Void> ACTION_CYCLE_IMPORT_MODE = new ClientActionKey<>("cycleImportMode");
+    private static final ClientActionKey<Void> ACTION_CYCLE_ENERGY_DIR = new ClientActionKey<>("cycleEnergyDir");
+    private static final ClientActionKey<Void> ACTION_CYCLE_IO_SPEED = new ClientActionKey<>("cycleIOSpeed");
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_UNLIMITED =
+            new ClientActionKey<>("toggleUnlimited");
+    private static final ClientActionKey<Integer> ACTION_OPEN_SET_AMOUNT = new ClientActionKey<>("setAmount");
 
     private static final MenuTypeBuilder.MenuFactory<OverloadedInterfaceMenu, InterfaceLogicHost> FACTORY =
             OverloadedInterfaceMenu::new;
@@ -127,14 +140,14 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
         cSlots.addAll(getSlots(SlotSemantics.UPGRADE));
         this.containerSlotSet = cSlots;
 
-        registerClientAction("nextPage", this::nextPage);
-        registerClientAction("prevPage", this::prevPage);
-        registerClientAction("cycleInterfaceMode", this::cycleInterfaceMode);
-        registerClientAction("cycleExportMode", this::cycleExportMode);
-        registerClientAction("cycleImportMode", this::cycleImportMode);
-        registerClientAction("cycleEnergyDir", this::cycleEnergyDir);
-        registerClientAction("cycleIOSpeed", this::cycleIOSpeed);
-        registerClientAction("toggleUnlimited", Integer.class, this::toggleUnlimited);
+        registerClientAction(ACTION_NEXT_PAGE, this::nextPage);
+        registerClientAction(ACTION_PREV_PAGE, this::prevPage);
+        registerClientAction(ACTION_CYCLE_INTERFACE_MODE, this::cycleInterfaceMode);
+        registerClientAction(ACTION_CYCLE_EXPORT_MODE, this::cycleExportMode);
+        registerClientAction(ACTION_CYCLE_IMPORT_MODE, this::cycleImportMode);
+        registerClientAction(ACTION_CYCLE_ENERGY_DIR, this::cycleEnergyDir);
+        registerClientAction(ACTION_CYCLE_IO_SPEED, this::cycleIOSpeed);
+        registerClientAction(ACTION_TOGGLE_UNLIMITED, ByteBufCodecs.INT, this::toggleUnlimited);
 
         syncFromBE();
         int startPage = (host instanceof OverloadedInterfaceBlockEntity be)
@@ -224,14 +237,14 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
     public void nextPage() {
         if (isClientSide()) {
-            sendClientAction("nextPage");
+            sendClientAction(ACTION_NEXT_PAGE);
         }
         showPage(currentPage + 1);
     }
 
     public void prevPage() {
         if (isClientSide()) {
-            sendClientAction("prevPage");
+            sendClientAction(ACTION_PREV_PAGE);
         }
         showPage(currentPage - 1);
     }
@@ -239,7 +252,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     // ── Mode cycles ──────────────────────────────────────────────────────
 
     public void cycleInterfaceMode() {
-        if (isClientSide()) { sendClientAction("cycleInterfaceMode"); return; }
+        if (isClientSide()) { sendClientAction(ACTION_CYCLE_INTERFACE_MODE); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             var modes = OverloadedInterfaceBlockEntity.InterfaceMode.values();
             be.setInterfaceMode(modes[(interfaceMode + 1) % modes.length]);
@@ -248,7 +261,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     }
 
     public void cycleExportMode() {
-        if (isClientSide()) { sendClientAction("cycleExportMode"); return; }
+        if (isClientSide()) { sendClientAction(ACTION_CYCLE_EXPORT_MODE); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             var modes = OverloadedInterfaceBlockEntity.ExportMode.values();
             be.setExportMode(modes[(exportMode + 1) % modes.length]);
@@ -257,7 +270,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     }
 
     public void cycleImportMode() {
-        if (isClientSide()) { sendClientAction("cycleImportMode"); return; }
+        if (isClientSide()) { sendClientAction(ACTION_CYCLE_IMPORT_MODE); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             var modes = OverloadedInterfaceBlockEntity.ImportMode.values();
             be.setImportMode(modes[(importMode + 1) % modes.length]);
@@ -266,7 +279,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     }
 
     public void cycleEnergyDir() {
-        if (isClientSide()) { sendClientAction("cycleEnergyDir"); return; }
+        if (isClientSide()) { sendClientAction(ACTION_CYCLE_ENERGY_DIR); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             int next = energyDirOrdinal + 1;
             if (next >= 6) next = -1;
@@ -277,7 +290,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     }
 
     public void cycleIOSpeed() {
-        if (isClientSide()) { sendClientAction("cycleIOSpeed"); return; }
+        if (isClientSide()) { sendClientAction(ACTION_CYCLE_IO_SPEED); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             var modes = OverloadedInterfaceBlockEntity.IOSpeedMode.values();
             be.setIOSpeedMode(modes[(ioSpeedMode + 1) % modes.length]);
@@ -286,7 +299,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
     }
 
     public void toggleUnlimited(int slot) {
-        if (isClientSide()) { sendClientAction("toggleUnlimited", slot); return; }
+        if (isClientSide()) { sendClientAction(ACTION_TOGGLE_UNLIMITED, slot); return; }
         if (host instanceof OverloadedInterfaceBlockEntity be) {
             boolean nowUnlimited = !be.isSlotUnlimited(slot);
             be.setSlotUnlimited(slot, nowUnlimited);

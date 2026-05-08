@@ -5,6 +5,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -17,6 +18,7 @@ import appeng.api.orientation.RelativeSide;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
 import appeng.menu.ToolboxMenu;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 
@@ -25,6 +27,10 @@ import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
 
 public class LightningAssemblyChamberMenu extends AEBaseMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_TOGGLE_AUTO_EXPORT = new ClientActionKey<>("toggleAutoExport");
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_OUTPUT_SIDE = new ClientActionKey<>("toggleOutputSide");
+    private static final ClientActionKey<Void> ACTION_CLEAR_OUTPUT_SIDES = new ClientActionKey<>("clearOutputSides");
+
     public static final MenuType<LightningAssemblyChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber"))
@@ -81,9 +87,9 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
         setupUpgrades(host.getUpgrades());
         createPlayerInventorySlots(playerInventory);
 
-        registerClientAction("toggleAutoExport", this::toggleAutoExport);
-        registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
-        registerClientAction("clearOutputSides", this::clearOutputSides);
+        registerClientAction(ACTION_TOGGLE_AUTO_EXPORT, this::toggleAutoExport);
+        registerClientAction(ACTION_TOGGLE_OUTPUT_SIDE, ByteBufCodecs.INT, this::toggleOutputSide);
+        registerClientAction(ACTION_CLEAR_OUTPUT_SIDES, this::clearOutputSides);
     }
 
     private void addMachineSlots() {
@@ -241,15 +247,15 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
     }
 
     public void clientToggleAutoExport() {
-        sendClientAction("toggleAutoExport");
+        sendClientAction(ACTION_TOGGLE_AUTO_EXPORT);
     }
 
     public void clientToggleOutputSide(RelativeSide side) {
-        sendClientAction("toggleOutputSide", side.ordinal());
+        sendClientAction(ACTION_TOGGLE_OUTPUT_SIDE, side.ordinal());
     }
 
     public void clientClearOutputSides() {
-        sendClientAction("clearOutputSides");
+        sendClientAction(ACTION_CLEAR_OUTPUT_SIDES);
     }
 
     public LightningAssemblyChamberBlockEntity getHost() {

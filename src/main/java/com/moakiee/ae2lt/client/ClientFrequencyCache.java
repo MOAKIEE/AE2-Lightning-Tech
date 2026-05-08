@@ -14,8 +14,6 @@ import com.moakiee.ae2lt.grid.FrequencyMember;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.network.SyncFrequencyListPacket;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -73,10 +71,10 @@ public final class ClientFrequencyCache {
     }
 
     public static void updateMembers(int frequencyId, CompoundTag tag) {
-        ListTag list = tag.getList("members", Tag.TAG_COMPOUND);
+        var list = tag.getListOrEmpty("members");
         List<CachedMember> result = new ArrayList<>(list.size());
         for (int i = 0; i < list.size(); i++) {
-            FrequencyMember m = new FrequencyMember(list.getCompound(i));
+            FrequencyMember m = new FrequencyMember(list.getCompoundOrEmpty(i));
             result.add(new CachedMember(m.getPlayerUUID(), m.getCachedName(), m.getAccessLevel()));
         }
         members.put(frequencyId, result);
@@ -84,17 +82,17 @@ public final class ClientFrequencyCache {
     }
 
     public static void updateConnections(int frequencyId, CompoundTag tag) {
-        ListTag list = tag.getList("connections", Tag.TAG_COMPOUND);
+        var list = tag.getListOrEmpty("connections");
         List<CachedConnection> result = new ArrayList<>(list.size());
         for (int i = 0; i < list.size(); i++) {
-            CompoundTag e = list.getCompound(i);
+            CompoundTag e = list.getCompoundOrEmpty(i);
             result.add(new CachedConnection(
-                    e.getString("dim"),
-                    net.minecraft.core.BlockPos.of(e.getLong("pos")),
-                    e.getBoolean("controller"),
-                    e.getBoolean("advanced"),
-                    e.getBoolean("loaded"),
-                    e.contains("name") ? e.getString("name") : "block.ae2lt.wireless_receiver"));
+                    e.getStringOr("dim", "minecraft:overworld"),
+                    net.minecraft.core.BlockPos.of(e.getLongOr("pos", 0L)),
+                    e.getBooleanOr("controller", false),
+                    e.getBooleanOr("advanced", false),
+                    e.getBooleanOr("loaded", false),
+                    e.getStringOr("name", "block.ae2lt.wireless_receiver")));
         }
         connections.put(frequencyId, result);
         revision++;

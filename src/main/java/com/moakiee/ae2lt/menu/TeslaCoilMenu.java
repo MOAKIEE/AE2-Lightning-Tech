@@ -13,6 +13,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.menu.AEBaseMenu;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 
@@ -23,6 +24,8 @@ import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilMode;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilStatus;
 
 public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_CYCLE_MODE = new ClientActionKey<>("cycleMode");
+
     public static final MenuType<TeslaCoilMenu> TYPE = MenuTypeBuilder
             .create(TeslaCoilMenu::new, TeslaCoilBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.tesla_coil"))
@@ -78,7 +81,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
 
         createPlayerInventorySlots(playerInventory);
 
-        registerClientAction("cycleMode", this::cycleMode);
+        registerClientAction(ACTION_CYCLE_MODE, this::cycleMode);
     }
 
     @Override
@@ -229,7 +232,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
     }
 
     public void clientCycleMode() {
-        sendClientAction("cycleMode");
+        sendClientAction(ACTION_CYCLE_MODE);
     }
 
     public TeslaCoilBlockEntity getHost() {

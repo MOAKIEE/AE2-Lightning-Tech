@@ -6,6 +6,7 @@ import java.util.List;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -20,6 +21,7 @@ import net.neoforged.neoforge.fluids.FluidStack;
 import appeng.api.orientation.RelativeSide;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.menu.slot.AppEngSlot;
@@ -30,6 +32,14 @@ import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 
 public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_TOGGLE_AUTO_EXPORT = new ClientActionKey<>("toggleAutoExport");
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_OUTPUT_SIDE = new ClientActionKey<>("toggleOutputSide");
+    private static final ClientActionKey<Void> ACTION_CLEAR_OUTPUT_SIDES = new ClientActionKey<>("clearOutputSides");
+    private static final ClientActionKey<Void> ACTION_INSERT_FLUID = new ClientActionKey<>("insertFluid");
+    private static final ClientActionKey<Void> ACTION_EXTRACT_FLUID = new ClientActionKey<>("extractFluid");
+    private static final ClientActionKey<Void> ACTION_CLEAR_FLUID_TANK = new ClientActionKey<>("clearFluidTank");
+    private static final ClientActionKey<Void> ACTION_CYCLE_MODE = new ClientActionKey<>("cycleMode");
+
     public static final MenuType<CrystalCatalyzerMenu> TYPE = MenuTypeBuilder
             .create(CrystalCatalyzerMenu::new, CrystalCatalyzerBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.crystal_catalyzer"))
@@ -81,13 +91,13 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
 
         createPlayerInventorySlots(playerInventory);
 
-        registerClientAction("toggleAutoExport", this::toggleAutoExport);
-        registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
-        registerClientAction("clearOutputSides", this::clearOutputSides);
-        registerClientAction("insertFluid", this::insertFluidFromCarried);
-        registerClientAction("extractFluid", this::extractFluidToCarried);
-        registerClientAction("clearFluidTank", this::clearFluidTank);
-        registerClientAction("cycleMode", this::cycleMode);
+        registerClientAction(ACTION_TOGGLE_AUTO_EXPORT, this::toggleAutoExport);
+        registerClientAction(ACTION_TOGGLE_OUTPUT_SIDE, ByteBufCodecs.INT, this::toggleOutputSide);
+        registerClientAction(ACTION_CLEAR_OUTPUT_SIDES, this::clearOutputSides);
+        registerClientAction(ACTION_INSERT_FLUID, this::insertFluidFromCarried);
+        registerClientAction(ACTION_EXTRACT_FLUID, this::extractFluidToCarried);
+        registerClientAction(ACTION_CLEAR_FLUID_TANK, this::clearFluidTank);
+        registerClientAction(ACTION_CYCLE_MODE, this::cycleMode);
     }
 
     @Override
@@ -236,31 +246,31 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
     }
 
     public void clientCycleMode() {
-        sendClientAction("cycleMode");
+        sendClientAction(ACTION_CYCLE_MODE);
     }
 
     public void clientToggleAutoExport() {
-        sendClientAction("toggleAutoExport");
+        sendClientAction(ACTION_TOGGLE_AUTO_EXPORT);
     }
 
     public void clientToggleOutputSide(RelativeSide side) {
-        sendClientAction("toggleOutputSide", side.ordinal());
+        sendClientAction(ACTION_TOGGLE_OUTPUT_SIDE, side.ordinal());
     }
 
     public void clientClearOutputSides() {
-        sendClientAction("clearOutputSides");
+        sendClientAction(ACTION_CLEAR_OUTPUT_SIDES);
     }
 
     public void clientInsertFluid() {
-        sendClientAction("insertFluid");
+        sendClientAction(ACTION_INSERT_FLUID);
     }
 
     public void clientExtractFluid() {
-        sendClientAction("extractFluid");
+        sendClientAction(ACTION_EXTRACT_FLUID);
     }
 
     public void clientClearFluidTank() {
-        sendClientAction("clearFluidTank");
+        sendClientAction(ACTION_CLEAR_FLUID_TANK);
     }
 
     private void insertFluidFromCarried() {

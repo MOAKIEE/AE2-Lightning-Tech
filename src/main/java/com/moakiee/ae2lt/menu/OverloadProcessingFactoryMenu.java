@@ -6,6 +6,7 @@ import java.util.List;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -24,6 +25,7 @@ import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantic;
 import appeng.menu.SlotSemantics;
 import appeng.menu.ToolboxMenu;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 
@@ -36,6 +38,13 @@ import com.moakiee.ae2lt.machine.overloadfactory.recipe.OverloadProcessingRecipe
 import com.moakiee.ae2lt.me.key.LightningKey;
 
 public class OverloadProcessingFactoryMenu extends AEBaseMenu implements FrequencyBindingMenu {
+    private static final ClientActionKey<Void> ACTION_TOGGLE_AUTO_EXPORT = new ClientActionKey<>("toggleAutoExport");
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_OUTPUT_SIDE = new ClientActionKey<>("toggleOutputSide");
+    private static final ClientActionKey<Void> ACTION_CLEAR_OUTPUT_SIDES = new ClientActionKey<>("clearOutputSides");
+    private static final ClientActionKey<Integer> ACTION_INSERT_FLUID = new ClientActionKey<>("insertFluid");
+    private static final ClientActionKey<Integer> ACTION_EXTRACT_FLUID = new ClientActionKey<>("extractFluid");
+    private static final ClientActionKey<Integer> ACTION_CLEAR_FLUID_TANK = new ClientActionKey<>("clearFluidTank");
+
     public static final MenuType<OverloadProcessingFactoryMenu> TYPE = MenuTypeBuilder
             .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory"))
@@ -117,12 +126,12 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
         setupUpgrades(host.getUpgrades());
         createPlayerInventorySlots(playerInventory);
 
-        registerClientAction("toggleAutoExport", this::toggleAutoExport);
-        registerClientAction("toggleOutputSide", Integer.class, this::toggleOutputSide);
-        registerClientAction("clearOutputSides", this::clearOutputSides);
-        registerClientAction("insertFluid", Integer.class, this::insertFluidFromCarried);
-        registerClientAction("extractFluid", Integer.class, this::extractFluidToCarried);
-        registerClientAction("clearFluidTank", Integer.class, this::clearFluidTank);
+        registerClientAction(ACTION_TOGGLE_AUTO_EXPORT, this::toggleAutoExport);
+        registerClientAction(ACTION_TOGGLE_OUTPUT_SIDE, ByteBufCodecs.INT, this::toggleOutputSide);
+        registerClientAction(ACTION_CLEAR_OUTPUT_SIDES, this::clearOutputSides);
+        registerClientAction(ACTION_INSERT_FLUID, ByteBufCodecs.INT, this::insertFluidFromCarried);
+        registerClientAction(ACTION_EXTRACT_FLUID, ByteBufCodecs.INT, this::extractFluidToCarried);
+        registerClientAction(ACTION_CLEAR_FLUID_TANK, ByteBufCodecs.INT, this::clearFluidTank);
     }
 
     private void addMachineSlots() {
@@ -347,27 +356,27 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
     }
 
     public void clientToggleAutoExport() {
-        sendClientAction("toggleAutoExport");
+        sendClientAction(ACTION_TOGGLE_AUTO_EXPORT);
     }
 
     public void clientToggleOutputSide(RelativeSide side) {
-        sendClientAction("toggleOutputSide", side.ordinal());
+        sendClientAction(ACTION_TOGGLE_OUTPUT_SIDE, side.ordinal());
     }
 
     public void clientClearOutputSides() {
-        sendClientAction("clearOutputSides");
+        sendClientAction(ACTION_CLEAR_OUTPUT_SIDES);
     }
 
     public void clientInsertFluid(int tankIndex) {
-        sendClientAction("insertFluid", tankIndex);
+        sendClientAction(ACTION_INSERT_FLUID, tankIndex);
     }
 
     public void clientExtractFluid(int tankIndex) {
-        sendClientAction("extractFluid", tankIndex);
+        sendClientAction(ACTION_EXTRACT_FLUID, tankIndex);
     }
 
     public void clientClearFluidTank(int tankIndex) {
-        sendClientAction("clearFluidTank", tankIndex);
+        sendClientAction(ACTION_CLEAR_FLUID_TANK, tankIndex);
     }
 
     private void insertFluidFromCarried(Integer tankIndex) {

@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.menu;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.entity.player.Inventory;
@@ -14,6 +15,7 @@ import appeng.api.crafting.PatternDetailsHelper;
 import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 import appeng.menu.AEBaseMenu;
 import appeng.menu.SlotSemantics;
+import appeng.menu.guisync.ClientActionKey;
 import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 import appeng.util.inv.AppEngInternalInventory;
@@ -36,6 +38,8 @@ import com.moakiee.ae2lt.registry.ModItems;
  */
 public class OverloadPatternEncoderMenu extends AEBaseMenu {
     private static final int RESULT_SLOT_INDEX = 1;
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_INPUT_MODE = new ClientActionKey<>("toggleInputMode");
+    private static final ClientActionKey<Integer> ACTION_TOGGLE_OUTPUT_MODE = new ClientActionKey<>("toggleOutputMode");
 
     public static final MenuType<OverloadPatternEncoderMenu> TYPE = MenuTypeBuilder
             .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class)
@@ -104,8 +108,8 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
         addPlayerInventorySlots(playerInventory);
 
-        registerClientAction("toggleInputMode", Integer.class, this::toggleInputMode);
-        registerClientAction("toggleOutputMode", Integer.class, this::toggleOutputMode);
+        registerClientAction(ACTION_TOGGLE_INPUT_MODE, ByteBufCodecs.INT, this::toggleInputMode);
+        registerClientAction(ACTION_TOGGLE_OUTPUT_MODE, ByteBufCodecs.INT, this::toggleOutputMode);
     }
 
     @Override
@@ -134,11 +138,11 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
     }
 
     public void clientToggleInputMode(int slotIndex) {
-        sendClientAction("toggleInputMode", slotIndex);
+        sendClientAction(ACTION_TOGGLE_INPUT_MODE, slotIndex);
     }
 
     public void clientToggleOutputMode(int slotIndex) {
-        sendClientAction("toggleOutputMode", slotIndex);
+        sendClientAction(ACTION_TOGGLE_OUTPUT_MODE, slotIndex);
     }
 
     public ItemStack getInputPreviewStack(int slotIndex) {
