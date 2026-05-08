@@ -39,7 +39,7 @@ public final class ResearchRitualService {
 
     public static void handleLightning(ServerLevel level, LightningBolt lightningBolt) {
         BlockPos center = BlockPos.containing(lightningBolt.position());
-        LOG.debug("[ae2lt/ritual] handleLightning: dim={} strike={} ", level.dimension().location(), center);
+        LOG.debug("[ae2lt/ritual] handleLightning: dim={} strike={} ", level.dimension().identifier(), center);
         Set<BlockPos> visited = new HashSet<>();
         int ionizerHits = 0;
         for (BlockPos pos : BlockPos.betweenClosed(center.offset(-1, -4, -1), center.offset(1, 1, 1))) {
@@ -142,12 +142,12 @@ public final class ResearchRitualService {
         long gameTime = level.getGameTime();
         List<Vec3> positions = consumeParticipants(candidates);
 
-        int fragmentCount = 1 + level.random.nextInt(3);
+        int fragmentCount = 1 + level.getRandom().nextInt(3);
         for (int i = 0; i < fragmentCount; i++) {
             ItemEntity fragment = new ItemEntity(level, anchorNote.getX(), anchorNote.getY() + 0.1D, anchorNote.getZ(),
                     new ItemStack(ModItems.CHARRED_RITUAL_FRAGMENT.get()));
-            fragment.setDeltaMovement((level.random.nextDouble() - 0.5D) * 0.08D, 0.05D,
-                    (level.random.nextDouble() - 0.5D) * 0.08D);
+            fragment.setDeltaMovement((level.getRandom().nextDouble() - 0.5D) * 0.08D, 0.05D,
+                    (level.getRandom().nextDouble() - 0.5D) * 0.08D);
             ProtectedItemEntityHelper.applyOutputProtection(fragment, gameTime);
             level.addFreshEntity(fragment);
         }

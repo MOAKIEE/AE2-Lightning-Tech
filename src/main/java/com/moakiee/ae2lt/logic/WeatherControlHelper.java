@@ -22,14 +22,23 @@ public final class WeatherControlHelper {
     }
 
     public static void setClearWeather(ServerLevel level, int duration) {
-        level.setWeatherParameters(Math.max(1, duration), 0, false, false);
+        setWeather(level, Math.max(1, duration), 0, false, false);
     }
 
     public static void setRainWeather(ServerLevel level, int duration) {
-        level.setWeatherParameters(0, Math.max(1, duration), true, false);
+        setWeather(level, 0, Math.max(1, duration), true, false);
     }
 
     public static void setThunderstorm(ServerLevel level, int duration) {
-        level.setWeatherParameters(0, Math.max(1, duration), true, true);
+        setWeather(level, 0, Math.max(1, duration), true, true);
+    }
+
+    private static void setWeather(ServerLevel level, int clearTime, int weatherTime, boolean raining, boolean thundering) {
+        var weatherData = level.getWeatherData();
+        weatherData.setClearWeatherTime(clearTime);
+        weatherData.setRainTime(weatherTime);
+        weatherData.setThunderTime(weatherTime);
+        weatherData.setRaining(raining);
+        weatherData.setThundering(thundering);
     }
 }

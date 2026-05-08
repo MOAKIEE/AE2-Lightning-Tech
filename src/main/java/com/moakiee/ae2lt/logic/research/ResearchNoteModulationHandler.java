@@ -52,6 +52,6 @@ public final class ResearchNoteModulationHandler {
         // cost 必须 > 0,否则 AnvilMenu 在非创造模式下会把结果槽锁死;
         // 同时 cost 不能 >= 40,否则会触发 "Too Expensive!" 同样锁死。
         // 取 39 作为"最大可能值",既保证取得出又让调制成本足够显著。
-        event.setCost(39);
+        event.setXpCost(39);
     }
 }
