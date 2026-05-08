@@ -17,16 +17,14 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
@@ -2206,8 +2204,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     // ---- NBT persistence --------------------------------------------------------
 
-    private static final String TAG_W_SEND_LIST = "WirelessSendList";
-    private static final String TAG_W_SEND_CONN = "WirelessSendConn";
     private static final String TAG_WIRELESS_OVERFLOW = "ae2lt:wireless_overflow";
     private static final String TAG_OVERFLOW_PATTERNS = "patterns";
     private static final String TAG_OVERFLOW_PATTERN_ID = "id";
@@ -2224,53 +2220,51 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final String TAG_UNLOCK_TEMPLATE = "Ae2ltUnlockTemplate";
 
     @Override
-    public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    public void writeToNBT(ValueOutput output) {
         if (totalCapacity > 36) {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
             try {
-                super.writeToNBT(tag, registries);
+                super.writeToNBT(output);
             } finally {
                 accessor.setPatternInventory(realInv);
             }
             saveToSavedData();
         } else {
-            super.writeToNBT(tag, registries);
+            super.writeToNBT(output);
         }
-        tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
+        output.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
         if (pendingUnlockMatchMode != null) {
-            tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
+            output.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
         }
         if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
-            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
+            output.store(TAG_UNLOCK_TEMPLATE, ItemStack.OPTIONAL_CODEC, pendingUnlockTemplate);
         }
-        writeWirelessOverflowToNBT(tag, registries);
+        writeWirelessOverflowToNBT(output);
     }
 
     @Override
-    public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
-        super.readFromNBT(tag, registries);
+    public void readFromNBT(ValueInput input) {
+        super.readFromNBT(input);
         if (totalCapacity > 36) {
             needsSavedDataLoad = true;
         }
-        wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
+        wirelessRoundRobin = input.getIntOr(TAG_W_ROUND_ROBIN, 0);
         pendingUnlockMatchMode = null;
         pendingUnlockTemplate = null;
-        if (tag.contains(TAG_UNLOCK_MATCH_MODE, Tag.TAG_STRING)) {
+        var unlockMatchMode = input.getString(TAG_UNLOCK_MATCH_MODE).orElse(null);
+        if (unlockMatchMode != null) {
             try {
-                pendingUnlockMatchMode = MatchMode.valueOf(tag.getString(TAG_UNLOCK_MATCH_MODE));
+                pendingUnlockMatchMode = MatchMode.valueOf(unlockMatchMode);
             } catch (IllegalArgumentException ignored) {
                 pendingUnlockMatchMode = null;
             }
         }
-        if (tag.contains(TAG_UNLOCK_TEMPLATE, Tag.TAG_COMPOUND)) {
-            pendingUnlockTemplate = ItemStack.parseOptional(registries, tag.getCompound(TAG_UNLOCK_TEMPLATE));
-            if (pendingUnlockTemplate.isEmpty()) {
-                pendingUnlockTemplate = null;
-            }
-        }
-        readWirelessOverflowFromNBT(tag, registries);
+        pendingUnlockTemplate = input.read(TAG_UNLOCK_TEMPLATE, ItemStack.OPTIONAL_CODEC)
+                .filter(stack -> !stack.isEmpty())
+                .orElse(null);
+        readWirelessOverflowFromNBT(input);
         cachedOutputFilter = null;
         outputFilterDirty = true;
         invalidateValidConnectionsCache();
@@ -2305,11 +2299,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    private void writeWirelessOverflowToNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    private void writeWirelessOverflowToNBT(ValueOutput output) {
         if (pendingOverflowByConn.isEmpty()) return;
 
-        var overflowTag = new CompoundTag();
-        var patternList = new ListTag();
+        var overflowTag = output.child(TAG_WIRELESS_OVERFLOW);
+        var patternList = overflowTag.childrenList(TAG_OVERFLOW_PATTERNS);
         var remappedIds = new HashMap<Integer, Short>();
         short nextWriteId = 0;
 
@@ -2322,19 +2316,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             short writeId = nextWriteId++;
             remappedIds.put(runtimeId, writeId);
-            var patternTag = new CompoundTag();
+            var patternTag = patternList.addChild();
             patternTag.putShort(TAG_OVERFLOW_PATTERN_ID, writeId);
-            patternTag.put(TAG_OVERFLOW_PATTERN,
-                    pattern.getDefinition().toStack().saveOptional(registries));
-            patternList.add(patternTag);
+            patternTag.store(TAG_OVERFLOW_PATTERN, ItemStack.OPTIONAL_CODEC,
+                    pattern.getDefinition().toStack());
         }
-        overflowTag.put(TAG_OVERFLOW_PATTERNS, patternList);
 
-        var bucketList = new ListTag();
+        var bucketList = overflowTag.childrenList(TAG_OVERFLOW_BUCKETS);
         for (var entry : pendingOverflowByConn.object2ObjectEntrySet()) {
             var bucket = entry.getValue();
-            var bucketTag = new CompoundTag();
-            bucketTag.put(TAG_OVERFLOW_CONN, entry.getKey().toTag());
+            var bucketTag = bucketList.addChild();
+            entry.getKey().writeTo(bucketTag.child(TAG_OVERFLOW_CONN));
             bucketTag.putBoolean(TAG_OVERFLOW_COMPACT, bucket.compactMode);
             if (bucket.compactMode) {
                 var remapped = remappedIds.get(Short.toUnsignedInt(bucket.patternId));
@@ -2345,81 +2337,59 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 bucketTag.putShort(TAG_OVERFLOW_IDX, bucket.stuckIdx);
                 bucketTag.putLong(TAG_OVERFLOW_REMAINING, bucket.remaining);
             } else {
-                var fallback = new ListTag();
+                var fallback = bucketTag.childrenList(TAG_OVERFLOW_FALLBACK);
                 for (var stack : bucket.fallbackList) {
-                    fallback.add(GenericStack.writeTag(registries, stack));
+                    GenericStack.writeTag(fallback.addChild(), stack);
                 }
-                bucketTag.put(TAG_OVERFLOW_FALLBACK, fallback);
             }
-            bucketList.add(bucketTag);
         }
-        overflowTag.put(TAG_OVERFLOW_BUCKETS, bucketList);
-        tag.put(TAG_WIRELESS_OVERFLOW, overflowTag);
     }
 
-    private void readWirelessOverflowFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    private void readWirelessOverflowFromNBT(ValueInput input) {
         clearWirelessOverflowState();
 
-        if (tag.contains(TAG_WIRELESS_OVERFLOW, Tag.TAG_COMPOUND)) {
-            var overflowTag = tag.getCompound(TAG_WIRELESS_OVERFLOW);
-            var patterns = overflowTag.getList(TAG_OVERFLOW_PATTERNS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < patterns.size(); i++) {
-                var patternTag = patterns.getCompound(i);
-                int id = Short.toUnsignedInt(patternTag.getShort(TAG_OVERFLOW_PATTERN_ID));
-                var stack = ItemStack.parseOptional(registries,
-                        patternTag.getCompound(TAG_OVERFLOW_PATTERN));
+        var overflowTag = input.child(TAG_WIRELESS_OVERFLOW).orElse(null);
+        if (overflowTag != null) {
+            for (var patternTag : overflowTag.childrenListOrEmpty(TAG_OVERFLOW_PATTERNS)) {
+                int id = Short.toUnsignedInt((short) patternTag.getShortOr(TAG_OVERFLOW_PATTERN_ID, (short) 0));
+                var stack = patternTag.read(TAG_OVERFLOW_PATTERN, ItemStack.OPTIONAL_CODEC)
+                        .orElse(ItemStack.EMPTY);
                 if (!stack.isEmpty()) {
                     pendingOverflowPatternDefinitions.put(id, stack);
                 }
             }
 
-            var buckets = overflowTag.getList(TAG_OVERFLOW_BUCKETS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < buckets.size(); i++) {
-                var bucketTag = buckets.getCompound(i);
-                if (!bucketTag.contains(TAG_OVERFLOW_CONN, Tag.TAG_COMPOUND)) continue;
-                var conn = WirelessConnection.fromTag(bucketTag.getCompound(TAG_OVERFLOW_CONN));
-                boolean compact = bucketTag.getBoolean(TAG_OVERFLOW_COMPACT);
+            for (var bucketTag : overflowTag.childrenListOrEmpty(TAG_OVERFLOW_BUCKETS)) {
+                var connInput = bucketTag.child(TAG_OVERFLOW_CONN).orElse(null);
+                if (connInput == null) continue;
+                var conn = WirelessConnection.fromInput(connInput);
+                boolean compact = bucketTag.getBooleanOr(TAG_OVERFLOW_COMPACT, false);
                 if (compact) {
                     pendingOverflowBuckets.add(new PendingBucketLoad(
                             conn,
-                            bucketTag.getShort(TAG_OVERFLOW_PID),
-                            bucketTag.getShort(TAG_OVERFLOW_IDX),
-                            bucketTag.getLong(TAG_OVERFLOW_REMAINING),
+                            (short) bucketTag.getShortOr(TAG_OVERFLOW_PID, (short) 0),
+                            (short) bucketTag.getShortOr(TAG_OVERFLOW_IDX, (short) 0),
+                            bucketTag.getLongOr(TAG_OVERFLOW_REMAINING, 0L),
                             List.of(),
                             true));
                 } else {
-                    var fallback = readGenericStackList(registries,
-                            bucketTag.getList(TAG_OVERFLOW_FALLBACK, Tag.TAG_COMPOUND));
+                    var fallback = readGenericStackList(
+                            bucketTag.childrenListOrEmpty(TAG_OVERFLOW_FALLBACK));
                     if (!fallback.isEmpty()) {
                         pendingOverflowBuckets.add(new PendingBucketLoad(
                                 conn, (short) 0, (short) 0, 0, fallback, false));
                     }
                 }
             }
-        } else {
-            readLegacyWirelessOverflowFromNBT(tag, registries);
         }
 
         finishPendingWirelessOverflowLoad();
     }
 
-    private void readLegacyWirelessOverflowFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
-        if (!tag.contains(TAG_W_SEND_LIST, Tag.TAG_LIST)
-                || !tag.contains(TAG_W_SEND_CONN, Tag.TAG_COMPOUND)) {
-            return;
-        }
-        var fallback = readGenericStackList(registries, tag.getList(TAG_W_SEND_LIST, Tag.TAG_COMPOUND));
-        if (!fallback.isEmpty()) {
-            pendingOverflowBuckets.add(new PendingBucketLoad(
-                    WirelessConnection.fromTag(tag.getCompound(TAG_W_SEND_CONN)),
-                    (short) 0, (short) 0, 0, fallback, false));
-        }
-    }
-
-    private static List<GenericStack> readGenericStackList(HolderLookup.Provider registries, ListTag list) {
-        var stacks = new ArrayList<GenericStack>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            var stack = GenericStack.readTag(registries, list.getCompound(i));
+    private static List<GenericStack> readGenericStackList(ValueInput.ValueInputList list) {
+        var stacks = new ArrayList<GenericStack>();
+        for (var stackInput : list) {
+            var stack = GenericStack.readTag(stackInput);
             if (stack != null && stack.amount() > 0) {
                 stacks.add(stack);
             }
