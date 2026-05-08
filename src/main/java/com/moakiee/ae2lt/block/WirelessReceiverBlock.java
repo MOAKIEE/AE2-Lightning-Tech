@@ -47,7 +47,7 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
                     if (freq != null
                             && !freq.getPlayerAccess(sp).canUse()
                             && freq.getSecurity() != FrequencySecurityLevel.ENCRYPTED) {
-                        sp.displayClientMessage(
+                        sp.sendSystemMessage(
                                 Component.translatable("ae2lt.gui.error.no_access")
                                         .withStyle(ChatFormatting.RED),
                                 true);

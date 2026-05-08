@@ -5,12 +5,12 @@ import java.util.List;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
@@ -289,15 +289,15 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
     // ── Persistence ──
 
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putInt("FrequencyId", frequencyId);
     }
 
     @Override
-    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadTag(tag, registries);
-        frequencyId = tag.contains("FrequencyId") ? tag.getInt("FrequencyId") : -1;
+    public void loadTag(ValueInput tag) {
+        super.loadTag(tag);
+        frequencyId = tag.getIntOr("FrequencyId", -1);
     }
 
     @Override

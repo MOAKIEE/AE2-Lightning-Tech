@@ -12,6 +12,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 public class FumoBlockEntity extends BlockEntity {
 
@@ -52,15 +54,15 @@ public class FumoBlockEntity extends BlockEntity {
     }
 
     @Override
-    protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    protected void saveAdditional(ValueOutput tag) {
+        super.saveAdditional(tag);
         tag.putBoolean(TAG_SPINNING, spinning);
     }
 
     @Override
-    protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadAdditional(tag, registries);
-        spinning = tag.getBoolean(TAG_SPINNING);
+    protected void loadAdditional(ValueInput tag) {
+        super.loadAdditional(tag);
+        spinning = tag.getBooleanOr(TAG_SPINNING, false);
     }
 
     @Override
