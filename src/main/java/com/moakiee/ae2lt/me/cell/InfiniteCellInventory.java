@@ -10,6 +10,7 @@ import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.UUIDUtil;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -236,13 +237,12 @@ public class InfiniteCellInventory implements StorageCell {
 
     private @Nullable UUID readCellId() {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.hasUUID(TAG_CELL_ID)) return null;
-        return tag.getUUID(TAG_CELL_ID);
+        return tag.read(TAG_CELL_ID, UUIDUtil.CODEC).orElse(null);
     }
 
     private void writeCellId(UUID id) {
         CustomData.update(DataComponents.CUSTOM_DATA, stack,
-                tag -> tag.putUUID(TAG_CELL_ID, id));
+                tag -> tag.store(TAG_CELL_ID, UUIDUtil.CODEC, id));
     }
 
     private void clearCellId() {

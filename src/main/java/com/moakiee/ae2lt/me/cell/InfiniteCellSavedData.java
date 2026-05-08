@@ -114,7 +114,7 @@ public final class InfiniteCellSavedData extends SavedData {
     private static InfiniteCellSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
         var data = new InfiniteCellSavedData();
         CompoundTag cellsTag = tag.getCompoundOrEmpty("cells");
-        for (String key : cellsTag.getAllKeys()) {
+        for (String key : cellsTag.keySet()) {
             try {
                 cellsTag.getCompound(key).ifPresent(cellTag -> data.cells.put(UUID.fromString(key), cellTag));
             } catch (IllegalArgumentException ignored) {}

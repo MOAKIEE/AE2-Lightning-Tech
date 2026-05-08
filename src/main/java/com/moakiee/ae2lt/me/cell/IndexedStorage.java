@@ -7,12 +7,14 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.KeyCounter;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.level.storage.TagValueInput;
+import net.minecraft.world.level.storage.TagValueOutput;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.LongArrayTag;
-import net.minecraft.nbt.Tag;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 
@@ -208,7 +210,7 @@ final class IndexedStorage {
     // ══════════════════════════════════════════════════════════════════════
 
     CompoundTag persist(@Nullable CompoundTag lastRoot, HolderLookup.Provider registries) {
-        return persist(lastRoot, (key, reg) -> key.toTagGeneric(reg), registries);
+        return persist(lastRoot, IndexedStorage::writeKeyTag, registries);
     }
 
     CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, HolderLookup.Provider registries) {
@@ -220,9 +222,9 @@ final class IndexedStorage {
             return persistFull(keySerializer, registries);
         }
 
-        ListTag keys = lastRoot.getList("keys", Tag.TAG_COMPOUND);
-        long[] pLo = lastRoot.getLongArray("lo");
-        long[] pHi = lastRoot.getLongArray("hi");
+        ListTag keys = lastRoot.getListOrEmpty("keys");
+        long[] pLo = lastRoot.getLongArray("lo").orElse(new long[0]);
+        long[] pHi = lastRoot.getLongArray("hi").orElse(new long[0]);
 
         int tagLen = alignPow2(nextId);
         if (pLo.length < nextId) {
@@ -358,9 +360,9 @@ final class IndexedStorage {
         typeAmountLo.clear();
         typeAmountHi.clear();
 
-        ListTag keys = root.getList("keys", Tag.TAG_COMPOUND);
-        long[] pLo = root.getLongArray("lo");
-        long[] pHi = root.getLongArray("hi");
+        ListTag keys = root.getListOrEmpty("keys");
+        long[] pLo = root.getLongArray("lo").orElse(new long[0]);
+        long[] pHi = root.getLongArray("hi").orElse(new long[0]);
         int size = keys.size();
         ensureCapacity(size);
         nextId = size;
@@ -369,12 +371,13 @@ final class IndexedStorage {
             inQueue[id] = false;
             isStructDirty[id] = false;
 
-            CompoundTag entry = keys.getCompound(id);
-            if (!entry.contains("key")) {
+            CompoundTag entry = keys.getCompoundOrEmpty(id);
+            var keyTag = entry.getCompound("key").orElse(null);
+            if (keyTag == null) {
                 addFree(id);
                 continue;
             }
-            AEKey key = AEKey.fromTagGeneric(registries, entry.getCompound("key"));
+            AEKey key = readKeyTag(keyTag, registries);
             if (key == null) {
                 addFree(id);
                 continue;
@@ -384,7 +387,7 @@ final class IndexedStorage {
             idToKey[id] = key;
             lo[id] = id < pLo.length ? pLo[id] : 0L;
             hi[id] = id < pHi.length ? pHi[id] : 0L;
-            serializedKey[id] = entry.getCompound("key");
+            serializedKey[id] = keyTag.copy();
             totalTypes++;
 
             AEKeyType kt = key.getType();
@@ -465,5 +468,15 @@ final class IndexedStorage {
         isStructDirty = new boolean[capacity];
         dirtyQueue = new int[64];
         freeIds = new int[64];
+    }
+
+    private static CompoundTag writeKeyTag(AEKey key, HolderLookup.Provider registries) {
+        var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
+        key.toTagGeneric(output);
+        return output.buildResult();
+    }
+
+    private static @Nullable AEKey readKeyTag(CompoundTag tag, HolderLookup.Provider registries) {
+        return AEKey.fromTagGeneric(TagValueInput.create(ProblemReporter.DISCARDING, registries, tag));
     }
 }
