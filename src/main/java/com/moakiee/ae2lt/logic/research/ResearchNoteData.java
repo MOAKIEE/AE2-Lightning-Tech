@@ -33,15 +33,14 @@ public record ResearchNoteData(
 
     public static boolean isBlank(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return !tag.contains(TAG_GOAL, Tag.TAG_STRING);
+        return !tag.contains(TAG_GOAL);
     }
 
     public static @Nullable RitualGoal readForcedGoal(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_FORCED_GOAL, Tag.TAG_STRING)) {
-            return null;
-        }
-        return RitualGoal.fromName(tag.getString(TAG_FORCED_GOAL));
+        return tag.getString(TAG_FORCED_GOAL)
+                .map(RitualGoal::fromName)
+                .orElse(null);
     }
 
     public static void writeForcedGoal(ItemStack stack, RitualGoal goal) {
@@ -55,18 +54,18 @@ public record ResearchNoteData(
 
     public static @Nullable ResearchNoteData read(ItemStack stack) {
         CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_GOAL, Tag.TAG_STRING)) {
+        if (!tag.contains(TAG_GOAL)) {
             return null;
         }
 
-        RitualGoal goal = RitualGoal.fromName(tag.getString(TAG_GOAL));
+        RitualGoal goal = RitualGoal.fromName(tag.getStringOr(TAG_GOAL, ""));
         if (goal == null) {
             return null;
         }
 
         UUID ritualSeed;
         try {
-            ritualSeed = UUID.fromString(tag.getString(TAG_RITUAL_SEED));
+            ritualSeed = UUID.fromString(tag.getStringOr(TAG_RITUAL_SEED, ""));
         } catch (IllegalArgumentException ignored) {
             return null;
         }
@@ -78,7 +77,7 @@ public record ResearchNoteData(
         }
 
         return new ResearchNoteData(ritualSeed, goal, List.copyOf(recipeItems), List.copyOf(descriptionKeys),
-                tag.getBoolean(TAG_CONSUMED));
+                tag.getBooleanOr(TAG_CONSUMED, false));
     }
 
     public void writeTo(ItemStack stack) {
@@ -101,13 +100,13 @@ public record ResearchNoteData(
 
     private static List<Identifier> readResourceLocationList(CompoundTag tag, String key) {
         List<Identifier> values = new ArrayList<>();
-        ListTag listTag = tag.getList(key, Tag.TAG_STRING);
+        ListTag listTag = tag.getListOrEmpty(key);
         for (Tag element : listTag) {
             if (!(element instanceof StringTag stringTag)) {
                 continue;
             }
 
-            Identifier id = Identifier.tryParse(stringTag.getAsString());
+            Identifier id = Identifier.tryParse(stringTag.value());
             if (id != null) {
                 values.add(id);
             }
@@ -117,10 +116,10 @@ public record ResearchNoteData(
 
     private static List<String> readStringList(CompoundTag tag, String key) {
         List<String> values = new ArrayList<>();
-        ListTag listTag = tag.getList(key, Tag.TAG_STRING);
+        ListTag listTag = tag.getListOrEmpty(key);
         for (Tag element : listTag) {
             if (element instanceof StringTag stringTag) {
-                values.add(stringTag.getAsString());
+                values.add(stringTag.value());
             }
         }
         return values;
