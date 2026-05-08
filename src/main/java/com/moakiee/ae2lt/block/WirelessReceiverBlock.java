@@ -23,8 +23,12 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
  */
 public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlockEntity> {
 
+    public WirelessReceiverBlock(Properties properties) {
+        super(metalProps(properties));
+    }
+
     public WirelessReceiverBlock() {
-        super(metalProps(Properties.of()));
+        this(Properties.of());
     }
 
     @Override

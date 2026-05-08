@@ -15,8 +15,12 @@ import appeng.menu.locator.MenuLocators;
 
 public class OverloadedInterfaceBlock extends AEBaseEntityBlock<OverloadedInterfaceBlockEntity> {
 
+    public OverloadedInterfaceBlock(Properties properties) {
+        super(metalProps(properties).forceSolidOn());
+    }
+
     public OverloadedInterfaceBlock() {
-        super(metalProps(Properties.of()).forceSolidOn());
+        this(Properties.of());
     }
 
     @Override

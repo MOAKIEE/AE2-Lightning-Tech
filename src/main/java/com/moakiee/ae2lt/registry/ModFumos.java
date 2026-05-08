@@ -2,6 +2,8 @@ package com.moakiee.ae2lt.registry;
 
 import com.moakiee.ae2lt.block.FumoBlock;
 import com.moakiee.ae2lt.item.FumoBlockItem;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredBlock;
@@ -24,16 +26,25 @@ public final class ModFumos {
     }
 
     public static void register() {
-        MOAKIEE_FUMO = ModBlocks.BLOCKS.register("moakiee_fumo", FumoBlock::new);
-        MOAKIEE_FUMO_ITEM = ModItems.ITEMS.register("moakiee_fumo",
-                () -> new BlockItem(MOAKIEE_FUMO.get(), new Item.Properties()));
-        CYSTRYSU_FUMO = ModBlocks.BLOCKS.register("cystrysu_fumo", FumoBlock::new);
-        CYSTRYSU_FUMO_ITEM = ModItems.ITEMS.register("cystrysu_fumo",
-                () -> new BlockItem(CYSTRYSU_FUMO.get(), new Item.Properties()));
+        MOAKIEE_FUMO = ModBlocks.BLOCKS.register("moakiee_fumo", id ->
+                new FumoBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+                        .setId(ResourceKey.create(Registries.BLOCK, id))));
+        MOAKIEE_FUMO_ITEM = ModItems.ITEMS.register("moakiee_fumo", id ->
+                new BlockItem(MOAKIEE_FUMO.get(), new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, id))));
+        CYSTRYSU_FUMO = ModBlocks.BLOCKS.register("cystrysu_fumo", id ->
+                new FumoBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+                        .setId(ResourceKey.create(Registries.BLOCK, id))));
+        CYSTRYSU_FUMO_ITEM = ModItems.ITEMS.register("cystrysu_fumo", id ->
+                new BlockItem(CYSTRYSU_FUMO.get(), new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, id))));
 
-        PIGMEE_FUMO = ModBlocks.BLOCKS.register("pigmee_fumo", FumoBlock::new);
-        PIGMEE_FUMO_ITEM = ModItems.ITEMS.register("pigmee_fumo",
-                () -> new FumoBlockItem(PIGMEE_FUMO.get(), new Item.Properties(),
+        PIGMEE_FUMO = ModBlocks.BLOCKS.register("pigmee_fumo", id ->
+                new FumoBlock(net.minecraft.world.level.block.state.BlockBehaviour.Properties.of()
+                        .setId(ResourceKey.create(Registries.BLOCK, id))));
+        PIGMEE_FUMO_ITEM = ModItems.ITEMS.register("pigmee_fumo", id ->
+                new FumoBlockItem(PIGMEE_FUMO.get(), new Item.Properties()
+                        .setId(ResourceKey.create(Registries.ITEM, id)),
                         "tooltip.ae2lt.pigmee_fumo"));
     }
 }

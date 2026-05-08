@@ -41,11 +41,15 @@ public class LightningSimulationChamberBlock extends AEBaseEntityBlock<Lightning
     private static final EnumMap<Direction, VoxelShape> SHAPES = BlockShapeHelper.createHorizontalFacingShapes(
             NORTH_SHAPE);
 
-    public LightningSimulationChamberBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public LightningSimulationChamberBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH));
+    }
+
+    public LightningSimulationChamberBlock() {
+        this(Properties.of());
     }
 
     @Override

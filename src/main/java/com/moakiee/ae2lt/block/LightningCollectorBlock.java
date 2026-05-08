@@ -29,9 +29,13 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
             Block.box(6, 12, 12, 10, 16, 16),
             Block.box(12, 12, 6, 16, 16, 10));
 
-    public LightningCollectorBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public LightningCollectorBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState().setValue(WORKING, false));
+    }
+
+    public LightningCollectorBlock() {
+        this(Properties.of());
     }
 
     @Override

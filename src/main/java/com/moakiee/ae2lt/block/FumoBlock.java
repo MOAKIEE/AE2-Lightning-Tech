@@ -45,8 +45,8 @@ public class FumoBlock extends Block implements EntityBlock {
     private static final VoxelShape SHAPE_WEST = Block.box(4, 0, 3.8, 14.7, 13.6, 12.2);
     private static final VoxelShape SHAPE_EAST = Block.box(1.3, 0, 3.8, 12, 13.6, 12.2);
 
-    public FumoBlock() {
-        super(BlockBehaviour.Properties.of()
+    public FumoBlock(BlockBehaviour.Properties properties) {
+        super(properties
                 .mapColor(MapColor.NONE)
                 .sound(SoundType.WOOL)
                 .strength(0.5f)
@@ -54,6 +54,10 @@ public class FumoBlock extends Block implements EntityBlock {
         this.registerDefaultState(this.stateDefinition.any()
                 .setValue(FACING, Direction.NORTH)
                 .setValue(WATERLOGGED, false));
+    }
+
+    public FumoBlock() {
+        this(BlockBehaviour.Properties.of());
     }
 
     @Override

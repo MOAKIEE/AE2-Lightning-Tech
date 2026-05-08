@@ -33,11 +33,15 @@ import appeng.menu.me.networktool.NetworkStatusMenu;
  */
 public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedControllerBlockEntity> {
 
-    public OverloadedControllerBlock() {
-        super(metalProps(Properties.of()).forceSolidOn().strength(6.0F));
+    public OverloadedControllerBlock(Properties properties) {
+        super(metalProps(properties).forceSolidOn().strength(6.0F));
         registerDefaultState(defaultBlockState()
                 .setValue(ControllerBlock.CONTROLLER_STATE, ControllerBlock.ControllerBlockState.offline)
                 .setValue(ControllerBlock.CONTROLLER_TYPE, ControllerBlock.ControllerRenderType.block));
+    }
+
+    public OverloadedControllerBlock() {
+        this(Properties.of());
     }
 
     @Override

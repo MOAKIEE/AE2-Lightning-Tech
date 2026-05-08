@@ -29,11 +29,15 @@ import org.jetbrains.annotations.Nullable;
 public class OverloadProcessingFactoryBlock extends AEBaseEntityBlock<OverloadProcessingFactoryBlockEntity> {
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
 
-    public OverloadProcessingFactoryBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public OverloadProcessingFactoryBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(BlockStateProperties.HORIZONTAL_FACING, Direction.NORTH));
+    }
+
+    public OverloadProcessingFactoryBlock() {
+        this(Properties.of());
     }
 
     @Override

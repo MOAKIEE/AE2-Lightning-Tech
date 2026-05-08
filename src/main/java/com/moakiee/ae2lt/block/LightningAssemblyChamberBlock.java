@@ -23,11 +23,15 @@ public class LightningAssemblyChamberBlock extends AEBaseEntityBlock<LightningAs
     public static final BooleanProperty WORKING = BooleanProperty.create("working");
     public static final BooleanProperty POWERED = BooleanProperty.create("powered");
 
-    public LightningAssemblyChamberBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public LightningAssemblyChamberBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(POWERED, false));
+    }
+
+    public LightningAssemblyChamberBlock() {
+        this(Properties.of());
     }
 
     @Override

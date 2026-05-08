@@ -61,11 +61,15 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
             Block.box(6, 0, 6, 10, 4, 10),
             Block.box(6, 4, 6, 10, 8, 10));
 
-    public AtmosphericIonizerBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public AtmosphericIonizerBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(HALF, DoubleBlockHalf.LOWER));
+    }
+
+    public AtmosphericIonizerBlock() {
+        this(Properties.of());
     }
 
     @Override

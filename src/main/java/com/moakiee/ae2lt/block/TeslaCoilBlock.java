@@ -73,12 +73,16 @@ public class TeslaCoilBlock extends AEBaseEntityBlock<TeslaCoilBlockEntity> {
             Block.box(7.5, 10, 10, 8.5, 12, 15),
             Block.box(1, 10, 7.5, 6, 12, 8.5));
 
-    public TeslaCoilBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public TeslaCoilBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH)
                 .setValue(HALF, DoubleBlockHalf.LOWER));
+    }
+
+    public TeslaCoilBlock() {
+        this(Properties.of());
     }
 
     @Override

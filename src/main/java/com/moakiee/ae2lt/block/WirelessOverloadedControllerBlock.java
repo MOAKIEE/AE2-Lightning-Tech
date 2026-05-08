@@ -7,6 +7,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockBehaviour.Properties;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
@@ -20,6 +21,14 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
  * Opens the frequency management GUI on right-click.
  */
 public class WirelessOverloadedControllerBlock extends OverloadedControllerBlock {
+
+    public WirelessOverloadedControllerBlock(Properties properties) {
+        super(properties);
+    }
+
+    public WirelessOverloadedControllerBlock() {
+        this(Properties.of());
+    }
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,

@@ -46,11 +46,15 @@ public class CrystalCatalyzerBlock extends AEBaseEntityBlock<CrystalCatalyzerBlo
     private static final EnumMap<Direction, VoxelShape> SHAPES =
             BlockShapeHelper.createHorizontalFacingShapes(UPRIGHT_SHAPE);
 
-    public CrystalCatalyzerBlock() {
-        super(metalProps(Properties.of()).noOcclusion().forceSolidOn());
+    public CrystalCatalyzerBlock(Properties properties) {
+        super(metalProps(properties).noOcclusion().forceSolidOn());
         registerDefaultState(defaultBlockState()
                 .setValue(WORKING, false)
                 .setValue(FACING, Direction.NORTH));
+    }
+
+    public CrystalCatalyzerBlock() {
+        this(Properties.of());
     }
 
     @Override
