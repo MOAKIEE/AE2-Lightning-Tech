@@ -323,7 +323,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                 || lightningCost <= 0
                 || (itemInputs.isEmpty() && fluidInput.isEmpty())
                 || (itemResults.isEmpty() && fluidResult.isEmpty())
-                || itemInputs.stream().anyMatch(input -> input.ingredient().hasNoItems());
+                || itemInputs.stream().anyMatch(input -> input.ingredient().isEmpty());
     }
 
     private FluidStack rawFluidInput() {
