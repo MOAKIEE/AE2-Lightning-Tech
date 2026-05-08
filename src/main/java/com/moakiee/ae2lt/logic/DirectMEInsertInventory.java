@@ -4,6 +4,8 @@ import java.util.function.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.neoforged.neoforge.transfer.transaction.TransactionContext;
+
 import appeng.api.behaviors.GenericInternalInventory;
 import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
@@ -109,4 +111,7 @@ public class DirectMEInsertInventory implements GenericInternalInventory {
 
     @Override
     public void onChange() {}
+
+    @Override
+    public void updateSnapshots(TransactionContext transaction) {}
 }
