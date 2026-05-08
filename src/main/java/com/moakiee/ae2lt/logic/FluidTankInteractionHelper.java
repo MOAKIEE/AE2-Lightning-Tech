@@ -53,11 +53,12 @@ public final class FluidTankInteractionHelper {
             return true;
         }
 
-        int selected = player.getInventory().selected;
-        if (selected < 0 || selected >= player.getInventory().items.size()) {
+        var inventory = player.getInventory();
+        int selected = inventory.getSelectedSlot();
+        if (selected < 0 || selected >= inventory.getNonEquipmentItems().size()) {
             return false;
         }
-        ItemStack hotbar = player.getInventory().items.get(selected);
+        ItemStack hotbar = inventory.getItem(selected);
         if (hotbar.isEmpty()) {
             return false;
         }
@@ -69,12 +70,12 @@ public final class FluidTankInteractionHelper {
         // 消耗主手 1 个,尝试把结果放回同一槽位(同类型则直接增量);放不下就 stash 到背包 / 光标。
         hotbar.shrink(1);
         if (hotbar.isEmpty()) {
-            player.getInventory().items.set(selected, ItemStack.EMPTY);
+            inventory.setItem(selected, ItemStack.EMPTY);
         }
         if (!result.isEmpty()) {
-            ItemStack slotStack = player.getInventory().items.get(selected);
+            ItemStack slotStack = inventory.getItem(selected);
             if (slotStack.isEmpty()) {
-                player.getInventory().items.set(selected, result);
+                inventory.setItem(selected, result);
             } else if (ItemStack.isSameItemSameComponents(slotStack, result)
                     && slotStack.getCount() + result.getCount() <= slotStack.getMaxStackSize()) {
                 slotStack.grow(result.getCount());
