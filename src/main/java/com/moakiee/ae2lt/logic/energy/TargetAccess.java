@@ -9,9 +9,8 @@ package com.moakiee.ae2lt.logic.energy;
  * trampoline that the bridge layer used to do on every simulate/send call.
  *
  * <p>This interface itself has zero external dependencies, so loading it
- * never triggers AppFlux/Mekanism/etc class initialization. The concrete
- * implementations live inside {@link AppFluxAccess} (package-private and
- * lazily loaded together with AppFlux types).
+ * never triggers optional mod class initialization. The 26.1.2 branch does
+ * not currently bind any third-party target implementation.
  */
 public interface TargetAccess {
 

@@ -28,10 +28,8 @@ import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem.CellOutcome;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.neoforged.bus.api.IEventBus;
@@ -617,7 +615,6 @@ public class AE2LightningTech {
             Upgrades.add(AEItems.CRAFTING_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
             Upgrades.add(AEItems.FUZZY_CARD, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
 
-            registerAppliedFluxInductionCardCompat();
             registerOverloadTntDispenseBehavior();
 
         });
@@ -656,17 +653,6 @@ public class AE2LightningTech {
                         return stack;
                     }
                 });
-    }
-
-    private static void registerAppliedFluxInductionCardCompat() {
-        var inductionId = Identifier.fromNamespaceAndPath("appflux", "induction_card");
-        Item inductionCard = net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(inductionId);
-        if (inductionCard == null || inductionCard == net.minecraft.world.item.Items.AIR) {
-            return;
-        }
-
-        Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
-        Upgrades.add(inductionCard, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
     }
 
     private void onServerStarting(ServerStartingEvent event) {
