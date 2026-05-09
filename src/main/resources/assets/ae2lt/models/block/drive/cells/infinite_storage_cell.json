@@ -1,5 +1,5 @@
 {
-  "parent": "ae2:block/drive/cells/creative_cell",
+  "parent": "ae2:block/drive_creative_cell",
   "textures": {
     "cell": "ae2lt:block/drive/drive_cells",
     "particle": "ae2lt:block/drive/drive_cells"
