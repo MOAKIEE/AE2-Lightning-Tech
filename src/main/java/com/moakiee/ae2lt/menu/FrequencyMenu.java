@@ -38,10 +38,14 @@ public class FrequencyMenu extends AbstractContainerMenu {
     @Nullable
     private final BlockEntity backingBlockEntity;
 
-    private final DataSlot freqIdSlot = DataSlot.standalone();
+    // DataSlot is still short-backed on the wire in 26.1; split int values.
+    private final DataSlot freqIdLowSlot = DataSlot.standalone();
+    private final DataSlot freqIdHighSlot = DataSlot.standalone();
     private final DataSlot linkActiveSlot = DataSlot.standalone();
-    private final DataSlot usedChannelsSlot = DataSlot.standalone();
-    private final DataSlot maxChannelsSlot = DataSlot.standalone();
+    private final DataSlot usedChannelsLowSlot = DataSlot.standalone();
+    private final DataSlot usedChannelsHighSlot = DataSlot.standalone();
+    private final DataSlot maxChannelsLowSlot = DataSlot.standalone();
+    private final DataSlot maxChannelsHighSlot = DataSlot.standalone();
 
     // channel counts iterate all grid nodes; throttle to once per 10 server ticks
     private static final int CHANNEL_REFRESH_INTERVAL = 10;
@@ -59,38 +63,41 @@ public class FrequencyMenu extends AbstractContainerMenu {
             this.deviceName = ctrl.isAdvanced()
                     ? "block.ae2lt.advanced_wireless_overloaded_controller"
                     : "block.ae2lt.wireless_overloaded_controller";
-            this.freqIdSlot.set(ctrl.getFrequencyId());
+            setSyncedFrequencyId(ctrl.getFrequencyId());
             this.linkActiveSlot.set(ctrl.isFrequencyActive() ? 1 : 0);
-            this.usedChannelsSlot.set(ctrl.getGridUsedChannels());
-            this.maxChannelsSlot.set(ctrl.getGridMaxChannels());
+            setSyncedUsedChannels(ctrl.getGridUsedChannels());
+            setSyncedMaxChannels(ctrl.getGridMaxChannels());
         } else if (be instanceof FrequencyBindingHost bindingHost) {
             this.isController = false;
             this.isAdvanced = false;
             this.deviceName = bindingHost.getFrequencyBindingDeviceName();
-            this.freqIdSlot.set(bindingHost.getFrequencyId());
+            setSyncedFrequencyId(bindingHost.getFrequencyId());
             this.linkActiveSlot.set(bindingHost.isFrequencyConnected() ? 1 : 0);
-            this.usedChannelsSlot.set(bindingHost.getGridUsedChannels());
-            this.maxChannelsSlot.set(bindingHost.getGridMaxChannels());
+            setSyncedUsedChannels(bindingHost.getGridUsedChannels());
+            setSyncedMaxChannels(bindingHost.getGridMaxChannels());
         } else {
             this.isController = false;
             this.isAdvanced = false;
             this.deviceName = "block.ae2lt.wireless_receiver";
-            this.freqIdSlot.set(-1);
+            setSyncedFrequencyId(-1);
             this.linkActiveSlot.set(0);
-            this.usedChannelsSlot.set(0);
-            this.maxChannelsSlot.set(0);
+            setSyncedUsedChannels(0);
+            setSyncedMaxChannels(0);
         }
 
-        addDataSlot(freqIdSlot);
+        addDataSlot(freqIdLowSlot);
+        addDataSlot(freqIdHighSlot);
         addDataSlot(linkActiveSlot);
-        addDataSlot(usedChannelsSlot);
-        addDataSlot(maxChannelsSlot);
+        addDataSlot(usedChannelsLowSlot);
+        addDataSlot(usedChannelsHighSlot);
+        addDataSlot(maxChannelsLowSlot);
+        addDataSlot(maxChannelsHighSlot);
 
         // initial sync to the player who just opened this menu
         if (playerInv.player instanceof ServerPlayer sp) {
             PacketDistributor.sendToPlayer(sp, SyncFrequencyListPacket.fromServer());
-            SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(sp, freqIdSlot.get());
-            SyncFrequencyDetailPacket.sendInitialConnectionsIfNeeded(sp, freqIdSlot.get());
+            SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(sp, getCurrentFrequencyId());
+            SyncFrequencyDetailPacket.sendInitialConnectionsIfNeeded(sp, getCurrentFrequencyId());
         }
     }
 
@@ -116,14 +123,17 @@ public class FrequencyMenu extends AbstractContainerMenu {
         this.isAdvanced = isAdvanced;
         this.deviceName = deviceName;
         this.backingBlockEntity = null;
-        this.freqIdSlot.set(freqId);
+        setSyncedFrequencyId(freqId);
         this.linkActiveSlot.set(linkActive ? 1 : 0);
-        this.usedChannelsSlot.set(used);
-        this.maxChannelsSlot.set(max);
-        addDataSlot(freqIdSlot);
+        setSyncedUsedChannels(used);
+        setSyncedMaxChannels(max);
+        addDataSlot(freqIdLowSlot);
+        addDataSlot(freqIdHighSlot);
         addDataSlot(linkActiveSlot);
-        addDataSlot(usedChannelsSlot);
-        addDataSlot(maxChannelsSlot);
+        addDataSlot(usedChannelsLowSlot);
+        addDataSlot(usedChannelsHighSlot);
+        addDataSlot(maxChannelsLowSlot);
+        addDataSlot(maxChannelsHighSlot);
     }
 
     public static void writeExtraData(FriendlyByteBuf buf, BlockEntity be) {
@@ -161,8 +171,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
     public void broadcastChanges() {
         if (backingBlockEntity != null) {
             int real = readFreqIdFromBE();
-            if (freqIdSlot.get() != real) {
-                freqIdSlot.set(real);
+            if (getCurrentFrequencyId() != real) {
+                setSyncedFrequencyId(real);
                 // player's new frequency: push fresh member + connection snapshots
                 var lvl = backingBlockEntity.getLevel();
                 if (lvl != null && !lvl.isClientSide()) {
@@ -183,12 +193,12 @@ public class FrequencyMenu extends AbstractContainerMenu {
             if (--channelRefreshCountdown <= 0) {
                 channelRefreshCountdown = CHANNEL_REFRESH_INTERVAL;
                 int used = readUsedChannelsFromBE();
-                if (usedChannelsSlot.get() != used) {
-                    usedChannelsSlot.set(used);
+                if (getUsedChannels() != used) {
+                    setSyncedUsedChannels(used);
                 }
                 int max = readMaxChannelsFromBE();
-                if (maxChannelsSlot.get() != max) {
-                    maxChannelsSlot.set(max);
+                if (getMaxChannels() != max) {
+                    setSyncedMaxChannels(max);
                 }
             }
         }
@@ -278,7 +288,7 @@ public class FrequencyMenu extends AbstractContainerMenu {
     }
 
     public int getCurrentFrequencyId() {
-        return freqIdSlot.get();
+        return readSplitInt(freqIdLowSlot, freqIdHighSlot);
     }
 
     public boolean isLinkActive() {
@@ -286,11 +296,32 @@ public class FrequencyMenu extends AbstractContainerMenu {
     }
 
     public int getUsedChannels() {
-        return usedChannelsSlot.get();
+        return readSplitInt(usedChannelsLowSlot, usedChannelsHighSlot);
     }
 
     public int getMaxChannels() {
-        return maxChannelsSlot.get();
+        return readSplitInt(maxChannelsLowSlot, maxChannelsHighSlot);
+    }
+
+    private void setSyncedFrequencyId(int value) {
+        writeSplitInt(freqIdLowSlot, freqIdHighSlot, value);
+    }
+
+    private void setSyncedUsedChannels(int value) {
+        writeSplitInt(usedChannelsLowSlot, usedChannelsHighSlot, value);
+    }
+
+    private void setSyncedMaxChannels(int value) {
+        writeSplitInt(maxChannelsLowSlot, maxChannelsHighSlot, value);
+    }
+
+    private static void writeSplitInt(DataSlot low, DataSlot high, int value) {
+        low.set(value & 0xFFFF);
+        high.set((value >>> 16) & 0xFFFF);
+    }
+
+    private static int readSplitInt(DataSlot low, DataSlot high) {
+        return ((high.get() & 0xFFFF) << 16) | (low.get() & 0xFFFF);
     }
 
     /**
