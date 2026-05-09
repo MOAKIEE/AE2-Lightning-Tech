@@ -19,12 +19,6 @@
     "EjectCapabilityMixin",
     "EjectGhostBEMixin"
   ],
-  "_disabled_for_26_1_2": [
-    "AdvCraftingCpuAccessor",
-    "AdvCraftingCpuLogicMixin",
-    "ECOCraftingCpuAccessor",
-    "ECOCraftingCpuLogicMixin"
-  ],
   "client": [
     "client.CableBusRenderStateMixin",
     "client.CableBusContainerRenderMixin",
