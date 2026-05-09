@@ -12,6 +12,8 @@ import net.minecraft.nbt.NbtOps;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 /**
  * Snapshot of the original plain pattern item that was converted into an
@@ -104,6 +106,15 @@ public final class SourcePatternSnapshot {
         return tag;
     }
 
+    public void writeTo(ValueOutput output) {
+        output.putString(TAG_ITEM, itemId.toString());
+        if (serializedStackTag != null && !serializedStackTag.isEmpty()) {
+            output.child(TAG_STACK).store(serializedStackTag.copy());
+        } else if (customDataTag != null && !customDataTag.isEmpty()) {
+            output.child(TAG_CUSTOM_DATA).store(customDataTag.copy());
+        }
+    }
+
     public static SourcePatternSnapshot fromTag(CompoundTag tag) {
         Identifier itemId;
         var itemIdString = tag.getString(TAG_ITEM);
@@ -123,5 +134,33 @@ public final class SourcePatternSnapshot {
                 .map(CompoundTag::copy)
                 .orElse(null);
         return new SourcePatternSnapshot(itemId, serializedStack, customData);
+    }
+
+    public static SourcePatternSnapshot fromInput(ValueInput input) {
+        var stack = input.child(TAG_STACK)
+                .flatMap(stackInput -> stackInput.read(ItemStack.MAP_CODEC))
+                .orElse(ItemStack.EMPTY);
+
+        Identifier itemId = input.getString(TAG_ITEM)
+                .map(Identifier::parse)
+                .orElseGet(() -> {
+                    if (stack.isEmpty()) {
+                        throw new IllegalArgumentException("source pattern snapshot is missing an item id");
+                    }
+                    return BuiltInRegistries.ITEM.getKey(stack.getItem());
+                });
+
+        CompoundTag serializedStack = null;
+        if (!stack.isEmpty()) {
+            var ops = input.lookup().createSerializationContext(NbtOps.INSTANCE);
+            var encoded = ItemStack.OPTIONAL_CODEC.encodeStart(ops, stack)
+                    .result()
+                    .orElse(null);
+            if (encoded instanceof CompoundTag stackTag) {
+                serializedStack = stackTag.copy();
+            }
+        }
+
+        return new SourcePatternSnapshot(itemId, serializedStack, null);
     }
 }

@@ -18,6 +18,8 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.util.ProblemReporter;
 import net.minecraft.world.level.storage.TagValueInput;
 import net.minecraft.world.level.storage.TagValueOutput;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.AEKey;
@@ -25,6 +27,7 @@ import appeng.api.stacks.GenericStack;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDetails;
+import com.moakiee.ae2lt.overload.pattern.SourcePatternSnapshot;
 
 /**
  * Per-CPU overload-side waiting state.
@@ -210,6 +213,24 @@ public final class OverloadCpuState {
         return tag;
     }
 
+    public void writeTo(ValueOutput output) {
+        Objects.requireNonNull(output, "output");
+        output.putLong(TAG_NEXT_SEQUENCE, nextSequence);
+
+        var pendingList = output.childrenList(TAG_PENDING);
+        for (var pending : pendingByKey.values()) {
+            var pendingOutput = pendingList.addChild();
+            pendingOutput.putString(TAG_PATTERN_IDENTITY, pending.key().patternIdentity());
+            pending.patternReference().sourcePattern().writeTo(pendingOutput.child(TAG_SOURCE_PATTERN));
+            pendingOutput.putInt(TAG_OUTPUT_SLOT, pending.key().outputSlotIndex());
+            pendingOutput.putString(TAG_ITEM_ID, pending.itemId().toString());
+            writeExactExpectedKey(pending.exactExpectedKey(), pendingOutput.child(TAG_EXACT_TEMPLATE));
+            pendingOutput.putLong(TAG_REMAINING, pending.remainingAmount());
+            pendingOutput.putBoolean(TAG_ROUTES_TO_REQUESTER, pending.routesToRequester());
+            pendingOutput.putLong(TAG_REGISTERED_ORDER, pending.registeredOrder());
+        }
+    }
+
     public static OverloadCpuState fromTag(OverloadCpuOwner owner, CompoundTag tag, HolderLookup.Provider registries) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(tag, "tag");
@@ -248,10 +269,52 @@ public final class OverloadCpuState {
         return state;
     }
 
+    public static OverloadCpuState fromInput(OverloadCpuOwner owner, ValueInput input) {
+        Objects.requireNonNull(owner, "owner");
+        Objects.requireNonNull(input, "input");
+
+        var state = new OverloadCpuState(owner);
+        state.nextSequence = Math.max(1L, input.getLongOr(TAG_NEXT_SEQUENCE, 1L));
+
+        for (var pendingInput : input.childrenListOrEmpty(TAG_PENDING)) {
+            var patternIdentity = pendingInput.getStringOr(TAG_PATTERN_IDENTITY, "");
+            var sourcePattern = pendingInput.child(TAG_SOURCE_PATTERN)
+                    .map(SourcePatternSnapshot::fromInput)
+                    .orElseGet(() -> new SourcePatternSnapshot(
+                            Identifier.parse(pendingInput.getStringOr(TAG_ITEM_ID, "minecraft:air")),
+                            null,
+                            null));
+            var patternReference = new OverloadPatternReference(patternIdentity, sourcePattern);
+            var key = new PendingOverloadOutputKey(
+                    owner.craftingId(),
+                    patternIdentity,
+                    pendingInput.getIntOr(TAG_OUTPUT_SLOT, 0));
+            long registeredOrder = pendingInput.getLong(TAG_REGISTERED_ORDER).orElse(state.nextSequence);
+            var pending = new PendingOverloadOutput(
+                    key,
+                    owner,
+                    patternReference,
+                    Identifier.parse(pendingInput.getStringOr(TAG_ITEM_ID, "")),
+                    loadExactExpectedKey(pendingInput),
+                    pendingInput.getLongOr(TAG_REMAINING, 0L),
+                    pendingInput.getBooleanOr(TAG_ROUTES_TO_REQUESTER, false),
+                    registeredOrder);
+            state.pendingByKey.put(key, pending);
+            state.pendingByItemId.computeIfAbsent(pending.itemId(), ignored -> new LinkedHashSet<>()).add(key);
+            state.nextSequence = Math.max(state.nextSequence, pending.registeredOrder() + 1);
+        }
+
+        return state;
+    }
+
     private static CompoundTag writeExactExpectedKey(AEKey key, HolderLookup.Provider registries) {
         var output = TagValueOutput.createWithContext(ProblemReporter.DISCARDING, registries);
         key.toTagGeneric(output);
         return output.buildResult();
+    }
+
+    private static void writeExactExpectedKey(AEKey key, ValueOutput output) {
+        key.toTagGeneric(output);
     }
 
     private static AEKey loadExactExpectedKey(CompoundTag pendingTag, HolderLookup.Provider registries) {
@@ -259,6 +322,16 @@ public final class OverloadCpuState {
                 .orElseThrow(() -> new IllegalArgumentException("pending overload entry is missing an exact expected key"));
         var input = TagValueInput.create(ProblemReporter.DISCARDING, registries, keyTag.copy());
         var key = AEKey.fromTagGeneric(input);
+        if (key == null) {
+            throw new IllegalArgumentException("pending overload entry has an invalid exact expected key");
+        }
+        return key;
+    }
+
+    private static AEKey loadExactExpectedKey(ValueInput pendingInput) {
+        var keyInput = pendingInput.child(TAG_EXACT_TEMPLATE)
+                .orElseThrow(() -> new IllegalArgumentException("pending overload entry is missing an exact expected key"));
+        var key = AEKey.fromTagGeneric(keyInput);
         if (key == null) {
             throw new IllegalArgumentException("pending overload entry has an invalid exact expected key");
         }

@@ -12,8 +12,8 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.config.Actionable;
 import appeng.api.crafting.IPatternDetails;
@@ -151,24 +151,23 @@ public abstract class CraftingCpuLogicMixin {
     }
 
     @Inject(method = "writeToNBT", at = @At("RETURN"))
-    private void ae2lt$writeOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ae2lt$writeOverloadState(ValueOutput data, CallbackInfo ci) {
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
-        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic, registries);
-        if (overloadStateTag != null) {
-            data.put("ae2ltOverloadState", overloadStateTag);
-        } else {
-            data.remove("ae2ltOverloadState");
+        var overloadStateOutput = data.child("ae2ltOverloadState");
+        if (OverloadCpuStateManager.INSTANCE.writeTo(logic, overloadStateOutput)) {
+            return;
         }
+        data.discard("ae2ltOverloadState");
     }
 
     @Inject(method = "readFromNBT", at = @At("RETURN"))
-    private void ae2lt$readOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ae2lt$readOverloadState(ValueInput data, CallbackInfo ci) {
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
         OverloadCpuStateManager.INSTANCE.clear(logic);
         var job = ((CraftingCpuLogicAccessor) logic).getJob();
-        var overloadStateTag = data.getCompound("ae2ltOverloadState").orElse(null);
-        if (job != null && overloadStateTag != null) {
-            OverloadCpuStateManager.INSTANCE.readFromTag(logic, overloadStateTag, registries);
+        var overloadStateInput = data.child("ae2ltOverloadState").orElse(null);
+        if (job != null && overloadStateInput != null) {
+            OverloadCpuStateManager.INSTANCE.readFromInput(logic, overloadStateInput);
         }
     }
 

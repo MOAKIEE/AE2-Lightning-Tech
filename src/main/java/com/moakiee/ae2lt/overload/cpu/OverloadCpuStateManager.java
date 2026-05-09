@@ -12,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.level.storage.ValueInput;
+import net.minecraft.world.level.storage.ValueOutput;
 
 import appeng.api.config.Actionable;
 import appeng.api.stacks.AEItemKey;
@@ -265,6 +267,21 @@ public final class OverloadCpuStateManager {
         return state != null && !state.isEmpty() ? state.toTag(registries) : null;
     }
 
+    public synchronized boolean writeTo(CraftingCpuLogic logic, ValueOutput output) {
+        return writeTo((Object) logic, output);
+    }
+
+    public synchronized boolean writeTo(Object logic, ValueOutput output) {
+        Objects.requireNonNull(logic, "logic");
+        Objects.requireNonNull(output, "output");
+        var state = states.get(logic);
+        if (state == null || state.isEmpty()) {
+            return false;
+        }
+        state.writeTo(output);
+        return true;
+    }
+
     public synchronized void readFromTag(CraftingCpuLogic logic, CompoundTag tag, HolderLookup.Provider registries) {
         var link = logic.getLastLink();
         if (link == null) {
@@ -286,6 +303,27 @@ public final class OverloadCpuStateManager {
         }
 
         states.put(logic, OverloadCpuState.fromTag(OverloadCpuOwner.from(craftingId, logic), tag, registries));
+    }
+
+    public synchronized void readFromInput(CraftingCpuLogic logic, ValueInput input) {
+        var link = logic.getLastLink();
+        if (link == null) {
+            throw new IllegalStateException("crafting logic has no active link");
+        }
+        readFromInput(logic, link.getCraftingID(), input);
+    }
+
+    public synchronized void readFromInput(Object logic, UUID craftingId, ValueInput input) {
+        Objects.requireNonNull(logic, "logic");
+        Objects.requireNonNull(craftingId, "craftingId");
+        Objects.requireNonNull(input, "input");
+
+        var state = OverloadCpuState.fromInput(OverloadCpuOwner.from(craftingId, logic), input);
+        if (state.isEmpty()) {
+            states.remove(logic);
+        } else {
+            states.put(logic, state);
+        }
     }
 
     private static AEItemKey asItemKey(AEKey key) {
