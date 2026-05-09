@@ -546,18 +546,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
         if (stack != null) {
             SetStockAmountMenu.open((ServerPlayer) getPlayer(), getLocator(), configSlot,
                     stack.what(), (int) stack.amount());
-            if (getPlayer().containerMenu instanceof SetStockAmountMenu sam) {
-                long cap = stack.what().getType().getAmountPerByte() * 1024L;
-                try {
-                    var f = SetStockAmountMenu.class.getDeclaredField("maxAmount");
-                    f.setAccessible(true);
-                    f.setInt(sam, (int) Math.min(cap, Integer.MAX_VALUE));
-                    sam.broadcastChanges();
-                } catch (ReflectiveOperationException e) {
-                    org.slf4j.LoggerFactory.getLogger(OverloadedInterfaceMenu.class)
-                            .warn("Failed to set maxAmount on SetStockAmountMenu", e);
-                }
-            }
         }
     }
 
