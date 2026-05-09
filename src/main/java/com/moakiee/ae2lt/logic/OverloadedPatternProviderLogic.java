@@ -614,14 +614,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (!PowerCostUtil.canAfford(grid, cost)) {
                 return false;
             }
-            boolean result;
-            if (AdvancedAECompat.isDirectional(patternDetails)) {
-                result = pushPatternDirectionally(patternDetails, inputHolder);
-            } else {
-                result = super.pushPattern(patternDetails, inputHolder);
-                if (result) {
-                    syncPendingUnlockRule(patternDetails);
-                }
+            boolean result = super.pushPattern(patternDetails, inputHolder);
+            if (result) {
+                syncPendingUnlockRule(patternDetails);
             }
             if (result) {
                 PowerCostUtil.consumeRaw(grid, cost);
@@ -889,9 +884,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private PushOutcome tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
             WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
         if (pendingOverflowByConn.containsKey(conn)) return PushOutcome.SOFT_FAIL;
-        if (AdvancedAECompat.isDirectional(pattern)) {
-            return tryPushToConnectionDirectionally(pattern, inputs, conn, server);
-        }
 
         var targetLevel = server.getLevel(conn.dimension());
         if (targetLevel == null) return PushOutcome.HARD_FAIL;
@@ -1083,132 +1075,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return possible[0].amount() * input.getMultiplier();
     }
 
-    // ---- AdvancedAE directional push (NORMAL mode) --------------------------------
-
-    /**
-     * Push a directional AdvancedAE pattern through adjacent machines in NORMAL mode.
-     * Each input key is routed to the target-machine face specified by the pattern's
-     * directionMap; keys without a mapping use the default face (pushDir.getOpposite()).
-     */
-    private boolean pushPatternDirectionally(IPatternDetails pattern, KeyCounter[] inputs) {
-        var accessor = (PatternProviderLogicAccessor) this;
-        if (!accessor.getSendList().isEmpty()) return false;
-        if (!gridNode.isActive()) return false;
-        if (!SmartDoublingCompat.containsOrUnwrapped(getAvailablePatterns(), pattern)) return false;
-        if (getCraftingLockedReason() != LockCraftingMode.NONE) return false;
-        if (!pattern.supportsPushInputsToExternalInventory()) return false;
-
-        var level = overloadedHost.getLevel();
-        if (!(level instanceof ServerLevel sl)) return false;
-
-        var targets = overloadedHost.getTargets();
-        if (targets.isEmpty()) return false;
-
-        var providerPos = overloadedHost.getBlockPos();
-        var patternInputKeys = accessor.getPatternInputs();
-
-        EjectModeRegistry.setBypass(true);
-        try {
-            for (var pushDir : targets) {
-                var targetPos = providerPos.relative(pushDir);
-                var defaultFace = pushDir.getOpposite();
-                var be = sl.getBlockEntity(targetPos);
-                if (be == null) continue;
-
-                var faceToTarget = buildDirectionalTargets(
-                        sl, targetPos, be, defaultFace, pattern, inputs, wirelessSource);
-                if (faceToTarget == null) continue;
-
-                if (isBlocking()) {
-                    var anyTarget = faceToTarget.values().iterator().next();
-                    // EAP advanced-blocking compat: bypass when target fully matches.
-                    if (anyTarget.containsPatternInput(patternInputKeys)
-                            && !AdvancedBlockingCompat.shouldBypassBlocking(this, anyTarget, pattern)) continue;
-                }
-
-                if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs)) continue;
-
-                commitDirectionalPush(pattern, inputs, faceToTarget, defaultFace);
-
-                accessor.setSendDirection(defaultFace);
-                accessor.invokeSendStacksOut();
-                accessor.invokeOnPushPatternSuccess(pattern);
-                syncPendingUnlockRule(pattern);
-                return true;
-            }
-            return false;
-        } finally {
-            EjectModeRegistry.setBypass(false);
-        }
-    }
-
-    // ---- AdvancedAE directional push (WIRELESS mode) -----------------------------
-
-    /**
-     * Push a directional AdvancedAE pattern to a wireless target.
-     * Behaves as if the provider were physically placed on {@code conn.boundFace()}.
-     * Each input key is routed to the target-machine face from the directionMap;
-     * keys without a mapping default to {@code conn.boundFace()}.
-     */
-    private PushOutcome tryPushToConnectionDirectionally(IPatternDetails pattern, KeyCounter[] inputs,
-            WirelessConnection conn, net.minecraft.server.MinecraftServer server) {
-        if (pendingOverflowByConn.containsKey(conn)) return PushOutcome.SOFT_FAIL;
-        var targetLevel = server.getLevel(conn.dimension());
-        if (targetLevel == null) return PushOutcome.HARD_FAIL;
-        if (!targetLevel.isLoaded(conn.pos())) return PushOutcome.HARD_FAIL;
-        if (!pattern.supportsPushInputsToExternalInventory()) return PushOutcome.SOFT_FAIL;
-
-        autoReturnBeforePush(targetLevel, conn);
-
-        var be = targetLevel.getBlockEntity(conn.pos());
-        if (be == null) return PushOutcome.HARD_FAIL;
-
-        double cost = PowerCostUtil.totalCost(inputs);
-        var grid = gridNode.getGrid();
-        if (!PowerCostUtil.canAfford(grid, cost)) {
-            return PushOutcome.SOFT_FAIL;
-        }
-
-        var defaultFace = conn.boundFace();
-
-        EjectModeRegistry.setBypass(true);
-        try {
-            var faceToTarget = buildDirectionalTargets(
-                    targetLevel, conn.pos(), be, defaultFace, pattern, inputs, wirelessSource);
-            if (faceToTarget == null) return PushOutcome.SOFT_FAIL;
-
-            if (isBlocking()) {
-                var patternInputKeys = ((PatternProviderLogicAccessor) this).getPatternInputs();
-                var anyTarget = faceToTarget.values().iterator().next();
-                // EAP advanced-blocking compat: bypass when target fully matches.
-                if (anyTarget.containsPatternInput(patternInputKeys)
-                        && !AdvancedBlockingCompat.shouldBypassBlocking(this, anyTarget, pattern)) return PushOutcome.SOFT_FAIL;
-            }
-
-            if (!simulateDirectionalAcceptance(faceToTarget, defaultFace, pattern, inputs))
-                return PushOutcome.SOFT_FAIL;
-
-            var overflow = commitDirectionalPushWithOverflow(pattern, inputs, faceToTarget, defaultFace);
-            PowerCostUtil.consumeRaw(grid, cost);
-            if (!overflow.isEmpty()) {
-                bucketOverflow(conn, pattern, overflow, true);
-            }
-        } finally {
-            EjectModeRegistry.setBypass(false);
-        }
-
-        ((PatternProviderLogicAccessor) this).invokeOnPushPatternSuccess(pattern);
-        syncPendingUnlockRule(pattern);
-        alertGridTick();
-
-        if (overloadedHost.isAutoReturn()) {
-            getOrCreateState(conn).resetBackoff(targetLevel.getGameTime());
-        }
-        return PushOutcome.SUCCESS;
-    }
-
-    // ---- directional push helpers ------------------------------------------------
-
     @Nullable
     private PatternProviderTarget getCachedTarget(
             ServerLevel level, BlockPos pos, BlockEntity be, Direction face, IActionSource source) {
@@ -1225,96 +1091,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             targetCache.remove(key);
         }
         return target;
-    }
-
-    /**
-     * Build a map of face -> PatternProviderTarget for all unique faces
-     * referenced by the directional pattern's inputs.
-     *
-     * @return the map, or {@code null} if any required target cannot be resolved
-     */
-    @Nullable
-    private Map<Direction, PatternProviderTarget> buildDirectionalTargets(
-            ServerLevel level, BlockPos targetPos, BlockEntity be,
-            Direction defaultFace, IPatternDetails pattern,
-            KeyCounter[] inputs, IActionSource source) {
-        var map = new HashMap<Direction, PatternProviderTarget>();
-        for (var inputList : inputs) {
-            for (var entry : inputList) {
-                var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
-                var face = dir != null ? dir : defaultFace;
-                map.computeIfAbsent(face, f -> getCachedTarget(level, targetPos, be, f, source));
-            }
-        }
-        if (map.isEmpty() || map.containsValue(null)) return null;
-        return map;
-    }
-
-    /**
-     * Simulate whether all directional targets can accept their respective inputs.
-     */
-    private static boolean simulateDirectionalAcceptance(
-            Map<Direction, PatternProviderTarget> faceToTarget,
-            Direction defaultFace,
-            IPatternDetails pattern, KeyCounter[] inputs) {
-        for (var inputList : inputs) {
-            for (var entry : inputList) {
-                var dir = AdvancedAECompat.getDirectionForKey(pattern, entry.getKey());
-                var face = dir != null ? dir : defaultFace;
-                var target = faceToTarget.get(face);
-                if (target == null) return false;
-                if (target.insert(entry.getKey(), entry.getLongValue(), Actionable.SIMULATE) == 0) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /**
-     * Commit directional push for NORMAL mode.
-     * Overflow goes to the parent's sendList via accessor.
-     */
-    private void commitDirectionalPush(IPatternDetails pattern, KeyCounter[] inputs,
-            Map<Direction, PatternProviderTarget> faceToTarget, Direction defaultFace) {
-        var accessor = (PatternProviderLogicAccessor) this;
-        pattern.pushInputsToExternalInventory(inputs, (what, amount) -> {
-            var dir = AdvancedAECompat.getDirectionForKey(pattern, what);
-            var face = dir != null ? dir : defaultFace;
-            var target = faceToTarget.get(face);
-            if (target != null) {
-                var inserted = target.insert(what, amount, Actionable.MODULATE);
-                if (inserted < amount) {
-                    accessor.invokeAddToSendList(what, amount - inserted);
-                }
-            } else {
-                accessor.invokeAddToSendList(what, amount);
-            }
-        });
-    }
-
-    /**
-     * Commit directional push for WIRELESS mode.
-     * Returns overflow items directly instead of using the parent's sendList.
-     */
-    private static List<GenericStack> commitDirectionalPushWithOverflow(
-            IPatternDetails pattern, KeyCounter[] inputs,
-            Map<Direction, PatternProviderTarget> faceToTarget, Direction defaultFace) {
-        var overflow = new ArrayList<GenericStack>();
-        pattern.pushInputsToExternalInventory(inputs, (what, amount) -> {
-            var dir = AdvancedAECompat.getDirectionForKey(pattern, what);
-            var face = dir != null ? dir : defaultFace;
-            var target = faceToTarget.get(face);
-            if (target != null) {
-                var inserted = target.insert(what, amount, Actionable.MODULATE);
-                if (inserted < amount) {
-                    overflow.add(new GenericStack(what, amount - inserted));
-                }
-            } else {
-                overflow.add(new GenericStack(what, amount));
-            }
-        });
-        return overflow;
     }
 
     // ---- overflow flush ---------------------------------------------------------
