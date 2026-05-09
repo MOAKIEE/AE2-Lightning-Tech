@@ -3,21 +3,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:blank_pattern"
-      },
+      "ingredient": "ae2:blank_pattern",
       "count": 64
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_processor"
-      },
+      "ingredient": "ae2lt:overload_processor",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_alloy_plate"
-      },
+      "ingredient": "ae2lt:overload_alloy_plate",
       "count": 4
     }
   ],

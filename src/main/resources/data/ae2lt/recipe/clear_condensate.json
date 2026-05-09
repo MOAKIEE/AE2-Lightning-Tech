@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:sunflower"
-    },
-    "B": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "C": {
-      "item": "minecraft:sunflower"
-    },
-    "D": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "E": {
-      "item": "minecraft:redstone_block"
-    },
-    "F": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "G": {
-      "item": "minecraft:sunflower"
-    },
-    "H": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "I": {
-      "item": "minecraft:sunflower"
-    }
+    "A": "minecraft:sunflower",
+    "B": "ae2lt:overload_alloy",
+    "C": "minecraft:sunflower",
+    "D": "ae2lt:overload_alloy",
+    "E": "minecraft:redstone_block",
+    "F": "ae2lt:overload_alloy",
+    "G": "minecraft:sunflower",
+    "H": "ae2lt:overload_alloy",
+    "I": "minecraft:sunflower"
   },
   "result": {
     "count": 1,

@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "minecraft:copper_ingot"
-      },
+      "ingredient": "minecraft:copper_ingot",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "advanced_ae:shattered_singularity"
-      },
+      "ingredient": "advanced_ae:shattered_singularity",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "ae2:singularity"
-      },
+      "ingredient": "ae2:singularity",
       "count": 4
     }
   ],

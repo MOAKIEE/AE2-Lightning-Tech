@@ -13,6 +13,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 
 /**
  * 水晶催化器配方的产物声明。
@@ -29,7 +30,11 @@ import net.minecraft.world.item.ItemStack;
 public sealed interface CrystalCatalyzerOutput
         permits CrystalCatalyzerOutput.OfItem, CrystalCatalyzerOutput.OfTag {
 
-    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ItemStack.CODEC)
+    Codec<ItemStack> ITEM_OUTPUT_CODEC = ItemStackTemplate.CODEC.xmap(
+            ItemStackTemplate::create,
+            ItemStackTemplate::fromNonEmptyStack);
+
+    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ITEM_OUTPUT_CODEC)
             .xmap(
                     either -> either.map(tag -> (CrystalCatalyzerOutput) tag, OfItem::new),
                     output -> output instanceof OfTag tag

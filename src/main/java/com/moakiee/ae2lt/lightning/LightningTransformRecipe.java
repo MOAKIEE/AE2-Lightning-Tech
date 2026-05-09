@@ -14,6 +14,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
@@ -31,6 +32,9 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
             .validate(inputs -> inputs.isEmpty()
                     ? DataResult.error(() -> "Lightning transform recipe inputs cannot be empty")
                     : DataResult.success(List.copyOf(inputs)));
+    private static final Codec<ItemStack> RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
+            ItemStackTemplate::create,
+            ItemStackTemplate::fromNonEmptyStack);
     public static final StreamCodec<RegistryFriendlyByteBuf, List<CountedIngredient>> INPUTS_STREAM_CODEC =
             CountedIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
 
@@ -297,7 +301,7 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
         public static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningTransformRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningTransformRecipe::inputs),
-                        ItemStack.CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
+                        RESULT_CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
                 .apply(instance, LightningTransformRecipe::new));
         public static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT,

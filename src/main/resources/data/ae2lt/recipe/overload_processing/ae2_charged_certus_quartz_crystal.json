@@ -3,9 +3,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:certus_quartz_crystal"
-      },
+      "ingredient": "ae2:certus_quartz_crystal",
       "count": 64
     }
   ],

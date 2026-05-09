@@ -3,21 +3,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:quartz_block"
-      },
+      "ingredient": "ae2:quartz_block",
       "count": 9
     },
     {
-      "ingredient": {
-        "item": "minecraft:redstone_block"
-      },
+      "ingredient": "minecraft:redstone_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "tag": "c:storage_blocks/silicon"
-      },
+      "ingredient": "#c:storage_blocks/silicon",
       "count": 4
     }
   ],

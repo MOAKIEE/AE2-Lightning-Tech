@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "ae2:quartz_glass"
-    },
-    "B": {
-      "item": "minecraft:redstone"
-    },
-    "C": {
-      "item": "ae2:quartz_glass"
-    },
-    "D": {
-      "item": "minecraft:redstone"
-    },
-    "E": {
-      "item": "ae2lt:lightning_cell_component_ii"
-    },
-    "F": {
-      "item": "minecraft:redstone"
-    },
-    "G": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "H": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "I": {
-      "item": "ae2lt:overload_alloy"
-    }
+    "A": "ae2:quartz_glass",
+    "B": "minecraft:redstone",
+    "C": "ae2:quartz_glass",
+    "D": "minecraft:redstone",
+    "E": "ae2lt:lightning_cell_component_ii",
+    "F": "minecraft:redstone",
+    "G": "ae2lt:overload_alloy",
+    "H": "ae2lt:overload_alloy",
+    "I": "ae2lt:overload_alloy"
   },
   "result": {
     "count": 1,

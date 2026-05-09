@@ -3,15 +3,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:fluix_covered_dense_cable"
-      },
+      "ingredient": "ae2:fluix_covered_dense_cable",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_alloy_plate"
-      },
+      "ingredient": "ae2lt:overload_alloy_plate",
       "count": 6
     }
   ],

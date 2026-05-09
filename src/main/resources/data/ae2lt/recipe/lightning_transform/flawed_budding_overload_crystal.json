@@ -3,9 +3,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2lt:cracked_budding_overload_crystal"
-      },
+      "ingredient": "ae2lt:cracked_budding_overload_crystal",
       "count": 1
     }
   ],

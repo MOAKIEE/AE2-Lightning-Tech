@@ -16,6 +16,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
@@ -46,6 +47,10 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
                         }
                         return DataResult.success(List.copyOf(inputs));
                     });
+
+    private static final Codec<ItemStack> RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
+            ItemStackTemplate::create,
+            ItemStackTemplate::fromNonEmptyStack);
 
     private static final Codec<Long> POSITIVE_ENERGY_CODEC = Codec.LONG.validate(totalEnergy -> {
         if (totalEnergy < MIN_TOTAL_ENERGY) {
@@ -363,7 +368,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
         public static final MapCodec<LightningAssemblyRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningAssemblyRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningAssemblyRecipe::inputs),
-                        ItemStack.CODEC.fieldOf("result").forGetter(LightningAssemblyRecipe::rawResult),
+                        RESULT_CODEC.fieldOf("result").forGetter(LightningAssemblyRecipe::rawResult),
                         POSITIVE_ENERGY_CODEC.fieldOf("totalEnergy").forGetter(LightningAssemblyRecipe::totalEnergy),
                         POSITIVE_LIGHTNING_COST_CODEC.optionalFieldOf("lightningCost", DEFAULT_LIGHTNING_COST)
                                 .forGetter(LightningAssemblyRecipe::lightningCost),

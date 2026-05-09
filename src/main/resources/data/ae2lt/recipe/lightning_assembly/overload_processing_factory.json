@@ -3,21 +3,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:inscriber"
-      },
+      "ingredient": "ae2:inscriber",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_machine_frame"
-      },
+      "ingredient": "ae2lt:overload_machine_frame",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "ae2lt:ultimate_overload_core"
-      },
+      "ingredient": "ae2lt:ultimate_overload_core",
       "count": 1
     }
   ],

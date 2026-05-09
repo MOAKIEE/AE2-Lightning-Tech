@@ -1,9 +1,7 @@
 {
   "type": "ae2lt:crystal_catalyzer",
   "mode": "dust",
-  "catalyst": {
-    "item": "ae2lt:overload_crystal_block"
-  },
+  "catalyst": "ae2lt:overload_crystal_block",
   "catalystCount": 1,
   "output": {
     "id": "ae2lt:overload_crystal_dust",

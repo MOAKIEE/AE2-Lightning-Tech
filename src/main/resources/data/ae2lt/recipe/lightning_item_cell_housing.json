@@ -2,15 +2,9 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "a": {
-      "item": "ae2:quartz_glass"
-    },
-    "b": {
-      "tag": "c:dusts/redstone"
-    },
-    "d": {
-      "item": "ae2lt:overload_alloy"
-    }
+    "a": "ae2:quartz_glass",
+    "b": "#c:dusts/redstone",
+    "d": "ae2lt:overload_alloy"
   },
   "pattern": [
     "aba",

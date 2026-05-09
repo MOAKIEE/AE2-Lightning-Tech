@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "ae2lt:overload_alloy_plate"
-    },
-    "B": {
-      "item": "minecraft:redstone"
-    },
-    "C": {
-      "item": "ae2lt:overload_alloy_plate"
-    },
-    "D": {
-      "item": "minecraft:redstone"
-    },
-    "E": {
-      "item": "ae2lt:overload_processor"
-    },
-    "F": {
-      "item": "minecraft:redstone"
-    },
-    "G": {
-      "item": "ae2lt:overload_alloy_plate"
-    },
-    "H": {
-      "item": "minecraft:redstone"
-    },
-    "I": {
-      "item": "ae2lt:overload_alloy_plate"
-    }
+    "A": "ae2lt:overload_alloy_plate",
+    "B": "minecraft:redstone",
+    "C": "ae2lt:overload_alloy_plate",
+    "D": "minecraft:redstone",
+    "E": "ae2lt:overload_processor",
+    "F": "minecraft:redstone",
+    "G": "ae2lt:overload_alloy_plate",
+    "H": "minecraft:redstone",
+    "I": "ae2lt:overload_alloy_plate"
   },
   "result": {
     "count": 1,

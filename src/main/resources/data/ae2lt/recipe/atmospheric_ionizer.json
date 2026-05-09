@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "ae2:entropy_manipulator"
-    },
-    "B": {
-      "item": "ae2lt:overload_crystal_block"
-    },
-    "C": {
-      "item": "ae2:entropy_manipulator"
-    },
-    "D": {
-      "item": "minecraft:copper_ingot"
-    },
-    "E": {
-      "item": "ae2lt:overload_machine_frame"
-    },
-    "F": {
-      "item": "minecraft:copper_ingot"
-    },
-    "G": {
-      "item": "ae2:fluix_glass_cable"
-    },
-    "H": {
-      "item": "ae2:fluix_glass_cable"
-    },
-    "I": {
-      "item": "ae2:fluix_glass_cable"
-    }
+    "A": "ae2:entropy_manipulator",
+    "B": "ae2lt:overload_crystal_block",
+    "C": "ae2:entropy_manipulator",
+    "D": "minecraft:copper_ingot",
+    "E": "ae2lt:overload_machine_frame",
+    "F": "minecraft:copper_ingot",
+    "G": "ae2:fluix_glass_cable",
+    "H": "ae2:fluix_glass_cable",
+    "I": "ae2:fluix_glass_cable"
   },
   "result": {
     "count": 1,

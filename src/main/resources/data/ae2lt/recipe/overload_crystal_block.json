@@ -7,18 +7,10 @@
     "   "
   ],
   "key": {
-    "A": {
-      "item": "ae2lt:overload_crystal"
-    },
-    "B": {
-      "item": "ae2lt:overload_crystal"
-    },
-    "C": {
-      "item": "ae2lt:overload_crystal"
-    },
-    "D": {
-      "item": "ae2lt:overload_crystal"
-    }
+    "A": "ae2lt:overload_crystal",
+    "B": "ae2lt:overload_crystal",
+    "C": "ae2lt:overload_crystal",
+    "D": "ae2lt:overload_crystal"
   },
   "result": {
     "count": 1,

@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:gunpowder"
-    },
-    "B": {
-      "item": "ae2lt:overload_crystal_dust"
-    },
-    "C": {
-      "item": "minecraft:gunpowder"
-    },
-    "D": {
-      "item": "ae2lt:overload_crystal_dust"
-    },
-    "E": {
-      "item": "ae2lt:overload_singularity"
-    },
-    "F": {
-      "item": "ae2lt:overload_crystal_dust"
-    },
-    "G": {
-      "item": "minecraft:gunpowder"
-    },
-    "H": {
-      "item": "ae2lt:overload_crystal_dust"
-    },
-    "I": {
-      "item": "minecraft:gunpowder"
-    }
+    "A": "minecraft:gunpowder",
+    "B": "ae2lt:overload_crystal_dust",
+    "C": "minecraft:gunpowder",
+    "D": "ae2lt:overload_crystal_dust",
+    "E": "ae2lt:overload_singularity",
+    "F": "ae2lt:overload_crystal_dust",
+    "G": "minecraft:gunpowder",
+    "H": "ae2lt:overload_crystal_dust",
+    "I": "minecraft:gunpowder"
   },
   "result": {
     "count": 1,

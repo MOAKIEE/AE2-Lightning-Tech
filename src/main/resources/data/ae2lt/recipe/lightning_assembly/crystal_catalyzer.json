@@ -3,27 +3,19 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:growth_accelerator"
-      },
+      "ingredient": "ae2:growth_accelerator",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2:condenser"
-      },
+      "ingredient": "ae2:condenser",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_machine_frame"
-      },
+      "ingredient": "ae2lt:overload_machine_frame",
       "count": 1
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_singularity"
-      },
+      "ingredient": "ae2lt:overload_singularity",
       "count": 1
     }
   ],

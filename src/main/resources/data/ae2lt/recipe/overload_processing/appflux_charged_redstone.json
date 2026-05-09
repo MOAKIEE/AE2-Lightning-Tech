@@ -9,9 +9,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "appflux:redstone_crystal"
-      },
+      "ingredient": "appflux:redstone_crystal",
       "count": 64
     }
   ],

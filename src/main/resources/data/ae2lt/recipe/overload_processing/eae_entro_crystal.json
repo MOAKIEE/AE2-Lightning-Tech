@@ -9,15 +9,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "extendedae:entro_dust"
-      },
+      "ingredient": "extendedae:entro_dust",
       "count": 32
     },
     {
-      "ingredient": {
-        "item": "ae2:fluix_crystal"
-      },
+      "ingredient": "ae2:fluix_crystal",
       "count": 32
     }
   ],

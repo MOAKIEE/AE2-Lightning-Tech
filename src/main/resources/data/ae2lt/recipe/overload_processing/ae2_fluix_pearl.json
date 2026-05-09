@@ -3,15 +3,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "minecraft:ender_pearl"
-      },
+      "ingredient": "minecraft:ender_pearl",
       "count": 1
     },
     {
-      "ingredient": {
-        "item": "ae2:fluix_dust"
-      },
+      "ingredient": "ae2:fluix_dust",
       "count": 4
     }
   ],

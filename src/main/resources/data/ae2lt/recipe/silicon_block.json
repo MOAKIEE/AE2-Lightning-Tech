@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "ae2:silicon"
-    },
-    "B": {
-      "item": "ae2:silicon"
-    },
-    "C": {
-      "item": "ae2:silicon"
-    },
-    "D": {
-      "item": "ae2:silicon"
-    },
-    "E": {
-      "item": "ae2:silicon"
-    },
-    "F": {
-      "item": "ae2:silicon"
-    },
-    "G": {
-      "item": "ae2:silicon"
-    },
-    "H": {
-      "item": "ae2:silicon"
-    },
-    "I": {
-      "item": "ae2:silicon"
-    }
+    "A": "ae2:silicon",
+    "B": "ae2:silicon",
+    "C": "ae2:silicon",
+    "D": "ae2:silicon",
+    "E": "ae2:silicon",
+    "F": "ae2:silicon",
+    "G": "ae2:silicon",
+    "H": "ae2:silicon",
+    "I": "ae2:silicon"
   },
   "result": {
     "count": 1,

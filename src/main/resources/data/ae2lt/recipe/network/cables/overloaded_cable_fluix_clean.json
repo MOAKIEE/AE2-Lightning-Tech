@@ -4,16 +4,10 @@
   "ingredients": [
     {
       "type": "neoforge:difference",
-      "base": {
-        "tag": "ae2lt:overloaded_cable"
-      },
-      "subtracted": {
-        "item": "ae2lt:overloaded_cable"
-      }
+      "base": "#ae2lt:overloaded_cable",
+      "subtracted": "ae2lt:overloaded_cable"
     },
-    {
-      "tag": "ae2:can_remove_color"
-    }
+    "#ae2:can_remove_color"
   ],
   "result": {
     "count": 1,

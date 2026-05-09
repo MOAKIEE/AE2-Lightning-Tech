@@ -3,27 +3,19 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2lt:overload_machine_frame"
-      },
+      "ingredient": "ae2lt:overload_machine_frame",
       "count": 1
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overloaded_cable"
-      },
+      "ingredient": "ae2lt:overloaded_cable",
       "count": 8
     },
     {
-      "ingredient": {
-        "item": "ae2:quantum_ring"
-      },
+      "ingredient": "ae2:quantum_ring",
       "count": 8
     },
     {
-      "ingredient": {
-        "item": "ae2:quantum_link"
-      },
+      "ingredient": "ae2:quantum_link",
       "count": 1
     }
   ],

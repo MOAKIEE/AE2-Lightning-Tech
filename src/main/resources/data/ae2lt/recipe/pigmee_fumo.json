@@ -2,9 +2,7 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "a": {
-      "item": "minecraft:pink_wool"
-    }
+    "a": "minecraft:pink_wool"
   },
   "pattern": [
     "aaa",

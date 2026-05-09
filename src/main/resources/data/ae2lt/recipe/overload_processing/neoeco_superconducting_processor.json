@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "neoecoae:energized_superconductive_block"
-      },
+      "ingredient": "neoecoae:energized_superconductive_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "neoecoae:crystal_matrix"
-      },
+      "ingredient": "neoecoae:crystal_matrix",
       "count": 36
     },
     {
-      "ingredient": {
-        "tag": "c:storage_blocks/silicon"
-      },
+      "ingredient": "#c:storage_blocks/silicon",
       "count": 4
     }
   ],

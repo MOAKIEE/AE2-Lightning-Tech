@@ -3,15 +3,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:singularity"
-      },
+      "ingredient": "ae2:singularity",
       "count": 1024
     },
     {
-      "ingredient": {
-        "item": "minecraft:nether_star"
-      },
+      "ingredient": "minecraft:nether_star",
       "count": 1
     }
   ],

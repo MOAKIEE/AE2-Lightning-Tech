@@ -10,9 +10,7 @@
   ],
   "type": "ae2lt:crystal_catalyzer",
   "mode": "dust",
-  "catalyst": {
-    "item": "minecraft:amethyst_block"
-  },
+  "catalyst": "minecraft:amethyst_block",
   "catalystCount": 1,
   "output": {
     "tag": "c:dusts/amethyst",

@@ -9,9 +9,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2omnicells:ender_ingot"
-      },
+      "ingredient": "ae2omnicells:ender_ingot",
       "count": 64
     }
   ],

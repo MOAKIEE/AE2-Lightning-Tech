@@ -9,9 +9,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "advanced_ae:quantum_infused_dust"
-      },
+      "ingredient": "advanced_ae:quantum_infused_dust",
       "count": 1
     }
   ],

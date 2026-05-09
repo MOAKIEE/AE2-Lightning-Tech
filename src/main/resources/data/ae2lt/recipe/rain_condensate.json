@@ -7,33 +7,15 @@
     "GHI"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:water_bucket"
-    },
-    "B": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "C": {
-      "item": "minecraft:water_bucket"
-    },
-    "D": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "E": {
-      "item": "minecraft:redstone_block"
-    },
-    "F": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "G": {
-      "item": "minecraft:water_bucket"
-    },
-    "H": {
-      "item": "ae2lt:overload_alloy"
-    },
-    "I": {
-      "item": "minecraft:water_bucket"
-    }
+    "A": "minecraft:water_bucket",
+    "B": "ae2lt:overload_alloy",
+    "C": "minecraft:water_bucket",
+    "D": "ae2lt:overload_alloy",
+    "E": "minecraft:redstone_block",
+    "F": "ae2lt:overload_alloy",
+    "G": "minecraft:water_bucket",
+    "H": "ae2lt:overload_alloy",
+    "I": "minecraft:water_bucket"
   },
   "result": {
     "count": 1,

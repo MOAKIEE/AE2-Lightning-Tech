@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "tag": "c:dusts/ender_pearl"
-      },
+      "ingredient": "#c:dusts/ender_pearl",
       "count": 32
     },
     {
-      "ingredient": {
-        "item": "minecraft:iron_ingot"
-      },
+      "ingredient": "minecraft:iron_ingot",
       "count": 32
     },
     {
-      "ingredient": {
-        "item": "ae2:certus_quartz_dust"
-      },
+      "ingredient": "ae2:certus_quartz_dust",
       "count": 32
     }
   ],

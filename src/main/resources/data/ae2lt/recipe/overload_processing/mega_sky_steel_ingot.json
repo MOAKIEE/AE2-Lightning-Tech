@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:charged_certus_quartz_crystal"
-      },
+      "ingredient": "ae2:charged_certus_quartz_crystal",
       "count": 16
     },
     {
-      "ingredient": {
-        "tag": "c:ingots/iron"
-      },
+      "ingredient": "#c:ingots/iron",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2:sky_stone_block"
-      },
+      "ingredient": "ae2:sky_stone_block",
       "count": 16
     }
   ],

@@ -16,6 +16,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.PlacementInfo;
 import net.minecraft.world.item.crafting.Recipe;
@@ -42,7 +43,11 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                             ? DataResult.error(() -> "overload processing supports at most 9 item inputs")
                             : DataResult.success(List.copyOf(inputs)));
 
-    private static final Codec<List<ItemStack>> OUTPUTS_CODEC = ItemStack.CODEC.listOf().validate(outputs -> {
+    private static final Codec<ItemStack> ITEM_RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
+            ItemStackTemplate::create,
+            ItemStackTemplate::fromNonEmptyStack);
+
+    private static final Codec<List<ItemStack>> OUTPUTS_CODEC = ITEM_RESULT_CODEC.listOf().validate(outputs -> {
         if (outputs.size() > OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT) {
             return DataResult.error(() -> "overload processing supports at most 1 item output");
         }

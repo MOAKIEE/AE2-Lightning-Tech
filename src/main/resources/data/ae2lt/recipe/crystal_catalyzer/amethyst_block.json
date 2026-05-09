@@ -1,8 +1,6 @@
 {
   "type": "ae2lt:crystal_catalyzer",
-  "catalyst": {
-    "item": "minecraft:amethyst_block"
-  },
+  "catalyst": "minecraft:amethyst_block",
   "catalystCount": 1,
   "output": {
     "id": "minecraft:amethyst_shard",

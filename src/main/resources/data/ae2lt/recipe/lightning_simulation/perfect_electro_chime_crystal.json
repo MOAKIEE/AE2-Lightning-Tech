@@ -3,15 +3,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2lt:electro_chime_crystal"
-      },
+      "ingredient": "ae2lt:electro_chime_crystal",
       "count": 1
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_singularity"
-      },
+      "ingredient": "ae2lt:overload_singularity",
       "count": 1024
     }
   ],

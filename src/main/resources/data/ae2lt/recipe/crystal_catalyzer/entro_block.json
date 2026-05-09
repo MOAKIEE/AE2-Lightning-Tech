@@ -1,8 +1,12 @@
 {
+  "neoforge:conditions": [
+    {
+      "type": "neoforge:mod_loaded",
+      "modid": "extendedae"
+    }
+  ],
   "type": "ae2lt:crystal_catalyzer",
-  "catalyst": {
-    "item": "extendedae:entro_block"
-  },
+  "catalyst": "extendedae:entro_block",
   "catalystCount": 1,
   "output": {
     "id": "extendedae:entro_crystal",

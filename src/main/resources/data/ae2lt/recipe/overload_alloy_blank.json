@@ -7,30 +7,14 @@
     "GHA"
   ],
   "key": {
-    "A": {
-      "item": "minecraft:ender_eye"
-    },
-    "B": {
-      "item": "minecraft:amethyst_shard"
-    },
-    "C": {
-      "item": "minecraft:chorus_fruit"
-    },
-    "D": {
-      "item": "minecraft:copper_ingot"
-    },
-    "E": {
-      "item": "minecraft:iron_ingot"
-    },
-    "F": {
-      "item": "minecraft:gold_ingot"
-    },
-    "G": {
-      "item": "minecraft:chorus_fruit"
-    },
-    "H": {
-      "item": "minecraft:amethyst_shard"
-    }
+    "A": "minecraft:ender_eye",
+    "B": "minecraft:amethyst_shard",
+    "C": "minecraft:chorus_fruit",
+    "D": "minecraft:copper_ingot",
+    "E": "minecraft:iron_ingot",
+    "F": "minecraft:gold_ingot",
+    "G": "minecraft:chorus_fruit",
+    "H": "minecraft:amethyst_shard"
   },
   "result": {
     "count": 1,

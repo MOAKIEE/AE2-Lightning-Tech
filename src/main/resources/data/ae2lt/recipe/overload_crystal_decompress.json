@@ -2,9 +2,7 @@
   "type": "minecraft:crafting_shapeless",
   "category": "misc",
   "ingredients": [
-    {
-      "item": "ae2lt:overload_crystal_block"
-    }
+    "ae2lt:overload_crystal_block"
   ],
   "result": {
     "count": 4,

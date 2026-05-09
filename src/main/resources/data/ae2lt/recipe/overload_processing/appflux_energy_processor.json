@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "appflux:charged_redstone_block"
-      },
+      "ingredient": "appflux:charged_redstone_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "minecraft:redstone_block"
-      },
+      "ingredient": "minecraft:redstone_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "tag": "c:storage_blocks/silicon"
-      },
+      "ingredient": "#c:storage_blocks/silicon",
       "count": 4
     }
   ],

@@ -3,21 +3,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2lt:overload_alloy"
-      },
+      "ingredient": "ae2lt:overload_alloy",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_processor"
-      },
+      "ingredient": "ae2lt:overload_processor",
       "count": 16
     },
     {
-      "ingredient": {
-        "item": "minecraft:netherite_ingot"
-      },
+      "ingredient": "minecraft:netherite_ingot",
       "count": 16
     }
   ],

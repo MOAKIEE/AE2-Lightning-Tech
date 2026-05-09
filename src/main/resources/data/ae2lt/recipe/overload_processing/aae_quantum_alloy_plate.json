@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "advanced_ae:quantum_alloy"
-      },
+      "ingredient": "advanced_ae:quantum_alloy",
       "count": 8
     },
     {
-      "ingredient": {
-        "item": "minecraft:netherite_ingot"
-      },
+      "ingredient": "minecraft:netherite_ingot",
       "count": 2
     },
     {
-      "ingredient": {
-        "item": "minecraft:nether_star"
-      },
+      "ingredient": "minecraft:nether_star",
       "count": 1
     }
   ],

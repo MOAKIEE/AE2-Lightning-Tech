@@ -3,15 +3,11 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2lt:overload_alloy_blank"
-      },
+      "ingredient": "ae2lt:overload_alloy_blank",
       "count": 3
     },
     {
-      "ingredient": {
-        "item": "ae2lt:overload_crystal_dust"
-      },
+      "ingredient": "ae2lt:overload_crystal_dust",
       "count": 4
     }
   ],

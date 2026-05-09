@@ -3,9 +3,7 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "ae2:matter_ball"
-      },
+      "ingredient": "ae2:matter_ball",
       "count": 64
     }
   ],

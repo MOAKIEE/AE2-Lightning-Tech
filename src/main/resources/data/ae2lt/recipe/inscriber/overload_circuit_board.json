@@ -1,12 +1,8 @@
 {
   "type": "ae2:inscriber",
   "ingredients": {
-    "middle": {
-      "item": "ae2lt:overload_crystal"
-    },
-    "top": {
-      "item": "ae2lt:overload_inscriber_press"
-    }
+    "middle": "ae2lt:overload_crystal",
+    "top": "ae2lt:overload_inscriber_press"
   },
   "mode": "inscribe",
   "result": {

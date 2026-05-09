@@ -9,21 +9,15 @@
   "priority": 0,
   "inputs": [
     {
-      "ingredient": {
-        "item": "advanced_ae:quantum_alloy_block"
-      },
+      "ingredient": "advanced_ae:quantum_alloy_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "item": "minecraft:redstone_block"
-      },
+      "ingredient": "minecraft:redstone_block",
       "count": 4
     },
     {
-      "ingredient": {
-        "tag": "c:storage_blocks/silicon"
-      },
+      "ingredient": "#c:storage_blocks/silicon",
       "count": 4
     }
   ],
