@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.mixin;
 
 import java.util.LinkedHashSet;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.SetMultimap;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import org.spongepowered.asm.mixin.Final;
@@ -25,12 +24,20 @@ public abstract class GridGetMachineNodesMixin {
 
     @Inject(method = "getMachineClasses", at = @At("HEAD"), cancellable = true)
     private void ae2lt$normalizeControllerMachineClasses(CallbackInfoReturnable<Iterable<Class<?>>> cir) {
-        if (!this.machines.containsKey(OverloadedControllerBlockEntity.class)) {
+        boolean hasOverloadedControllerClass = false;
+        var machineClasses = new LinkedHashSet<Class<?>>(this.machines.keySet());
+
+        for (var machineClass : this.machines.keySet()) {
+            if (OverloadedControllerBlockEntity.class.isAssignableFrom(machineClass)) {
+                hasOverloadedControllerClass = true;
+                machineClasses.remove(machineClass);
+            }
+        }
+
+        if (!hasOverloadedControllerClass) {
             return;
         }
 
-        var machineClasses = new LinkedHashSet<Class<?>>(this.machines.keySet());
-        machineClasses.remove(OverloadedControllerBlockEntity.class);
         machineClasses.add(ControllerBlockEntity.class);
         cir.setReturnValue(machineClasses);
     }
@@ -42,18 +49,23 @@ public abstract class GridGetMachineNodesMixin {
             return;
         }
 
-        var overloadedControllers = this.machines.get(OverloadedControllerBlockEntity.class);
-        if (overloadedControllers.isEmpty()) {
+        var controllerNodes = new LinkedHashSet<IGridNode>(this.machines.get(ControllerBlockEntity.class));
+
+        for (var candidateClass : this.machines.keySet()) {
+            if (OverloadedControllerBlockEntity.class.isAssignableFrom(candidateClass)) {
+                controllerNodes.addAll(this.machines.get(candidateClass));
+            }
+        }
+
+        if (controllerNodes.size() == this.machines.get(ControllerBlockEntity.class).size()) {
             return;
         }
 
         // Compatibility shim only:
         // AE2 stores nodes by exact owner class, so a query for
         // ControllerBlockEntity.class would miss our subclass otherwise.
-        // This only affects controller-class queries and only appends AE2LT's
-        // explicit overloaded controller subtype, leaving vanilla lookups intact.
-        cir.setReturnValue(Iterables.concat(
-                this.machines.get(ControllerBlockEntity.class),
-                overloadedControllers));
+        // This only affects controller-class queries and appends AE2LT's
+        // overloaded controller subtype family, leaving vanilla lookups intact.
+        cir.setReturnValue(controllerNodes);
     }
 }
