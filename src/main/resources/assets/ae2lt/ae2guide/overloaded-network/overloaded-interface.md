@@ -14,7 +14,7 @@ item_ids:
   <BlockImage id="ae2lt:overloaded_interface" scale="4" />
 </Row>
 
-The **Overloaded ME Interface** is the upgraded version of the vanilla <ItemLink id="ae2:interface" />, with **36 configuration slots** and a **wireless mode** for long-distance item transfer and energy distribution.
+The **Overloaded ME Interface** is the upgraded version of the vanilla <ItemLink id="ae2:interface" />, with **36 configuration slots** and a **wireless mode** for long-distance item transfer.
 
 ## Core Features
 
@@ -22,7 +22,6 @@ The **Overloaded ME Interface** is the upgraded version of the vanilla <ItemLink
 * **Two operating modes**: Normal and Wireless
 * **Unlimited-mode slots**: individual slots can be switched to unlimited supply
 * **Two I/O speeds**: Normal and Fast (Probe)
-* **Energy transfer**: can route FE stored in the ME network to adjacent or wireless-connected machines
 * **Import filtering**: uses the Overloaded Filter Component to restrict which items can be imported
 
 ## Operating Modes
@@ -31,11 +30,9 @@ The **Overloaded ME Interface** is the upgraded version of the vanilla <ItemLink
 
 In Normal Mode, the Overloaded ME Interface behaves like the vanilla interface — it keeps stocked according to the configuration and outputs items to a physically adjacent container. The differences are more configuration slots and higher transfer bandwidth.
 
-If an energy output direction is configured, Normal Mode can also route FE from the ME network to an adjacent device on that side.
-
 ### Wireless Mode
 
-In Wireless Mode, the Overloaded ME Interface can manage input, output, and energy supply for multiple machines remotely. Bind remote machines via the interface's in-game UI; one interface can bind to multiple remote machines.
+In Wireless Mode, the Overloaded ME Interface can manage input and output for multiple machines remotely. Bind remote machines via the interface's in-game UI; one interface can bind to multiple remote machines.
 
 ## Import / Export Modes
 
@@ -66,16 +63,8 @@ Shift-clicking a configuration slot switches it to **Unlimited Mode**. In this m
 
 The Overloaded ME Interface accepts an **Overloaded Filter Component** to restrict which items may be imported into the ME network. The filter component is configured the same way as an AE2 Cell Workbench configuration.
 
-## Energy Transfer
-
-With an AppFlux Induction Card installed (requires AppFlux), the Overloaded ME Interface can send FE stored in the ME network to target machines.
-
-* **Normal Mode**: routes energy to the adjacent block on the configured side
-* **Wireless Mode**: distributes energy across all wireless-connected machines via a round-robin scheduler
-
 ## Automation Tips
 
 * A single interface can manage I/O for many machines wirelessly, replacing a lot of pipework
 * Combined with unlimited-mode slots, it can keep a remote machine continuously supplied with a specific material
-* With energy transfer, you can drop dedicated power lines
 * Enable the Fast probe tier to reduce processing response latency
