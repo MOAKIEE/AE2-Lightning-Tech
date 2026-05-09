@@ -48,10 +48,6 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
                         return DataResult.success(List.copyOf(inputs));
                     });
 
-    private static final Codec<ItemStack> RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
-            ItemStackTemplate::create,
-            ItemStackTemplate::fromNonEmptyStack);
-
     private static final Codec<Long> POSITIVE_ENERGY_CODEC = Codec.LONG.validate(totalEnergy -> {
         if (totalEnergy < MIN_TOTAL_ENERGY) {
             return DataResult.error(() -> "totalEnergy must be at least " + MIN_TOTAL_ENERGY);
@@ -73,7 +69,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
 
     private final int priority;
     private final List<LightningSimulationIngredient> inputs;
-    private final ItemStack result;
+    private final ItemStackTemplate result;
     private final long totalEnergy;
     private final int lightningCost;
     private final LightningKey.Tier lightningTier;
@@ -86,14 +82,21 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
             long totalEnergy,
             int lightningCost,
             LightningKey.Tier lightningTier) {
+        this(priority, inputs, toTemplate(result), totalEnergy, lightningCost, lightningTier);
+    }
+
+    public LightningAssemblyRecipe(
+            int priority,
+            List<LightningSimulationIngredient> inputs,
+            ItemStackTemplate result,
+            long totalEnergy,
+            int lightningCost,
+            LightningKey.Tier lightningTier) {
         Objects.requireNonNull(inputs, "inputs");
         Objects.requireNonNull(result, "result");
         Objects.requireNonNull(lightningTier, "lightningTier");
         if (inputs.isEmpty() || inputs.size() > 9) {
             throw new IllegalArgumentException("inputs must contain 1 to 9 entries");
-        }
-        if (result.isEmpty()) {
-            throw new IllegalArgumentException("result cannot be empty");
         }
         if (totalEnergy < MIN_TOTAL_ENERGY) {
             throw new IllegalArgumentException("totalEnergy must be at least " + MIN_TOTAL_ENERGY);
@@ -104,7 +107,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
 
         this.priority = priority;
         this.inputs = List.copyOf(inputs);
-        this.result = result.copy();
+        this.result = result;
         this.totalEnergy = totalEnergy;
         this.lightningCost = lightningCost;
         this.lightningTier = lightningTier;
@@ -120,7 +123,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
     }
 
     public ItemStack getResultStack() {
-        return result.copy();
+        return result.create();
     }
 
     public long totalEnergy() {
@@ -204,11 +207,11 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
 
     @Override
     public ItemStack assemble(LightningAssemblyRecipeInput input) {
-        return result.copy();
+        return result.create();
     }
 
     public ItemStack getResultItem() {
-        return result.copy();
+        return result.create();
     }
 
     public NonNullList<Ingredient> getIngredients() {
@@ -256,14 +259,21 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
 
     public boolean isIncomplete() {
         return inputs.isEmpty()
-                || result.isEmpty()
                 || totalEnergy < MIN_TOTAL_ENERGY
                 || lightningCost <= 0
                 || inputs.stream().anyMatch(input -> input.ingredient().isEmpty());
     }
 
-    private ItemStack rawResult() {
+    private ItemStackTemplate rawResult() {
         return result;
+    }
+
+    private static ItemStackTemplate toTemplate(ItemStack stack) {
+        Objects.requireNonNull(stack, "result");
+        if (stack.isEmpty()) {
+            throw new IllegalArgumentException("result cannot be empty");
+        }
+        return ItemStackTemplate.fromNonEmptyStack(stack);
     }
 
     private boolean allocateRequirement(
@@ -368,7 +378,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
         public static final MapCodec<LightningAssemblyRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningAssemblyRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningAssemblyRecipe::inputs),
-                        RESULT_CODEC.fieldOf("result").forGetter(LightningAssemblyRecipe::rawResult),
+                        ItemStackTemplate.CODEC.fieldOf("result").forGetter(LightningAssemblyRecipe::rawResult),
                         POSITIVE_ENERGY_CODEC.fieldOf("totalEnergy").forGetter(LightningAssemblyRecipe::totalEnergy),
                         POSITIVE_LIGHTNING_COST_CODEC.optionalFieldOf("lightningCost", DEFAULT_LIGHTNING_COST)
                                 .forGetter(LightningAssemblyRecipe::lightningCost),
@@ -382,7 +392,7 @@ public final class LightningAssemblyRecipe implements Recipe<LightningAssemblyRe
                         LightningAssemblyRecipe::priority,
                         INPUTS_STREAM_CODEC,
                         LightningAssemblyRecipe::inputs,
-                        ItemStack.STREAM_CODEC,
+                        ItemStackTemplate.STREAM_CODEC,
                         LightningAssemblyRecipe::rawResult,
                         ByteBufCodecs.VAR_LONG,
                         LightningAssemblyRecipe::totalEnergy,

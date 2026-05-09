@@ -32,30 +32,28 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
             .validate(inputs -> inputs.isEmpty()
                     ? DataResult.error(() -> "Lightning transform recipe inputs cannot be empty")
                     : DataResult.success(List.copyOf(inputs)));
-    private static final Codec<ItemStack> RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
-            ItemStackTemplate::create,
-            ItemStackTemplate::fromNonEmptyStack);
     public static final StreamCodec<RegistryFriendlyByteBuf, List<CountedIngredient>> INPUTS_STREAM_CODEC =
             CountedIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
 
     private final int priority;
     private final List<CountedIngredient> inputs;
-    private final ItemStack result;
+    private final ItemStackTemplate result;
     private final int totalInputCount;
 
     public LightningTransformRecipe(int priority, List<CountedIngredient> inputs, ItemStack result) {
+        this(priority, inputs, toTemplate(result));
+    }
+
+    public LightningTransformRecipe(int priority, List<CountedIngredient> inputs, ItemStackTemplate result) {
         Objects.requireNonNull(inputs, "inputs");
         Objects.requireNonNull(result, "result");
         if (inputs.isEmpty()) {
             throw new IllegalArgumentException("inputs cannot be empty");
         }
-        if (result.isEmpty()) {
-            throw new IllegalArgumentException("result cannot be empty");
-        }
 
         this.priority = priority;
         this.inputs = List.copyOf(inputs);
-        this.result = result.copy();
+        this.result = result;
         this.totalInputCount = this.inputs.stream().mapToInt(CountedIngredient::count).sum();
     }
 
@@ -142,11 +140,11 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
 
     @Override
     public ItemStack assemble(LightningTransformRecipeInput input) {
-        return result.copy();
+        return result.create();
     }
 
     public ItemStack getResultItem() {
-        return result.copy();
+        return result.create();
     }
 
     public NonNullList<Ingredient> getIngredients() {
@@ -194,12 +192,19 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
 
     public boolean isIncomplete() {
         return inputs.isEmpty()
-                || result.isEmpty()
                 || inputs.stream().anyMatch(input -> input.ingredient().isEmpty());
     }
 
-    private ItemStack rawResult() {
+    private ItemStackTemplate rawResult() {
         return result;
+    }
+
+    private static ItemStackTemplate toTemplate(ItemStack stack) {
+        Objects.requireNonNull(stack, "result");
+        if (stack.isEmpty()) {
+            throw new IllegalArgumentException("result cannot be empty");
+        }
+        return ItemStackTemplate.fromNonEmptyStack(stack);
     }
 
     private boolean allocateRequirement(
@@ -301,14 +306,14 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
         public static final MapCodec<LightningTransformRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
                         Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningTransformRecipe::priority),
                         INPUTS_CODEC.fieldOf("inputs").forGetter(LightningTransformRecipe::inputs),
-                        RESULT_CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
+                        ItemStackTemplate.CODEC.fieldOf("result").forGetter(LightningTransformRecipe::rawResult))
                 .apply(instance, LightningTransformRecipe::new));
         public static final StreamCodec<RegistryFriendlyByteBuf, LightningTransformRecipe> STREAM_CODEC = StreamCodec.composite(
                 ByteBufCodecs.VAR_INT,
                 LightningTransformRecipe::priority,
                 INPUTS_STREAM_CODEC,
                 LightningTransformRecipe::inputs,
-                ItemStack.STREAM_CODEC,
+                ItemStackTemplate.STREAM_CODEC,
                 LightningTransformRecipe::rawResult,
                 LightningTransformRecipe::new);
         public MapCodec<LightningTransformRecipe> codec() {

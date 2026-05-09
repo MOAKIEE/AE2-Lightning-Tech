@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.machine.crystalcatalyzer.recipe;
 import com.mojang.datafixers.util.Either;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.Objects;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -30,11 +31,7 @@ import net.minecraft.world.item.ItemStackTemplate;
 public sealed interface CrystalCatalyzerOutput
         permits CrystalCatalyzerOutput.OfItem, CrystalCatalyzerOutput.OfTag {
 
-    Codec<ItemStack> ITEM_OUTPUT_CODEC = ItemStackTemplate.CODEC.xmap(
-            ItemStackTemplate::create,
-            ItemStackTemplate::fromNonEmptyStack);
-
-    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ITEM_OUTPUT_CODEC)
+    Codec<CrystalCatalyzerOutput> CODEC = Codec.either(OfTag.CODEC, ItemStackTemplate.CODEC)
             .xmap(
                     either -> either.map(tag -> (CrystalCatalyzerOutput) tag, OfItem::new),
                     output -> output instanceof OfTag tag
@@ -53,7 +50,11 @@ public sealed interface CrystalCatalyzerOutput
     int count();
 
     static CrystalCatalyzerOutput ofItem(ItemStack stack) {
-        return new OfItem(stack.copy());
+        Objects.requireNonNull(stack, "stack");
+        if (stack.isEmpty()) {
+            throw new IllegalArgumentException("output stack cannot be empty");
+        }
+        return new OfItem(ItemStackTemplate.fromNonEmptyStack(stack));
     }
 
     static CrystalCatalyzerOutput ofTag(TagKey<Item> tag, int count) {
@@ -64,7 +65,7 @@ public sealed interface CrystalCatalyzerOutput
         switch (output) {
             case OfItem item -> {
                 buf.writeBoolean(false);
-                ItemStack.STREAM_CODEC.encode(buf, item.stack());
+                ItemStackTemplate.STREAM_CODEC.encode(buf, item.stack());
             }
             case OfTag tag -> {
                 buf.writeBoolean(true);
@@ -80,26 +81,23 @@ public sealed interface CrystalCatalyzerOutput
             int count = ByteBufCodecs.VAR_INT.decode(buf);
             return new OfTag(TagKey.create(BuiltInRegistries.ITEM.key(), tagId), count);
         }
-        ItemStack stack = ItemStack.STREAM_CODEC.decode(buf);
+        ItemStackTemplate stack = ItemStackTemplate.STREAM_CODEC.decode(buf);
         return new OfItem(stack);
     }
 
-    record OfItem(ItemStack stack) implements CrystalCatalyzerOutput {
+    record OfItem(ItemStackTemplate stack) implements CrystalCatalyzerOutput {
         public OfItem {
-            stack = stack.copy();
-            if (stack.isEmpty()) {
-                throw new IllegalArgumentException("output stack cannot be empty");
-            }
+            Objects.requireNonNull(stack, "stack");
         }
 
         @Override
         public ItemStack resolve() {
-            return stack.copy();
+            return stack.create();
         }
 
         @Override
         public int count() {
-            return stack.getCount();
+            return stack.create().getCount();
         }
     }
 

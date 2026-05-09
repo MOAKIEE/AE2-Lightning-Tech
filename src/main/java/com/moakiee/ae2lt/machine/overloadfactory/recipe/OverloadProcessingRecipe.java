@@ -43,16 +43,9 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                             ? DataResult.error(() -> "overload processing supports at most 9 item inputs")
                             : DataResult.success(List.copyOf(inputs)));
 
-    private static final Codec<ItemStack> ITEM_RESULT_CODEC = ItemStackTemplate.CODEC.xmap(
-            ItemStackTemplate::create,
-            ItemStackTemplate::fromNonEmptyStack);
-
-    private static final Codec<List<ItemStack>> OUTPUTS_CODEC = ITEM_RESULT_CODEC.listOf().validate(outputs -> {
+    private static final Codec<List<ItemStackTemplate>> OUTPUTS_CODEC = ItemStackTemplate.CODEC.listOf().validate(outputs -> {
         if (outputs.size() > OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT) {
             return DataResult.error(() -> "overload processing supports at most 1 item output");
-        }
-        if (outputs.stream().anyMatch(ItemStack::isEmpty)) {
-            return DataResult.error(() -> "item results cannot contain empty stacks");
         }
         return DataResult.success(List.copyOf(outputs));
     });
@@ -73,15 +66,15 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
 
     public static final StreamCodec<RegistryFriendlyByteBuf, List<OverloadProcessingIngredient>> INPUTS_STREAM_CODEC =
             OverloadProcessingIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
-    public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStack>> OUTPUTS_STREAM_CODEC =
-            ItemStack.STREAM_CODEC.apply(ByteBufCodecs.list());
+    public static final StreamCodec<RegistryFriendlyByteBuf, List<ItemStackTemplate>> OUTPUTS_STREAM_CODEC =
+            ItemStackTemplate.STREAM_CODEC.apply(ByteBufCodecs.list());
     public static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
             StreamCodec.of((buffer, tier) -> buffer.writeEnum(tier), buffer -> buffer.readEnum(LightningKey.Tier.class));
 
     private final int priority;
     private final List<OverloadProcessingIngredient> itemInputs;
     private final FluidStack fluidInput;
-    private final List<ItemStack> itemResults;
+    private final List<ItemStackTemplate> itemResults;
     private final FluidStack fluidResult;
     private final long totalEnergy;
     private final int lightningCost;
@@ -92,7 +85,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
             int priority,
             List<OverloadProcessingIngredient> itemInputs,
             FluidStack fluidInput,
-            List<ItemStack> itemResults,
+            List<ItemStackTemplate> itemResults,
             FluidStack fluidResult,
             long totalEnergy,
             int lightningCost,
@@ -114,9 +107,6 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         if (itemResults.isEmpty() && fluidResult.isEmpty()) {
             throw new IllegalArgumentException("recipe must define at least one item or fluid output");
         }
-        if (itemResults.stream().anyMatch(ItemStack::isEmpty)) {
-            throw new IllegalArgumentException("itemResults cannot contain empty stacks");
-        }
         if (totalEnergy < MIN_TOTAL_ENERGY) {
             throw new IllegalArgumentException("totalEnergy must be at least " + MIN_TOTAL_ENERGY);
         }
@@ -127,7 +117,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         this.priority = priority;
         this.itemInputs = List.copyOf(itemInputs);
         this.fluidInput = fluidInput.copy();
-        this.itemResults = itemResults.stream().map(ItemStack::copy).toList();
+        this.itemResults = List.copyOf(itemResults);
         this.fluidResult = fluidResult.copy();
         this.totalEnergy = totalEnergy;
         this.lightningCost = lightningCost;
@@ -148,7 +138,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
     }
 
     public List<ItemStack> itemResults() {
-        return itemResults.stream().map(ItemStack::copy).toList();
+        return itemResults.stream().map(ItemStackTemplate::create).toList();
     }
 
     public FluidStack fluidResult() {
@@ -260,6 +250,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
 
     public List<ItemStack> getScaledItemResults(int operations) {
         return itemResults.stream()
+                .map(ItemStackTemplate::create)
                 .map(stack -> stack.copyWithCount(multiplyExactToInt(stack.getCount(), operations)))
                 .toList();
     }
@@ -273,11 +264,11 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
 
     @Override
     public ItemStack assemble(OverloadProcessingRecipeInput input) {
-        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
+        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().create();
     }
 
     public ItemStack getResultItem() {
-        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().copy();
+        return itemResults.isEmpty() ? ItemStack.EMPTY : itemResults.getFirst().create();
     }
 
     public NonNullList<Ingredient> getIngredients() {
@@ -335,7 +326,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
         return fluidInput;
     }
 
-    private List<ItemStack> rawItemResults() {
+    private List<ItemStackTemplate> rawItemResultTemplates() {
         return itemResults;
     }
 
@@ -455,7 +446,8 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                         INPUTS_CODEC.optionalFieldOf("inputs", List.of()).forGetter(OverloadProcessingRecipe::itemInputs),
                         FluidStack.OPTIONAL_CODEC.optionalFieldOf("inputFluid", FluidStack.EMPTY)
                                 .forGetter(OverloadProcessingRecipe::rawFluidInput),
-                        OUTPUTS_CODEC.optionalFieldOf("results", List.of()).forGetter(OverloadProcessingRecipe::rawItemResults),
+                        OUTPUTS_CODEC.optionalFieldOf("results", List.of())
+                                .forGetter(OverloadProcessingRecipe::rawItemResultTemplates),
                         FluidStack.OPTIONAL_CODEC.optionalFieldOf("resultFluid", FluidStack.EMPTY)
                                 .forGetter(OverloadProcessingRecipe::rawFluidResult),
                         POSITIVE_ENERGY_CODEC.fieldOf("totalEnergy").forGetter(OverloadProcessingRecipe::totalEnergy),
@@ -485,7 +477,7 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
                         ByteBufCodecs.VAR_INT.encode(buffer, recipe.priority());
                         INPUTS_STREAM_CODEC.encode(buffer, recipe.itemInputs());
                         FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, recipe.rawFluidInput());
-                        OUTPUTS_STREAM_CODEC.encode(buffer, recipe.rawItemResults());
+                        OUTPUTS_STREAM_CODEC.encode(buffer, recipe.rawItemResultTemplates());
                         FluidStack.OPTIONAL_STREAM_CODEC.encode(buffer, recipe.rawFluidResult());
                         ByteBufCodecs.VAR_LONG.encode(buffer, recipe.totalEnergy());
                         ByteBufCodecs.VAR_INT.encode(buffer, recipe.lightningCost());
