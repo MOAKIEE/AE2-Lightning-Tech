@@ -56,7 +56,7 @@
   "jei.ae2lt.tesla_coil.output_hv": "产出 +1 高压闪电（注入 ME 网络）",
   "jei.ae2lt.tesla_coil.output_ehv": "产出 +1 极高压闪电（注入 ME 网络）",
   "jei.ae2lt.crystal_catalyzer.title": "水晶催化器",
-  "jei.ae2lt.crystal_catalyzer.energy": "单次能耗：%s AE",
+  "jei.ae2lt.crystal_catalyzer.energy": "单次能耗：%s FE",
   "jei.ae2lt.crystal_catalyzer.matrix_note_line1": "装入闪电坍缩矩阵后",
   "jei.ae2lt.crystal_catalyzer.matrix_note_line2": "每轮产量提升至 ×%s",
   "jei.ae2lt.crystal_catalyzer.catalyst_kept": "催化剂不被消耗，仅做存量校验",

@@ -58,7 +58,7 @@
   "jei.ae2lt.tesla_coil.output_hv": "Produces +1 High Voltage Lightning (into ME network)",
   "jei.ae2lt.tesla_coil.output_ehv": "Produces +1 Extreme High Voltage Lightning (into ME network)",
   "jei.ae2lt.crystal_catalyzer.title": "Crystal Catalyzer",
-  "jei.ae2lt.crystal_catalyzer.energy": "Energy per cycle: %s AE",
+  "jei.ae2lt.crystal_catalyzer.energy": "Energy per cycle: %s FE",
   "jei.ae2lt.crystal_catalyzer.matrix_note_line1": "With Collapse Matrix:",
   "jei.ae2lt.crystal_catalyzer.matrix_note_line2": "Output ×%s per cycle",
   "jei.ae2lt.crystal_catalyzer.catalyst_kept": "Catalyst is not consumed, only the stock is checked",

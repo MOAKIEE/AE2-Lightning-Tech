@@ -33,7 +33,7 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
  *         when present, the slot content must match the ingredient and have at least
  *         {@code catalystCount} items (the stack is <em>not</em> consumed).</li>
  *     <li>{@code output}: base per-cycle item output (final count = {@code output.count} × matrix multiplier).</li>
- *     <li>{@code energyPerCycle}: total energy (AE) consumed per cycle.</li>
+ *     <li>{@code energyPerCycle}: total energy (FE) consumed per cycle.</li>
  * </ul>
  *
  * <p>Fluid cost is <strong>not</strong> part of the recipe anymore — the machine always
