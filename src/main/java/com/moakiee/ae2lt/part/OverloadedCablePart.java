@@ -28,14 +28,11 @@ public class OverloadedCablePart extends CoveredDenseCablePart
 
     @Override
     protected IManagedGridNode createMainNode() {
-        // AE2 1.21.1 uses IManagedGridNode#setTagName here.
-        // If your target AE2/MC version renames this API, adjust this override accordingly.
         return super.createMainNode().setTagName("overloaded_cable");
     }
 
     @Override
     public AECableType getCableConnectionType() {
-        // Stay on the covered dense cable path for maximum compatibility in this stage.
         return AECableType.DENSE_COVERED;
     }
 
