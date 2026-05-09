@@ -15,7 +15,6 @@ repositories {
         url = "https://modmaven.dev/"
         content {
             includeGroup "dev.technici4n"
-            includeGroup "mekanism"
         }
     }
     maven {
