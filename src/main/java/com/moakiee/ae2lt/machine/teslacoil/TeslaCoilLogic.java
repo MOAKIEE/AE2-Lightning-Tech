@@ -6,7 +6,6 @@ import appeng.api.networking.ticking.TickRateModulation;
 import appeng.api.networking.ticking.TickingRequest;
 
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
-import com.moakiee.ae2lt.logic.AppFluxHelper;
 
 public final class TeslaCoilLogic implements IGridTickable {
     private final TeslaCoilBlockEntity host;
@@ -29,8 +28,6 @@ public final class TeslaCoilLogic implements IGridTickable {
         if (host.isRemoved() || host.getLevel() == null || host.isClientSide()) {
             return TickRateModulation.SLEEP;
         }
-
-        rechargeFromAppliedFlux();
 
         if (!host.hasLockedMode()) {
             // 本地资源 (粉 / 矩阵) 完全不够, 此时 SLEEP 是安全的:
@@ -100,16 +97,4 @@ public final class TeslaCoilLogic implements IGridTickable {
         host.getMainNode().ifPresent((grid, node) -> grid.getTickManager().alertDevice(node));
     }
 
-    private void rechargeFromAppliedFlux() {
-        if (!AppFluxHelper.isAvailable()) {
-            return;
-        }
-
-        host.getMainNode().ifPresent((grid, node) -> {
-            AppFluxHelper.pullPowerFromNetwork(
-                    grid.getStorageService().getInventory(),
-                    host.getEnergyStorage(),
-                    appeng.api.networking.security.IActionSource.ofMachine(host));
-        });
-    }
 }

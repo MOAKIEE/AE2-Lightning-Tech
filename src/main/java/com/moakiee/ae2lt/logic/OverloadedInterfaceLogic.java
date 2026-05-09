@@ -114,7 +114,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         var newUpgrades = UpgradeInventories.forMachine(is, 4, () -> {
             invokeQuietly(M_ON_UPGRADES_CHANGED, this);
-            host.invalidateInductionCardCache();
         });
         setField(F_UPGRADES, newUpgrades);
         this.ourUpgrades = newUpgrades;

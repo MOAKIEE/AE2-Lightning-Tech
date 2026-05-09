@@ -19,14 +19,10 @@ import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
-import com.moakiee.ae2lt.logic.AppFluxHelper;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
-import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
-import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
-import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 
@@ -91,7 +87,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private static final String TAG_IMPORT_MODE   = "ImportMode";
     private static final String TAG_IO_SPEED_MODE  = "IOSpeedMode";
     private static final String TAG_CONNECTIONS    = "WirelessConnections";
-    private static final String TAG_ENERGY_DIR     = "EnergyDir";
     private static final String TAG_UNLIMITED_SLOTS = "UnlimitedSlots";
     private static final String TAG_FILTER_INV     = "FilterInv";
     private static final String TAG_IMPORT_BUFFER  = "ae2ltImportBuffer";
@@ -546,8 +541,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     }
 
-    private long lastEnergyTickGameTime = -1;
-
     // ── Connection validation cache ──────────────────────────────────────
 
     private static final int VALIDATE_INTERVAL = 20;
@@ -557,20 +550,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private List<WirelessConnection> validConnectionsCache = List.of();
     private long    validConnectionsCacheTick = -1;
     private boolean connectionsDirty = true;
-
-    /**
-     * Snapshot of the current valid wireless connections projected as
-     * {@link WirelessEnergyAPI.Target} records. Rebuilt in lockstep with
-     * {@link #validConnectionsCache} so the shared NORMAL-mode distributor
-     * sees the exact same set the IO wheel uses.
-     */
-    private List<WirelessEnergyAPI.Target> validEnergyTargetsCache = List.of();
-    /**
-     * Monotonic stamp; bumped whenever {@link #validEnergyTargetsCache}
-     * actually changes. The distributor uses this as an O(1)
-     * cache-invalidation key (see {@link WirelessEnergyDistributor.Host}).
-     */
-    private int validEnergyTargetsVersion;
 
     @SuppressWarnings("unchecked")
     private final List<IoScheduledEntry>[] ioWheel = new ArrayList[IO_WHEEL_SLOTS];
@@ -588,7 +567,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private IOSpeedMode   ioSpeedMode   = IOSpeedMode.NORMAL;
     private ExportMode    exportMode    = ExportMode.OFF;
     private ImportMode    importMode    = ImportMode.OFF;
-    private @Nullable Direction energyOutputDir = null;
     private final boolean[] unlimitedSlots = new boolean[SLOT_COUNT];
     private final List<WirelessConnection> connections = new ArrayList<>();
     private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
@@ -616,14 +594,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
     };
     private @Nullable DirectMEInsertInventory directInsertInv;
-    /** Shared NORMAL-mode distributor (32-slot adaptive wheel + cap listeners). */
-    private final WirelessEnergyDistributor wirelessDistributor =
-            new WirelessEnergyDistributor(new DistributorHost());
     private @Nullable Set<AEKey> importFilterKeys;
     private @Nullable FuzzyMode importFilterFuzzyMode;
     private boolean importFilterInverted;
-    private boolean inductionCardCacheDirty = true;
-    private boolean inductionCardInstalledCache = false;
     private boolean unloadingChunk = false;
     private transient int lastViewedPage = 0;
 
@@ -814,17 +787,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         saveChanges(); markForUpdate();
     }
 
-    public @Nullable Direction getEnergyOutputDir() { return energyOutputDir; }
-    public void setEnergyOutputDir(@Nullable Direction d) {
-        if (energyOutputDir == d) return; energyOutputDir = d;
-        saveChanges(); markForUpdate();
-    }
-
-    public void invalidateInductionCardCache() {
-        inductionCardCacheDirty = true;
-        wakeWirelessIo();
-    }
-
     void recomputeIdlePower() {
         double idle = IDLE_BASE;
         if (interfaceMode == InterfaceMode.WIRELESS) {
@@ -874,13 +836,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private void invalidateConnectionCache() {
         connectionsDirty = true;
         validConnectionsCache = List.of(); validConnectionsCacheTick = -1;
-        if (!validEnergyTargetsCache.isEmpty()) {
-            validEnergyTargetsCache = List.of();
-        }
-        validEnergyTargetsVersion++;
         connectionStates.clear();
         resetIOWheel();
-        wirelessDistributor.clearTickState(true);
     }
 
     private void resetIOWheel() {
@@ -934,30 +891,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var newCache = List.copyOf(valid);
         if (!newCache.equals(validConnectionsCache)) {
             validConnectionsCache = newCache;
-            rebuildEnergyTargets();
         }
         validConnectionsCacheTick = gameTick; connectionsDirty = false;
         return validConnectionsCache;
-    }
-
-    /**
-     * Project the current valid wireless connections into a list of
-     * {@link WirelessEnergyAPI.Target} records and bump the version stamp so
-     * the shared distributor refreshes its per-target caches on the next
-     * tick.
-     */
-    private void rebuildEnergyTargets() {
-        if (validConnectionsCache.isEmpty()) {
-            validEnergyTargetsCache = List.of();
-        } else {
-            var snapshot = new ArrayList<WirelessEnergyAPI.Target>(validConnectionsCache.size());
-            for (var conn : validConnectionsCache) {
-                snapshot.add(new WirelessEnergyAPI.Target(
-                        conn.dimension(), conn.pos(), conn.boundFace()));
-            }
-            validEnergyTargetsCache = List.copyOf(snapshot);
-        }
-        validEnergyTargetsVersion++;
     }
 
     @Nullable
@@ -979,9 +915,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         be.frequencyBinding.serverTick();
         if (!be.hasServerTickWork()) return;
 
-        // 能量层:每 tick 触发(内部 wheel + scheduleDelay 已经是自适应的)
-        be.tickEnergyTransfer(sl);
-
         // Wireless IO: timing-wheel driven per-connection scheduling
         if (be.interfaceMode != InterfaceMode.WIRELESS) return;
         be.tickWirelessIO(sl);
@@ -995,10 +928,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 && !connections.isEmpty()
                 && (importMode == ImportMode.AUTO || exportMode == ExportMode.AUTO)) {
             return true;
-        }
-        if ((interfaceMode == InterfaceMode.WIRELESS && !connections.isEmpty())
-                || energyOutputDir != null) {
-            return AppFluxHelper.FE_KEY != null && hasInductionCard();
         }
         return false;
     }
@@ -1103,9 +1032,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     private static boolean isWirelessIoKeyType(AEKeyType keyType) {
-        if (AppFluxHelper.FE_KEY != null && keyType == AppFluxHelper.FE_KEY.getType()) {
-            return false;
-        }
         return true;
     }
 
@@ -1629,89 +1555,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     }
 
     // ══════════════════════════════════════════════════════════════════════
-    //  Energy transfer
-    // ══════════════════════════════════════════════════════════════════════
-
-    private boolean hasInductionCard() {
-        if (!AppFluxHelper.isAvailable()) return false;
-        if (!inductionCardCacheDirty) return inductionCardInstalledCache;
-        var u = getInterfaceLogic().getUpgrades();
-        boolean installed = false;
-        for (int i = 0; i < u.size(); i++) {
-            if (AppFluxHelper.isInductionCard(u.getStackInSlot(i).getItem())) {
-                installed = true;
-                break;
-            }
-        }
-        inductionCardInstalledCache = installed;
-        inductionCardCacheDirty = false;
-        return installed;
-    }
-
-    private void tickEnergyTransfer(ServerLevel sl) {
-        if (!hasInductionCard()) return;
-        var feKey = AppFluxHelper.FE_KEY; if (feKey == null) return;
-        var grid = getMainNode().getGrid(); if (grid == null) return;
-        if (interfaceMode == InterfaceMode.WIRELESS) tickWirelessEnergy(sl, feKey);
-        else if (energyOutputDir != null)            tickNormalEnergy(sl);
-    }
-
-    private void tickNormalEnergy(ServerLevel sl) {
-        if (!AppFluxBridge.canUseEnergyHandler()) return;
-        var grid = getMainNode().getGrid(); if (grid == null) return;
-        var capCache = AppFluxBridge.createCapCache(sl, getBlockPos(), () -> grid);
-        var target = WirelessEnergyAPI.resolveEnergyTarget(capCache, energyOutputDir.getOpposite());
-        if (target == null) return;
-        var storage = grid.getStorageService();
-        WirelessEnergyAPI.sendToTarget(target, storage, machineSource, AppFluxBridge.TRANSFER_RATE);
-    }
-
-    // ── Wireless energy: timing-wheel scheduler ──────────────────────────
-
-    private void tickWirelessEnergy(ServerLevel sl, AEKey feKey) {
-        long gt = sl.getGameTime();
-        if (gt == lastEnergyTickGameTime) return;
-        lastEnergyTickGameTime = gt;
-        distributeWirelessEnergy(sl, gt, feKey);
-    }
-
-    private void distributeWirelessEnergy(ServerLevel sl, long tick, AEKey feKey) {
-        // Refresh the validated connection list (host-owned: 20-tick sweep
-        // + automatic stale-connection removal). rebuildEnergyTargets()
-        // inside this call publishes the snapshot the distributor reads
-        // through DistributorHost and bumps the version stamp.
-        getOrRefreshValidConnections(sl, tick);
-        wirelessDistributor.tickNormal(sl);
-    }
-
-    private final class DistributorHost implements WirelessEnergyDistributor.Host {
-        @Override
-        public appeng.api.networking.IManagedGridNode getMainNode() {
-            return OverloadedInterfaceBlockEntity.this.getMainNode();
-        }
-
-        @Override
-        public IActionSource actionSource() {
-            return machineSource;
-        }
-
-        @Override
-        public boolean isHostRemoved() {
-            return OverloadedInterfaceBlockEntity.this.isRemoved();
-        }
-
-        @Override
-        public List<WirelessEnergyAPI.Target> getValidTargets() {
-            return validEnergyTargetsCache;
-        }
-
-        @Override
-        public int getValidTargetsVersion() {
-            return validEnergyTargetsVersion;
-        }
-    }
-
-    // ══════════════════════════════════════════════════════════════════════
     //  Eject mode
     // ══════════════════════════════════════════════════════════════════════
 
@@ -1761,10 +1604,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (!unloadingChunk) {
             unregisterEject();
         }
-        // Flush any FE the wireless distributor still has buffered back to
-        // the ME network — there is no persistent storage on this side and
-        // BufferedMEStorage discards on GC.
-        wirelessDistributor.flushBufferToNetwork();
         super.setRemoved();
     }
 
@@ -1777,7 +1616,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     @Override
     public void onChunkUnloaded() {
         unloadingChunk = true;
-        wirelessDistributor.flushBufferToNetwork();
         super.onChunkUnloaded();
     }
 
@@ -1792,7 +1630,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         data.writeByte(ioSpeedMode.ordinal());
         data.writeByte(exportMode.ordinal());
         data.writeByte(importMode.ordinal());
-        data.writeByte(energyOutputDir != null ? energyOutputDir.get3DDataValue() : -1);
 
         long bits = 0;
         for (int i = 0; i < SLOT_COUNT; i++) {
@@ -1830,10 +1667,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         var newImportMode = importOrd >= 0 && importOrd < ImportMode.values().length
                 ? ImportMode.values()[importOrd] : ImportMode.OFF;
 
-        int energyOrd = data.readByte();
-        Direction newEnergyDir = energyOrd >= 0 && energyOrd < 6
-                ? Direction.from3DDataValue(energyOrd) : null;
-
         long newBits = data.readLong();
         boolean[] newUnlimitedSlots = new boolean[SLOT_COUNT];
         for (int i = 0; i < SLOT_COUNT; i++) {
@@ -1862,14 +1695,12 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 || newIoSpeedMode != ioSpeedMode
                 || newExportMode != exportMode
                 || newImportMode != importMode
-                || newEnergyDir != energyOutputDir
                 || unlimitedChanged
                 || !newConnections.equals(connections)) {
             interfaceMode = newInterfaceMode;
             ioSpeedMode = newIoSpeedMode;
             exportMode = newExportMode;
             importMode = newImportMode;
-            energyOutputDir = newEnergyDir;
             System.arraycopy(newUnlimitedSlots, 0, unlimitedSlots, 0, SLOT_COUNT);
             invalidateExportConfigCache();
             connections.clear();
@@ -1887,7 +1718,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         d.putString(TAG_IO_SPEED_MODE, ioSpeedMode.name());
         d.putString(TAG_EXPORT_MODE, exportMode.name());
         d.putString(TAG_IMPORT_MODE, importMode.name());
-        d.putInt(TAG_ENERGY_DIR, energyOutputDir!=null ? energyOutputDir.get3DDataValue() : -1);
         long bits = 0;
         for (int i = 0; i < SLOT_COUNT; i++) if (unlimitedSlots[i]) bits |= (1L << i);
         d.putLong(TAG_UNLIMITED_SLOTS, bits);
@@ -1929,8 +1759,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
         long bits = d.getLongOr(TAG_UNLIMITED_SLOTS, 0L);
         for (int i = 0; i < SLOT_COUNT; i++) unlimitedSlots[i] = (bits & (1L << i)) != 0;
-        int ev = d.getIntOr(TAG_ENERGY_DIR, -1);
-        energyOutputDir = ev>=0 && ev<6 ? Direction.from3DDataValue(ev) : null;
         connections.clear();
         for (var connInput : d.childrenListOrEmpty(TAG_CONNECTIONS)) {
             connections.add(WirelessConnection.fromInput(connInput));
@@ -1955,7 +1783,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     // ── Memory card copy/paste (machine-specific fields only) ───────────────
     // AE2's generic export only walks IUpgradeable / IConfigurableObject /
     // IPriorityHost / IConfigInvHost — none of our custom mode enums, the
-    // energy output direction, or the unlimited-slot bitset live there.
+    // unlimited-slot bitset, or the wireless frequency live there.
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
@@ -1967,7 +1795,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IO_SPEED_MODE, ioSpeedMode);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_EXPORT_MODE, exportMode);
             com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeEnum(tag, TAG_IMPORT_MODE, importMode);
-            com.moakiee.ae2lt.logic.MemoryCardConfigSupport.writeDirection(tag, TAG_ENERGY_DIR, energyOutputDir);
             long bits = 0;
             for (int i = 0; i < SLOT_COUNT; i++) {
                 if (unlimitedSlots[i]) bits |= (1L << i);
@@ -1997,9 +1824,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 if ((old == ImportMode.EJECT) != (newImportMode == ImportMode.EJECT)) {
                     refreshEjectRegistrations();
                 }
-            }
-            if (tag.contains(TAG_ENERGY_DIR)) {
-                this.energyOutputDir = com.moakiee.ae2lt.logic.MemoryCardConfigSupport.readDirection(tag, TAG_ENERGY_DIR);
             }
             if (tag.contains(TAG_UNLIMITED_SLOTS)) {
                 long bits = tag.getLongOr(TAG_UNLIMITED_SLOTS, 0L);

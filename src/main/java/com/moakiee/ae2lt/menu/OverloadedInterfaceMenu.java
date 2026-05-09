@@ -13,7 +13,6 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
 
-import net.minecraft.core.Direction;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -47,7 +46,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
             new ClientActionKey<>("cycleInterfaceMode");
     private static final ClientActionKey<Void> ACTION_CYCLE_EXPORT_MODE = new ClientActionKey<>("cycleExportMode");
     private static final ClientActionKey<Void> ACTION_CYCLE_IMPORT_MODE = new ClientActionKey<>("cycleImportMode");
-    private static final ClientActionKey<Void> ACTION_CYCLE_ENERGY_DIR = new ClientActionKey<>("cycleEnergyDir");
     private static final ClientActionKey<Void> ACTION_CYCLE_IO_SPEED = new ClientActionKey<>("cycleIOSpeed");
     private static final ClientActionKey<Integer> ACTION_TOGGLE_UNLIMITED =
             new ClientActionKey<>("toggleUnlimited");
@@ -92,9 +90,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
     @GuiSync(24)
     public int importMode;
-
-    @GuiSync(25)
-    public int energyDirOrdinal;
 
     @GuiSync(26)
     public int ioSpeedMode;
@@ -144,7 +139,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
         registerClientAction(ACTION_CYCLE_INTERFACE_MODE, this::cycleInterfaceMode);
         registerClientAction(ACTION_CYCLE_EXPORT_MODE, this::cycleExportMode);
         registerClientAction(ACTION_CYCLE_IMPORT_MODE, this::cycleImportMode);
-        registerClientAction(ACTION_CYCLE_ENERGY_DIR, this::cycleEnergyDir);
         registerClientAction(ACTION_CYCLE_IO_SPEED, this::cycleIOSpeed);
         registerClientAction(ACTION_TOGGLE_UNLIMITED, ByteBufCodecs.INT, this::toggleUnlimited);
 
@@ -202,8 +196,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
             ioSpeedMode   = be.getIOSpeedMode().ordinal();
             exportMode    = be.getExportMode().ordinal();
             importMode    = be.getImportMode().ordinal();
-            var dir = be.getEnergyOutputDir();
-            energyDirOrdinal = dir != null ? dir.get3DDataValue() : -1;
             long bits = 0;
             for (int i = 0; i < OverloadedInterfaceBlockEntity.SLOT_COUNT; i++)
                 if (be.isSlotUnlimited(i)) bits |= (1L << i);
@@ -274,17 +266,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
             var modes = OverloadedInterfaceBlockEntity.ImportMode.values();
             be.setImportMode(modes[(importMode + 1) % modes.length]);
             importMode = be.getImportMode().ordinal();
-        }
-    }
-
-    public void cycleEnergyDir() {
-        if (isClientSide()) { sendClientAction(ACTION_CYCLE_ENERGY_DIR); return; }
-        if (host instanceof OverloadedInterfaceBlockEntity be) {
-            int next = energyDirOrdinal + 1;
-            if (next >= 6) next = -1;
-            be.setEnergyOutputDir(next >= 0 ? Direction.from3DDataValue(next) : null);
-            var dir = be.getEnergyOutputDir();
-            energyDirOrdinal = dir != null ? dir.get3DDataValue() : -1;
         }
     }
 
@@ -556,8 +537,6 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
             ioSpeedMode   = be.getIOSpeedMode().ordinal();
             exportMode    = be.getExportMode().ordinal();
             importMode    = be.getImportMode().ordinal();
-            var dir = be.getEnergyOutputDir();
-            energyDirOrdinal = dir != null ? dir.get3DDataValue() : -1;
             long bits = 0;
             for (int i = 0; i < OverloadedInterfaceBlockEntity.SLOT_COUNT; i++)
                 if (be.isSlotUnlimited(i)) bits |= (1L << i);

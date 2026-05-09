@@ -637,10 +637,6 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     public void onChunkUnloaded() {
         super.onChunkUnloaded();
         unloadingChunk = true;
-        var logic = getOverloadedLogic();
-        if (logic != null) {
-            logic.flushWirelessEnergyBuffer();
-        }
     }
 
     @Override
@@ -657,10 +653,6 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                     }
                 }
             }
-        }
-        var logic = getOverloadedLogic();
-        if (logic != null) {
-            logic.flushWirelessEnergyBuffer();
         }
         super.setRemoved();
     }

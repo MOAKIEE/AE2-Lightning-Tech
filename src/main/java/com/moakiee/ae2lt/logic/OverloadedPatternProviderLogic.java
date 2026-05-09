@@ -41,7 +41,6 @@ import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import appeng.api.upgrades.IUpgradeableObject;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
 import appeng.helpers.patternprovider.PatternProviderTarget;
@@ -55,8 +54,6 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.Provid
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
-import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
-import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
 import com.moakiee.ae2lt.overload.model.MatchMode;
@@ -85,17 +82,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private final IManagedGridNode gridNode;
     private final IActionSource wirelessSource;
     private final int totalCapacity;
-
-    /** Shared NORMAL-mode distributor (32-slot adaptive wheel + cap listeners). */
-    private final WirelessEnergyDistributor wirelessDistributor;
-    /**
-     * Target snapshot exposed to the distributor. Rebuilt in lockstep with
-     * {@link #validConnectionsCache}. {@link #validTargetsVersion} bumps on
-     * every replacement so the distributor's per-target caches refresh
-     * exactly when the validated connection set changes.
-     */
-    private List<WirelessEnergyAPI.Target> validTargetsCache = List.of();
-    private int validTargetsVersion;
 
     /** Currently displayed page index (0-based). */
     private int currentPage = 0;
@@ -402,9 +388,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** External host changes force the next wireless lookup to rebuild the cache immediately. */
     private boolean connectionsDirty = true;
 
-    /** Prevents double execution when both BlockEntityTicker and AE2 Grid Ticker fire in the same tick. */
-    private long lastEnergyTickGameTime = -1;
-
     /** Wireless round-robin: index into valid connections for spread return. */
     private int returnRobinIndex = 0;
 
@@ -413,12 +396,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     /** Last game tick when single-machine pre-distribution return was executed. */
     private long lastSingleReturnTick = -1;
-
-    // ---- eject mode state --------------------------------------------------------
-
-    /** Cached result of induction card check; invalidated on state/upgrade change. */
-    private boolean cachedInductionCardInstalled;
-    private boolean inductionCardCacheDirty = true;
 
     // ---- construction -----------------------------------------------------------
 
@@ -431,7 +408,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         this.gridNode = mainNode;
         this.wirelessSource = new MachineSource(mainNode::getNode);
         this.totalCapacity = patternInventorySize;
-        this.wirelessDistributor = new WirelessEnergyDistributor(new DistributorHost());
         this.patternTable.defaultReturnValue(-1);
 
         var accessor = (PatternProviderLogicAccessor) this;
@@ -1182,8 +1158,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     public void tickAutoReturn() {
         if (!hasAnyTickWork()) return;
 
-        tickWirelessInductionEnergy();
-
         var returnMode = overloadedHost.getReturnMode();
         if (returnMode != ReturnMode.AUTO) return;
         if (!gridNode.isActive()) return;
@@ -1210,10 +1184,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      */
     public boolean hasAnyTickWork() {
         if (!pendingOverflowByConn.isEmpty()) return true;
-        if (overloadedHost.getProviderMode() == ProviderMode.WIRELESS
-                && gridNode.isActive()
-                && isInductionCardInstalled()
-                && CACHED_APPFLUX_FE_KEY != null) return true;
         if (overloadedHost.isAutoReturn()) return true;
         if (!fullReturnInv.isEmpty()) return true;
         return false;
@@ -1548,32 +1518,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    private void tickWirelessInductionEnergy() {
-        if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return;
-        if (!gridNode.isActive() || !isInductionCardInstalled()) return;
-
-        var level = overloadedHost.getLevel();
-        if (!(level instanceof ServerLevel sl)) return;
-
-        if (CACHED_APPFLUX_FE_KEY == null) return;
-        if (CACHED_APPFLUX_TRANSFER_RATE <= 0) return;
-
-        long gameTick = sl.getGameTime();
-        if (gameTick == lastEnergyTickGameTime) return;
-        lastEnergyTickGameTime = gameTick;
-
-        // Refresh validation (host-owned: 20-tick sweep + per-machine cleanup)
-        // — rebuildValidTargets() inside this call publishes the target
-        // snapshot that DistributorHost exposes to the shared distributor.
-        getOrRefreshValidConnections(sl, gameTick);
-        wirelessDistributor.tickNormal(sl);
-    }
-
     /**
      * Returns a cached list of valid wireless connections.
      * The cache is refreshed at most once per {@link #VALIDATE_INTERVAL} ticks.
-     * Both the energy-induction path and auto-return path share this cache
-     * to avoid duplicate world queries within a single tick.
      */
     private List<WirelessConnection> getOrRefreshValidConnections(ServerLevel providerLevel, long gameTick) {
         if (!connectionsDirty && gameTick - validConnectionsCacheTick < VALIDATE_INTERVAL) {
@@ -1601,23 +1548,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         pruneMachineBackoffState(validConnectionsCache);
         validConnectionsCacheTick = gameTick;
         connectionsDirty = false;
-        rebuildValidTargets();
         return validConnectionsCache;
-    }
-
-    /**
-     * Mirror {@link #validConnectionsCache} into a {@link WirelessEnergyAPI.Target}
-     * snapshot for the shared {@link WirelessEnergyDistributor}. Bumps
-     * {@link #validTargetsVersion} on every replacement so the distributor
-     * picks up the new set on its next tick.
-     */
-    private void rebuildValidTargets() {
-        var targets = new ArrayList<WirelessEnergyAPI.Target>(validConnectionsCache.size());
-        for (var conn : validConnectionsCache) {
-            targets.add(new WirelessEnergyAPI.Target(conn.dimension(), conn.pos(), conn.boundFace()));
-        }
-        validTargetsCache = List.copyOf(targets);
-        validTargetsVersion++;
     }
 
     private void pruneMachineBackoffState(List<WirelessConnection> validConnections) {
@@ -1641,22 +1572,11 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     public void onHostStateChanged() {
         invalidateValidConnectionsCache();
-        inductionCardCacheDirty = true;
         refreshEjectRegistrations();
         alertGridTick();
     }
 
-    /**
-     * Flush any FE the shared distributor still has buffered back to the ME
-     * network. Called from BE lifecycle hooks (chunk unload, removal) so we
-     * never leak FE on world-side teardown.
-     */
-    public void flushWirelessEnergyBuffer() {
-        wirelessDistributor.flushBufferToNetwork();
-    }
-
     public void onPersistentStateChanged() {
-        inductionCardCacheDirty = true;
         alertGridTick();
     }
 
@@ -1673,16 +1593,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!pendingOverflowByConn.isEmpty()) {
             return true;
         }
-        if (shouldTickWirelessEnergyNow(gameTick)) {
-            return true;
-        }
         return shouldPollAutoReturnNow(gameTick);
-    }
-
-    private boolean shouldTickWirelessEnergyNow(long gameTick) {
-        if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return false;
-        if (!gridNode.isActive() || !isInductionCardInstalled()) return false;
-        return CACHED_APPFLUX_FE_KEY != null && CACHED_APPFLUX_TRANSFER_RATE > 0;
     }
 
     private boolean shouldPollAutoReturnNow(long gameTick) {
@@ -1743,8 +1654,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         connectionsDirty = true;
         validConnectionsCache = List.of();
         validConnectionsCacheTick = -1;
-        validTargetsCache = List.of();
-        validTargetsVersion++;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();
         readyPQ.clear();
@@ -1752,65 +1661,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         lastPushWheelTick = -1;
         targetCache.clear();
         connectionStates.clear();
-        wirelessDistributor.clearTickState(true);
     }
-
-    private boolean isInductionCardInstalled() {
-        if (inductionCardCacheDirty) {
-            cachedInductionCardInstalled = computeInductionCardInstalled();
-            inductionCardCacheDirty = false;
-        }
-        return cachedInductionCardInstalled;
-    }
-
-    private boolean computeInductionCardInstalled() {
-        Item card = getAppliedFluxInductionCard();
-        if (card == null) return false;
-        if (this instanceof IUpgradeableObject upgradeableLogic) {
-            return upgradeableLogic.getUpgrades().isInstalled(card);
-        }
-        return false;
-    }
-
-    private final class DistributorHost implements WirelessEnergyDistributor.Host {
-        @Override
-        public IManagedGridNode getMainNode() {
-            return gridNode;
-        }
-
-        @Override
-        public IActionSource actionSource() {
-            return wirelessSource;
-        }
-
-        @Override
-        public boolean isHostRemoved() {
-            return overloadedHost.isRemoved();
-        }
-
-        @Override
-        public List<WirelessEnergyAPI.Target> getValidTargets() {
-            return validTargetsCache;
-        }
-
-        @Override
-        public int getValidTargetsVersion() {
-            return validTargetsVersion;
-        }
-    }
-
-    private static final Item APPFLUX_INDUCTION_CARD =
-            AppFluxHelper.getInductionCard();
-
-    // ---- Cached reflection results (resolved once at class-load, never per-tick) ----
-
-    /** Cached AEKey for Applied Flux FE energy type. Null if Applied Flux is not loaded. */
-    @Nullable
-    private static final AEKey CACHED_APPFLUX_FE_KEY = AppFluxHelper.FE_KEY;
-
-    /** Cached transfer rate from Applied Flux config. 0 if not available. */
-    private static final long CACHED_APPFLUX_TRANSFER_RATE = AppFluxHelper.TRANSFER_RATE;
-
 
     // ---- SavedData persistence helpers ------------------------------------------
 
@@ -1870,11 +1721,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     public int getTotalCapacity() {
         return totalCapacity;
-    }
-
-    @Nullable
-    private static Item getAppliedFluxInductionCard() {
-        return APPFLUX_INDUCTION_CARD;
     }
 
     private class Ticker implements IGridTickable {
@@ -1954,8 +1800,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         cachedOutputFilter = null;
         outputFilterDirty = true;
         invalidateValidConnectionsCache();
-        inductionCardCacheDirty = true;
-        lastEnergyTickGameTime = -1;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
@@ -2028,8 +1872,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         cachedOutputFilter = null;
         outputFilterDirty = true;
         invalidateValidConnectionsCache();
-        inductionCardCacheDirty = true;
-        lastEnergyTickGameTime = -1;
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;

@@ -10,8 +10,6 @@ import appeng.api.upgrades.IUpgradeableObject;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.core.definitions.AEItems;
 
-import com.moakiee.ae2lt.logic.AppFluxHelper;
-
 public abstract class AbstractGridRecipeMachineLogic<
         H extends AENetworkedBlockEntity & GridRecipeMachineHost<L, C> & IUpgradeableObject,
         L,
@@ -37,8 +35,6 @@ public abstract class AbstractGridRecipeMachineLogic<
         if (host.isRemoved() || host.getLevel() == null || host.isClientSide()) {
             return TickRateModulation.SLEEP;
         }
-
-        rechargeFromAppliedFlux();
 
         if (!host.hasLockedRecipe()) {
             tryStartProcessing();
@@ -178,19 +174,6 @@ public abstract class AbstractGridRecipeMachineLogic<
         if (!host.completeLockedRecipe(lockedRecipe, lockedCandidate)) {
             host.abortProcessing();
         }
-    }
-
-    private void rechargeFromAppliedFlux() {
-        if (!AppFluxHelper.isAvailable()) {
-            return;
-        }
-
-        host.getMainNode().ifPresent((grid, node) -> {
-            AppFluxHelper.pullPowerFromNetwork(
-                    grid.getStorageService().getInventory(),
-                    host.getMachineEnergyStorage(),
-                    appeng.api.networking.security.IActionSource.ofMachine(host));
-        });
     }
 
     private static long divideCeil(long dividend, long divisor) {
