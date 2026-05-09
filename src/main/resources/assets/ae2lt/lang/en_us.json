@@ -124,8 +124,6 @@
   "block.ae2lt.overloaded_controller": "Overloaded ME Controller",
   "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
   "block.ae2lt.overloaded_interface": "Overloaded ME Interface",
-  "config.jade.plugin_ae2lt.lightning_collector": "Lightning Collector",
-  "jade.ae2lt.lightning_collector.cooldown": "Cooldown: %ss",
   "ae2lt.gui.provider_mode.normal": "Normal Mode",
   "ae2lt.gui.provider_mode.wireless": "Wireless Mode",
   "ae2lt.gui.overload_pattern_encoder.mode.strict": "Ignore NBT: Off",
