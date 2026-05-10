@@ -84,6 +84,6 @@ public record SyncFrequencyListPacket(List<FrequencyEntry> entries) implements C
     }
 
     public static void handle(SyncFrequencyListPacket pkt, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> com.moakiee.ae2lt.client.ClientFrequencyCache.updateFromSync(pkt.entries));
+        ctx.enqueueWork(() -> ClientboundFrequencyPacketBridge.syncFrequencyList(pkt.entries));
     }
 }

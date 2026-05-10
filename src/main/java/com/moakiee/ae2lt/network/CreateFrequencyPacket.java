@@ -80,8 +80,8 @@ public record CreateFrequencyPacket(
                 // filters on "player.containerMenu's current freq id ==
                 // this freq", but a newly-created frequency isn't yet
                 // bound to any device — so without this explicit send
-                // the creator's {@link com.moakiee.ae2lt.client.ClientFrequencyCache}
-                // never learns they're an OWNER member, and the client's
+                // the creator's client-side cache never learns they're an
+                // OWNER member, and the client's
                 // {@code needsPasswordUnlock} predicate misfires on the
                 // first Select click (pops the password modal for the
                 // creator of an ENCRYPTED freq they just set up).

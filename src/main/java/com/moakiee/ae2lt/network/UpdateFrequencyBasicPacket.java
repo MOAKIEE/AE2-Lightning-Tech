@@ -89,13 +89,7 @@ public record UpdateFrequencyBasicPacket(
     }
 
     public static void handle(UpdateFrequencyBasicPacket pkt, IPayloadContext ctx) {
-        ctx.enqueueWork(() -> {
-            if (pkt.deleted) {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.removeFrequency(pkt.frequencyId);
-            } else {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.upsertFrequency(
-                        pkt.frequencyId, pkt.name, pkt.color, pkt.ownerUUID, pkt.security);
-            }
-        });
+        ctx.enqueueWork(() -> ClientboundFrequencyPacketBridge.updateFrequencyBasic(
+                pkt.frequencyId, pkt.deleted, pkt.name, pkt.color, pkt.ownerUUID, pkt.security));
     }
 }
