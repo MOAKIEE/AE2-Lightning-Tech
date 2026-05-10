@@ -2,9 +2,13 @@ package com.moakiee.ae2lt.client;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 
+import org.jetbrains.annotations.Nullable;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 import net.minecraft.data.AtlasIds;
 import net.minecraft.network.chat.Component;
@@ -29,6 +33,7 @@ public final class LightningKeyRenderHandler implements AEKeyRenderer<LightningK
     }
 
     public static final class State {
+        public TextureAtlasSprite sprite;
     }
 
     private static TextureAtlasSprite spriteFor(LightningKey stack) {
@@ -59,11 +64,55 @@ public final class LightningKeyRenderHandler implements AEKeyRenderer<LightningK
     }
 
     @Override
-    public void extract(State state, LightningKey what, Level level, int seed) {
+    public void extract(State state, LightningKey what, @Nullable Level level, int seed) {
+        state.sprite = spriteFor(what);
     }
 
     @Override
     public void submit(PoseStack poseStack, State state, SubmitNodeCollector nodes, int lightCoords) {
+        var sprite = state.sprite;
+        if (sprite == null) {
+            return;
+        }
+
+        poseStack.pushPose();
+        // Push out of the block face a bit to avoid z-fighting
+        poseStack.translate(0, 0, 0.01f);
+
+        // y is flipped here
+        var x0 = -1 / 2f;
+        var y0 = 1 / 2f;
+        var x1 = 1 / 2f;
+        var y1 = -1 / 2f;
+
+        nodes.submitCustomGeometry(poseStack, RenderTypes.entitySolid(sprite.atlasLocation()), (pose, buffer) -> {
+            buffer.addVertex(pose, x0, y1, 0)
+                    .setColor(0xFFFFFFFF)
+                    .setUv(sprite.getU0(), sprite.getV1())
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(lightCoords)
+                    .setNormal(0, 0, 1);
+            buffer.addVertex(pose, x1, y1, 0)
+                    .setColor(0xFFFFFFFF)
+                    .setUv(sprite.getU1(), sprite.getV1())
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(lightCoords)
+                    .setNormal(0, 0, 1);
+            buffer.addVertex(pose, x1, y0, 0)
+                    .setColor(0xFFFFFFFF)
+                    .setUv(sprite.getU1(), sprite.getV0())
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(lightCoords)
+                    .setNormal(0, 0, 1);
+            buffer.addVertex(pose, x0, y0, 0)
+                    .setColor(0xFFFFFFFF)
+                    .setUv(sprite.getU0(), sprite.getV0())
+                    .setOverlay(OverlayTexture.NO_OVERLAY)
+                    .setLight(lightCoords)
+                    .setNormal(0, 0, 1);
+        });
+
+        poseStack.popPose();
     }
 
     @Override
