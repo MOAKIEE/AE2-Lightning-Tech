@@ -64,7 +64,6 @@ public final class PigmeeFumoGiftHandler {
         if (dropped != null) {
             dropped.setNoPickUpDelay();
             dropped.setUnlimitedLifetime();
-            player.level().addFreshEntity(dropped);
         }
     }
 
