@@ -7,6 +7,7 @@ import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
 import mezz.jei.api.gui.builder.ITooltipBuilder;
@@ -16,12 +17,10 @@ import mezz.jei.api.gui.builder.ITooltipBuilder;
  * <p>
  * Displays abbreviated counts (e.g. {@code 1.5K}, {@code 2.3M}) with a
  * scaled-down font, similar to how AE2 renders amounts in its ME terminal.
- * A tooltip showing the exact count is available via
- * {@link #appendCountTooltip}.
+ * A tooltip showing the exact count is available via {@link #appendCountTooltip}.
  */
 public final class LargeStackCountRenderer {
-    private static final int SHADOW_COLOR = 0x413f54;
-    private static final int TEXT_COLOR = 0xFFFFFF;
+    private static final float SCALE = 0.75F;
 
     private LargeStackCountRenderer() {
     }
@@ -40,8 +39,7 @@ public final class LargeStackCountRenderer {
             return;
         }
 
-        String text = formatCount(stack.getCount());
-        renderLabel(guiGraphics, font, slot.x, slot.y, text);
+        renderLabel(guiGraphics, font, stack, slot.x, slot.y, formatCount(stack.getCount()));
     }
 
     /**
@@ -51,12 +49,18 @@ public final class LargeStackCountRenderer {
      * instance, but we still want to reuse the exact same large-stack count
      * visuals as the machine GUI.
      */
-    public static void renderCountAt(GuiGraphicsExtractor guiGraphics, Font font, int slotX, int slotY, long count) {
+    public static void renderCountAt(
+            GuiGraphicsExtractor guiGraphics,
+            Font font,
+            ItemStack stack,
+            int slotX,
+            int slotY,
+            long count) {
         if (count <= 1) {
             return;
         }
 
-        renderLabel(guiGraphics, font, slotX, slotY, formatCount(count));
+        renderLabel(guiGraphics, font, stack, slotX, slotY, formatCount(count));
     }
 
     /**
@@ -118,7 +122,6 @@ public final class LargeStackCountRenderer {
         double value = count / (double) divisor;
         if (value < 10) {
             String formatted = String.format("%.1f", value);
-            // "1.0" -> "1"
             if (formatted.endsWith(".0")) {
                 formatted = formatted.substring(0, formatted.length() - 2);
             }
@@ -127,10 +130,21 @@ public final class LargeStackCountRenderer {
         return Math.round(value) + suffix;
     }
 
-    private static void renderLabel(GuiGraphicsExtractor guiGraphics, Font font, int slotX, int slotY, String text) {
-        int drawX = slotX + 18 - font.width(text);
-        int drawY = slotY + 11;
-        guiGraphics.text(font, text, drawX + 1, drawY + 1, SHADOW_COLOR, false);
-        guiGraphics.text(font, text, drawX, drawY, TEXT_COLOR, false);
+    private static void renderLabel(
+            GuiGraphicsExtractor guiGraphics,
+            Font font,
+            ItemStack stack,
+            int slotX,
+            int slotY,
+            String text) {
+        // Keep the vanilla item-decoration layout logic, but pre-compensate the
+        // slot origin so the scaled text still hugs the slot's bottom-right corner.
+        int drawX = Math.round((slotX + 18.0F) / SCALE - 17.0F);
+        int drawY = Math.round((slotY + 16.0F) / SCALE - 14.0F);
+
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(SCALE);
+        guiGraphics.itemDecorations(font, stack, drawX, drawY, text);
+        guiGraphics.pose().popMatrix();
     }
 }

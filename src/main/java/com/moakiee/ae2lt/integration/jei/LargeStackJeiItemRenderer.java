@@ -32,13 +32,17 @@ public class LargeStackJeiItemRenderer implements IIngredientRenderer<ItemStack>
         }
 
         // Intentionally do NOT toggle RenderSystem.enableDepthTest / disableBlend here.
-        // GuiGraphicsExtractor#item and Font#drawInBatch already manage their own
-        // depth / blend state via their RenderTypes; toggling them here would leave
-        // the GL state machine in an unexpected configuration for the next JEI
-        // ingredient (one of the patterns the optimization report flags as
-        // GL state-machine pollution).
-        guiGraphics.item(ingredient, posX, posY);
-        LargeStackCountRenderer.renderCountAt(guiGraphics, getFontRenderer(Minecraft.getInstance(), ingredient), posX, posY, ingredient.getCount());
+        // GuiGraphicsExtractor's fake-item and text paths manage their own render
+        // state; toggling them here would leave the GL state machine in an
+        // unexpected configuration for the next JEI ingredient.
+        guiGraphics.fakeItem(ingredient, posX, posY);
+        LargeStackCountRenderer.renderCountAt(
+                guiGraphics,
+                getFontRenderer(Minecraft.getInstance(), ingredient),
+                ingredient,
+                posX,
+                posY,
+                ingredient.getCount());
     }
 
     @Override
