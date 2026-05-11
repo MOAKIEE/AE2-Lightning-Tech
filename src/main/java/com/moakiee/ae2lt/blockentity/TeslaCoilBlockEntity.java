@@ -12,6 +12,7 @@ import appeng.api.networking.security.IActionSource;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -19,6 +20,7 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilAutomationInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilEnergyStorage;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
@@ -42,7 +44,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
+public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
+        implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
     public static final int ENERGY_CAPACITY = 16_000_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";
@@ -465,6 +468,11 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity implements IAct
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.of(orientation.getSide(RelativeSide.BOTTOM));
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.DENSE_SMART;
     }
 
     private boolean hasLocalPrerequisites(TeslaCoilMode mode, long batchSize) {

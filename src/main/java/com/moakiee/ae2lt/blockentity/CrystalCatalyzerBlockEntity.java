@@ -35,6 +35,7 @@ import appeng.api.orientation.RelativeSide;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -42,6 +43,7 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
@@ -60,7 +62,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
-        implements IActionHost, IUpgradeableObject, FrequencyBindingHost,
+        implements IActionHost, IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
         GridRecipeMachineHost<CrystalCatalyzerLockedRecipe, CrystalCatalyzerRecipeCandidate> {
 
     private static final String TAG_INVENTORY = "Inventory";
@@ -738,6 +740,11 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.allOf(Direction.class);
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.DENSE_SMART;
     }
 
     private void onInventoryChanged() {

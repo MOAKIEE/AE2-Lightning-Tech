@@ -12,6 +12,7 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.BlockOrientation;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -21,6 +22,7 @@ import com.moakiee.ae2lt.api.event.LightningCollectedEvent;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.machine.common.InsertOnlyAutomationInventory;
 import com.moakiee.ae2lt.machine.lightningcollector.LightningCollectorInventory;
@@ -46,7 +48,8 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
-public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implements IActionHost, FrequencyBindingHost {
+public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
+        implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_COOLDOWN = "CooldownTicks";
@@ -337,6 +340,11 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity implem
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.allOf(Direction.class);
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.DENSE_SMART;
     }
 
     private boolean canCultivateFromNaturalStrike(ServerLevel serverLevel) {

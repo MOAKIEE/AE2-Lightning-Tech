@@ -30,6 +30,7 @@ import appeng.api.storage.MEStorage;
 import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -41,6 +42,7 @@ import org.jetbrains.annotations.Nullable;
 import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
@@ -48,7 +50,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
-        implements InternalInventoryHost, FrequencyBindingHost {
+        implements InternalInventoryHost, FrequencyBindingHost, OverloadedGridNodeOwner {
 
     public static final int MAX_WIRELESS_CONNECTIONS = 64;
 
@@ -177,6 +179,11 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkedBlockEntity
         return super.createMainNode()
                 .setTagName("overloaded_power_supply")
                 .setVisualRepresentation(ModBlocks.OVERLOADED_POWER_SUPPLY.get());
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.DENSE_SMART;
     }
 
     @Override

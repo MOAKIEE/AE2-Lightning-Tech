@@ -28,6 +28,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.stacks.AEItemKey;
+import appeng.api.util.AECableType;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
@@ -36,6 +37,7 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -52,7 +54,8 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * in WIRELESS mode it is purely visual / grid-connectivity and does NOT affect
  * wireless dispatch or auto-return — those use wireless connector records instead.
  */
-public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity implements FrequencyBindingHost {
+public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity
+        implements FrequencyBindingHost, OverloadedGridNodeOwner {
 
     /** Pattern slots displayed per GUI page. */
     public static final int SLOTS_PER_PAGE = 36;
@@ -245,6 +248,11 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             return EnumSet.noneOf(Direction.class);
         }
         return super.getTargets();
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.DENSE_SMART;
     }
 
     // -- Getters / Setters --
