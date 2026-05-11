@@ -100,6 +100,18 @@ public final class RailgunBeamRenderClient {
         }
     }
 
+    private record BeamGeometry(Vec3 origin, Vec3 endpoint) {}
+
+    private static BeamGeometry resolveBeamGeometry(BeamState s, Minecraft mc, float partialTick) {
+        Player shooter = mc.level == null ? null : mc.level.getPlayerByUUID(s.shooterId);
+        if (shooter == null) {
+            return new BeamGeometry(s.from, s.to);
+        }
+        Vec3 origin = RailgunVisuals.computeBarrelOrigin(shooter, partialTick);
+        Vec3 endpoint = RailgunVisuals.computeBarrelEndpoint(shooter, origin, s.from, s.to, partialTick);
+        return new BeamGeometry(origin, endpoint);
+    }
+
     private RailgunBeamRenderClient() {}
 
     public static void setLocalFiring(boolean firing) {
@@ -192,11 +204,11 @@ public final class RailgunBeamRenderClient {
         var bb = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_COLOR);
         var matrix = stack.last().pose();
         for (BeamState s : ACTIVE.values()) {
-            // Resolve dynamic origin per-frame so the beam tracks the player's gun barrel
-            // even when other players move between server packets.
-            Vec3 origin = resolveOriginFor(s, mc, partialTick);
-            addBeam(bb, matrix, origin, s.to, pulse, smoothTime);
-            addEndpointGlow(bb, matrix, s.to, camPos, pulse);
+            // Per-frame: rebuild origin AND endpoint so the beam stays parallel to the
+            // rendered barrel during fast camera motion (see RailgunVisuals).
+            BeamGeometry g = resolveBeamGeometry(s, mc, partialTick);
+            addBeam(bb, matrix, g.origin, g.endpoint, pulse, smoothTime);
+            addEndpointGlow(bb, matrix, g.endpoint, camPos, pulse);
         }
         var built = bb.build();
         if (built != null) {
@@ -214,18 +226,6 @@ public final class RailgunBeamRenderClient {
         spawnCrackleArcs(mc, now, partialTick);
     }
 
-    /**
-     * Resolve the visual origin of the beam -- preferred is the gun barrel
-     * position computed from the shooter's current (interpolated) pose;
-     * fallback to the server-provided eye position if the shooter isn't loaded.
-     */
-    private static Vec3 resolveOriginFor(BeamState s, Minecraft mc, float partialTick) {
-        if (mc.level == null) return s.from;
-        Player p = mc.level.getPlayerByUUID(s.shooterId);
-        if (p == null) return s.from;
-        return RailgunVisuals.computeBarrelOrigin(p, partialTick);
-    }
-
     private static void refreshLocalBeam(Minecraft mc, long now, float partialTick) {
         if (!localFiring || mc.player == null || mc.level == null) return;
         ItemStack stack = mc.player.getMainHandItem();
@@ -234,14 +234,10 @@ public final class RailgunBeamRenderClient {
             return;
         }
 
-        // The beam's visual origin is the gun barrel (see RailgunVisuals), so the
-        // client-side raycast must also start there and follow the player's look
-        // direction. Previously the raycast started at the eye position, which
-        // left the barrel origin off-axis and made the beam appear to emanate
-        // from a point floating in front of the player at steep pitches. The
-        // server still authoritatively computes damage from the eye position.
+        // Raycast from the visual barrel along the rendered look direction.
+        // Server still authoritatively computes damage from the eye position.
         Vec3 from = RailgunVisuals.computeBarrelOrigin(mc.player, partialTick);
-        Vec3 dir = mc.player.getViewVector(partialTick).normalize();
+        Vec3 dir = RailgunVisuals.computeBarrelDirection(mc.player, partialTick);
         double range = RailgunDefaults.BEAM_RANGE;
         Vec3 maxTo = from.add(dir.scale(range));
         HitResult blockHit = mc.level.clip(new ClipContext(
@@ -470,15 +466,15 @@ public final class RailgunBeamRenderClient {
         for (BeamState s : ACTIVE.values()) {
             if (now - s.lastArcTick < ARC_INTERVAL_TICKS) continue;
             s.lastArcTick = now;
-            Vec3 origin = resolveOriginFor(s, mc, partialTick);
-            Vec3 axis = s.to.subtract(origin);
+            BeamGeometry g = resolveBeamGeometry(s, mc, partialTick);
+            Vec3 axis = g.endpoint.subtract(g.origin);
             double len = axis.length();
             if (len < 1.0D) continue;
             // 1-2 small arcs per pulse
             int n = 1 + mc.level.random.nextInt(2);
             for (int i = 0; i < n; i++) {
                 double t = 0.10D + mc.level.random.nextDouble() * 0.85D;
-                Vec3 fromArc = origin.add(axis.scale(t));
+                Vec3 fromArc = g.origin.add(axis.scale(t));
                 Vec3 randDir = new Vec3(
                         mc.level.random.nextDouble() - 0.5D,
                         mc.level.random.nextDouble() - 0.5D,

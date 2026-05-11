@@ -55,12 +55,12 @@ public final class RailgunClientExtensions implements IClientItemExtensions {
         ModelPart main = right ? model.rightArm : model.leftArm;
         ModelPart support = right ? model.leftArm : model.rightArm;
         float mirror = right ? 1.0F : -1.0F;
-        main.xRot = -1.18F + model.head.xRot * 0.55F;
-        main.yRot = model.head.yRot - mirror * 0.10F;
-        main.zRot = mirror * 0.04F;
+        main.xRot = -1.48F + model.head.xRot;
+        main.yRot = model.head.yRot;
+        main.zRot = 0.0F;
 
-        support.xRot = -1.08F + model.head.xRot * 0.45F;
+        support.xRot = -1.42F + model.head.xRot;
         support.yRot = model.head.yRot + mirror * 0.42F;
-        support.zRot = -mirror * 0.18F;
+        support.zRot = -mirror * 0.14F;
     }
 }

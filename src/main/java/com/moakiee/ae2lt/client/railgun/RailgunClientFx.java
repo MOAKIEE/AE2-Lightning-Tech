@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.client.railgun;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 import com.moakiee.ae2lt.network.railgun.RailgunFirePacket;
@@ -34,13 +35,16 @@ public final class RailgunClientFx {
         boolean isMax = p.isMax();
         int tier = Math.max(1, p.tier());
 
-        // The plasma trail visually emanates from the firing player's gun barrel.
-        // Server-supplied {@code from} is the eye position; we use it only as fallback.
-        // Use the current frame's partial tick so the barrel is interpolated to the same
-        // moment as the rest of the rendering — matters most for the local player whose
-        // pose may have advanced past the tick boundary by the time the packet arrives.
-        Vec3 plasmaOrigin = RailgunVisuals.resolveShooterBarrel(
-                p.shooterId(), p.from(), RailgunVisuals.currentPartialTick());
+        // Resolve shooter once; fall back to server-supplied eye/hit if the player
+        // isn't loaded clientside.
+        float partialTick = RailgunVisuals.currentPartialTick();
+        Player shooter = mc.level.getPlayerByUUID(p.shooterId());
+        Vec3 plasmaOrigin = shooter == null
+                ? p.from()
+                : RailgunVisuals.computeBarrelOrigin(shooter, partialTick);
+        Vec3 plasmaEnd = shooter == null
+                ? hit
+                : RailgunVisuals.computeBarrelEndpoint(shooter, plasmaOrigin, p.from(), hit, partialTick);
 
         // 1. Shockwave + flash core at the impact point (slow, deliberate ease-out).
         float radius = p.impactRadius();
@@ -70,8 +74,8 @@ public final class RailgunClientFx {
         // 3. Plasma trail from gun barrel to impact — the headline "shot" effect.
         // Slightly thinner spread + longer lifetime than the chain arcs so it
         // reads as the main projectile path.
-        RailgunArcRenderer.spawnPlasma(plasmaOrigin, hit,
-                Math.max(10, (int) Math.round(plasmaOrigin.distanceTo(hit) * 1.2D)),
+        RailgunArcRenderer.spawnPlasma(plasmaOrigin, plasmaEnd,
+                Math.max(10, (int) Math.round(plasmaOrigin.distanceTo(plasmaEnd) * 1.2D)),
                 isMax ? 0.30F : 0.18F,
                 isMax ? 36 : 30);
 
