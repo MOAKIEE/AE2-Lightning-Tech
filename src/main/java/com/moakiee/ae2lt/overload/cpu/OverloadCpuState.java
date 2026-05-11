@@ -79,18 +79,23 @@ public final class OverloadCpuState {
         if (pushedCopies <= 0) {
             throw new IllegalArgumentException("pushedCopies must be > 0");
         }
-        if (actualOutputs.size() != patternDetails.outputs().size()) {
-            throw new IllegalArgumentException("output count mismatch between overload details and AE2 pattern details");
-        }
-
         for (int outputIndex = 0; outputIndex < patternDetails.outputs().size(); outputIndex++) {
             var output = patternDetails.outputs().get(outputIndex);
             if (output.matchMode() != MatchMode.ID_ONLY) {
                 continue;
             }
 
+            int ae2SlotIndex = output.slotIndex();
+            if (ae2SlotIndex < 0 || ae2SlotIndex >= actualOutputs.size()) {
+                continue;
+            }
+            var actual = actualOutputs.get(ae2SlotIndex);
+            if (!(actual.what() instanceof AEItemKey)) {
+                continue;
+            }
+
             var itemId = itemIdOf(output);
-            var exactExpectedKey = actualOutputs.get(outputIndex).what();
+            var exactExpectedKey = actual.what();
             var amount = output.amountPerCraft() * pushedCopies;
             var key = new PendingOverloadOutputKey(owner.craftingId(), patternReference.patternIdentity(),
                     output.slotIndex());
