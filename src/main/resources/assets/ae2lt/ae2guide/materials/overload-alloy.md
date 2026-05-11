@@ -22,10 +22,11 @@ item_ids:
 ## Processing Chain
 
 1. **Overload Alloy Blank** — crafted at a crafting table
-2. **Overload Alloy** — the finished alloy ingot, refined from the blank in the Lightning Simulation Room or Overload Processing Factory
+2. **Overload Alloy** — the finished alloy ingot, refined from the blank in the Lightning Simulation Room, or batch-produced in the Overload Processing Factory from metal and crystal components
 3. **Overload Alloy Plate** — pressed from the Overload Alloy in the Lightning Simulation Room or Overload Processing Factory; required by top-tier recipes such as the Ultimate Overload Core
 
 <RecipeFor id="ae2lt:overload_alloy_blank" />
+<RecipeFor id="ae2lt:overload_alloy" />
 
 ## Items
 

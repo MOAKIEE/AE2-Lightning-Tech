@@ -22,8 +22,8 @@ The **Lightning Collapse Matrix** is one of the key end-tier components in AE2 L
 |----------|--------|
 | Perfect Electro-Chime Crystal | 1 |
 | Ultimate Overload Core | 16 |
-| **Extreme High Voltage Lightning** | 256 |
-| Energy | 500,000,000 AE |
+| **Extreme High Voltage Lightning** | 128 |
+| Energy | 50,000,000 AE |
 
 Because the cost is already steep, you typically schedule this alongside your Overload Processing Factory and Lightning Assembly Chamber work.
 
