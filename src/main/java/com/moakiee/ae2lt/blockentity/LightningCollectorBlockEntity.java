@@ -344,7 +344,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.DENSE_SMART;
+        return AECableType.SMART;
     }
 
     private boolean canCultivateFromNaturalStrike(ServerLevel serverLevel) {

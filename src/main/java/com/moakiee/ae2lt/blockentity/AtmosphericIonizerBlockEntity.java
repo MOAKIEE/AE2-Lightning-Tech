@@ -419,7 +419,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.DENSE_SMART;
+        return AECableType.SMART;
     }
 
     private boolean isWeatherAlreadyActive(WeatherCondensateItem.Type type) {

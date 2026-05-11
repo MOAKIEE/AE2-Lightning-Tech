@@ -472,7 +472,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.DENSE_SMART;
+        return AECableType.SMART;
     }
 
     private boolean hasLocalPrerequisites(TeslaCoilMode mode, long batchSize) {

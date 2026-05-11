@@ -629,7 +629,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkedBlockEntit
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.DENSE_SMART;
+        return AECableType.SMART;
     }
 
     private void invalidateExportTargets() {

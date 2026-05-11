@@ -728,7 +728,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public AECableType getCableConnectionType(Direction dir) {
-        return AECableType.DENSE_SMART;
+        return AECableType.SMART;
     }
 
     @Override
