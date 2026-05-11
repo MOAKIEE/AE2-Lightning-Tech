@@ -6,7 +6,7 @@
       "ingredient": {
         "item": "ae2lt:overload_alloy_plate"
       },
-      "count": 32
+      "count": 16
     },
     {
       "ingredient": {
@@ -18,7 +18,7 @@
       "ingredient": {
         "item": "minecraft:echo_shard"
       },
-      "count": 16
+      "count": 1
     }
   ],
   "result": {
@@ -26,6 +26,6 @@
     "count": 1
   },
   "totalEnergy": 8000000,
-  "lightningCost": 16,
+  "lightningCost": 8,
   "lightningTier": "extreme_high_voltage"
 }
