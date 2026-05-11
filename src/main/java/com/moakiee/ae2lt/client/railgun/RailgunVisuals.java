@@ -31,9 +31,9 @@ public final class RailgunVisuals {
      */
     private static final double SIDE_OFFSET = 0.27D;
     /** How far in front of the eye along the look vector the muzzle sits. */
-    private static final double FORWARD_OFFSET = 1.02D;
+    private static final double FORWARD_OFFSET = 0.86D;
     /** How far below the eye (in the view's up axis) the muzzle sits. */
-    private static final double VERTICAL_OFFSET = -0.26D;
+    private static final double VERTICAL_OFFSET = -0.18D;
 
     private RailgunVisuals() {}
 

@@ -43,7 +43,7 @@ public final class RailgunClientExtensions implements IClientItemExtensions {
 
         // Keep the gun locked in a shouldered position. Using swing/equip/charge
         // here makes held left-fire and right-charge visibly jitter.
-        poseStack.translate(side * 0.48F, -0.58F, -0.98F);
+        poseStack.translate(side * 0.48F, -0.49F, -0.98F);
         poseStack.mulPose(Axis.XP.rotationDegrees(-4.0F));
         poseStack.mulPose(Axis.YP.rotationDegrees(side * -2.0F));
         poseStack.mulPose(Axis.ZP.rotationDegrees(side * -3.0F));
