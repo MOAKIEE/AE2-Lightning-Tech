@@ -4,6 +4,7 @@ import org.joml.Vector3f;
 
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.HumanoidArm;
@@ -27,6 +28,11 @@ import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
  * ahead of the rendered barrel by up to one tick (~50 ms) during fast camera
  * motion. Server-supplied {@code (to - from)} is also unsuitable for direction
  * since it's frozen at packet-send time.
+ *
+ * <p>First-person barrel tracks the hand rendering's subtle rotation offset
+ * (from {@code ItemInHandRenderer.renderHandsWithItems}), which applies a
+ * small lag derived from {@code xBob}/{@code yBob} smoothing. Without this
+ * the beam snaps to the camera while the held gun model visibly lags behind.
  */
 public final class RailgunVisuals {
 
@@ -48,23 +54,36 @@ public final class RailgunVisuals {
     /** World-space muzzle position for the given player at the current frame. */
     public static Vec3 computeBarrelOrigin(Player player, float partialTick) {
         if (isLocalFirstPerson(player)) {
-            return computeFirstPersonBarrelOrigin(player);
+            return computeFirstPersonBarrelOrigin(player, partialTick);
         }
         return computeThirdPersonBarrelOrigin(player, partialTick);
     }
 
     /**
      * Normalized barrel-aligned direction. Local first-person uses the camera
-     * look vector. Third-person / remote use {@code yHeadRot + xRot} to match
-     * the rendered model head (see class javadoc).
+     * look vector adjusted by the hand-rendering offset so the beam visually
+     * tracks the held gun model. Third-person / remote use
+     * {@code yHeadRot + xRot} to match the rendered model head.
      */
     public static Vec3 computeBarrelDirection(Player player, float partialTick) {
         if (isLocalFirstPerson(player)) {
-            Vec3 cam = fromJoml(Minecraft.getInstance().gameRenderer.getMainCamera().getLookVector());
-            if (cam.lengthSqr() < 1.0E-9D) {
+            Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+            Vec3 look = fromJoml(camera.getLookVector());
+            if (look.lengthSqr() < 1.0E-9D) {
                 return new Vec3(1.0D, 0.0D, 0.0D);
             }
-            return cam.normalize();
+            look = look.normalize();
+            Vec3 right = fromJoml(camera.getLeftVector()).scale(-1.0D).normalize();
+            Vec3 up = right.cross(look).normalize();
+            // Apply the same subtle rotation offset that ItemInHandRenderer
+            // adds in renderHandsWithItems — (viewRot - bobSmoothed) * 0.1.
+            float pitchOff = fpHandPitchOffset(player, partialTick);
+            float yawOff = fpHandYawOffset(player, partialTick);
+            if (Math.abs(pitchOff) > 0.001F || Math.abs(yawOff) > 0.001F) {
+                look = rotateDegrees(look, right, pitchOff);
+                look = rotateDegrees(look, up, yawOff);
+            }
+            return look.normalize();
         }
         float yaw = Mth.rotLerp(partialTick, player.yHeadRotO, player.yHeadRot);
         float pitch = Mth.lerp(partialTick, player.xRotO, player.getXRot());
@@ -102,22 +121,53 @@ public final class RailgunVisuals {
         return Minecraft.getInstance().getTimer().getGameTimeDeltaPartialTick(true);
     }
 
+    // ── First-person hand-rendering offset ────────────────────────────────
+
+    /**
+     * {@code ItemInHandRenderer.renderHandsWithItems} applies a subtle rotation
+     * derived from the gap between the current view rotation and the smoothed
+     * {@code xBob}/{@code yBob} values (which exponentially approach the real
+     * rotation at factor 0.5 per tick). The hand therefore lags behind the
+     * camera during fast rotation. We replicate this offset so the beam
+     * visually matches the held gun model.
+     */
+    private static float fpHandPitchOffset(Player player, float partialTick) {
+        if (!(player instanceof LocalPlayer lp)) return 0F;
+        float xBobLerp = Mth.lerp(partialTick, lp.xBobO, lp.xBob);
+        return (lp.getViewXRot(partialTick) - xBobLerp) * 0.1F;
+    }
+
+    private static float fpHandYawOffset(Player player, float partialTick) {
+        if (!(player instanceof LocalPlayer lp)) return 0F;
+        float yBobLerp = Mth.lerp(partialTick, lp.yBobO, lp.yBob);
+        return (lp.getViewYRot(partialTick) - yBobLerp) * 0.1F;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
     private static boolean isLocalFirstPerson(Player player) {
         Minecraft mc = Minecraft.getInstance();
         return player == mc.player && mc.options.getCameraType().isFirstPerson();
     }
 
-    private static Vec3 computeFirstPersonBarrelOrigin(Player player) {
+    private static Vec3 computeFirstPersonBarrelOrigin(Player player, float partialTick) {
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
         Vec3 eye = camera.getPosition();
         Vec3 look = fromJoml(camera.getLookVector()).normalize();
         Vec3 right = fromJoml(camera.getLeftVector()).scale(-1.0D).normalize();
         Vec3 up = right.cross(look).normalize();
         double sideMul = holdingArm(player) == HumanoidArm.LEFT ? -1.0D : 1.0D;
-        return eye
-                .add(look.scale(FP_FORWARD_OFFSET))
+        Vec3 offset = look.scale(FP_FORWARD_OFFSET)
                 .add(right.scale(FP_SIDE_OFFSET * sideMul))
                 .add(up.scale(FP_VERTICAL_OFFSET));
+        // Apply the same hand-rendering rotation offset as direction.
+        float pitchOff = fpHandPitchOffset(player, partialTick);
+        float yawOff = fpHandYawOffset(player, partialTick);
+        if (Math.abs(pitchOff) > 0.001F || Math.abs(yawOff) > 0.001F) {
+            offset = rotateDegrees(offset, right, pitchOff);
+            offset = rotateDegrees(offset, up, yawOff);
+        }
+        return eye.add(offset);
     }
 
     /**
@@ -135,6 +185,17 @@ public final class RailgunVisuals {
                 .add(0.0D, player.getBbHeight() * TP_SHOULDER_HEIGHT_FACTOR, 0.0D)
                 .add(bodyRight.scale(TP_SHOULDER_SIDE * sideMul))
                 .add(lookDir.scale(TP_BARREL_LENGTH));
+    }
+
+    /** Rodrigues rotation of v around unit axis by angle in degrees. */
+    private static Vec3 rotateDegrees(Vec3 v, Vec3 axis, float deg) {
+        double rad = Math.toRadians(deg);
+        double cos = Math.cos(rad);
+        double sin = Math.sin(rad);
+        // v * cos + (axis × v) * sin + axis * (axis · v) * (1 - cos)
+        double dot = axis.dot(v);
+        Vec3 cross = axis.cross(v);
+        return v.scale(cos).add(cross.scale(sin)).add(axis.scale(dot * (1.0D - cos)));
     }
 
     private static Vec3 fromJoml(Vector3f v) {

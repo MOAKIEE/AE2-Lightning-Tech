@@ -122,10 +122,11 @@ public final class RailgunBeamRenderClient {
             ACTIVE.remove(mc.player.getUUID());
         } else {
             long tick = mc.level == null ? 0L : mc.level.getGameTime();
+            float pt = mc.getTimer().getGameTimeDeltaPartialTick(true);
+            Vec3 from = RailgunVisuals.computeBarrelOrigin(mc.player, pt);
+            Vec3 dir = RailgunVisuals.computeBarrelDirection(mc.player, pt);
             ACTIVE.put(mc.player.getUUID(), new BeamState(mc.player.getUUID(),
-                    mc.player.getEyePosition(),
-                    mc.player.getEyePosition().add(mc.player.getLookAngle().scale(RailgunDefaults.BEAM_RANGE)),
-                    tick));
+                    from, from.add(dir.scale(RailgunDefaults.BEAM_RANGE)), tick));
         }
     }
 
@@ -144,7 +145,18 @@ public final class RailgunBeamRenderClient {
             }
             return;
         }
-        if (mc.player != null && p.shooterId().equals(mc.player.getUUID()) && !localFiring) {
+        boolean isLocal = mc.player != null && p.shooterId().equals(mc.player.getUUID());
+        // Local player's beam is driven entirely by refreshLocalBeam (runs every
+        // render frame with current camera data); overwriting from/to with server
+        // eye-position values causes length drift during fast head rotation.
+        if (isLocal) {
+            if (!localFiring) return;
+            // Keep lastUpdateTick fresh so the stale-check doesn't kill the beam,
+            // but do NOT touch from/to — those belong to refreshLocalBeam.
+            ACTIVE.computeIfPresent(p.shooterId(), (k, prev) -> {
+                prev.lastUpdateTick = tick;
+                return prev;
+            });
             return;
         }
         ACTIVE.compute(p.shooterId(), (k, prev) -> {
