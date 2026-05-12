@@ -63,6 +63,15 @@ public final class OverloadArmorState {
     private OverloadArmorState() {
     }
 
+    /** Direct read of persisted stored energy (no registries / no runtime cache hit). */
+    public static long readPersistedStoredEnergy(ItemStack armor) {
+        var root = readRootTag(armor);
+        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
+            return 0L;
+        }
+        return Math.max(0L, root.getCompound(TAG_ROOT).getLong(TAG_STORED_ENERGY));
+    }
+
     public static ItemStack[] loadSlots(ItemStack armor, HolderLookup.Provider registries) {
         var result = new ItemStack[SLOT_COUNT];
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
