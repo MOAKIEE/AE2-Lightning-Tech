@@ -62,7 +62,7 @@ public final class RailgunShockwaveRenderer {
     /** Spawn a shockwave at {@code center} that expands to {@code maxRadius} over {@code lifetime} ticks. */
     public static void spawn(Vec3 center, float maxRadius, int lifetime) {
         ACTIVE.add(new Burst(center, maxRadius, lifetime,
-                0.55F, 0.85F, 1.00F));
+                1.00F, 0.50F, 0.75F));
     }
 
     public static void clear() {

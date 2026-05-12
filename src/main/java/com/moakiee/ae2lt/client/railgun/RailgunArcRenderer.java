@@ -71,8 +71,8 @@ public final class RailgunArcRenderer {
      */
     public static void spawnPlasma(Vec3 from, Vec3 to, int segments, float spread, int lifetime) {
         spawn(from, to, segments, spread, lifetime,
-                0.95F, 1.00F, 1.00F,   // hot white-blue core
-                0.35F, 0.78F, 1.00F,   // wider blue glow
+                1.00F, 0.80F, 0.90F,   // hot white-pink core
+                1.00F, 0.30F, 0.60F,   // wider pink glow
                 0.05F, 0.16F);
     }
 
@@ -93,8 +93,8 @@ public final class RailgunArcRenderer {
         int segments = Math.max(4, Math.min(14, (int) Math.round(len * 2.5D)));
         float spread = (float) Math.min(0.35D, 0.06D + len * 0.04D);
         spawn(from, to, segments, spread, lifetime,
-                1.00F, 0.98F, 0.85F,   // hot pale-yellow core (electric snap)
-                0.45F, 0.65F, 1.00F,   // blue glow
+                1.00F, 0.82F, 0.88F,   // hot pale-pink core (electric snap)
+                0.90F, 0.25F, 0.55F,   // deep pink glow
                 0.04F, 0.13F);
     }
 
