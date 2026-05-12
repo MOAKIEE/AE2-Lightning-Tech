@@ -673,5 +673,11 @@
   "item.ae2lt.armor_submodule_reflect": "Reflect Module",
   "item.ae2lt.armor_submodule_reflect.tooltip": "Reflects 25% of received damage back to the attacker",
   "ae2lt.overload_armor.feature.reflect.name": "Damage Reflect",
-  "ae2lt.overload_armor.feature.reflect.desc": "Reflects a portion of received melee damage back to the attacker"
+  "ae2lt.overload_armor.feature.reflect.desc": "Reflects a portion of received melee damage back to the attacker",
+  "item.ae2lt.armor_submodule_dash": "Dash Module",
+  "item.ae2lt.armor_submodule_dash.tooltip": "Press V to dash forward (3s cooldown)",
+  "ae2lt.overload_armor.feature.dash.name": "Dash",
+  "ae2lt.overload_armor.feature.dash.desc": "Dash forward in the direction you are looking",
+  "ae2lt.overload_armor.feature.dash.cooldown": "Dash on cooldown",
+  "key.ae2lt.dash": "Dash (Overload Armor)"
 }

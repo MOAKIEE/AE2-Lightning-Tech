@@ -12,6 +12,7 @@ import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.network.DashPacket;
 import com.moakiee.ae2lt.network.OpenOverloadArmorMenuPacket;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
@@ -21,12 +22,18 @@ public final class OverloadArmorKeyMappings {
             GLFW.GLFW_KEY_G,
             "key.categories.ae2lt.overload_armor");
 
+    public static final KeyMapping DASH = new KeyMapping(
+            "key.ae2lt.dash",
+            GLFW.GLFW_KEY_V,
+            "key.categories.ae2lt.overload_armor");
+
     private OverloadArmorKeyMappings() {
     }
 
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(OPEN_CONFIG);
+        event.register(DASH);
     }
 
     @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
@@ -43,6 +50,10 @@ public final class OverloadArmorKeyMappings {
 
             while (OPEN_CONFIG.consumeClick()) {
                 PacketDistributor.sendToServer(new OpenOverloadArmorMenuPacket());
+            }
+
+            while (DASH.consumeClick()) {
+                PacketDistributor.sendToServer(new DashPacket());
             }
         }
     }

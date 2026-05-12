@@ -9,6 +9,7 @@ import com.moakiee.ae2lt.network.railgun.RailgunOpenGuiPacket;
 import com.moakiee.ae2lt.network.railgun.RailgunRecoilFxPacket;
 import com.moakiee.ae2lt.network.railgun.RailgunSettingsTogglePacket;
 import com.moakiee.ae2lt.network.OpenOverloadArmorMenuPacket;
+import com.moakiee.ae2lt.network.DashPacket;
 import com.moakiee.ae2lt.network.SubmoduleLifecyclePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -110,6 +111,11 @@ public final class NetworkInit {
                 OpenOverloadArmorMenuPacket.TYPE,
                 OpenOverloadArmorMenuPacket.STREAM_CODEC,
                 OpenOverloadArmorMenuPacket::handle);
+
+        registrar.playToServer(
+                DashPacket.TYPE,
+                DashPacket.STREAM_CODEC,
+                DashPacket::handle);
 
         // Overload Armor: S→C
         registrar.playToClient(

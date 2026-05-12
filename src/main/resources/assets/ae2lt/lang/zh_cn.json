@@ -673,5 +673,11 @@
   "item.ae2lt.armor_submodule_reflect": "反伤模块",
   "item.ae2lt.armor_submodule_reflect.tooltip": "将 25% 受到的伤害反弹给攻击者",
   "ae2lt.overload_armor.feature.reflect.name": "伤害反弹",
-  "ae2lt.overload_armor.feature.reflect.desc": "将受到的近战伤害的一部分反弹给攻击者"
+  "ae2lt.overload_armor.feature.reflect.desc": "将受到的近战伤害的一部分反弹给攻击者",
+  "item.ae2lt.armor_submodule_dash": "冲刺模块",
+  "item.ae2lt.armor_submodule_dash.tooltip": "按 V 键向视角方向冲刺（3 秒冷却）",
+  "ae2lt.overload_armor.feature.dash.name": "冲刺",
+  "ae2lt.overload_armor.feature.dash.desc": "向视角方向快速冲刺",
+  "ae2lt.overload_armor.feature.dash.cooldown": "冲刺冷却中",
+  "key.ae2lt.dash": "冲刺（过载护甲）"
 }
