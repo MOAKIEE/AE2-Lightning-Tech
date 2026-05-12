@@ -661,5 +661,9 @@
   "item.ae2lt.armor_submodule_water_breathing": "Water Breathing Module",
   "item.ae2lt.armor_submodule_water_breathing.tooltip": "Grants permanent Water Breathing while active",
   "ae2lt.overload_armor.feature.water_breathing.name": "Water Breathing",
-  "ae2lt.overload_armor.feature.water_breathing.desc": "Grants permanent Water Breathing while the armor is equipped and active"
+  "ae2lt.overload_armor.feature.water_breathing.desc": "Grants permanent Water Breathing while the armor is equipped and active",
+  "item.ae2lt.armor_submodule_speed": "Speed Module",
+  "item.ae2lt.armor_submodule_speed.tooltip": "Increases movement speed while active",
+  "ae2lt.overload_armor.feature.speed.name": "Speed Boost",
+  "ae2lt.overload_armor.feature.speed.desc": "Increases movement speed while the armor is equipped and active"
 }
