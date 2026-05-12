@@ -665,5 +665,9 @@
   "item.ae2lt.armor_submodule_speed": "Speed Module",
   "item.ae2lt.armor_submodule_speed.tooltip": "Increases movement speed while active",
   "ae2lt.overload_armor.feature.speed.name": "Speed Boost",
-  "ae2lt.overload_armor.feature.speed.desc": "Increases movement speed while the armor is equipped and active"
+  "ae2lt.overload_armor.feature.speed.desc": "Increases movement speed while the armor is equipped and active",
+  "item.ae2lt.armor_submodule_resistance": "Resistance Module",
+  "item.ae2lt.armor_submodule_resistance.tooltip": "Reduces incoming damage by 30% after armor (stacks multiplicatively)",
+  "ae2lt.overload_armor.feature.resistance.name": "Damage Resistance",
+  "ae2lt.overload_armor.feature.resistance.desc": "Reduces incoming damage after vanilla armor calculation"
 }

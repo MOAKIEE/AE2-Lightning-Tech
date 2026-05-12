@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.item.TestOverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.item.NightVisionSubmoduleItem;
 import com.moakiee.ae2lt.item.WaterBreathingSubmoduleItem;
 import com.moakiee.ae2lt.item.SpeedSubmoduleItem;
+import com.moakiee.ae2lt.item.ResistanceSubmoduleItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
@@ -189,6 +190,11 @@ public final class ModItems {
     public static final DeferredItem<SpeedSubmoduleItem> ARMOR_SUBMODULE_SPEED = ITEMS.registerItem(
             "armor_submodule_speed",
             SpeedSubmoduleItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_RESISTANCE = ITEMS.registerItem(
+            "armor_submodule_resistance",
+            ResistanceSubmoduleItem::new,
             new Item.Properties());
 
     // ── Electromagnetic Railgun (终末期 BiS 武器) ─────────────────────────────

@@ -665,5 +665,9 @@
   "item.ae2lt.armor_submodule_speed": "移速模块",
   "item.ae2lt.armor_submodule_speed.tooltip": "激活时提升移动速度",
   "ae2lt.overload_armor.feature.speed.name": "移速提升",
-  "ae2lt.overload_armor.feature.speed.desc": "护甲装备并激活时提升移动速度"
+  "ae2lt.overload_armor.feature.speed.desc": "护甲装备并激活时提升移动速度",
+  "item.ae2lt.armor_submodule_resistance": "抗性模块",
+  "item.ae2lt.armor_submodule_resistance.tooltip": "在原版护甲减伤后额外减少 30% 伤害（乘算叠加）",
+  "ae2lt.overload_armor.feature.resistance.name": "伤害抗性",
+  "ae2lt.overload_armor.feature.resistance.desc": "在原版护甲减伤之后乘算减少受到的伤害"
 }
