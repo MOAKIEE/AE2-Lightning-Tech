@@ -11,9 +11,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 
+import com.moakiee.ae2lt.device.module.OverloadDeviceSubmodule;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
-public interface OverloadArmorSubmodule {
+public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
+    @Override
     String id();
 
     String nameKey();
