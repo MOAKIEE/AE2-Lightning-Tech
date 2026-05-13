@@ -51,8 +51,8 @@ public final class RailgunVisuals {
     private static final double TP_SHOULDER_HEIGHT_FACTOR = 0.764D; // 1.376 / 1.8
     private static final double TP_SHOULDER_SIDE = 0.3125D;          // 5/16
     private static final double TP_BARREL_OUTWARD = 0.0625D;         // 1/16
-    private static final double TP_BARREL_ALONG_ARM = 1.519D;
-    private static final double TP_BARREL_PERP_UP = 0.210D;
+    private static final double TP_BARREL_ALONG_ARM = 1.331D;
+    private static final double TP_BARREL_PERP_UP = 0.180D;
     // Arm tilt vs. horizontal: arm.xRot baseline (-1.48) is 5.2° below -π/2.
     private static final float TP_ARM_PITCH_OFFSET_DEG =
             (float) Math.toDegrees(RailgunClientExtensions.MAIN_ARM_X_ROT_BASE + Math.PI / 2.0D);
