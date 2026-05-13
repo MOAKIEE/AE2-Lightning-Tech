@@ -39,6 +39,7 @@ import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
+import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -411,6 +412,12 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         while (it.hasNext()) {
             var conn = it.next();
             if (!conn.dimension().equals(hostLevel.dimension())) {
+                it.remove();
+                removed++;
+                continue;
+            }
+            if (!WirelessConnectionRange.isConnectorLinkInRange(
+                    hostLevel.dimension(), worldPosition, conn.dimension(), conn.pos())) {
                 it.remove();
                 removed++;
                 continue;

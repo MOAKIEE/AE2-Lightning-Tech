@@ -1830,6 +1830,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (!conn.dimension().equals(providerLevel.dimension())) {
                 continue;
             }
+            if (!WirelessConnectionRange.isConnectorLinkInRange(
+                    providerLevel.dimension(), overloadedHost.getBlockPos(), conn.dimension(), conn.pos())) {
+                continue;
+            }
             var targetLevel = server.getLevel(conn.dimension());
             if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) {
                 continue;
@@ -1876,6 +1880,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     @Nullable
     private ServerLevel resolveTargetLevel(ServerLevel providerLevel, WirelessConnection conn) {
         if (!conn.dimension().equals(providerLevel.dimension())) return null;
+        if (!WirelessConnectionRange.isConnectorLinkInRange(
+                providerLevel.dimension(), overloadedHost.getBlockPos(), conn.dimension(), conn.pos())) {
+            return null;
+        }
         var targetLevel = providerLevel.getServer().getLevel(conn.dimension());
         if (targetLevel == null || !targetLevel.isLoaded(conn.pos())) return null;
         return targetLevel;

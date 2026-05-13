@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
+import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 import java.util.ArrayList;
 import net.minecraft.ChatFormatting;
@@ -171,6 +172,7 @@ public record WirelessConnectorUsePacket(
         var updated = new ArrayList<BlockPos>();
         var connected = new ArrayList<BlockPos>();
         int skippedDueToLimit = 0;
+        int skippedOutOfRange = 0;
 
         for (var targetPos : targets) {
             var existing = provider.getConnections().stream()
@@ -183,11 +185,21 @@ public record WirelessConnectorUsePacket(
                         disconnected.add(targetPos.immutable());
                     }
                 } else {
+                    if (!WirelessConnectionRange.isConnectorLinkInRange(
+                            level, provider.getBlockPos(), targetPos)) {
+                        skippedOutOfRange++;
+                        continue;
+                    }
                     if (provider.addOrUpdateConnection(targetDim, targetPos, face)) {
                         updated.add(targetPos.immutable());
                     }
                 }
             } else {
+                if (!WirelessConnectionRange.isConnectorLinkInRange(
+                        level, provider.getBlockPos(), targetPos)) {
+                    skippedOutOfRange++;
+                    continue;
+                }
                 if (provider.addOrUpdateConnection(targetDim, targetPos, face)) {
                     connected.add(targetPos.immutable());
                 } else {
@@ -196,14 +208,57 @@ public record WirelessConnectorUsePacket(
             }
         }
 
-        sendProviderConnectionFeedback(player, disconnected, updated, connected, skippedDueToLimit);
+        sendProviderConnectionFeedback(player, disconnected, updated, connected, skippedDueToLimit, skippedOutOfRange);
     }
 
     private void sendProviderConnectionFeedback(ServerPlayer player,
                                                 ArrayList<BlockPos> disconnected,
                                                 ArrayList<BlockPos> updated,
                                                 ArrayList<BlockPos> connected,
-                                                int skippedDueToLimit) {
+                                                int skippedDueToLimit,
+                                                int skippedOutOfRange) {
+        if (skippedOutOfRange > 0 && skippedDueToLimit > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "ae2lt.connector.partial_with_range_and_limit",
+                        changed,
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance(),
+                        skippedDueToLimit,
+                        OverloadedPatternProviderBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                        .withStyle(ChatFormatting.GREEN), true);
+                return;
+            }
+            player.displayClientMessage(Component.translatable(
+                    "ae2lt.connector.skipped_range_and_limit",
+                    skippedOutOfRange,
+                    WirelessConnectionRange.maxConnectorDistance(),
+                    skippedDueToLimit,
+                    OverloadedPatternProviderBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        if (skippedOutOfRange > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "ae2lt.connector.out_of_range_partial",
+                        changed,
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance())
+                        .withStyle(ChatFormatting.GREEN), true);
+                return;
+            }
+            player.displayClientMessage(Component.translatable(
+                    "ae2lt.connector.out_of_range",
+                    skippedOutOfRange,
+                    WirelessConnectionRange.maxConnectorDistance())
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         if (skippedDueToLimit > 0) {
             int changed = disconnected.size() + updated.size() + connected.size();
             if (changed > 0) {
@@ -253,6 +308,7 @@ public record WirelessConnectorUsePacket(
         var disconnected = new ArrayList<BlockPos>();
         var updated = new ArrayList<BlockPos>();
         var connected = new ArrayList<BlockPos>();
+        int skippedOutOfRange = 0;
 
         for (var targetPos : targets) {
             var existing = iface.getConnections().stream()
@@ -264,18 +320,28 @@ public record WirelessConnectorUsePacket(
                     iface.removeConnection(targetDim, targetPos);
                     disconnected.add(targetPos.immutable());
                 } else {
+                    if (!WirelessConnectionRange.isConnectorLinkInRange(
+                            level, iface.getBlockPos(), targetPos)) {
+                        skippedOutOfRange++;
+                        continue;
+                    }
                     iface.addOrUpdateConnection(
                             new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
                     updated.add(targetPos.immutable());
                 }
             } else {
+                if (!WirelessConnectionRange.isConnectorLinkInRange(
+                        level, iface.getBlockPos(), targetPos)) {
+                    skippedOutOfRange++;
+                    continue;
+                }
                 iface.addOrUpdateConnection(
                         new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
                 connected.add(targetPos.immutable());
             }
         }
 
-        sendConnectionFeedback(player, disconnected, updated, connected);
+        sendConnectionFeedback(player, disconnected, updated, connected, 0, skippedOutOfRange);
     }
 
     private void handlePowerSupplyConnection(ServerPlayer player, net.minecraft.world.level.Level level, ItemStack stack) {
@@ -302,26 +368,85 @@ public record WirelessConnectorUsePacket(
         }
 
         var targetDim = level.dimension();
-        var result = powerSupply.editConnections(targetDim, targets, face);
+        var editableTargets = new ArrayList<BlockPos>();
+        int skippedOutOfRange = 0;
+        for (var targetPos : targets) {
+            var existing = powerSupply.getConnections().stream()
+                    .filter(c -> c.sameTarget(targetDim, targetPos))
+                    .findFirst().orElse(null);
+            boolean removingExisting = existing != null && existing.boundFace() == face;
+            if (removingExisting || WirelessConnectionRange.isConnectorLinkInRange(
+                    level, powerSupply.getBlockPos(), targetPos)) {
+                editableTargets.add(targetPos.immutable());
+            } else {
+                skippedOutOfRange++;
+            }
+        }
+
+        var result = powerSupply.editConnections(targetDim, editableTargets, face);
         sendConnectionFeedback(player,
                 new ArrayList<>(result.disconnected()),
                 new ArrayList<>(result.updated()),
                 new ArrayList<>(result.connected()),
-                result.skippedDueToLimit());
+                result.skippedDueToLimit(),
+                skippedOutOfRange);
     }
 
     private void sendConnectionFeedback(ServerPlayer player,
                                          ArrayList<BlockPos> disconnected,
                                          ArrayList<BlockPos> updated,
                                          ArrayList<BlockPos> connected) {
-        sendConnectionFeedback(player, disconnected, updated, connected, 0);
+        sendConnectionFeedback(player, disconnected, updated, connected, 0, 0);
     }
 
     private void sendConnectionFeedback(ServerPlayer player,
                                          ArrayList<BlockPos> disconnected,
                                          ArrayList<BlockPos> updated,
                                          ArrayList<BlockPos> connected,
-                                         int skippedDueToLimit) {
+                                         int skippedDueToLimit,
+                                         int skippedOutOfRange) {
+        if (skippedOutOfRange > 0 && skippedDueToLimit > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "ae2lt.connector.partial_with_range_and_limit",
+                        changed,
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance(),
+                        skippedDueToLimit,
+                        OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                        .withStyle(ChatFormatting.GREEN), true);
+                return;
+            }
+            player.displayClientMessage(Component.translatable(
+                    "ae2lt.connector.skipped_range_and_limit",
+                    skippedOutOfRange,
+                    WirelessConnectionRange.maxConnectorDistance(),
+                    skippedDueToLimit,
+                    OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
+        if (skippedOutOfRange > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                player.displayClientMessage(Component.translatable(
+                        "ae2lt.connector.out_of_range_partial",
+                        changed,
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance())
+                        .withStyle(ChatFormatting.GREEN), true);
+                return;
+            }
+            player.displayClientMessage(Component.translatable(
+                    "ae2lt.connector.out_of_range",
+                    skippedOutOfRange,
+                    WirelessConnectionRange.maxConnectorDistance())
+                    .withStyle(ChatFormatting.RED), true);
+            return;
+        }
+
         if (skippedDueToLimit > 0) {
             int changed = disconnected.size() + updated.size() + connected.size();
             if (changed > 0) {

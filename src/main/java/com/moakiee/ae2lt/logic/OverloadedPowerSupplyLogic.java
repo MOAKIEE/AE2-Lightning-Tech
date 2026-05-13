@@ -495,6 +495,11 @@ public class OverloadedPowerSupplyLogic implements IGridTickable {
                     invalidConnections.add(cachedConnections.get(i));
                     continue;
                 }
+                if (!WirelessConnectionRange.isConnectorLinkInRange(
+                        serverLevel.dimension(), host.getBlockPos(), target.dimension(), target.pos())) {
+                    invalidConnections.add(cachedConnections.get(i));
+                    continue;
+                }
                 ServerLevel targetLevel = server.getLevel(target.dimension());
                 if (targetLevel == null) {
                     invalidConnections.add(cachedConnections.get(i));
