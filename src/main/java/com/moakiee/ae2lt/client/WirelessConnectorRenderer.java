@@ -378,8 +378,6 @@ public final class WirelessConnectorRenderer {
             int color) {
         int[] c = decomposeColor(color);
         Matrix4f mat = poseStack.last().pose();
-        VertexConsumer visible = buffer.getBuffer(AERenderTypes.AREA_OVERLAY_LINE);
-        VertexConsumer occluded = buffer.getBuffer(AERenderTypes.AREA_OVERLAY_LINE_OCCLUDED);
 
         float fx = from.getX() + 0.5F;
         float fy = from.getY() + 0.5F;
@@ -399,8 +397,11 @@ public final class WirelessConnectorRenderer {
         float nx = dx / len;
         float ny = dy / len;
         float nz = dz / len;
+        VertexConsumer visible = buffer.getBuffer(AERenderTypes.AREA_OVERLAY_LINE);
         lineVertex(visible, mat, c, fx, fy, fz, nx, ny, nz);
         lineVertex(visible, mat, c, tx, ty, tz, nx, ny, nz);
+
+        VertexConsumer occluded = buffer.getBuffer(AERenderTypes.AREA_OVERLAY_LINE_OCCLUDED);
         lineVertex(occluded, mat, c, fx, fy, fz, nx, ny, nz);
         lineVertex(occluded, mat, c, tx, ty, tz, nx, ny, nz);
     }
