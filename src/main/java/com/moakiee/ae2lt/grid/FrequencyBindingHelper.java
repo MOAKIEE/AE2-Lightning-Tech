@@ -23,7 +23,9 @@ import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
  * WirelessReceiver virtual-connection lifecycle, but can be attached to any
  * AE-networked block entity whose main node should join a wireless controller.
  */
-public final class FrequencyBindingHelper implements WirelessFrequencyManager.TransmitterListener {
+public final class FrequencyBindingHelper
+        implements WirelessFrequencyManager.TransmitterListener,
+                   com.moakiee.ae2lt.api.frequency.FrequencyBindingAccess {
     public static final String TAG_FREQUENCY_ID = "FrequencyId";
     public static final String TAG_MEMORY_FREQUENCY = "Frequency";
 
@@ -34,7 +36,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     /** Upper bound for retry backoff; keeps unloaded chunks from causing steady update churn. */
     private static final int MAX_RETRY_COOLDOWN_TICKS = 20 * 10;
 
-    private final FrequencyBindingHost host;
+    private final com.moakiee.ae2lt.api.frequency.FrequencyBindingHost host;
 
     private int frequencyId = -1;
     @Nullable
@@ -44,7 +46,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     private int nextRetryCooldownTicks = INITIAL_RETRY_COOLDOWN_TICKS;
     private int subscribedFrequencyId = -1;
 
-    public FrequencyBindingHelper(FrequencyBindingHost host) {
+    public FrequencyBindingHelper(com.moakiee.ae2lt.api.frequency.FrequencyBindingHost host) {
         this.host = host;
     }
 

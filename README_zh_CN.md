@@ -43,6 +43,9 @@ AE2 闪电科技 把闪电变成一种可用的资源。收集自然雷电，精
 - **`LightningTier`** —— `HIGH_VOLTAGE` / `EXTREME_HIGH_VOLTAGE`。序列化名固化为 `"high_voltage"` / `"extreme_high_voltage"`。
 - **`LightningCollectedEvent`** —— 在 `NeoForge.EVENT_BUS` 上发布的可取消事件，于 `LightningCollectorBlockEntity.captureLightning(boolean)` 内部、roll 出数量之后、写入网格之前触发。订阅者可以取消捕获或改写入库数量。
 - **`AE2LTBlockEntityIds`** / **`AE2LTRecipeIds`** —— 公开方块实体与配方类型的固化 `ResourceLocation` 常量。
+- **`com.moakiee.ae2lt.api.frequency.FrequencyApi`** —— 无线频率系统的静态门面（服务器线程）。提供只读查询：`getBoundFrequencyId(BlockEntity)`、`getFrequencyInfo(server, id)`、`getTransmitter(server, id)`、`isValidFrequency(server, id)`，返回 `FrequencyInfo` / `TransmitterInfo` / `FrequencySecurity` 等不可变快照，不暴露内部可变状态。
+- **`FrequencyBindingHost`** + **`FrequencyBindingAccess`** —— 让第三方方块实体作为接收设备加入无线控制器。BE 必须继承 AE2 的 `AENetworkedBlockEntity`；把 `FrequencyApi.createBinding(this)` 得到的 access 存进一个字段，从 `getFrequencyBindingAccess()` 返回（同时实现另外三个 host 访问器：`getFrequencyBindingBlockEntity` / `saveFrequencyBindingChanges` / `markFrequencyBindingForUpdate`），并把生命周期方法（`onReady` / `setRemoved` / `clearRemoved` / `serverTick` / `save` / `load` / `onMainNodeStateChanged`）转发给句柄。虚拟连接重试、监听订阅、绑定设备列表全部由内部 helper 自动处理。完整可参考实现见 `package-info.java`。
+- **`FrequencyBindingMenuHost`** + **`FrequencyApi.openBindingScreen(menu)`** —— 让第三方菜单复用本 mod 完整的频率选择 / 创建 / 成员管理 UI。在你的 `AbstractContainerMenu` 上实现 Marker，在 `Screen` 上自绘按钮，`onPress` 里调一行辅助函数即可——服务端权限校验、列表同步、密码、成员管理全部复用。
 
 `com.moakiee.ae2lt.api.*` 之外的所有代码都是内部实现，可能在小版本之间变更。完整契约与"发布即冻结"清单见 `package-info.java`。
 

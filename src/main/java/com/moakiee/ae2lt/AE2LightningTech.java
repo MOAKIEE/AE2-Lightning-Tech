@@ -56,7 +56,9 @@ import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
 
 import com.moakiee.ae2lt.api.AE2LTCapabilities;
+import com.moakiee.ae2lt.api.frequency.FrequencyApi;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
+import com.moakiee.ae2lt.grid.api.FrequencyApiBridge;
 import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
@@ -463,6 +465,7 @@ public class AE2LightningTech {
      * so that newBlockEntity() and getBlockEntity() work correctly.
      */
     private void commonSetup(FMLCommonSetupEvent event) {
+        FrequencyApi.setProvider(new FrequencyApiBridge());
         event.enqueueWork(() -> {
             var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
             var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
