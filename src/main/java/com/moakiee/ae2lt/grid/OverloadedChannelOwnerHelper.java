@@ -10,10 +10,13 @@ import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
+import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGrid;
+import appeng.api.networking.IGridMultiblock;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.pathing.ChannelMode;
 import appeng.blockentity.networking.ControllerBlockEntity;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 
 /**
  * Centralized owner checks for the overloaded-channel subsystem.
@@ -99,6 +102,41 @@ public final class OverloadedChannelOwnerHelper {
 
         long capacity = (long) channelsPerController() * overloadedCount * channelMode.getCableCapacityFactor();
         return (int) Math.min(Integer.MAX_VALUE, capacity);
+    }
+
+    /**
+     * Counts channel-consuming devices in the grid, treating each multiblock
+     * cluster as a single device. Required because our pathing mixin gives
+     * multiblock siblings a channel marker so the whole cluster stays active.
+     */
+    public static int countUsedChannels(IGrid grid) {
+        Set<IGridNode> visitedMultiblockSiblings = new ReferenceOpenHashSet<>();
+        int count = 0;
+        for (var node : grid.getNodes()) {
+            if (!node.hasFlag(GridFlags.REQUIRE_CHANNEL)) {
+                continue;
+            }
+            if (!node.meetsChannelRequirements()) {
+                continue;
+            }
+            if (node.hasFlag(GridFlags.MULTIBLOCK)) {
+                var multiblock = node.getService(IGridMultiblock.class);
+                if (multiblock != null) {
+                    if (!visitedMultiblockSiblings.add(node)) {
+                        continue;
+                    }
+                    var siblings = multiblock.getMultiblockNodes();
+                    while (siblings.hasNext()) {
+                        var sibling = siblings.next();
+                        if (sibling != node) {
+                            visitedMultiblockSiblings.add(sibling);
+                        }
+                    }
+                }
+            }
+            count++;
+        }
+        return count;
     }
 
 }

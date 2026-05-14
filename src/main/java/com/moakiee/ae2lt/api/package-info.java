@@ -4,8 +4,9 @@
  * <p>This package, and its sub-packages
  * {@link com.moakiee.ae2lt.api.lightning lightning},
  * {@link com.moakiee.ae2lt.api.event event}, and
- * {@link com.moakiee.ae2lt.api.ids ids}, are the only stable contract for addon
- * authors. Anything else under {@code com.moakiee.ae2lt.*} is internal and may
+ * {@link com.moakiee.ae2lt.api.ids ids}, and
+ * {@link com.moakiee.ae2lt.api.frequency frequency}, are the only stable
+ * contract for addon authors. Anything else under {@code com.moakiee.ae2lt.*} is internal and may
  * change between minor versions without notice.
  *
  * <h2>Frozen on release</h2>
@@ -14,6 +15,8 @@
  *   <li>{@link com.moakiee.ae2lt.api.lightning.LightningTier} constants and their
  *       serialized names ({@code "high_voltage"}, {@code "extreme_high_voltage"})</li>
  *   <li>{@link com.moakiee.ae2lt.api.AE2LTCapabilities} {@code Identifier}s</li>
+ *   <li>The wireless frequency facade and binding contracts in
+ *       {@link com.moakiee.ae2lt.api.frequency}</li>
  *   <li>The block entity and recipe IDs in
  *       {@link com.moakiee.ae2lt.api.ids}</li>
  *   <li>The fields and trigger timing of

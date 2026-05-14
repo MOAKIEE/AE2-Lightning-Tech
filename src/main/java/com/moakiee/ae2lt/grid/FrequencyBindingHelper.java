@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
@@ -26,7 +25,9 @@ import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
  * WirelessReceiver virtual-connection lifecycle, but can be attached to any
  * AE-networked block entity whose main node should join a wireless controller.
  */
-public final class FrequencyBindingHelper implements WirelessFrequencyManager.TransmitterListener {
+public final class FrequencyBindingHelper
+        implements WirelessFrequencyManager.TransmitterListener,
+                   com.moakiee.ae2lt.api.frequency.FrequencyBindingAccess {
     public static final String TAG_FREQUENCY_ID = "FrequencyId";
     public static final String TAG_MEMORY_FREQUENCY = "Frequency";
 
@@ -37,7 +38,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     /** Upper bound for retry backoff; keeps unloaded chunks from causing steady update churn. */
     private static final int MAX_RETRY_COOLDOWN_TICKS = 20 * 10;
 
-    private final FrequencyBindingHost host;
+    private final com.moakiee.ae2lt.api.frequency.FrequencyBindingHost host;
 
     private int frequencyId = -1;
     @Nullable
@@ -47,7 +48,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     private int nextRetryCooldownTicks = INITIAL_RETRY_COOLDOWN_TICKS;
     private int subscribedFrequencyId = -1;
 
-    public FrequencyBindingHelper(FrequencyBindingHost host) {
+    public FrequencyBindingHelper(com.moakiee.ae2lt.api.frequency.FrequencyBindingHost host) {
         this.host = host;
     }
 
@@ -201,14 +202,7 @@ public final class FrequencyBindingHelper implements WirelessFrequencyManager.Tr
     public int getGridUsedChannels() {
         var grid = host.getFrequencyBindingBlockEntity().getMainNode().getGrid();
         if (grid == null) return 0;
-
-        int count = 0;
-        for (var node : grid.getNodes()) {
-            if (node.hasFlag(GridFlags.REQUIRE_CHANNEL) && node.meetsChannelRequirements()) {
-                count++;
-            }
-        }
-        return count;
+        return OverloadedChannelOwnerHelper.countUsedChannels(grid);
     }
 
     public int getGridMaxChannels() {

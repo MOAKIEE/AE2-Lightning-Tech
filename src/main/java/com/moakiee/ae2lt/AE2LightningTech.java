@@ -10,6 +10,7 @@ import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.config.AE2LTConfigMigration;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
@@ -52,7 +53,9 @@ import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
 
 import com.moakiee.ae2lt.api.AE2LTCapabilities;
+import com.moakiee.ae2lt.api.frequency.FrequencyApi;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
+import com.moakiee.ae2lt.grid.api.FrequencyApiBridge;
 import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
@@ -66,6 +69,7 @@ import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.OnDatapackSyncEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppedEvent;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
@@ -175,6 +179,7 @@ public class AE2LightningTech {
                     .build());
 
     public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
+        AE2LTConfigMigration.runIfNeeded();
         ModFumos.register();
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
@@ -193,6 +198,7 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         NeoForge.EVENT_BUS.addListener(this::onDatapackSync);
+        NeoForge.EVENT_BUS.addListener(this::onServerTickPost);
         NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
     }
 
@@ -458,6 +464,7 @@ public class AE2LightningTech {
      * so that newBlockEntity() and getBlockEntity() work correctly.
      */
     private void commonSetup(FMLCommonSetupEvent event) {
+        FrequencyApi.setProvider(new FrequencyApiBridge());
         event.enqueueWork(() -> {
             var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
             var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
@@ -666,6 +673,10 @@ public class AE2LightningTech {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
         ResearchNoteGenerator.onServerStopped();
+    }
+
+    private void onServerTickPost(ServerTickEvent.Post event) {
+        WirelessFrequencyManager.flushPendingDeviceNotifications();
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})

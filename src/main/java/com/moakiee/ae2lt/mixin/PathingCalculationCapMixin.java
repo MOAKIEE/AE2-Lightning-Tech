@@ -61,6 +61,8 @@ public abstract class PathingCalculationCapMixin {
     @Unique private List<IGridNode> ae2lt$overloadedControllers;
     @Unique private boolean ae2lt$useMaxFlow;
     @Unique private BorrowedCapacityCalculator.Result ae2lt$flowResult;
+    // -1 = not applicable, fall through to vanilla channelsInUse
+    @Unique private int ae2lt$maxFlowChannelsInUse = -1;
 
     // ── Phase 1: constructor – identify & unify overloaded controllers ──
 
@@ -230,8 +232,20 @@ public abstract class PathingCalculationCapMixin {
             for (var entry : connFlow.reference2IntEntrySet()) {
                 entry.getKey().setAdHocChannels(entry.getIntValue());
             }
+
+            // Persist used-channel count for getChannelsInUse() override.
+            // channelNodes here holds exactly the max-flow winners (one per
+            // device, one per multiblock cluster), so its size is the answer.
+            ae2lt$maxFlowChannelsInUse = ae2lt$flowResult.channelNodes().size();
         }
         BorrowedCapacityCalculator.clearActiveData();
         ae2lt$flowResult = null;
+    }
+
+    @Inject(method = "getChannelsInUse", at = @At("HEAD"), cancellable = true)
+    private void ae2lt$overrideChannelsInUse(CallbackInfoReturnable<Integer> cir) {
+        if (ae2lt$maxFlowChannelsInUse >= 0) {
+            cir.setReturnValue(ae2lt$maxFlowChannelsInUse);
+        }
     }
 }

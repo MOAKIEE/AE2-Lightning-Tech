@@ -23,6 +23,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
 
@@ -103,6 +104,7 @@ public final class WirelessFrequencyManager extends SavedData {
     private final Map<Integer, Set<DeviceEntry>> devices = new HashMap<>();
     private final Map<Integer, List<TransmitterListener>> listeners = new HashMap<>();
     private final List<DeviceListener> deviceListeners = new ArrayList<>();
+    private final Set<Integer> pendingDeviceNotifications = new HashSet<>();
 
     private int uniqueId = 0;
 
@@ -124,7 +126,7 @@ public final class WirelessFrequencyManager extends SavedData {
     public static void onServerStart(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
         instance = overworld.getDataStorage().computeIfAbsent(TYPE);
-        // broadcast connection changes to every player whose FrequencyMenu is on this freq
+        // Broadcasts are flushed from the server tick, outside chunk post-load callbacks.
         instance.addDeviceListener(freqId ->
                 com.moakiee.ae2lt.network.SyncFrequencyDetailPacket.broadcastConnectionsTo(server, freqId));
     }
@@ -133,6 +135,7 @@ public final class WirelessFrequencyManager extends SavedData {
         if (instance != null) {
             instance.listeners.clear();
             instance.deviceListeners.clear();
+            instance.pendingDeviceNotifications.clear();
         }
         instance = null;
     }
@@ -140,6 +143,12 @@ public final class WirelessFrequencyManager extends SavedData {
     @Nullable
     public static WirelessFrequencyManager get() {
         return instance;
+    }
+
+    public static void flushPendingDeviceNotifications() {
+        if (instance != null) {
+            instance.flushDeviceListeners();
+        }
     }
 
     // ── Frequency CRUD ──
@@ -165,20 +174,18 @@ public final class WirelessFrequencyManager extends SavedData {
             TransmitterEntry txEntry = transmitters.get(id);
             if (txEntry != null && server != null) {
                 ServerLevel txLevel = server.getLevel(txEntry.dimension());
-                if (txLevel != null && txLevel.isLoaded(txEntry.pos())) {
-                    var be = txLevel.getBlockEntity(txEntry.pos());
-                    if (be instanceof WirelessTransmitterNodeProvider provider
-                            && provider.getTransmitterFrequencyId() == id) {
-                        if (be instanceof com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity ctrl) {
-                            ctrl.clearFrequency();
-                        }
+                var be = txLevel == null ? null : getLoadedBlockEntity(txLevel, txEntry.pos());
+                if (be instanceof WirelessTransmitterNodeProvider provider
+                        && provider.getTransmitterFrequencyId() == id) {
+                    if (be instanceof com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity ctrl) {
+                        ctrl.clearFrequency();
                     }
                 }
             }
             transmitters.remove(id);
             devices.remove(id);
             fireListeners(id, false);
-            fireDeviceListeners(id);
+            queueDeviceListeners(id);
             setDirty();
             return true;
         }
@@ -261,14 +268,23 @@ public final class WirelessFrequencyManager extends SavedData {
         if (entry == null) return null;
 
         ServerLevel targetLevel = server.getLevel(entry.dimension());
-        if (targetLevel == null || !targetLevel.isLoaded(entry.pos())) {
+        if (targetLevel == null) {
             if (entry.cachedNode() != null) {
                 updateNode(freqId, null);
             }
             return null;
         }
 
-        var be = targetLevel.getBlockEntity(entry.pos());
+        var chunk = targetLevel.getChunkSource()
+                .getChunkNow(entry.pos().getX() >> 4, entry.pos().getZ() >> 4);
+        if (chunk == null) {
+            if (entry.cachedNode() != null) {
+                updateNode(freqId, null);
+            }
+            return null;
+        }
+
+        var be = chunk.getBlockEntity(entry.pos());
         if (be instanceof WirelessTransmitterNodeProvider provider) {
             IGridNode node = provider.getWirelessGridNode();
             updateNode(freqId, node);
@@ -308,10 +324,19 @@ public final class WirelessFrequencyManager extends SavedData {
         if (!isFrequencyValid(freqId)) return;
         var set = devices.computeIfAbsent(freqId, k -> new HashSet<>());
         // replace any entry at the same position so flags (advanced, isController) stay current
-        set.removeIf(d -> d.dimension().equals(entry.dimension()) && d.pos().equals(entry.pos()));
+        var existing = set.stream()
+                .filter(d -> d.dimension().equals(entry.dimension()) && d.pos().equals(entry.pos()))
+                .findFirst()
+                .orElse(null);
+        if (entry.equals(existing)) {
+            return;
+        }
+        if (existing != null) {
+            set.remove(existing);
+        }
         set.add(entry);
         setDirty();
-        fireDeviceListeners(freqId);
+        queueDeviceListeners(freqId);
     }
 
     public void unregisterDevice(int freqId, ResourceKey<Level> dim, BlockPos pos) {
@@ -322,7 +347,7 @@ public final class WirelessFrequencyManager extends SavedData {
         if (removed) {
             if (set.isEmpty()) devices.remove(freqId);
             setDirty();
-            fireDeviceListeners(freqId);
+            queueDeviceListeners(freqId);
         }
     }
 
@@ -336,11 +361,32 @@ public final class WirelessFrequencyManager extends SavedData {
         deviceListeners.add(l);
     }
 
+    private void queueDeviceListeners(int freqId) {
+        pendingDeviceNotifications.add(freqId);
+    }
+
+    private void flushDeviceListeners() {
+        if (pendingDeviceNotifications.isEmpty() || deviceListeners.isEmpty()) {
+            return;
+        }
+        var dirtyFrequencies = List.copyOf(pendingDeviceNotifications);
+        pendingDeviceNotifications.clear();
+        for (int freqId : dirtyFrequencies) {
+            fireDeviceListeners(freqId);
+        }
+    }
+
     private void fireDeviceListeners(int freqId) {
         if (deviceListeners.isEmpty()) return;
         for (var l : List.copyOf(deviceListeners)) {
             l.onDevicesChanged(freqId);
         }
+    }
+
+    @Nullable
+    private static BlockEntity getLoadedBlockEntity(ServerLevel level, BlockPos pos) {
+        var chunk = level.getChunkSource().getChunkNow(pos.getX() >> 4, pos.getZ() >> 4);
+        return chunk == null ? null : chunk.getBlockEntity(pos);
     }
 
     // ── Persistence ──
