@@ -36,6 +36,7 @@ import appeng.api.orientation.RelativeSide;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
+import appeng.api.util.AECableType;
 import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
@@ -44,6 +45,7 @@ import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
 import com.moakiee.ae2lt.machine.common.GridRecipeMachineHost;
@@ -62,7 +64,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
-    implements IUpgradeableObject, FrequencyBindingHost,
+    implements IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
         GridRecipeMachineHost<OverloadProcessingLockedRecipe, OverloadProcessingRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_UPGRADES = "Upgrades";
@@ -360,7 +362,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     public boolean hasAutoExportWork() {
-        return !allowedOutputs.isEmpty() && AdjacentItemAutoExportHelper.hasAnyOutput(
+        if (allowedOutputs.isEmpty() || !autoExport) {
+            return false;
+        }
+        if (!outputTank.getFluid().isEmpty()) {
+            return true;
+        }
+        return AdjacentItemAutoExportHelper.hasAnyOutput(
                 autoExport,
                 OverloadProcessingFactoryInventory.SLOT_OUTPUT_0,
                 OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT,
@@ -368,11 +376,11 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     public boolean pushOutResult() {
-        if (allowedOutputs.isEmpty() || !hasAutoExportWork() || !(level instanceof ServerLevel serverLevel)) {
+        if (allowedOutputs.isEmpty() || !autoExport || !(level instanceof ServerLevel serverLevel)) {
             return false;
         }
 
-        return AdjacentItemAutoExportHelper.pushOutResult(
+        boolean pushedItem = AdjacentItemAutoExportHelper.pushOutResult(
                 this,
                 getOrientation(),
                 allowedOutputs,
@@ -386,6 +394,16 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                     }
                 },
                 direction -> getExportTarget(serverLevel, direction));
+
+        boolean pushedFluid = AdjacentItemAutoExportHelper.pushOutFluid(
+                this,
+                getOrientation(),
+                allowedOutputs,
+                outputTank::getFluid,
+                amount -> outputTank.extractFluid(amount).getAmount(),
+                direction -> getExportTarget(serverLevel, direction));
+
+        return pushedItem || pushedFluid;
     }
 
     public void onNeighborChanged(BlockPos changedPos) {
@@ -716,6 +734,11 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     @Override
     public Set<Direction> getGridConnectableSides(BlockOrientation orientation) {
         return EnumSet.allOf(Direction.class);
+    }
+
+    @Override
+    public AECableType getCableConnectionType(Direction dir) {
+        return AECableType.SMART;
     }
 
     @Override

@@ -77,11 +77,9 @@ public abstract class LargeStackItemHandler extends BaseInternalInventory {
         Objects.requireNonNull(stack, "stack");
 
         if (!stack.isEmpty()) {
-            int slotLimit = getSlotLimit(slot);
-            if (stack.getCount() > slotLimit) {
-                throw new IllegalArgumentException(
-                        "Stack count " + stack.getCount() + " exceeds slot " + slot + " limit " + slotLimit);
-            }
+            // Save loading and client slot sync can carry stacks whose count
+            // exceeds the current slot limit after balance changes. Insertion
+            // still enforces the limit, so automation cannot grow them further.
             if (validateItem && !isItemValid(slot, stack)) {
                 throw new IllegalArgumentException("Stack " + stack + " is not valid for slot " + slot);
             }
@@ -279,9 +277,8 @@ public abstract class LargeStackItemHandler extends BaseInternalInventory {
                 continue;
             }
 
-            int limit = getSlotLimit(slot);
             int savedCount = itemTag.getIntOr(TAG_COUNT_INT, stack.getCount());
-            stack = stack.copyWithCount(Math.min(limit, Math.max(1, savedCount)));
+            stack = stack.copyWithCount(Math.max(1, savedCount));
             stacks.set(slot, stack);
         }
     }
@@ -304,9 +301,8 @@ public abstract class LargeStackItemHandler extends BaseInternalInventory {
                 continue;
             }
 
-            int limit = getSlotLimit(slot);
             int savedCount = itemInput.getIntOr(TAG_COUNT_INT, stack.getCount());
-            stack = stack.copyWithCount(Math.min(limit, Math.max(1, savedCount)));
+            stack = stack.copyWithCount(Math.max(1, savedCount));
             stacks.set(slot, stack);
         }
     }

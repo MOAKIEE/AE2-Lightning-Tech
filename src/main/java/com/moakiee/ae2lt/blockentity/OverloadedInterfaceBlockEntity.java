@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
+import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -873,7 +874,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         if (!connectionsDirty
                 && gameTick - validConnectionsCacheTick < VALIDATE_INTERVAL)
             return validConnectionsCache;
-        if (connections.removeIf(c -> !c.dimension().equals(sl.dimension()))) {
+        if (connections.removeIf(c -> !WirelessConnectionRange.isConnectorLinkInRange(
+                sl.dimension(), getBlockPos(), c.dimension(), c.pos()))) {
             invalidateConnectionCache();
             refreshEjectRegistrations();
             recomputeIdlePower();
@@ -900,6 +902,10 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     private ServerLevel resolveTargetLevel(
             ServerLevel origin, WirelessConnection conn) {
         if (!conn.dimension().equals(origin.dimension())) return null;
+        if (!WirelessConnectionRange.isConnectorLinkInRange(
+                origin.dimension(), getBlockPos(), conn.dimension(), conn.pos())) {
+            return null;
+        }
         var tl = origin.getServer().getLevel(conn.dimension());
         return (tl != null && tl.isLoaded(conn.pos())) ? tl : null;
     }
