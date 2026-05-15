@@ -175,6 +175,9 @@ public class AtmosphericIonizerBlock extends AEBaseEntityBlock<AtmosphericIonize
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         if (!level.isClientSide && !state.is(newState.getBlock())) {
             boolean lower = state.getValue(HALF) == DoubleBlockHalf.LOWER;
+            if (lower && level.getBlockEntity(pos) instanceof AtmosphericIonizerBlockEntity ionizer) {
+                ionizer.cancelProcessingForRemoval();
+            }
             BlockPos otherPos = lower ? pos.above() : pos.below();
             DoubleBlockHalf otherHalf = lower ? DoubleBlockHalf.UPPER : DoubleBlockHalf.LOWER;
             BlockState otherState = level.getBlockState(otherPos);
