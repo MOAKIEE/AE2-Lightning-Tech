@@ -308,6 +308,7 @@ public record WirelessConnectorUsePacket(
         var disconnected = new ArrayList<BlockPos>();
         var updated = new ArrayList<BlockPos>();
         var connected = new ArrayList<BlockPos>();
+        int skippedDueToLimit = 0;
         int skippedOutOfRange = 0;
 
         for (var targetPos : targets) {
@@ -325,9 +326,10 @@ public record WirelessConnectorUsePacket(
                         skippedOutOfRange++;
                         continue;
                     }
-                    iface.addOrUpdateConnection(
-                            new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
-                    updated.add(targetPos.immutable());
+                    if (iface.addOrUpdateConnection(
+                            new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face))) {
+                        updated.add(targetPos.immutable());
+                    }
                 }
             } else {
                 if (!WirelessConnectionRange.isConnectorLinkInRange(
@@ -335,13 +337,20 @@ public record WirelessConnectorUsePacket(
                     skippedOutOfRange++;
                     continue;
                 }
-                iface.addOrUpdateConnection(
-                        new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
-                connected.add(targetPos.immutable());
+                if (iface.addOrUpdateConnection(
+                        new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face))) {
+                    connected.add(targetPos.immutable());
+                } else {
+                    skippedDueToLimit++;
+                }
             }
         }
 
-        sendConnectionFeedback(player, disconnected, updated, connected, 0, skippedOutOfRange);
+        sendConnectionFeedback(player, disconnected, updated, connected,
+                skippedDueToLimit, skippedOutOfRange,
+                "ae2lt.connector.interface_partial",
+                "ae2lt.connector.interface_full",
+                OverloadedInterfaceBlockEntity.MAX_WIRELESS_CONNECTIONS);
     }
 
     private void handlePowerSupplyConnection(ServerPlayer player, net.minecraft.world.level.Level level, ItemStack stack) {
@@ -389,7 +398,10 @@ public record WirelessConnectorUsePacket(
                 new ArrayList<>(result.updated()),
                 new ArrayList<>(result.connected()),
                 result.skippedDueToLimit(),
-                skippedOutOfRange);
+                skippedOutOfRange,
+                "ae2lt.connector.power_supply_partial",
+                "ae2lt.connector.power_supply_full",
+                OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS);
     }
 
     private void sendConnectionFeedback(ServerPlayer player,
@@ -405,6 +417,22 @@ public record WirelessConnectorUsePacket(
                                          ArrayList<BlockPos> connected,
                                          int skippedDueToLimit,
                                          int skippedOutOfRange) {
+        sendConnectionFeedback(player, disconnected, updated, connected,
+                skippedDueToLimit, skippedOutOfRange,
+                "ae2lt.connector.power_supply_partial",
+                "ae2lt.connector.power_supply_full",
+                OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS);
+    }
+
+    private void sendConnectionFeedback(ServerPlayer player,
+                                         ArrayList<BlockPos> disconnected,
+                                         ArrayList<BlockPos> updated,
+                                         ArrayList<BlockPos> connected,
+                                         int skippedDueToLimit,
+                                         int skippedOutOfRange,
+                                         String limitPartialKey,
+                                         String limitFullKey,
+                                         int maxConnections) {
         if (skippedOutOfRange > 0 && skippedDueToLimit > 0) {
             int changed = disconnected.size() + updated.size() + connected.size();
             if (changed > 0) {
@@ -414,7 +442,7 @@ public record WirelessConnectorUsePacket(
                         skippedOutOfRange,
                         WirelessConnectionRange.maxConnectorDistance(),
                         skippedDueToLimit,
-                        OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                        maxConnections)
                         .withStyle(ChatFormatting.GREEN), true);
                 return;
             }
@@ -423,7 +451,7 @@ public record WirelessConnectorUsePacket(
                     skippedOutOfRange,
                     WirelessConnectionRange.maxConnectorDistance(),
                     skippedDueToLimit,
-                    OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                    maxConnections)
                     .withStyle(ChatFormatting.RED), true);
             return;
         }
@@ -451,17 +479,17 @@ public record WirelessConnectorUsePacket(
             int changed = disconnected.size() + updated.size() + connected.size();
             if (changed > 0) {
                 player.displayClientMessage(Component.translatable(
-                        "ae2lt.connector.power_supply_partial",
+                        limitPartialKey,
                         changed,
                         skippedDueToLimit,
-                        OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                        maxConnections)
                         .withStyle(ChatFormatting.GREEN), true);
                 return;
             }
             player.displayClientMessage(Component.translatable(
-                    "ae2lt.connector.power_supply_full",
+                    limitFullKey,
                     skippedDueToLimit,
-                    OverloadedPowerSupplyBlockEntity.MAX_WIRELESS_CONNECTIONS)
+                    maxConnections)
                     .withStyle(ChatFormatting.RED), true);
             return;
         }

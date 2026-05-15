@@ -150,6 +150,8 @@
   "ae2lt.connector.cannot_bind_power_supply": "不能将过载供电仪绑定到另一个供电仪",
   "ae2lt.connector.provider_partial": "已处理 %d 个目标，跳过 %d 个；过载样板供应器最多连接 %d 台机器",
   "ae2lt.connector.provider_full": "已跳过 %d 个目标；过载样板供应器最多连接 %d 台机器",
+  "ae2lt.connector.interface_partial": "已处理 %d 个目标，跳过 %d 个；过载ME接口最多连接 %d 台机器",
+  "ae2lt.connector.interface_full": "已跳过 %d 个目标；过载ME接口最多连接 %d 台机器",
   "ae2lt.connector.out_of_range": "已跳过 %d 个超出无线范围的目标（%d 格）",
   "ae2lt.connector.out_of_range_partial": "已处理 %d 个目标，跳过 %d 个超出无线范围的目标（%d 格）",
   "ae2lt.connector.partial_with_range_and_limit": "已处理 %d 个目标，跳过 %d 个超出无线范围的目标（%d 格）和 %d 个超过连接上限的目标（最多 %d 台机器）",
