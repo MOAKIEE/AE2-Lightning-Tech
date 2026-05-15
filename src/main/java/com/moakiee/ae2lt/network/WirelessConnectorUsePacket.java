@@ -313,7 +313,7 @@ public record WirelessConnectorUsePacket(
 
         for (var targetPos : targets) {
             var existing = iface.getConnections().stream()
-                    .filter(c -> c.dimension().equals(targetDim) && c.pos().equals(targetPos))
+                    .filter(c -> c.sameTarget(targetDim, targetPos))
                     .findFirst().orElse(null);
 
             if (existing != null) {

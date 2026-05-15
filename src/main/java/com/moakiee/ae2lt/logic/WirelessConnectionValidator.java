@@ -26,6 +26,13 @@ public final class WirelessConnectionValidator {
     public static Status validate(
             ServerLevel hostLevel,
             BlockPos hostPos,
+            WirelessConnectionRef target) {
+        return validate(hostLevel, hostPos, target.dimension(), target.pos());
+    }
+
+    public static Status validate(
+            ServerLevel hostLevel,
+            BlockPos hostPos,
             ResourceKey<Level> targetDimension,
             BlockPos targetPos) {
         if (!targetDimension.equals(hostLevel.dimension())) {

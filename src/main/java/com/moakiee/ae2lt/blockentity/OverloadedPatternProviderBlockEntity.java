@@ -12,8 +12,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -38,6 +36,8 @@ import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
+import com.moakiee.ae2lt.logic.WirelessConnectionLists;
+import com.moakiee.ae2lt.logic.WirelessConnectionRef;
 import com.moakiee.ae2lt.logic.WirelessConnectionValidator;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -105,15 +105,10 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             ResourceKey<Level> dimension,
             BlockPos pos,
             Direction boundFace
-    ) {
+    ) implements WirelessConnectionRef {
         private static final String TAG_DIM = "Dim";
         private static final String TAG_POS = "Pos";
         private static final String TAG_FACE = "Face";
-
-        /** Same machine = same dimension + same pos. */
-        public boolean sameTarget(ResourceKey<Level> otherDim, BlockPos otherPos) {
-            return dimension.equals(otherDim) && pos.equals(otherPos);
-        }
 
         public CompoundTag toTag() {
             var tag = new CompoundTag();
@@ -353,19 +348,18 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         if (!isLocalDimension(dimension)) {
             return false;
         }
-        for (int i = 0; i < connections.size(); i++) {
-            if (connections.get(i).sameTarget(dimension, pos)) {
-                var updated = new WirelessConnection(dimension, pos, boundFace);
-                if (connections.get(i).equals(updated)) {
-                    return true;
-                }
-                connections.set(i, updated);
-                invalidConnectionScanCursor = 0;
-                notifyLogicStateChanged();
-                saveChanges();
-                markForClientUpdate();
+        int index = WirelessConnectionLists.indexOf(connections, dimension, pos);
+        if (index >= 0) {
+            var updated = new WirelessConnection(dimension, pos, boundFace);
+            if (connections.get(index).equals(updated)) {
                 return true;
             }
+            connections.set(index, updated);
+            invalidConnectionScanCursor = 0;
+            notifyLogicStateChanged();
+            saveChanges();
+            markForClientUpdate();
+            return true;
         }
         if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
             return false;
@@ -385,15 +379,17 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
      * @return true if a connection was removed
      */
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
-        boolean removed = connections.removeIf(c -> c.sameTarget(dimension, pos));
-        if (removed) {
-            invalidConnectionScanCursor = 0;
-            recomputeIdlePower();
-            notifyLogicStateChanged();
-            saveChanges();
-            markForClientUpdate();
+        int index = WirelessConnectionLists.indexOf(connections, dimension, pos);
+        if (index < 0) {
+            return false;
         }
-        return removed;
+        connections.remove(index);
+        invalidConnectionScanCursor = 0;
+        recomputeIdlePower();
+        notifyLogicStateChanged();
+        saveChanges();
+        markForClientUpdate();
+        return true;
     }
 
     /** Returns an unmodifiable view of the current connections. */
@@ -417,35 +413,17 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             return 0;
         }
 
-        int checksRemaining = Math.min(maxChecks, connections.size());
-        int removed = 0;
-        int index = Math.min(invalidConnectionScanCursor, connections.size() - 1);
-
-        while (checksRemaining-- > 0 && !connections.isEmpty()) {
-            if (index >= connections.size()) {
-                index = 0;
-            }
-
-            var conn = connections.get(index);
-            if (WirelessConnectionValidator.validate(
-                    serverLevel, worldPosition, conn.dimension(), conn.pos())
-                    == WirelessConnectionValidator.Status.REMOVE
-                    && canRemoveInvalidConnection(conn)) {
-                connections.remove(index);
-                removed++;
-            } else {
-                index++;
-            }
-        }
-
-        invalidConnectionScanCursor = connections.isEmpty() ? 0 : index % connections.size();
-        if (removed > 0) {
+        var result = WirelessConnectionLists.pruneInvalid(
+                connections, invalidConnectionScanCursor, maxChecks,
+                serverLevel, worldPosition, this::canRemoveInvalidConnection);
+        invalidConnectionScanCursor = result.nextCursor();
+        if (result.removed() > 0) {
             recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
             markForClientUpdate();
         }
-        return removed;
+        return result.removed();
     }
 
     private void tickWirelessConnectionCleanup(ServerLevel level) {
@@ -462,7 +440,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     private boolean isLocalDimension(ResourceKey<Level> dimension) {
-        return level == null || level.dimension().equals(dimension);
+        return WirelessConnectionLists.isLocalDimension(level, dimension);
     }
 
     // -- Client sync (writeToStream / readFromStream) --
@@ -505,9 +483,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
             var pos = data.readBlockPos();
             var face = Direction.from3DDataValue(data.readByte());
-            if (newConns.size() < MAX_WIRELESS_CONNECTIONS) {
-                newConns.add(new WirelessConnection(dim, pos, face));
-            }
+            WirelessConnectionLists.addOrReplace(
+                    newConns, new WirelessConnection(dim, pos, face), MAX_WIRELESS_CONNECTIONS);
         }
         if (newMode != providerMode || newReturnMode != returnMode
                 || newDispatchMode != wirelessDispatchMode
@@ -548,11 +525,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         data.putString(TAG_WIRELESS_SPEED_MODE, wirelessSpeedMode.name());
         data.putBoolean(TAG_FILTERED_IMPORT, filteredImport);
 
-        var connList = new ListTag();
-        for (var conn : connections) {
-            connList.add(conn.toTag());
-        }
-        data.put(TAG_CONNECTIONS, connList);
+        data.put(TAG_CONNECTIONS, WirelessConnectionLists.writeTagList(connections));
         frequencyBinding.save(data);
     }
 
@@ -590,13 +563,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             }
         }
         filteredImport = data.getBoolean(TAG_FILTERED_IMPORT);
-        connections.clear();
-        if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
-            var connList = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < connList.size() && connections.size() < MAX_WIRELESS_CONNECTIONS; i++) {
-                connections.add(WirelessConnection.fromTag(connList.getCompound(i)));
-            }
-        }
+        WirelessConnectionLists.readTagList(
+                data, TAG_CONNECTIONS, connections, MAX_WIRELESS_CONNECTIONS, WirelessConnection::fromTag);
         invalidConnectionScanCursor = 0;
         frequencyBinding.load(data);
         recomputeIdlePower();
