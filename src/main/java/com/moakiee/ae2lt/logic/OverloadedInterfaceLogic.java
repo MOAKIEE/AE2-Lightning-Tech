@@ -110,7 +110,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
                 () -> invokeQuietly(M_ON_STORAGE_CHANGED, this));
         setField(F_STORAGE, proxiedStorage);
         proxiedStorage.useRegisteredCapacities();
-        proxiedStorage.setCapacity(AEKeyType.items(), OVERLOADED_CAP);
 
         var newUpgrades = UpgradeInventories.forMachine(is, 4, () -> {
             invokeQuietly(M_ON_UPGRADES_CHANGED, this);
@@ -311,6 +310,14 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
                           int size, @Nullable Runnable listener) {
             super(supportedTypes, slotFilter, GenericStackInv.Mode.STORAGE, size, listener);
             this.logic = logic;
+        }
+
+        @Override
+        public long getCapacity(AEKeyType keyType) {
+            // AE2 adapts this to IItemHandler slot limit; keep unbounded so external
+            // automation does not re-impose OVERLOADED_CAP on unlimited slots.
+            if (keyType == AEKeyType.items()) return Integer.MAX_VALUE;
+            return super.getCapacity(keyType);
         }
 
         private IActionSource src() {
