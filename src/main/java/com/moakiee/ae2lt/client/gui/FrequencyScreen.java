@@ -151,14 +151,14 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     // comes from {@link ChatFormatting} colours applied where they
     // carry information (status / access / channel pressure / etc.) —
     // labels that don't need a tint stay black.
-    private static final int AE2_TEXT_TITLE = 0x000000;
-    private static final int AE2_TEXT_BODY  = 0x000000;
+    private static final int AE2_TEXT_TITLE = 0xFF000000;
+    private static final int AE2_TEXT_BODY  = 0xFF000000;
     /**
      * Slightly de-emphasised tone for "label vs value" pairs (field
      * captions like "name:" / "security:") and quiet annotations like
      * row counts. Still a flat dark gray — no tint.
      */
-    private static final int AE2_TEXT_MUTED = 0x404040;
+    private static final int AE2_TEXT_MUTED = 0xFF404040;
 
     /**
      * AETextField's native {@code guis/text_field.png} frame is a fixed 12
@@ -1895,7 +1895,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // {@code getMessage()} flows through. The fallback colour
             // is only used for unstyled glyphs — pick black on the
             // light idle sprite, dark blue-gray on the disabled sprite.
-            int fallback = active ? 0x000000 : 0x404040;
+            int fallback = active ? 0xFF000000 : 0xFF404040;
             int textY = getY() + (getHeight() - 8) / 2;
             int textX = getX() + (getWidth() - font.width(getMessage())) / 2;
             g.text(font, getMessage(), textX, textY, fallback, false);

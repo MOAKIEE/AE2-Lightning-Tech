@@ -97,8 +97,8 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
 
     @Override
     protected void extractLabels(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
-        graphics.text(font, SCREEN_TITLE, 8, 6, 0x404040, false);
-        graphics.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0x404040, false);
+        graphics.text(font, SCREEN_TITLE, 8, 6, 0xFF404040, false);
+        graphics.text(font, playerInventoryTitle, inventoryLabelX, inventoryLabelY, 0xFF404040, false);
     }
 
     @Override
@@ -169,7 +169,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
         graphics.item(entry.stack(), slotX + 1, contentY + 1);
         graphics.itemDecorations(font, entry.stack(), slotX + 1, contentY + 1);
 
-        graphics.text(font, entryLabel(entry), textX, contentY + 5, 0x404040, false);
+        graphics.text(font, entryLabel(entry), textX, contentY + 5, 0xFF404040, false);
 
         renderModeSwitch(graphics, switchX, contentY + 3, entry.mode());
     }

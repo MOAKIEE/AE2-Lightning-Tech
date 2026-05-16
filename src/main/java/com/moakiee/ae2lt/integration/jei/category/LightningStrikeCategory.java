@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.integration.jei.LightningJeiIngredients;
 import com.moakiee.ae2lt.integration.jei.MultiblockPreviewWidget;
 import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
@@ -15,16 +14,12 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
-import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.types.IRecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
-import net.minecraft.ChatFormatting;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -64,7 +59,7 @@ public class LightningStrikeCategory implements IRecipeCategory<RecipeHolder<Lig
     private static final int MATERIAL_CELL = 18;
     private static final int MATERIALS_PER_ROW = 4;
 
-    private static final int TEXT_COLOR = 0x404040;
+    private static final int TEXT_COLOR = 0xFF404040;
 
     private final IDrawable icon;
 
@@ -143,6 +138,17 @@ public class LightningStrikeCategory implements IRecipeCategory<RecipeHolder<Lig
         var recipe = holder.value();
         builder.addRecipeArrow().setPosition(ARROW_X, ARROW_Y);
 
+        Component lightningLabel = recipe.requiresNaturalLightning()
+                ? Component.translatable("jei.ae2lt.lightning_strike.natural_only")
+                : Component.translatable("jei.ae2lt.lightning_strike.any_lightning");
+        int lightningColor = recipe.requiresNaturalLightning() ? 0xFF6A1B9A : 0xFF007A80;
+        builder.addText(lightningLabel, PREVIEW_W, 10)
+                .setPosition(PREVIEW_X, 2)
+                .setColor(lightningColor);
+        builder.addText(Component.translatable("jei.ae2lt.lightning_strike.materials"), 64, 10)
+                .setPosition(MATERIALS_X, MATERIALS_LABEL_Y)
+                .setColor(TEXT_COLOR);
+
         var widgetBuilder = MultiblockPreviewWidget.builder(PREVIEW_X, PREVIEW_Y, PREVIEW_W, PREVIEW_H);
 
         // y=0 layer requirements at their world offsets.
@@ -155,31 +161,5 @@ public class LightningStrikeCategory implements IRecipeCategory<RecipeHolder<Lig
         widgetBuilder.addBlock(Blocks.LIGHTNING_ROD, new BlockPos(0, 1, 0));
 
         builder.addWidget(widgetBuilder.build());
-    }
-
-    @Override
-    public void draw(
-            RecipeHolder<LightningStrikeRecipe> holder,
-            IRecipeSlotsView recipeSlotsView,
-            GuiGraphicsExtractor guiGraphics,
-            double mouseX,
-            double mouseY) {
-        var recipe = holder.value();
-        var font = Minecraft.getInstance().font;
-
-        Component lightningLabel = recipe.requiresNaturalLightning()
-                ? Component.translatable("jei.ae2lt.lightning_strike.natural_only")
-                        .withStyle(ChatFormatting.DARK_PURPLE)
-                : Component.translatable("jei.ae2lt.lightning_strike.any_lightning")
-                        .withStyle(ChatFormatting.DARK_AQUA);
-        guiGraphics.text(font, lightningLabel, PREVIEW_X, 2, TEXT_COLOR, false);
-
-        guiGraphics.text(
-                font,
-                Component.translatable("jei.ae2lt.lightning_strike.materials"),
-                MATERIALS_X,
-                MATERIALS_LABEL_Y,
-                TEXT_COLOR,
-                false);
     }
 }

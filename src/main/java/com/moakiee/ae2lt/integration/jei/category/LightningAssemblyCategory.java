@@ -128,7 +128,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<RecipeHolder<L
                 "jei.ae2lt.lightning_assembly.energy",
                 formatCompactEnergy(recipe.totalEnergy()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
-        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0xFF404040, false);
 
         var lightningText = Component.translatable(
                 "jei.ae2lt.lightning_assembly.lightning",
@@ -137,7 +137,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<RecipeHolder<L
                         ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
                         : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
         int lightningX = (WIDTH - font.width(lightningText)) / 2;
-        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0xFF404040, false);
     }
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {

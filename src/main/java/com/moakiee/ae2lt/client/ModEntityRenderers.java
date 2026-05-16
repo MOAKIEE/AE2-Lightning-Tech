@@ -8,6 +8,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterPictureInPictureRenderersEvent;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public final class ModEntityRenderers {
@@ -29,5 +30,12 @@ public final class ModEntityRenderers {
         event.registerBlockEntityRenderer(
                 ModBlockEntities.FUMO.get(),
                 FumoBlockRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerPipRenderers(RegisterPictureInPictureRenderersEvent event) {
+        event.register(
+                MultiblockPreviewPictureInPictureRenderer.State.class,
+                MultiblockPreviewPictureInPictureRenderer::new);
     }
 }

@@ -129,7 +129,7 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         if (tp > 1) {
             String pageText = (this.menu.getCurrentPage() + 1) + "/" + tp;
             int textWidth = this.font.width(pageText);
-            guiGraphics.text(this.font, pageText, 136 - textWidth / 2, 33, 0x404040, false);
+            guiGraphics.text(this.font, pageText, 136 - textWidth / 2, 33, 0xFF404040, false);
         }
     }
 

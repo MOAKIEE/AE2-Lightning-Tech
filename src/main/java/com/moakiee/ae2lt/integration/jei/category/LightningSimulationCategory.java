@@ -123,7 +123,7 @@ public class LightningSimulationCategory implements IRecipeCategory<RecipeHolder
                 "jei.ae2lt.lightning_simulation.energy",
                 formatCompactEnergy(recipe.totalEnergy()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
-        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0xFF404040, false);
         var lightningText = Component.translatable(
                 "jei.ae2lt.lightning_simulation.lightning",
                 recipe.lightningCost(),
@@ -131,7 +131,7 @@ public class LightningSimulationCategory implements IRecipeCategory<RecipeHolder
                         ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
                         : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
         int lightningX = (WIDTH - font.width(lightningText)) / 2;
-        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0x404040, false);
+        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0xFF404040, false);
         if (recipe.lightningTier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE) {
             var substitutionText = Component.translatable(
                     "jei.ae2lt.lightning_simulation.substitution",
@@ -139,7 +139,7 @@ public class LightningSimulationCategory implements IRecipeCategory<RecipeHolder
                             recipe.lightningTier(),
                             recipe.lightningCost()));
             int substitutionX = (WIDTH - font.width(substitutionText)) / 2;
-            guiGraphics.text(font, substitutionText, substitutionX, SUBSTITUTION_TEXT_Y, 0x404040, false);
+            guiGraphics.text(font, substitutionText, substitutionX, SUBSTITUTION_TEXT_Y, 0xFF404040, false);
         }
     }
 

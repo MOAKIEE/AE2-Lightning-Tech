@@ -50,7 +50,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     private static final long ICON_FRAME_MS = 100L;
     private static final long PROCESS_CYCLE_MS = 1500L;
 
-    private static final int TEXT_COLOR = 0x404040;
+    private static final int TEXT_COLOR = 0xFF404040;
     private static final int[] TEXT_LINES = {34, 46, 58, 70};
 
     private static final Identifier ARROW_TEXTURE =
