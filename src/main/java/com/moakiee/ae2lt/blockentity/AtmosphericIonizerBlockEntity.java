@@ -43,6 +43,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
@@ -243,7 +244,10 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
     }
 
     public boolean commitLockedCondensate() {
-        if (!(level instanceof ServerLevel serverLevel) || lockedType == null || !hasLockedCondensateInput()) {
+        if (!(level instanceof ServerLevel serverLevel)
+                || lockedType == null
+                || !hasLockedCondensateInput()
+                || !isInstalledInWorld()) {
             return false;
         }
         if (!WeatherControlHelper.supportsWeather(serverLevel) || lockedType.isActive(serverLevel)) {
@@ -285,6 +289,18 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         return working;
     }
 
+    public boolean isInstalledInWorld() {
+        if (level == null || isRemoved()) {
+            return false;
+        }
+
+        BlockState state = level.getBlockState(worldPosition);
+        return state.is(ModBlocks.ATMOSPHERIC_IONIZER.get())
+                && state.hasProperty(AtmosphericIonizerBlock.HALF)
+                && state.getValue(AtmosphericIonizerBlock.HALF) == DoubleBlockHalf.LOWER
+                && level.getBlockEntity(worldPosition) == this;
+    }
+
     public void setWorking(boolean working) {
         boolean changed = this.working != working;
         this.working = working;
@@ -297,6 +313,13 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
                 markForClientUpdate();
             }
         }
+    }
+
+    public void cancelProcessingForRemoval() {
+        lockedType = null;
+        consumedEnergy = 0L;
+        processingTicksSpent = 0;
+        working = false;
     }
 
     @Override
