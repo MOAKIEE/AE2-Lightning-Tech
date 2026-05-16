@@ -9,7 +9,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.registry.ModSounds;
@@ -74,7 +74,7 @@ public final class RailgunChargeLoopSound extends AbstractTickableSoundInstance 
         if (active) {
             ItemStack stack = player.getUseItem();
             long ticks = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
-            RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+            RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
             RailgunChargeTier tier = RailgunFireService.tierForCharge(ticks, mods);
             this.pitch = pitchForTier(tier);
 

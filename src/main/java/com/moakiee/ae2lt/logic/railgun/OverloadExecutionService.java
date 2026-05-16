@@ -22,7 +22,7 @@ import net.neoforged.neoforge.entity.PartEntity;
 
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
@@ -50,7 +50,7 @@ public final class OverloadExecutionService {
         if (!target.isAlive()) return;
         if (target instanceof Player tp && (tp.isCreative() || tp.isSpectator())) return;
 
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         if (!mods.hasOverloadExecution()) return;
 
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
@@ -91,7 +91,7 @@ public final class OverloadExecutionService {
 
     /** Per-tick decay for all tracked targets on a held railgun. */
     public static void tickDecay(ServerPlayer player, ItemStack stack, ServerLevel level) {
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         if (!mods.hasOverloadExecution()) return;
 
         OverloadExecutionTuningParams params = readTuning(mods);
@@ -250,7 +250,7 @@ public final class OverloadExecutionService {
 
     private record OverloadExecutionTuningParams(double decayRate, int decayDelayTicks, int maxTracked) {}
 
-    private static OverloadExecutionTuningParams readTuning(RailgunModules mods) {
+    private static OverloadExecutionTuningParams readTuning(RailgunModuleEntries mods) {
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.OverloadExecutionTuning t) {
                 return new OverloadExecutionTuningParams(t.decayRate(), t.decayDelayTicks(), t.maxTrackedTargets());

@@ -32,7 +32,7 @@ import appeng.api.networking.security.IActionSource;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.network.NetworkHandler;
@@ -141,7 +141,7 @@ public final class RailgunBeamService {
             return false;
         }
         IGrid grid = bound.grid();
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
 
         long aeCost = AmmoCost.beamAeCost(mods);

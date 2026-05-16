@@ -32,7 +32,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.network.NetworkHandler;
@@ -58,7 +58,7 @@ public final class RailgunFireService {
 
     private RailgunFireService() {}
 
-    public static RailgunChargeTier tierForCharge(long ticks, RailgunModules mods) {
+    public static RailgunChargeTier tierForCharge(long ticks, RailgunModuleEntries mods) {
         int t1 = RailgunDefaults.CHARGE_TICKS_TIER1;
         int t2 = RailgunDefaults.CHARGE_TICKS_TIER2;
         int t3 = RailgunDefaults.CHARGE_TICKS_TIER3;
@@ -83,7 +83,7 @@ public final class RailgunFireService {
         }
         IGrid grid = bound.grid();
 
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         AmmoCost cost = AmmoCost.forCharged(tier, mods);
 
@@ -315,7 +315,7 @@ public final class RailgunFireService {
         player.displayClientMessage(Component.translatable(key), true);
     }
 
-    private static int countAccelerationFactor(RailgunModules mods) {
+    private static int countAccelerationFactor(RailgunModuleEntries mods) {
         int n = 0;
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.AccelerationFactor) n++;
@@ -323,7 +323,7 @@ public final class RailgunFireService {
         return n;
     }
 
-    private static int countChainTuning(RailgunModules mods) {
+    private static int countChainTuning(RailgunModuleEntries mods) {
         int n = 0;
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.ChainTuning) n++;

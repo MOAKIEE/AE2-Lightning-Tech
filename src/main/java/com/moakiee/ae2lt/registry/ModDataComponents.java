@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.mojang.serialization.Codec;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 
 import net.minecraft.core.component.DataComponentType;
@@ -42,13 +42,13 @@ public final class ModDataComponents {
                             .persistent(CustomData.CODEC)
                             .networkSynchronized(CustomData.STREAM_CODEC));
 
-    /** Per-stack railgun module loadout. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunModules>>
-            RAILGUN_MODULES = DATA_COMPONENTS.registerComponentType(
-                    "railgun_modules",
+    /** Per-stack railgun module entries. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunModuleEntries>>
+            RAILGUN_MODULE_ENTRIES = DATA_COMPONENTS.registerComponentType(
+                    "railgun_module_entries",
                     builder -> builder
-                            .persistent(RailgunModules.CODEC)
-                            .networkSynchronized(RailgunModules.STREAM_CODEC));
+                            .persistent(RailgunModuleEntries.CODEC)
+                            .networkSynchronized(RailgunModuleEntries.STREAM_CODEC));
 
     /** Persistent UI toggles for the railgun (terrain destruction, PVP lock). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunSettings>>

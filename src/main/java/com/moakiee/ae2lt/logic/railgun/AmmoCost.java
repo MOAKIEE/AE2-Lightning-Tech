@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.logic.railgun;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 
 /**
  * Per-shot resource cost for a charged railgun fire. The {@code energy} module
@@ -12,7 +12,7 @@ import com.moakiee.ae2lt.item.railgun.RailgunModules;
  */
 public record AmmoCost(long aeEnergy, long ehv) {
 
-    public static AmmoCost forCharged(RailgunChargeTier tier, RailgunModules mods) {
+    public static AmmoCost forCharged(RailgunChargeTier tier, RailgunModuleEntries mods) {
         long ae;
         long ehv;
         switch (tier) {
@@ -29,7 +29,7 @@ public record AmmoCost(long aeEnergy, long ehv) {
         return new AmmoCost(ae, ehv);
     }
 
-    public static long beamAeCost(RailgunModules mods) {
+    public static long beamAeCost(RailgunModuleEntries mods) {
         long ae = AE2LTCommonConfig.railgunBeamAeCostPerSettle();
         double mul = beamConsumeMul(mods);
         if (mul != 1.0D) {
@@ -38,7 +38,7 @@ public record AmmoCost(long aeEnergy, long ehv) {
         return ae;
     }
 
-    public static int beamHvCostInterval(RailgunModules mods) {
+    public static int beamHvCostInterval(RailgunModuleEntries mods) {
         int n = AE2LTCommonConfig.railgunBeamHvCostInterval();
         if (hasEnergyCapability(mods)) {
             n *= 3;
@@ -46,7 +46,7 @@ public record AmmoCost(long aeEnergy, long ehv) {
         return Math.max(1, n);
     }
 
-    private static double chargedConsumeMul(RailgunModules mods) {
+    private static double chargedConsumeMul(RailgunModuleEntries mods) {
         // EnergyTuning.consumeMul applies to charged AE+EHV; default 1.0 (no modules).
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.EnergyTuning et) {
@@ -56,12 +56,12 @@ public record AmmoCost(long aeEnergy, long ehv) {
         return 1.0D;
     }
 
-    private static double beamConsumeMul(RailgunModules mods) {
+    private static double beamConsumeMul(RailgunModuleEntries mods) {
         // Doc D-energy: beam AE is x0.25 (extra reduction over charged x0.50).
         return hasEnergyCapability(mods) ? 0.25D : 1.0D;
     }
 
-    private static boolean hasEnergyCapability(RailgunModules mods) {
+    private static boolean hasEnergyCapability(RailgunModuleEntries mods) {
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.EnergyTuning) return true;
         }

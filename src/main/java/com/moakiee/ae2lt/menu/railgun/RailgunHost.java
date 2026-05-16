@@ -7,7 +7,8 @@ import appeng.api.implementations.menuobjects.ItemMenuHost;
 import appeng.menu.locator.ItemMenuHostLocator;
 
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleStorage;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
@@ -16,12 +17,12 @@ public class RailgunHost extends ItemMenuHost<ElectromagneticRailgunItem> {
         super(item, player, locator);
     }
 
-    public RailgunModules getModules() {
-        return getItemStack().getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+    public RailgunModuleEntries getModules() {
+        return RailgunModuleStorage.get(getItemStack());
     }
 
-    public void setModules(RailgunModules m) {
-        getItemStack().set(ModDataComponents.RAILGUN_MODULES.get(), m);
+    public void setModules(RailgunModuleEntries m) {
+        RailgunModuleStorage.set(getItemStack(), m);
     }
 
     public RailgunSettings getSettings() {

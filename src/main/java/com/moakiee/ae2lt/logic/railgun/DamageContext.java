@@ -4,7 +4,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -37,7 +37,7 @@ public record DamageContext(
         return base * (1.0D - effective);
     }
 
-    public static DamageContext buildBeam(Player player, RailgunModules mods, Level level, boolean pvpLock) {
+    public static DamageContext buildBeam(Player player, RailgunModuleEntries mods, Level level, boolean pvpLock) {
         boolean storm = isStorming(level, player);
         int compute = countChainTuning(mods);
         double base = AE2LTCommonConfig.railgunBeamDamagePerSettle();
@@ -66,7 +66,7 @@ public record DamageContext(
                 pvpLock);
     }
 
-    public static DamageContext buildCharged(Player player, RailgunChargeTier tier, RailgunModules mods, Level level, boolean pvpLock) {
+    public static DamageContext buildCharged(Player player, RailgunChargeTier tier, RailgunModuleEntries mods, Level level, boolean pvpLock) {
         boolean storm = isStorming(level, player);
         int compute = countChainTuning(mods);
         double base = switch (tier) {
@@ -136,7 +136,7 @@ public record DamageContext(
         return level.isThundering() && level.canSeeSky(player.blockPosition());
     }
 
-    private static int countChainTuning(RailgunModules mods) {
+    private static int countChainTuning(RailgunModuleEntries mods) {
         int n = 0;
         for (var cap : mods.capabilities()) {
             if (cap instanceof DeviceCapability.ChainTuning) n++;

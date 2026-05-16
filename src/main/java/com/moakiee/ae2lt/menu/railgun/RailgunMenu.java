@@ -1,7 +1,6 @@
 package com.moakiee.ae2lt.menu.railgun;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import net.minecraft.resources.ResourceLocation;
@@ -17,9 +16,9 @@ import appeng.menu.SlotSemantics;
 import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleItem;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleType;
-import com.moakiee.ae2lt.item.railgun.RailgunModules;
 
 /**
  * Railgun module configuration menu. Backed by an in-memory module container
@@ -102,31 +101,39 @@ public class RailgunMenu extends AEBaseMenu {
     }
 
     private void loadFromHost() {
-        RailgunModules m = host.getModules();
-        moduleContainer.setItem(0, m.core().copy());
-        moduleContainer.setItem(1, m.energy().copy());
-        List<ItemStack> compute = new ArrayList<>(m.compute());
+        RailgunModuleEntries m = host.getModules();
+        moduleContainer.setItem(0, m.first(RailgunModuleType.CORE));
+        moduleContainer.setItem(1, m.first(RailgunModuleType.ENERGY));
+        List<ItemStack> compute = new ArrayList<>(m.unitStacks(RailgunModuleType.COMPUTE));
         while (compute.size() < 2) compute.add(ItemStack.EMPTY);
         moduleContainer.setItem(2, compute.get(0).copy());
         moduleContainer.setItem(3, compute.get(1).copy());
-        List<ItemStack> accel = new ArrayList<>(m.acceleration());
+        List<ItemStack> accel = new ArrayList<>(m.unitStacks(RailgunModuleType.ACCELERATION));
         while (accel.size() < 2) accel.add(ItemStack.EMPTY);
         moduleContainer.setItem(4, accel.get(0).copy());
         moduleContainer.setItem(5, accel.get(1).copy());
-        moduleContainer.setItem(6, m.overloadExecution().copy());
+        moduleContainer.setItem(6, m.first(RailgunModuleType.OVERLOAD_EXECUTION));
         moduleContainer.dirty = false;
     }
 
     private void persistToHost() {
         ItemStack core = sanitize(moduleContainer.getItem(0), RailgunModuleType.CORE);
         ItemStack energy = sanitize(moduleContainer.getItem(1), RailgunModuleType.ENERGY);
-        List<ItemStack> compute = Arrays.asList(
-                sanitize(moduleContainer.getItem(2), RailgunModuleType.COMPUTE),
-                sanitize(moduleContainer.getItem(3), RailgunModuleType.COMPUTE));
-        List<ItemStack> accel = Arrays.asList(
-                sanitize(moduleContainer.getItem(4), RailgunModuleType.ACCELERATION),
-                sanitize(moduleContainer.getItem(5), RailgunModuleType.ACCELERATION));
-        host.setModules(new RailgunModules(core, compute, accel, energy, sanitize(moduleContainer.getItem(6), RailgunModuleType.OVERLOAD_EXECUTION)));
+        ItemStack computeA = sanitize(moduleContainer.getItem(2), RailgunModuleType.COMPUTE);
+        ItemStack computeB = sanitize(moduleContainer.getItem(3), RailgunModuleType.COMPUTE);
+        ItemStack accelA = sanitize(moduleContainer.getItem(4), RailgunModuleType.ACCELERATION);
+        ItemStack accelB = sanitize(moduleContainer.getItem(5), RailgunModuleType.ACCELERATION);
+        ItemStack overloadExecution = sanitize(
+                moduleContainer.getItem(6),
+                RailgunModuleType.OVERLOAD_EXECUTION);
+        host.setModules(RailgunModuleEntries.fromSlotStacks(List.of(
+                core,
+                energy,
+                computeA,
+                computeB,
+                accelA,
+                accelB,
+                overloadExecution)));
     }
 
     private static ItemStack sanitize(ItemStack stack, RailgunModuleType expected) {

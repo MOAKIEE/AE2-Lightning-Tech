@@ -50,7 +50,7 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         if (!mods.hasCore()) {
             if (!level.isClientSide) {
                 player.displayClientMessage(
@@ -97,7 +97,7 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         }
         long charged = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
         stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
-        RailgunModules mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULES.get(), RailgunModules.EMPTY);
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunChargeTier tier = RailgunFireService.tierForCharge(charged, mods);
         if (tier == RailgunChargeTier.HV) {
             return;
