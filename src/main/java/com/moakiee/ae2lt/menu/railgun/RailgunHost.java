@@ -18,11 +18,11 @@ public class RailgunHost extends ItemMenuHost<ElectromagneticRailgunItem> {
     }
 
     public RailgunModuleEntries getModules() {
-        return RailgunModuleStorage.get(getItemStack());
+        return RailgunModuleStorage.entryData(getItemStack());
     }
 
     public void setModules(RailgunModuleEntries m) {
-        RailgunModuleStorage.set(getItemStack(), m);
+        RailgunModuleStorage.setEntries(getItemStack(), m);
     }
 
     public RailgunSettings getSettings() {

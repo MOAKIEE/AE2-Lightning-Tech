@@ -13,12 +13,12 @@ public final class RailgunOverloadBudget implements OverloadBudget {
 
     @Override
     public int currentLoad(ItemStack stack) {
-        return RailgunModuleStorage.currentIdleOverload(stack);
+        return RailgunModuleStorage.INSTANCE.currentIdleOverload(stack);
     }
 
     @Override
     public int budgetCap(ItemStack stack) {
-        return RailgunModuleStorage.baseOverloadBudget(stack);
+        return RailgunModuleStorage.INSTANCE.baseOverloadBudget(stack);
     }
 
     @Override

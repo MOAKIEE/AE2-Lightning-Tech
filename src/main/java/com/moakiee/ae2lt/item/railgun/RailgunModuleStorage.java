@@ -6,37 +6,45 @@ import java.util.stream.Stream;
 
 import net.minecraft.world.item.ItemStack;
 
+import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.device.module.DeviceModuleStorage;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
-public final class RailgunModuleStorage {
+public final class RailgunModuleStorage implements DeviceModuleStorage {
+    public static final RailgunModuleStorage INSTANCE = new RailgunModuleStorage();
+
     private RailgunModuleStorage() {}
 
-    public static RailgunModuleEntries get(ItemStack device) {
-        return device.getOrDefault(
-                ModDataComponents.RAILGUN_MODULE_ENTRIES.get(),
-                RailgunModuleEntries.EMPTY);
+    @Override
+    public DeviceKind deviceKind() {
+        return DeviceKind.RAILGUN;
     }
 
-    public static void set(ItemStack device, RailgunModuleEntries entries) {
-        if (entries == null || entries.entries().isEmpty()) {
-            device.remove(ModDataComponents.RAILGUN_MODULE_ENTRIES.get());
-        } else {
-            device.set(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), entries);
-        }
+    @Override
+    public int baseOverloadBudget(ItemStack device) {
+        return baseOverloadBudget(entryData(device));
     }
 
-    public static List<ItemStack> listEntries(ItemStack device) {
-        return get(device).entries().stream()
+    @Override
+    public int currentIdleOverload(ItemStack device) {
+        return currentIdleOverload(entryData(device));
+    }
+
+    @Override
+    public List<ItemStack> listEntries(ItemStack device) {
+        return entryData(device).entries().stream()
                 .map(ItemStack::copy)
                 .toList();
     }
 
-    public static int getCount(ItemStack device, String typeId) {
-        return get(device).getCount(typeId);
+    @Override
+    public int getCount(ItemStack device, String typeId) {
+        return entryData(device).getCount(typeId);
     }
 
-    public static boolean canInstallOne(ItemStack device, ItemStack candidate) {
+    @Override
+    public boolean canInstallOne(ItemStack device, ItemStack candidate) {
         if (candidate == null || candidate.isEmpty()) {
             return false;
         }
@@ -44,7 +52,7 @@ public final class RailgunModuleStorage {
             return false;
         }
 
-        var entries = get(device);
+        var entries = entryData(device);
         if (entries.getCount(module.moduleType()) >= module.getMaxInstallAmount()) {
             return false;
         }
@@ -53,7 +61,8 @@ public final class RailgunModuleStorage {
         return nextLoad <= baseOverloadBudgetAfterInstall(entries, candidate);
     }
 
-    public static boolean installOne(ItemStack device, ItemStack candidate) {
+    @Override
+    public boolean installOne(ItemStack device, ItemStack candidate) {
         if (!canInstallOne(device, candidate)) {
             return false;
         }
@@ -63,16 +72,17 @@ public final class RailgunModuleStorage {
         for (var stack : stacks) {
             if (typeId.equals(RailgunModuleEntries.typeId(stack))) {
                 stack.grow(1);
-                set(device, new RailgunModuleEntries(stacks));
+                setEntries(device, new RailgunModuleEntries(stacks));
                 return true;
             }
         }
         stacks.add(candidate.copyWithCount(1));
-        set(device, new RailgunModuleEntries(stacks));
+        setEntries(device, new RailgunModuleEntries(stacks));
         return true;
     }
 
-    public static ItemStack uninstallOne(ItemStack device, String typeId) {
+    @Override
+    public ItemStack uninstallOne(ItemStack device, String typeId) {
         if (typeId == null || typeId.isBlank()) {
             return ItemStack.EMPTY;
         }
@@ -89,13 +99,14 @@ public final class RailgunModuleStorage {
             } else {
                 stack.shrink(1);
             }
-            set(device, new RailgunModuleEntries(stacks));
+            setEntries(device, new RailgunModuleEntries(stacks));
             return detached;
         }
         return ItemStack.EMPTY;
     }
 
-    public static ItemStack uninstallAll(ItemStack device, String typeId) {
+    @Override
+    public ItemStack uninstallAll(ItemStack device, String typeId) {
         if (typeId == null || typeId.isBlank()) {
             return ItemStack.EMPTY;
         }
@@ -108,30 +119,38 @@ public final class RailgunModuleStorage {
             }
             var detached = stack.copy();
             stacks.remove(index);
-            set(device, new RailgunModuleEntries(stacks));
+            setEntries(device, new RailgunModuleEntries(stacks));
             return detached;
         }
         return ItemStack.EMPTY;
     }
 
-    public static boolean hasAnyInstalled(ItemStack device) {
-        return !get(device).entries().isEmpty();
+    @Override
+    public boolean hasAnyInstalled(ItemStack device) {
+        return !entryData(device).entries().isEmpty();
     }
 
-    public static Stream<ItemStack> installedModuleStacks(ItemStack device) {
-        return get(device).installedModuleStacks();
+    @Override
+    public Stream<ItemStack> installedModuleStacks(ItemStack device) {
+        return entryData(device).installedModuleStacks();
     }
 
-    public static List<DeviceCapability> capabilities(ItemStack device) {
-        return get(device).capabilities();
+    public List<DeviceCapability> capabilities(ItemStack device) {
+        return entryData(device).capabilities();
     }
 
-    public static int baseOverloadBudget(ItemStack device) {
-        return baseOverloadBudget(get(device));
+    public static RailgunModuleEntries entryData(ItemStack device) {
+        return device.getOrDefault(
+                ModDataComponents.RAILGUN_MODULE_ENTRIES.get(),
+                RailgunModuleEntries.EMPTY);
     }
 
-    public static int currentIdleOverload(ItemStack device) {
-        return currentIdleOverload(get(device));
+    public static void setEntries(ItemStack device, RailgunModuleEntries entries) {
+        if (entries == null || entries.entries().isEmpty()) {
+            device.remove(ModDataComponents.RAILGUN_MODULE_ENTRIES.get());
+        } else {
+            device.set(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), entries);
+        }
     }
 
     private static int baseOverloadBudget(RailgunModuleEntries entries) {
