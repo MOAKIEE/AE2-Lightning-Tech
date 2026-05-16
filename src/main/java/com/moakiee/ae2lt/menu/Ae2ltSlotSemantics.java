@@ -72,8 +72,6 @@ public final class Ae2ltSlotSemantics {
             SlotSemantics.register("AE2LT_OVERLOAD_DEVICE_WORKBENCH_CORE", false);
     public static final SlotSemantic OVERLOAD_DEVICE_WORKBENCH_BUFFER =
             SlotSemantics.register("AE2LT_OVERLOAD_DEVICE_WORKBENCH_BUFFER", false);
-    public static final SlotSemantic OVERLOAD_DEVICE_WORKBENCH_TERMINAL =
-            SlotSemantics.register("AE2LT_OVERLOAD_DEVICE_WORKBENCH_TERMINAL", false);
     public static final SlotSemantic OVERLOAD_DEVICE_WORKBENCH_MODULE =
             SlotSemantics.register("AE2LT_OVERLOAD_DEVICE_WORKBENCH_MODULE", false);
 

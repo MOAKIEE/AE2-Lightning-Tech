@@ -12,8 +12,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.neoforged.api.distmarker.Dist;
 
-import de.mari_023.ae2wtlib.api.terminal.ItemWT;
-
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorFeature;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorFeatureCatalog;
@@ -23,8 +21,7 @@ import com.moakiee.ae2lt.registry.ModItems;
 public final class OverloadArmorState {
     public static final int SLOT_CORE = 0;
     public static final int SLOT_BUFFER = 1;
-    public static final int SLOT_TERMINAL = 2;
-    public static final int SLOT_COUNT = 3;
+    public static final int SLOT_COUNT = 2;
 
     /**
      * Maximum number of <em>distinct module types</em> an armor may have installed simultaneously.
@@ -43,8 +40,6 @@ public final class OverloadArmorState {
     private static final String TAG_UNPAID_ENERGY = "UnpaidEnergy";
     private static final String TAG_DEBT_TICKS = "DebtTicks";
     private static final String TAG_LOCKED_TICKS = "LockedTicks";
-    private static final String TAG_TERMINAL_CONTENT_VERSION = "TerminalContentVersion";
-    private static final String TAG_TERMINAL_SESSION_VERSION = "TerminalSessionVersion";
     private static final String TAG_FEATURE_TOGGLES = "FeatureToggles";
     private static final String TAG_SUBMODULE_DATA = "SubmoduleData";
     private static final String TAG_SUBMODULE_RUNTIME = "SubmoduleRuntime";
@@ -52,7 +47,7 @@ public final class OverloadArmorState {
     private static final String TAG_MODULE_SLOTS = "ModuleSlots";
     private static final String TAG_RUNTIME_ACTIVE = "Active";
     private static final String TAG_RUNTIME_DYNAMIC_LOAD = "DynamicLoad";
-    private static final String[] SLOT_KEYS = {"Core", "Buffer", "Terminal"};
+    private static final String[] SLOT_KEYS = {"Core", "Buffer"};
 
     private static final int EQUIPPED_IDLE_LOAD = 8;
     private static final int BUFFER_IDLE_LOAD = 4;
@@ -121,11 +116,6 @@ public final class OverloadArmorState {
     }
 
     public static void saveSlots(ItemStack armor, HolderLookup.Provider registries, ItemStack[] slots) {
-        var previousTerminal = getSlot(armor, registries, SLOT_TERMINAL);
-        var nextTerminal = slots.length > SLOT_TERMINAL && slots[SLOT_TERMINAL] != null
-                ? slots[SLOT_TERMINAL]
-                : ItemStack.EMPTY;
-
         CustomData.update(DataComponents.CUSTOM_DATA, armor, rootTag -> {
             var armorTag = rootTag.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)
                     ? rootTag.getCompound(TAG_ROOT)
@@ -142,10 +132,6 @@ public final class OverloadArmorState {
 
             rootTag.put(TAG_ROOT, armorTag);
         });
-
-        if (!ItemStack.matches(previousTerminal, nextTerminal)) {
-            incrementTerminalContentVersion(armor);
-        }
     }
 
     public static void setSlot(ItemStack armor, HolderLookup.Provider registries, int slot, ItemStack stack) {
@@ -864,40 +850,6 @@ public final class OverloadArmorState {
         return mask;
     }
 
-    public static TerminalSession beginTerminalSession(ItemStack armor) {
-        long nextSessionVersion = getTerminalSessionVersion(armor) + 1L;
-        setLongMetadata(armor, TAG_TERMINAL_SESSION_VERSION, nextSessionVersion);
-        return new TerminalSession(nextSessionVersion, getTerminalContentVersion(armor));
-    }
-
-    public static long getTerminalContentVersion(ItemStack armor) {
-        return getLongMetadata(armor, TAG_TERMINAL_CONTENT_VERSION);
-    }
-
-    public static long getTerminalSessionVersion(ItemStack armor) {
-        return getLongMetadata(armor, TAG_TERMINAL_SESSION_VERSION);
-    }
-
-    public static boolean matchesTerminalSession(ItemStack armor, long sessionVersion, long contentVersion) {
-        return getTerminalSessionVersion(armor) == sessionVersion
-                && getTerminalContentVersion(armor) == contentVersion;
-    }
-
-    public static boolean writeTerminalForSession(
-            ItemStack armor,
-            HolderLookup.Provider registries,
-            ItemStack terminal,
-            long sessionVersion,
-            long contentVersion
-    ) {
-        if (!matchesTerminalSession(armor, sessionVersion, contentVersion)) {
-            return false;
-        }
-
-        setSlot(armor, registries, SLOT_TERMINAL, terminal);
-        return true;
-    }
-
     public static Snapshot snapshot(ItemStack armor, HolderLookup.Provider registries, boolean equipped) {
         return snapshot(null, armor, registries, equipped, Dist.CLIENT);
     }
@@ -915,7 +867,6 @@ public final class OverloadArmorState {
     ) {
         var core = getSlot(armor, registries, SLOT_CORE);
         var buffer = getSlot(armor, registries, SLOT_BUFFER);
-        var terminal = getSlot(armor, registries, SLOT_TERMINAL);
         var runtime = getRuntime(armor);
         var submodules = collectSubmodules(armor, registries);
 
@@ -928,9 +879,6 @@ public final class OverloadArmorState {
         int bufferLoad = !buffer.isEmpty() ? BUFFER_IDLE_LOAD : 0;
         int submoduleIdleLoad = 0;
         int submoduleDynamicLoad = 0;
-        // Install-time cap guarantees that every enabled module's idle load fits under baseOverload;
-        // at runtime we just sum the contributions of enabled modules. Dynamic load can still push
-        // the armor into deficit, which translates to energy draw / lockout downstream.
         for (var submodule : submodules) {
             if (!isSubmoduleEnabled(armor, submodule)) {
                 continue;
@@ -941,17 +889,11 @@ public final class OverloadArmorState {
             submoduleDynamicLoad += moduleDynamicLoad;
         }
         int currentLoad = idleLoad + bufferLoad + submoduleIdleLoad + submoduleDynamicLoad;
-        // Terminal proxy is a built-in armor capability now: any ItemWT in the terminal slot
-        // opens the terminal. We no longer attribute any load to it beyond the core idle load.
-        boolean terminalProxyEnabled = terminal.getItem() instanceof ItemWT;
-        int terminalLoad = 0;
 
         return new Snapshot(
                 equipped,
                 !core.isEmpty(),
                 !buffer.isEmpty(),
-                terminal.getItem() instanceof ItemWT,
-                terminalProxyEnabled,
                 runtime.storedEnergy(),
                 runtime.unpaidEnergy(),
                 runtime.debtTicks(),
@@ -959,7 +901,6 @@ public final class OverloadArmorState {
                 baseOverload,
                 idleLoad,
                 bufferLoad,
-                terminalLoad,
                 currentLoad,
                 bufferCapacity);
     }
@@ -1424,29 +1365,6 @@ public final class OverloadArmorState {
         });
     }
 
-    private static long getLongMetadata(ItemStack armor, String key) {
-        var root = readRootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return 0L;
-        }
-
-        return Math.max(root.getCompound(TAG_ROOT).getLong(key), 0L);
-    }
-
-    private static void setLongMetadata(ItemStack armor, String key, long value) {
-        CustomData.update(DataComponents.CUSTOM_DATA, armor, rootTag -> {
-            var armorTag = rootTag.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)
-                    ? rootTag.getCompound(TAG_ROOT)
-                    : new CompoundTag();
-            armorTag.putLong(key, Math.max(value, 0L));
-            rootTag.put(TAG_ROOT, armorTag);
-        });
-    }
-
-    private static void incrementTerminalContentVersion(ItemStack armor) {
-        setLongMetadata(armor, TAG_TERMINAL_CONTENT_VERSION, getTerminalContentVersion(armor) + 1L);
-    }
-
     private static Dist resolveDist(boolean clientSide) {
         return clientSide ? Dist.CLIENT : Dist.DEDICATED_SERVER;
     }
@@ -1454,15 +1372,10 @@ public final class OverloadArmorState {
     private record RuntimeState(long storedEnergy, long unpaidEnergy, int debtTicks, int lockedTicks) {
     }
 
-    public record TerminalSession(long sessionVersion, long contentVersion) {
-    }
-
     public record Snapshot(
             boolean equipped,
             boolean hasCore,
             boolean hasBuffer,
-            boolean hasTerminal,
-            boolean terminalProxyEnabled,
             long storedEnergy,
             long unpaidEnergy,
             int debtTicks,
@@ -1470,7 +1383,6 @@ public final class OverloadArmorState {
             int baseOverload,
             int idleLoad,
             int bufferLoad,
-            int terminalLoad,
             int currentLoad,
             long bufferCapacity
     ) {
@@ -1499,16 +1411,6 @@ public final class OverloadArmorState {
 
         public boolean locked() {
             return lockedTicks > 0;
-        }
-
-        public boolean canOpenTerminal() {
-            return equipped
-                    && hasCore
-                    && hasBuffer
-                    && hasTerminal
-                    && terminalProxyEnabled
-                    && !overloaded()
-                    && !locked();
         }
     }
 }

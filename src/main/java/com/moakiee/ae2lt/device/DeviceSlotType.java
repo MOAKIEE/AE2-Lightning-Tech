@@ -8,6 +8,5 @@ public enum DeviceSlotType {
     ENERGY,
     OVERLOAD_EXECUTION,
     BUFFER,
-    TERMINAL,
     SUBMODULE
 }

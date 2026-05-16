@@ -51,7 +51,7 @@ public interface OverloadArmorSubmoduleItem extends OverloadDeviceModuleItem {
     }
 
     /**
-     * @deprecated legacy signature from when core/buffer/terminal slots still produced submodules.
+     * @deprecated legacy signature from when core/buffer slots still produced submodules.
      *     New code should override {@link #collectSubmodules(ItemStack, Consumer)} instead and
      *     ignore {@link SlotType}. Retained so already-compiled addon jars keep loading; intend
      *     to delete once there are no external call sites.
@@ -72,7 +72,6 @@ public interface OverloadArmorSubmoduleItem extends OverloadDeviceModuleItem {
     enum SlotType {
         CORE,
         BUFFER,
-        TERMINAL,
         MODULE
     }
 }

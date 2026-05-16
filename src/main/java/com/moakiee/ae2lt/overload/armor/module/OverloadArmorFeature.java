@@ -15,8 +15,7 @@ public record OverloadArmorFeature(
         String nameKey,
         String descriptionKey,
         boolean defaultEnabled,
-        int idleLoad,
-        boolean grantsTerminalAccess
+        int idleLoad
 ) implements OverloadArmorSubmodule {
     public Component name() {
         return Component.translatable(nameKey);

@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 import com.moakiee.ae2lt.menu.OverloadDeviceWorkbenchMenu;
 
 /**
- * Workbench screen. Left column = armor + core/buffer/terminal (vertical 1+3). Right side = a
+ * Workbench screen. Left column = device + structural slots. Right side = a
  * scrollable list of installed module types with an X button per row to pop one instance back to
  * the player. Beneath the list sits a single "install" slot where the player drops submodule
  * items; the server auto-installs them one at a time while the idle-overload budget allows.

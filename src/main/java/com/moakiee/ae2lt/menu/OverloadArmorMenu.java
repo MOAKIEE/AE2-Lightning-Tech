@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.MenuType;
 import net.neoforged.api.distmarker.Dist;
@@ -18,8 +17,6 @@ import appeng.menu.implementations.MenuTypeBuilder;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorMenuLocator;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
-import com.moakiee.ae2lt.overload.armor.OverloadArmorTerminalService;
-import com.moakiee.ae2lt.overload.armor.module.OverloadArmorFeature;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleConfig;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleOptionUi;
@@ -38,8 +35,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
     public int remainingLoad;
     @GuiSync(13)
     public long bufferCapacity;
-    @GuiSync(14)
-    public int terminalReady;
     @GuiSync(15)
     public long storedEnergy;
     @GuiSync(16)
@@ -58,8 +53,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
     public int coreInstalled;
     @GuiSync(23)
     public int bufferInstalled;
-    @GuiSync(24)
-    public int terminalInstalled;
 
     private static final long CONFIG_DIRECTION_BIT = 1L << 62;
 
@@ -69,14 +62,9 @@ public class OverloadArmorMenu extends AEBaseMenu {
     public OverloadArmorMenu(int id, Inventory playerInventory, OverloadArmorHost host) {
         super(TYPE, id, playerInventory, host);
         this.host = host;
-        registerClientAction("openTerminal", Boolean.class, this::openTerminal);
         registerClientAction("toggleFeature", Integer.class, this::toggleFeature);
         registerClientAction("toggleSubmoduleConfig", Long.class, this::toggleSubmoduleConfig);
         updateSnapshot();
-    }
-
-    public void clientOpenTerminal() {
-        sendClientAction("openTerminal", Boolean.TRUE);
     }
 
     public void clientToggleFeature(int index) {
@@ -87,11 +75,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         clientCycleSubmoduleConfig(submoduleIndex, configIndex, true);
     }
 
-    /**
-     * Cycle the option at (submodule, config) forward ({@code forward=true}) or backward. Forward
-     * is what left-click triggers; right-click sends {@code forward=false}. Backward cycling is
-     * mainly useful for enums with 3+ options; boolean toggles round-trip either way.
-     */
     public void clientCycleSubmoduleConfig(int submoduleIndex, int configIndex, boolean forward) {
         long packed = packConfigAction(submoduleIndex, configIndex) | (forward ? 0L : CONFIG_DIRECTION_BIT);
         sendClientAction("toggleSubmoduleConfig", packed);
@@ -107,19 +90,10 @@ public class OverloadArmorMenu extends AEBaseMenu {
         if (bufferInstalled == 0) {
             return Component.translatable("ae2lt.overload_armor.status.missing_buffer");
         }
-        if (terminalInstalled == 0) {
-            return Component.translatable("ae2lt.overload_armor.status.missing_terminal");
-        }
-        if (hasTerminalProxyFeature() && !isTerminalProxyEnabled()) {
-            return Component.translatable("ae2lt.overload_armor.status.terminal_disabled");
-        }
         if (equippedFlag == 0) {
             return Component.translatable("ae2lt.overload_armor.status.not_equipped");
         }
-        if (terminalReady != 0) {
-            return Component.translatable("ae2lt.overload_armor.status.ready");
-        }
-        return Component.translatable("ae2lt.overload_armor.status.terminal_unavailable");
+        return Component.translatable("ae2lt.overload_armor.status.ready");
     }
 
     public int getFeatureCount() {
@@ -161,16 +135,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         return bufferInstalled != 0;
     }
 
-    public boolean hasTerminalInstalled() {
-        return terminalInstalled != 0;
-    }
-
-    @Nullable
-    public OverloadArmorFeature getFeature(int index) {
-        var submodule = getSubmodule(index);
-        return submodule instanceof OverloadArmorFeature feature ? feature : null;
-    }
-
     @Nullable
     public OverloadArmorSubmodule getSubmodule(int index) {
         var submodules = getSubmodules();
@@ -192,11 +156,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         return submodule != null ? submodule.name() : Component.empty();
     }
 
-    /**
-     * Returns how many instances of the given submodule type are installed on the armor. The V
-     * menu lists one row per distinct type, so this is used to render an "×N" badge when the
-     * player has stacked the same module type.
-     */
     public int getSubmoduleInstalledAmount(int index) {
         var submodule = getSubmodule(index);
         if (submodule == null) {
@@ -205,11 +164,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         return OverloadArmorState.getInstalledAmount(host.getItemStack(), registryAccess(), submodule.id());
     }
 
-    /**
-     * Returns the per-type install cap of the submodule at {@code index}, or {@code 0} if the
-     * submodule is uncapped. The screen appends "/cap" to the amount badge whenever this is
-     * positive so the player always sees their remaining slots for that type.
-     */
     public int getSubmoduleMaxInstallAmount(int index) {
         var submodule = getSubmodule(index);
         return submodule != null ? OverloadArmorState.getSubmoduleMaxInstallAmount(submodule.id()) : 0;
@@ -229,39 +183,9 @@ public class OverloadArmorMenu extends AEBaseMenu {
                 : 0;
     }
 
-    public boolean doesSubmoduleGrantTerminalAccess(int index) {
-        var submodule = getSubmodule(index);
-        return submodule != null && submodule.grantsTerminalAccess();
-    }
-
     public List<OverloadArmorSubmoduleOptionUi> getSubmoduleConfigUi(int index) {
         var submodule = getSubmodule(index);
         return submodule != null ? submodule.getConfigUI(host.getItemStack()) : List.of();
-    }
-
-    @Deprecated(forRemoval = false)
-    public List<OverloadArmorSubmoduleOptionUi> getSubmoduleOptionUi(int index) {
-        return getSubmoduleConfigUi(index);
-    }
-
-    public Component getFeatureButtonText(int index) {
-        return getSubmoduleButtonText(index);
-    }
-
-    public Component getFeatureTooltipText(int index) {
-        return getSubmoduleTooltipText(index);
-    }
-
-    public Component getFeatureName(int index) {
-        return getSubmoduleName(index);
-    }
-
-    public int getFeatureIdleLoad(int index) {
-        return getSubmoduleIdleOverloaded(index);
-    }
-
-    public boolean doesFeatureGrantTerminalAccess(int index) {
-        return doesSubmoduleGrantTerminalAccess(index);
     }
 
     public Component getSubmoduleStatusText(int index) {
@@ -274,20 +198,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         return Component.translatable(active
                 ? "ae2lt.overload_armor.screen.module_available"
                 : "ae2lt.overload_armor.screen.module_offline");
-    }
-
-    public boolean hasTerminalProxyFeature() {
-        return getSubmodules().stream().anyMatch(OverloadArmorSubmodule::grantsTerminalAccess);
-    }
-
-    public boolean isTerminalProxyEnabled() {
-        var submodules = getSubmodules();
-        for (int index = 0; index < submodules.size(); index++) {
-            if (submodules.get(index).grantsTerminalAccess()) {
-                return isSubmoduleEnabled(index);
-            }
-        }
-        return false;
     }
 
     @Override
@@ -316,11 +226,9 @@ public class OverloadArmorMenu extends AEBaseMenu {
         unpaidEnergy = snapshot.unpaidEnergy();
         debtTicks = snapshot.debtTicks();
         lockedTicks = snapshot.lockedTicks();
-        terminalReady = snapshot.canOpenTerminal() ? 1 : 0;
         equippedFlag = snapshot.equipped() ? 1 : 0;
         coreInstalled = snapshot.hasCore() ? 1 : 0;
         bufferInstalled = snapshot.hasBuffer() ? 1 : 0;
-        terminalInstalled = snapshot.hasTerminal() ? 1 : 0;
     }
 
     public void syncClientSubmoduleStateFromServer() {
@@ -358,19 +266,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
                     host.getItemStack(),
                     registryAccess(),
                     Dist.CLIENT);
-        }
-    }
-
-    private void openTerminal(Boolean ignored) {
-        if (!isServerSide() || !(getPlayer() instanceof ServerPlayer serverPlayer)) {
-            return;
-        }
-
-        boolean opened = OverloadArmorTerminalService.openTerminal(serverPlayer, host.getItemStack());
-        if (!opened) {
-            serverPlayer.displayClientMessage(
-                    Component.translatable("ae2lt.overload_armor.terminal_unavailable"),
-                    true);
         }
     }
 
@@ -422,9 +317,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         boolean enabled = OverloadArmorState.isSubmoduleEnabled(host.getItemStack(), submodule);
         OverloadArmorState.setSubmoduleEnabled(host.getItemStack(), submodule, !enabled);
         syncSubmoduleState();
-        // featureMask already round-trips via GuiSync, but submodule toggle edits the stack's
-        // CUSTOM_DATA too; resync so the client's view of the stack stays in lock-step with
-        // the server (matters for tooltips / UI reading NBT directly).
         resyncCarrierStack();
     }
 
@@ -435,9 +327,6 @@ public class OverloadArmorMenu extends AEBaseMenu {
         }
 
         syncSubmoduleState();
-        // Config values are only stored in the stack's NBT (not synced via GuiSync). Without
-        // this push, the owner-client's config panel keeps rendering the pre-edit values until
-        // the menu is reopened, so clicks look like no-ops.
         resyncCarrierStack();
     }
 
@@ -481,15 +370,5 @@ public class OverloadArmorMenu extends AEBaseMenu {
 
     private Dist resolveDist() {
         return getPlayer() != null && getPlayer().level().isClientSide() ? Dist.CLIENT : Dist.DEDICATED_SERVER;
-    }
-
-    @Deprecated(forRemoval = false)
-    public boolean hasTerminalProxyFeatureLegacy() {
-        return hasTerminalProxyFeature();
-    }
-
-    @Deprecated(forRemoval = false)
-    public boolean isTerminalProxyEnabledLegacy() {
-        return isTerminalProxyEnabled();
     }
 }

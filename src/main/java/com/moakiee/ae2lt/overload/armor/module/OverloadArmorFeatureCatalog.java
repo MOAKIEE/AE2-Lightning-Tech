@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -16,7 +15,7 @@ import net.minecraft.world.item.ItemStack;
  * a live-instance cache (rather than a static catalog of default modules) so that:
  *
  * <ul>
- *   <li>Newly-crafted armor ships with zero modules — the baked-in terminal proxy + energy run is
+ *   <li>Newly-crafted armor ships with zero modules — the energy run is
  *       the entire default feature set;</li>
  *   <li>{@link #findSubmoduleById(String)} can still return a living instance after the providing
  *       item is removed, enabling the reconciler to fire {@code onUninstalled};</li>
@@ -56,19 +55,6 @@ public final class OverloadArmorFeatureCatalog {
             collectFromItem(stack, submodules);
         }
         return List.copyOf(submodules.values());
-    }
-
-    /**
-     * @deprecated only kept so legacy JEI / diagnostics code keeps building; new call sites should
-     *     pass module-slot stacks via {@link #collectSubmodules(List)} instead.
-     */
-    @Deprecated(forRemoval = true)
-    public static List<OverloadArmorFeature> collect(ItemStack core, ItemStack buffer, ItemStack terminal) {
-        return collectSubmodules(List.of(core, buffer, terminal))
-                .stream()
-                .filter(OverloadArmorFeature.class::isInstance)
-                .map(OverloadArmorFeature.class::cast)
-                .collect(Collectors.toUnmodifiableList());
     }
 
     @SuppressWarnings("deprecation")

@@ -62,15 +62,12 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
     public int coreInstalled;
     @GuiSync(5)
     public int bufferInstalled;
-    @GuiSync(6)
-    public int terminalInstalled;
     @GuiSync(7)
     public int moduleIdleUsed;
 
     private static final List<SlotSemantic> STRUCTURAL_SEMANTICS = List.of(
             Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_CORE,
-            Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER,
-            Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_TERMINAL);
+            Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER);
 
     private final OverloadDeviceWorkbenchBlockEntity host;
     private final Slot deviceSlot;
@@ -193,10 +190,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         return bufferInstalled != 0;
     }
 
-    public boolean hasTerminalInstalled() {
-        return terminalInstalled != 0;
-    }
-
     public List<StructuralSlotSpec> getStructuralSlotSpecs() {
         return host.getStructuralSlots();
     }
@@ -214,9 +207,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         }
         if (!hasBufferInstalled()) {
             return Component.translatable("ae2lt.overload_armor.status.missing_buffer");
-        }
-        if (!hasTerminalInstalled()) {
-            return Component.translatable("ae2lt.overload_armor.status.missing_terminal");
         }
         return Component.translatable("ae2lt.overload_device_workbench.status.ready");
     }
@@ -297,7 +287,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
             bufferCapacity = 0L;
             coreInstalled = 0;
             bufferInstalled = 0;
-            terminalInstalled = 0;
             moduleIdleUsed = 0;
             return;
         }
@@ -310,9 +299,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         coreInstalled = structuralInstalled(DeviceSlotType.CORE) ? 1 : 0;
         bufferInstalled = hasStructuralSlot(DeviceSlotType.BUFFER)
                 ? (structuralInstalled(DeviceSlotType.BUFFER) ? 1 : 0)
-                : 1;
-        terminalInstalled = hasStructuralSlot(DeviceSlotType.TERMINAL)
-                ? (structuralInstalled(DeviceSlotType.TERMINAL) ? 1 : 0)
                 : 1;
     }
 

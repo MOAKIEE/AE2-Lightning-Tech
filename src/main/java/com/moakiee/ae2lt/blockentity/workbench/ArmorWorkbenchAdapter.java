@@ -10,8 +10,6 @@ import net.neoforged.api.distmarker.Dist;
 
 import appeng.menu.SlotSemantic;
 
-import de.mari_023.ae2wtlib.api.terminal.ItemWT;
-
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.DeviceSlotType;
 import com.moakiee.ae2lt.device.energy.DeviceEnergyBuffer;
@@ -30,8 +28,7 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
 
     private static final List<StructuralSlotSpec> STRUCTURAL_SLOTS = List.of(
             slot(0, DeviceSlotType.CORE, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_CORE),
-            slot(1, DeviceSlotType.BUFFER, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER),
-            slot(2, DeviceSlotType.TERMINAL, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_TERMINAL));
+            slot(1, DeviceSlotType.BUFFER, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER));
 
     private ArmorWorkbenchAdapter() {}
 
@@ -175,7 +172,6 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
             case CORE -> stack.is(ModItems.ULTIMATE_OVERLOAD_CORE.get())
                     && OverloadArmorState.canInstallCore(device, registries, stack);
             case BUFFER -> stack.getItem() instanceof LightningStorageComponentItem;
-            case TERMINAL -> stack.getItem() instanceof ItemWT;
             default -> false;
         };
     }
@@ -220,7 +216,6 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
         return switch (spec.slotType()) {
             case CORE -> OverloadArmorState.SLOT_CORE;
             case BUFFER -> OverloadArmorState.SLOT_BUFFER;
-            case TERMINAL -> OverloadArmorState.SLOT_TERMINAL;
             default -> -1;
         };
     }

@@ -3,7 +3,6 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -15,7 +14,6 @@ import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleOptionUi;
 
 public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMenu> {
     private static final Component SCREEN_TITLE = Component.translatable("item.ae2lt.overload_armor");
-    private static final Component OPEN_TERMINAL = Component.translatable("ae2lt.overload_armor.open_terminal");
     private static final Component MODULE_BAY = Component.translatable("ae2lt.overload_armor.screen.module_bay");
     private static final Component MODULE_CONTROL = Component.translatable("ae2lt.overload_armor.screen.module_control");
     private static final Component MODULE_OPTIONS = Component.translatable("ae2lt.overload_armor.screen.module_options");
@@ -67,7 +65,6 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
     private static final int COLOR_ARROW_ENABLED = 0xFFE0E0E0;
     private static final int COLOR_ARROW_DISABLED = 0xFF5A5A5A;
 
-    private Button openTerminalButton;
     private int selectedSubmoduleIndex = -1;
     private int submoduleScrollOffset;
     private int selectedConfigIndex = -1;
@@ -83,11 +80,6 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
     protected void init() {
         super.init();
         syncSelectedSubmodule();
-
-        openTerminalButton = addRenderableWidget(Button.builder(OPEN_TERMINAL, button -> menu.clientOpenTerminal())
-                .bounds(leftPos + 14, topPos + 20, 96, 20)
-                .build());
-        updateButtons();
     }
 
     @Override
@@ -95,7 +87,6 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
         super.containerTick();
         menu.syncClientSubmoduleStateFromServer();
         syncSelectedSubmodule();
-        updateButtons();
     }
 
     @Override
@@ -199,17 +190,10 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
                 8, 109, 0xB8B8B8, false);
         graphics.drawString(font,
                 Component.translatable(
-                        "ae2lt.overload_armor.screen.terminal",
-                        Component.translatable(menu.hasTerminalInstalled()
-                                ? "ae2lt.overload_armor.screen.flag.installed"
-                                : "ae2lt.overload_armor.screen.flag.missing")),
-                8, 121, 0xB8B8B8, false);
-        graphics.drawString(font,
-                Component.translatable(
                         "ae2lt.overload_armor.screen.features_count",
                         menu.getEnabledFeatureCount(),
                         menu.getSubmoduleCount()),
-                8, 133, 0x8A8A8A, false);
+                8, 121, 0x8A8A8A, false);
 
         graphics.drawString(font, MODULE_BAY, 129, 6, 0xE0E0E0, false);
         graphics.drawString(font, MODULE_CONTROL, 221, 6, 0xE0E0E0, false);
@@ -260,12 +244,6 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
         renderHoveredSubmoduleTooltip(graphics, mouseX, mouseY);
         renderHoveredConfigTooltip(graphics, mouseX, mouseY);
         renderTooltip(graphics, mouseX, mouseY);
-    }
-
-    private void updateButtons() {
-        if (openTerminalButton != null) {
-            openTerminalButton.active = menu.terminalReady != 0;
-        }
     }
 
     private void renderSubmoduleList(GuiGraphics graphics, int mouseX, int mouseY) {

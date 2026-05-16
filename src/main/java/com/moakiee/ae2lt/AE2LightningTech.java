@@ -53,7 +53,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
 import appeng.api.features.GridLinkables;
-import appeng.api.features.HotkeyAction;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
@@ -72,8 +71,6 @@ import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorMenuLocator;
-import com.moakiee.ae2lt.overload.armor.OverloadArmorTerminalService;
-import com.moakiee.ae2lt.overload.armor.OverloadArmorTerminalLocator;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -240,16 +237,6 @@ public class AE2LightningTech {
                 OverloadArmorMenuLocator.class,
                 OverloadArmorMenuLocator::writeToPacket,
                 OverloadArmorMenuLocator::readFromPacket);
-        MenuLocators.register(
-                OverloadArmorTerminalLocator.class,
-                OverloadArmorTerminalLocator::writeToPacket,
-                OverloadArmorTerminalLocator::readFromPacket);
-    }
-
-    private static void registerHotkeyActions() {
-        HotkeyAction.register(
-                OverloadArmorTerminalService::openEquippedTerminalFromHotkey,
-                HotkeyAction.WIRELESS_TERMINAL);
     }
 
     // Prevents automation from accessing the workbench inventory
@@ -527,8 +514,6 @@ public class AE2LightningTech {
      */
     private void commonSetup(FMLCommonSetupEvent event) {
         event.enqueueWork(() -> {
-            registerHotkeyActions();
-
             var lightningCollectorBlock = ModBlocks.LIGHTNING_COLLECTOR.get();
             var lightningCollectorBeType = ModBlockEntities.LIGHTNING_COLLECTOR.get();
             lightningCollectorBlock.setBlockEntity(

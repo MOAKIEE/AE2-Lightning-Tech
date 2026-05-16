@@ -24,10 +24,6 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
 
     boolean defaultEnabled();
 
-    default boolean grantsTerminalAccess() {
-        return false;
-    }
-
     default Component name() {
         return Component.translatable(nameKey());
     }
@@ -93,7 +89,7 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
      * the global idle-overload budget. {@code 0} (default) means unlimited within the budget.
      *
      * <p>This lets modules express semantics that the idle budget alone can't: e.g. "only one
-     * terminal proxy", "at most three dash modules", etc., without forcing the module to consume
+     * "at most three dash modules", etc., without forcing the module to consume
      * an artificially large idle slice. Zero-idle modules can use this to stay gated.
      */
     default int getMaxInstallAmount() {
