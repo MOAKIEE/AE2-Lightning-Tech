@@ -25,7 +25,7 @@ public class RailgunScreen extends AbstractContainerScreen<RailgunSettingsMenu> 
 
     private static final int ENERGY_X = 8;
     private static final int ENERGY_Y = 24;
-    private static final int ENERGY_W = 96;
+    private static final int ENERGY_W = 104;
     private static final int ENERGY_H = 10;
     private static final int NETWORK_X = 8;
     private static final int NETWORK_Y = 46;
@@ -35,8 +35,8 @@ public class RailgunScreen extends AbstractContainerScreen<RailgunSettingsMenu> 
     private static final int PLAYER_INV_X = 8;
     private static final int PLAYER_INV_Y = 104;
 
-    private static final int COLOR_LABEL = 0xFF404040;
-    private static final int COLOR_LABEL_DIM = 0xFF707070;
+    private static final int COLOR_LABEL = 0xFFE0E0E0;
+    private static final int COLOR_LABEL_DIM = 0xFFB0B0B0;
     private static final int COLOR_BTN_ON_TEXT = 0xFFFFFFFF;
     private static final int COLOR_BTN_OFF_TEXT = 0xFFCCCCCC;
 
@@ -54,10 +54,13 @@ public class RailgunScreen extends AbstractContainerScreen<RailgunSettingsMenu> 
         int x = (this.width - this.imageWidth) / 2;
         int y = (this.height - this.imageHeight) / 2;
 
-        gfx.fill(x, y, x + this.imageWidth, y + this.imageHeight, 0xFFC6C6C6);
-        gfx.fill(x + 2, y + 2, x + this.imageWidth - 2, y + this.imageHeight - 2, 0xFFD8D8D8);
+        gfx.fill(x, y, x + this.imageWidth, y + this.imageHeight, 0xFF1E1E1E);
+        gfx.fill(x + 2, y + 2, x + this.imageWidth - 2, y + this.imageHeight - 2, 0xFF313131);
 
         drawEnergyBar(gfx, x + ENERGY_X, y + ENERGY_Y);
+        // Network status panel.
+        gfx.fill(x + NETWORK_X - 2, y + NETWORK_Y - 3,
+                x + this.imageWidth - 8, y + NETWORK_Y + 11, 0xFF1B1B1B);
         drawToggleBg(gfx, x + BTN_X, y + BTN_TERRAIN_Y, menu.terrainDestruction, 0xFFCC4444);
         drawToggleBg(gfx, x + BTN_X, y + BTN_PVP_Y, menu.pvpLock, 0xFF4488CC);
         drawPlayerInventory(gfx, x + PLAYER_INV_X, y + PLAYER_INV_Y);
@@ -88,8 +91,9 @@ public class RailgunScreen extends AbstractContainerScreen<RailgunSettingsMenu> 
     }
 
     private static void drawSlotTile(GuiGraphics gfx, int x, int y) {
-        gfx.fill(x - 1, y - 1, x + 17, y + 17, 0xFF373737);
+        gfx.fill(x - 1, y - 1, x + 17, y + 17, 0xFF080808);
         gfx.fill(x, y, x + 16, y + 16, 0xFF8B8B8B);
+        gfx.fill(x + 1, y + 1, x + 15, y + 15, 0xFF1B1B1B);
     }
 
     private static void drawToggleBg(GuiGraphics gfx, int x, int y, boolean on, int onColor) {
@@ -112,7 +116,8 @@ public class RailgunScreen extends AbstractContainerScreen<RailgunSettingsMenu> 
 
     @Override
     protected void renderLabels(GuiGraphics gfx, int mouseX, int mouseY) {
-        super.renderLabels(gfx, mouseX, mouseY);
+        gfx.drawString(this.font, this.title, this.titleLabelX, this.titleLabelY, 0xFFE0E0E0, false);
+        gfx.drawString(this.font, this.playerInventoryTitle, this.inventoryLabelX, this.inventoryLabelY, 0xFFE0E0E0, false);
 
         gfx.drawString(this.font,
                 Component.translatable("ae2lt.railgun.gui.energy.title"),
