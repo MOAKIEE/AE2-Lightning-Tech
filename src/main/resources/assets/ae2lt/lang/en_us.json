@@ -176,6 +176,8 @@
   "ae2lt.connector.cannot_bind_provider": "Cannot bind an Overloaded Pattern Provider to another Pattern Provider",
   "ae2lt.connector.provider_partial": "Processed %d targets; skipped %d. Overloaded Pattern Provider can link at most %d machines",
   "ae2lt.connector.provider_full": "Skipped %d targets; Overloaded Pattern Provider can link at most %d machines",
+  "ae2lt.connector.interface_partial": "Processed %d targets; skipped %d. Overloaded ME Interface can link at most %d machines",
+  "ae2lt.connector.interface_full": "Skipped %d targets; Overloaded ME Interface can link at most %d machines",
   "ae2lt.connector.out_of_range": "Skipped %d targets outside wireless range (%d blocks)",
   "ae2lt.connector.out_of_range_partial": "Processed %d targets; skipped %d outside wireless range (%d blocks)",
   "ae2lt.connector.partial_with_range_and_limit": "Processed %d targets; skipped %d outside wireless range (%d blocks) and %d because the limit is %d machines",

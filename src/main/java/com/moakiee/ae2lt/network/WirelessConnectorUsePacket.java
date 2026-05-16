@@ -299,27 +299,30 @@ public record WirelessConnectorUsePacket(
         var disconnected = new ArrayList<BlockPos>();
         var updated = new ArrayList<BlockPos>();
         var connected = new ArrayList<BlockPos>();
+        int skippedDueToLimit = 0;
         int skippedOutOfRange = 0;
 
         for (var targetPos : targets) {
             var existing = iface.getConnections().stream()
-                    .filter(c -> c.dimension().equals(targetDim) && c.pos().equals(targetPos))
+                    .filter(c -> c.sameTarget(targetDim, targetPos))
                     .findFirst()
                     .orElse(null);
 
             if (existing != null) {
                 if (existing.boundFace() == face) {
-                    iface.removeConnection(targetDim, targetPos);
-                    disconnected.add(targetPos.immutable());
+                    if (iface.removeConnection(targetDim, targetPos)) {
+                        disconnected.add(targetPos.immutable());
+                    }
                 } else {
                     if (!WirelessConnectionRange.isConnectorLinkInRange(
                             level, iface.getBlockPos(), targetPos)) {
                         skippedOutOfRange++;
                         continue;
                     }
-                    iface.addOrUpdateConnection(
-                            new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
-                    updated.add(targetPos.immutable());
+                    if (iface.addOrUpdateConnection(
+                            new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face))) {
+                        updated.add(targetPos.immutable());
+                    }
                 }
             } else {
                 if (!WirelessConnectionRange.isConnectorLinkInRange(
@@ -327,13 +330,20 @@ public record WirelessConnectorUsePacket(
                     skippedOutOfRange++;
                     continue;
                 }
-                iface.addOrUpdateConnection(
-                        new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face));
-                connected.add(targetPos.immutable());
+                if (iface.addOrUpdateConnection(
+                        new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face))) {
+                    connected.add(targetPos.immutable());
+                } else {
+                    skippedDueToLimit++;
+                }
             }
         }
 
-        sendConnectionFeedback(player, disconnected, updated, connected, skippedOutOfRange);
+        sendConnectionFeedback(player, disconnected, updated, connected,
+                skippedDueToLimit, skippedOutOfRange,
+                "ae2lt.connector.interface_partial",
+                "ae2lt.connector.interface_full",
+                OverloadedInterfaceBlockEntity.MAX_WIRELESS_CONNECTIONS);
     }
 
     private void sendConnectionFeedback(
@@ -350,6 +360,43 @@ public record WirelessConnectorUsePacket(
             ArrayList<BlockPos> updated,
             ArrayList<BlockPos> connected,
             int skippedOutOfRange) {
+        sendConnectionFeedback(player, disconnected, updated, connected,
+                0, skippedOutOfRange, null, null, 0);
+    }
+
+    private void sendConnectionFeedback(
+            ServerPlayer player,
+            ArrayList<BlockPos> disconnected,
+            ArrayList<BlockPos> updated,
+            ArrayList<BlockPos> connected,
+            int skippedDueToLimit,
+            int skippedOutOfRange,
+            @org.jetbrains.annotations.Nullable String limitPartialKey,
+            @org.jetbrains.annotations.Nullable String limitFullKey,
+            int maxConnections) {
+        if (skippedOutOfRange > 0 && skippedDueToLimit > 0) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                sendAction(player, Component.translatable(
+                        "ae2lt.connector.partial_with_range_and_limit",
+                        changed,
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance(),
+                        skippedDueToLimit,
+                        maxConnections)
+                        .withStyle(ChatFormatting.GREEN));
+            } else {
+                sendAction(player, Component.translatable(
+                        "ae2lt.connector.skipped_range_and_limit",
+                        skippedOutOfRange,
+                        WirelessConnectionRange.maxConnectorDistance(),
+                        skippedDueToLimit,
+                        maxConnections)
+                        .withStyle(ChatFormatting.RED));
+            }
+            return;
+        }
+
         if (skippedOutOfRange > 0) {
             int changed = disconnected.size() + updated.size() + connected.size();
             if (changed > 0) {
@@ -364,6 +411,25 @@ public record WirelessConnectorUsePacket(
                         "ae2lt.connector.out_of_range",
                         skippedOutOfRange,
                         WirelessConnectionRange.maxConnectorDistance())
+                        .withStyle(ChatFormatting.RED));
+            }
+            return;
+        }
+
+        if (skippedDueToLimit > 0 && limitPartialKey != null && limitFullKey != null) {
+            int changed = disconnected.size() + updated.size() + connected.size();
+            if (changed > 0) {
+                sendAction(player, Component.translatable(
+                        limitPartialKey,
+                        changed,
+                        skippedDueToLimit,
+                        maxConnections)
+                        .withStyle(ChatFormatting.GREEN));
+            } else {
+                sendAction(player, Component.translatable(
+                        limitFullKey,
+                        skippedDueToLimit,
+                        maxConnections)
                         .withStyle(ChatFormatting.RED));
             }
             return;
