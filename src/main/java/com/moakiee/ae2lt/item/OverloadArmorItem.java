@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
@@ -28,6 +29,7 @@ import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
+import com.moakiee.ae2lt.device.energy.SelfContainedEnergyBuffer;
 import com.moakiee.ae2lt.menu.OverloadArmorHost;
 import com.moakiee.ae2lt.menu.OverloadArmorMenu;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorCarrierLocator;
@@ -105,6 +107,9 @@ public class OverloadArmorItem extends ArmorItem implements IMenuItem, ICurioIte
             return;
         }
         OverloadArmorState.tickActiveSubmodules(player, stack, level.registryAccess(), dist);
+        if (player instanceof ServerPlayer serverPlayer) {
+            SelfContainedEnergyBuffer.INSTANCE.refill(stack, serverPlayer);
+        }
         OverloadArmorState.tickEquipped(player, stack, level.registryAccess());
     }
 
@@ -128,6 +133,9 @@ public class OverloadArmorItem extends ArmorItem implements IMenuItem, ICurioIte
                 true,
                 dist);
         OverloadArmorState.tickActiveSubmodules(player, stack, level.registryAccess(), dist);
+        if (player instanceof ServerPlayer serverPlayer) {
+            SelfContainedEnergyBuffer.INSTANCE.refill(stack, serverPlayer);
+        }
         OverloadArmorState.tickEquipped(player, stack, level.registryAccess());
     }
 

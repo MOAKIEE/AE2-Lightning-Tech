@@ -72,6 +72,28 @@ public final class OverloadArmorState {
         return Math.max(0L, root.getCompound(TAG_ROOT).getLong(TAG_STORED_ENERGY));
     }
 
+    public static long addStoredEnergy(ItemStack armor, HolderLookup.Provider registries, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var snapshot = snapshot(null, armor, registries, true);
+        if (!snapshot.hasCore() || !snapshot.hasBuffer() || snapshot.bufferCapacity() <= 0L) {
+            return 0L;
+        }
+        var runtime = getRuntime(armor);
+        long current = Math.min(runtime.storedEnergy(), snapshot.bufferCapacity());
+        long accepted = Math.min(amount, snapshot.bufferCapacity() - current);
+        if (accepted <= 0L) {
+            return 0L;
+        }
+        setRuntime(armor, new RuntimeState(
+                current + accepted,
+                runtime.unpaidEnergy(),
+                runtime.debtTicks(),
+                runtime.lockedTicks()));
+        return accepted;
+    }
+
     public static ItemStack[] loadSlots(ItemStack armor, HolderLookup.Provider registries) {
         var result = new ItemStack[SLOT_COUNT];
         for (int slot = 0; slot < SLOT_COUNT; slot++) {
