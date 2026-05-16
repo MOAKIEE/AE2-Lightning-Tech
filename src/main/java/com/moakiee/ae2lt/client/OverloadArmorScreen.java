@@ -156,44 +156,51 @@ public class OverloadArmorScreen extends AbstractContainerScreen<OverloadArmorMe
         graphics.drawString(font, SCREEN_TITLE, 8, 6, 0xE0E0E0, false);
         graphics.drawString(font,
                 Component.translatable("ae2lt.overload_armor.screen.load", menu.currentLoad, menu.baseOverload),
-                8, 49, 0xE0E0E0, false);
+                8, 22, 0xE0E0E0, false);
         graphics.drawString(font,
                 Component.translatable("ae2lt.overload_armor.screen.energy", menu.storedEnergy, menu.bufferCapacity),
-                8, 61, 0xE0E0E0, false);
+                8, 34, 0xE0E0E0, false);
 
         Component detail = menu.lockedTicks > 0
                 ? Component.translatable("ae2lt.overload_armor.screen.locked", menu.lockedTicks / 20)
                 : menu.unpaidEnergy > 0
                         ? Component.translatable("ae2lt.overload_armor.screen.debt", menu.unpaidEnergy, menu.debtTicks, 10)
                         : menu.getStatusText();
-        graphics.drawString(font, detail, 8, 73, 0xF6D365, false);
+        graphics.drawString(font, detail, 8, 46, 0xF6D365, false);
         graphics.drawString(font,
                 Component.translatable(
                         "ae2lt.overload_armor.screen.equipped",
                         Component.translatable(menu.isEquipped()
                                 ? "ae2lt.overload_armor.screen.flag.yes"
                                 : "ae2lt.overload_armor.screen.flag.no")),
-                8, 85, 0xB8B8B8, false);
+                8, 58, 0xB8B8B8, false);
         graphics.drawString(font,
                 Component.translatable(
                         "ae2lt.overload_armor.screen.core",
                         Component.translatable(menu.hasCoreInstalled()
                                 ? "ae2lt.overload_armor.screen.flag.installed"
                                 : "ae2lt.overload_armor.screen.flag.missing")),
-                8, 97, 0xB8B8B8, false);
+                8, 70, 0xB8B8B8, false);
         graphics.drawString(font,
                 Component.translatable(
                         "ae2lt.overload_armor.screen.buffer",
                         Component.translatable(menu.hasBufferInstalled()
                                 ? "ae2lt.overload_armor.screen.flag.installed"
                                 : "ae2lt.overload_armor.screen.flag.missing")),
-                8, 109, 0xB8B8B8, false);
+                8, 82, 0xB8B8B8, false);
         graphics.drawString(font,
                 Component.translatable(
                         "ae2lt.overload_armor.screen.features_count",
                         menu.getEnabledFeatureCount(),
                         menu.getSubmoduleCount()),
-                8, 121, 0x8A8A8A, false);
+                8, 94, 0x8A8A8A, false);
+
+        Component networkStatus = menu.isBound()
+                ? Component.translatable("ae2lt.overload_armor.screen.network",
+                        Component.translatable("ae2lt.railgun.gui.network.bound"))
+                : Component.translatable("ae2lt.overload_armor.screen.network",
+                        Component.translatable("ae2lt.railgun.gui.network.unbound"));
+        graphics.drawString(font, networkStatus, 8, 106, menu.isBound() ? 0xFF36B65C : 0xFFCC4444, false);
 
         graphics.drawString(font, MODULE_BAY, 129, 6, 0xE0E0E0, false);
         graphics.drawString(font, MODULE_CONTROL, 221, 6, 0xE0E0E0, false);

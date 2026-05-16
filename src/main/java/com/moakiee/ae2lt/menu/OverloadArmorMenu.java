@@ -15,6 +15,7 @@ import appeng.menu.guisync.GuiSync;
 import appeng.menu.implementations.MenuTypeBuilder;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.device.network.ArmorNetworkBinding;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorMenuLocator;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleConfig;
@@ -53,6 +54,8 @@ public class OverloadArmorMenu extends AEBaseMenu {
     public int coreInstalled;
     @GuiSync(23)
     public int bufferInstalled;
+    @GuiSync(24)
+    public String boundDimensionLabel = "";
 
     private static final long CONFIG_DIRECTION_BIT = 1L << 62;
 
@@ -133,6 +136,10 @@ public class OverloadArmorMenu extends AEBaseMenu {
 
     public boolean hasBufferInstalled() {
         return bufferInstalled != 0;
+    }
+
+    public boolean isBound() {
+        return boundDimensionLabel != null && !boundDimensionLabel.isEmpty();
     }
 
     @Nullable
@@ -229,6 +236,9 @@ public class OverloadArmorMenu extends AEBaseMenu {
         equippedFlag = snapshot.equipped() ? 1 : 0;
         coreInstalled = snapshot.hasCore() ? 1 : 0;
         bufferInstalled = snapshot.hasBuffer() ? 1 : 0;
+
+        var boundPos = ArmorNetworkBinding.INSTANCE.getBoundPos(host.getItemStack());
+        boundDimensionLabel = boundPos != null ? boundPos.dimension().location().toString() : "";
     }
 
     public void syncClientSubmoduleStateFromServer() {

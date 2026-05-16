@@ -582,6 +582,7 @@
   "ae2lt.overload_armor.screen.debt": "欠费：%s，未支付 %s / %s tick",
   "ae2lt.overload_armor.screen.features": "功能开关",
   "ae2lt.overload_armor.screen.features_count": "功能：%s / %s",
+  "ae2lt.overload_armor.screen.network": "网络：%s",
   "ae2lt.overload_armor.screen.no_features": "未检测到可配置模块",
   "ae2lt.overload_armor.screen.hint": "模块装配请在过载装备工作站完成",
   "ae2lt.overload_armor.screen.module_bay": "模块列表",

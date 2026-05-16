@@ -582,6 +582,7 @@
   "ae2lt.overload_armor.screen.debt": "Debt: %s, unpaid %s / %s ticks",
   "ae2lt.overload_armor.screen.features": "Feature Toggles",
   "ae2lt.overload_armor.screen.features_count": "Features: %s / %s",
+  "ae2lt.overload_armor.screen.network": "Network: %s",
   "ae2lt.overload_armor.screen.no_features": "No configurable modules detected",
   "ae2lt.overload_armor.screen.hint": "Install modules at the workbench",
   "ae2lt.overload_armor.screen.module_bay": "Module List",
