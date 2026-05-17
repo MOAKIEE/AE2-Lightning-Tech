@@ -66,7 +66,7 @@ public final class OverloadExecutionService {
 
         // Find or create entry
         CompoundTag entry = findEntry(targets, targetUuid);
-        double accumulated = entry.getDouble(TAG_ACCUMULATED) + actualDamage;
+        double accumulated = entry.getDouble(TAG_ACCUMULATED) + actualDamage * 0.5;
         entry.putDouble(TAG_ACCUMULATED, accumulated);
         entry.putLong(TAG_LAST_HIT_TICK, now);
 
