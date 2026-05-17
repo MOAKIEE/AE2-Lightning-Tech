@@ -40,7 +40,7 @@ import java.util.List;
 public class OverloadedInterfaceLogic extends InterfaceLogic {
     private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
 
-    public static final long OVERLOADED_CAP = 1024L * AEKeyType.items().getAmountPerByte();
+    private static final long OVERLOADED_BYTES = 1024L;
 
     private static final Field F_CONFIG;
     private static final Field F_STORAGE;
@@ -101,7 +101,9 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         newConfig.owner = host;
         setField(F_CONFIG, newConfig);
         newConfig.useRegisteredCapacities();
-        newConfig.setCapacity(AEKeyType.items(), OVERLOADED_CAP);
+        for (var type : AEKeyTypes.getAll()) {
+            newConfig.setCapacity(type, overloadedCap(type));
+        }
 
         proxiedStorage = new ProxiedStorageInv(
                 this, AEKeyTypes.getAll(),
@@ -188,10 +190,18 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         for (int i = 0; i < slotCount; i++) {
             var key = cfg.getKey(i);
             if (key == null || !key.equals(what)) continue;
-            long cap = owner.isSlotUnlimited(i) ? OVERLOADED_CAP : cfg.getAmount(i);
+            long cap = owner.isSlotUnlimited(i) ? overloadedCap(what) : cfg.getAmount(i);
             invokeCrafting(i, what, cap);
             break;
         }
+    }
+
+    private static long overloadedCap(AEKey what) {
+        return overloadedCap(what.getType());
+    }
+
+    private static long overloadedCap(AEKeyType type) {
+        return OVERLOADED_BYTES * type.getAmountPerByte();
     }
 
     private void setField(Field f, Object value) {
@@ -242,7 +252,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
                 if (cfgStack == null) continue;
                 long cap = owner.isSlotUnlimited(i) ? Long.MAX_VALUE : cfgStack.amount();
                 if (cap == Long.MAX_VALUE) {
-                    didWork |= invokeCrafting(i, cfgStack.what(), OVERLOADED_CAP);
+                    didWork |= invokeCrafting(i, cfgStack.what(), overloadedCap(cfgStack.what()));
                 } else {
                     long deficit = cap - cache.get(cfgStack.what());
                     if (deficit > 0) {
@@ -315,7 +325,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         @Override
         public long getCapacity(AEKeyType keyType) {
             // AE2 adapts this to IItemHandler slot limit; keep unbounded so external
-            // automation does not re-impose OVERLOADED_CAP on unlimited slots.
+            // automation does not re-impose the configured stack cap on unlimited slots.
             if (keyType == AEKeyType.items()) return Integer.MAX_VALUE;
             return super.getCapacity(keyType);
         }
