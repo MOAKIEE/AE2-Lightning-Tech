@@ -433,7 +433,7 @@ public class LightningBlastTask {
             MinecraftForge.EVENT_BUS.post(event);
             cancelled = event.isCanceled();
         } catch (Throwable ignored) {
-            cancelled = false;
+            cancelled = true;
         }
         this.chunkProtectionCache.put(key, cancelled);
         return cancelled;
