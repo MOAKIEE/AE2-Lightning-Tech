@@ -26,6 +26,7 @@ import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem.CellOutcome;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -78,9 +79,13 @@ import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 
+import java.util.EnumMap;
+
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
+    private static final ResourceLocation BLOCK_ENTITY_CAP_PROVIDER_ID =
+            new ResourceLocation(MODID, "block_entity_cap_provider");
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
@@ -220,48 +225,164 @@ public class AE2LightningTech {
             return;
         }
 
-        event.addCapability(new ResourceLocation(MODID, "block_entity_cap_provider"), new ICapabilityProvider() {
-            private final BlockEntity blockEntity = event.getObject();
+        var provider = new AttachedBlockEntityCapabilityProvider(event.getObject());
+        event.addCapability(BLOCK_ENTITY_CAP_PROVIDER_ID, provider);
+        event.addListener(provider::invalidate);
+    }
 
-            @Override
-            public <T> LazyOptional<T> getCapability(Capability<T> capability, net.minecraft.core.Direction side) {
-                if (capability == ForgeCapabilities.ITEM_HANDLER) {
-                    var itemHandler = getItemHandlerCapability(blockEntity);
-                    return itemHandler != null ? LazyOptional.of(() -> itemHandler).cast() : LazyOptional.empty();
+    private static final class AttachedBlockEntityCapabilityProvider implements ICapabilityProvider {
+        private final BlockEntity blockEntity;
+        private final EnumMap<Direction, LazyOptional<IFluidHandler>> fluidHandlers =
+                new EnumMap<>(Direction.class);
+        private final EnumMap<Direction, LazyOptional<IEnergyStorage>> energyHandlers =
+                new EnumMap<>(Direction.class);
+        private LazyOptional<IItemHandlerModifiable> itemHandler;
+        private LazyOptional<IFluidHandler> nullSideFluidHandler;
+        private LazyOptional<IEnergyStorage> nullSideEnergyHandler;
+        private LazyOptional<IInWorldGridNodeHost> gridNodeHost;
+        private LazyOptional<ILightningEnergyHandler> lightningEnergyHandler;
+        private LazyOptional<GenericInternalInventory> genericInternalInventory;
+
+        private AttachedBlockEntityCapabilityProvider(BlockEntity blockEntity) {
+            this.blockEntity = blockEntity;
+        }
+
+        @Override
+        public <T> LazyOptional<T> getCapability(Capability<T> capability, Direction side) {
+            if (capability == ForgeCapabilities.ITEM_HANDLER) {
+                return itemHandler().cast();
+            }
+
+            if (capability == ForgeCapabilities.FLUID_HANDLER) {
+                return fluidHandler(side).cast();
+            }
+
+            if (capability == ForgeCapabilities.ENERGY) {
+                return energyHandler(side).cast();
+            }
+
+            if (capability == Capabilities.IN_WORLD_GRID_NODE_HOST) {
+                return gridNodeHost().cast();
+            }
+
+            if (capability == AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK) {
+                return lightningEnergyHandler().cast();
+            }
+
+            if (capability == Capabilities.GENERIC_INTERNAL_INV) {
+                return genericInternalInventory().cast();
+            }
+
+            return LazyOptional.empty();
+        }
+
+        private LazyOptional<IItemHandlerModifiable> itemHandler() {
+            if (itemHandler == null) {
+                var handler = getItemHandlerCapability(blockEntity);
+                if (handler != null) {
+                    itemHandler = LazyOptional.of(() -> handler);
                 }
+            }
+            return itemHandler != null ? itemHandler : LazyOptional.empty();
+        }
 
-                if (capability == ForgeCapabilities.FLUID_HANDLER) {
-                    var fluidHandler = getFluidHandlerCapability(blockEntity, side);
-                    return fluidHandler != null ? LazyOptional.of(() -> fluidHandler).cast() : LazyOptional.empty();
+        private LazyOptional<IFluidHandler> fluidHandler(Direction side) {
+            if (side == null) {
+                if (nullSideFluidHandler == null) {
+                    var handler = getFluidHandlerCapability(blockEntity, null);
+                    if (handler != null) {
+                        nullSideFluidHandler = LazyOptional.of(() -> handler);
+                    }
                 }
+                return nullSideFluidHandler != null ? nullSideFluidHandler : LazyOptional.empty();
+            }
 
-                if (capability == ForgeCapabilities.ENERGY) {
-                    var energyHandler = getEnergyCapability(blockEntity, side);
-                    return energyHandler != null ? LazyOptional.of(() -> energyHandler).cast() : LazyOptional.empty();
-                }
+            var cached = fluidHandlers.get(side);
+            if (cached != null) {
+                return cached;
+            }
 
-                if (capability == Capabilities.IN_WORLD_GRID_NODE_HOST
-                        && blockEntity instanceof IInWorldGridNodeHost host) {
-                    return LazyOptional.of(() -> host).cast();
-                }
-
-                if (capability == AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK) {
-                    var lightningHandler = getLightningEnergyCapability(blockEntity);
-                    return lightningHandler != null
-                            ? LazyOptional.of(() -> lightningHandler).cast()
-                            : LazyOptional.empty();
-                }
-
-                if (capability == Capabilities.GENERIC_INTERNAL_INV) {
-                    var genericInventory = getGenericInternalInventoryCapability(blockEntity);
-                    return genericInventory != null
-                            ? LazyOptional.of(() -> genericInventory).cast()
-                            : LazyOptional.empty();
-                }
-
+            var handler = getFluidHandlerCapability(blockEntity, side);
+            if (handler == null) {
                 return LazyOptional.empty();
             }
-        });
+
+            var optional = LazyOptional.of(() -> handler);
+            fluidHandlers.put(side, optional);
+            return optional;
+        }
+
+        private LazyOptional<IEnergyStorage> energyHandler(Direction side) {
+            if (side == null) {
+                if (nullSideEnergyHandler == null) {
+                    var handler = getEnergyCapability(blockEntity, null);
+                    if (handler != null) {
+                        nullSideEnergyHandler = LazyOptional.of(() -> handler);
+                    }
+                }
+                return nullSideEnergyHandler != null ? nullSideEnergyHandler : LazyOptional.empty();
+            }
+
+            var cached = energyHandlers.get(side);
+            if (cached != null) {
+                return cached;
+            }
+
+            var handler = getEnergyCapability(blockEntity, side);
+            if (handler == null) {
+                return LazyOptional.empty();
+            }
+
+            var optional = LazyOptional.of(() -> handler);
+            energyHandlers.put(side, optional);
+            return optional;
+        }
+
+        private LazyOptional<IInWorldGridNodeHost> gridNodeHost() {
+            if (gridNodeHost == null && blockEntity instanceof IInWorldGridNodeHost host) {
+                gridNodeHost = LazyOptional.of(() -> host);
+            }
+            return gridNodeHost != null ? gridNodeHost : LazyOptional.empty();
+        }
+
+        private LazyOptional<ILightningEnergyHandler> lightningEnergyHandler() {
+            if (lightningEnergyHandler == null) {
+                var handler = getLightningEnergyCapability(blockEntity);
+                if (handler != null) {
+                    lightningEnergyHandler = LazyOptional.of(() -> handler);
+                }
+            }
+            return lightningEnergyHandler != null ? lightningEnergyHandler : LazyOptional.empty();
+        }
+
+        private LazyOptional<GenericInternalInventory> genericInternalInventory() {
+            if (genericInternalInventory == null) {
+                var inventory = getGenericInternalInventoryCapability(blockEntity);
+                if (inventory != null) {
+                    genericInternalInventory = LazyOptional.of(() -> inventory);
+                }
+            }
+            return genericInternalInventory != null ? genericInternalInventory : LazyOptional.empty();
+        }
+
+        private void invalidate() {
+            invalidate(itemHandler);
+            invalidate(nullSideFluidHandler);
+            invalidate(nullSideEnergyHandler);
+            invalidate(gridNodeHost);
+            invalidate(lightningEnergyHandler);
+            invalidate(genericInternalInventory);
+            fluidHandlers.values().forEach(AttachedBlockEntityCapabilityProvider::invalidate);
+            energyHandlers.values().forEach(AttachedBlockEntityCapabilityProvider::invalidate);
+            fluidHandlers.clear();
+            energyHandlers.clear();
+        }
+
+        private static void invalidate(LazyOptional<?> optional) {
+            if (optional != null) {
+                optional.invalidate();
+            }
+        }
     }
 
     private static boolean hasAttachedCapabilitySupport(BlockEntity blockEntity) {
