@@ -76,6 +76,7 @@ import com.moakiee.ae2lt.network.NetworkInit;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.server.ServerStartingEvent;
 import net.minecraftforge.event.server.ServerStoppedEvent;
 
@@ -213,6 +214,7 @@ public class AE2LightningTech {
         MinecraftForge.EVENT_BUS.addGenericListener(BlockEntity.class, this::attachBlockEntityCapabilities);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStarting);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStopped);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerTick);
         MinecraftForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
     }
 
@@ -743,6 +745,12 @@ public class AE2LightningTech {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
         ResearchNoteGenerator.onServerStopped();
+    }
+
+    private void onServerTick(TickEvent.ServerTickEvent event) {
+        if (event.phase == TickEvent.Phase.END) {
+            WirelessFrequencyManager.flushPendingDeviceNotifications();
+        }
     }
 
     private static void acceptCreative(CreativeModeTab.Output output, RegistryObject<? extends ItemLike> holder) {
