@@ -1,12 +1,19 @@
 {
-  "type": "extendedae:circuit_cutter",
-  "input": {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "expatternprovider"
+    }
+  ],
+  "type": "expatternprovider:circuit_cutter",
+  "item_input": {
     "ingredient": {
       "item": "ae2lt:overload_crystal_block"
-    }
+    },
+    "amount": 1
   },
   "output": {
     "count": 4,
-    "id": "ae2lt:unoverloaded_circuit_board"
+    "item": "ae2lt:unoverloaded_circuit_board"
   }
 }

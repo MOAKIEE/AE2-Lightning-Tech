@@ -1,4 +1,10 @@
 {
+  "conditions": [
+    {
+      "type": "forge:mod_loaded",
+      "modid": "extendedae"
+    }
+  ],
   "type": "ae2lt:crystal_catalyzer",
   "catalyst": {
     "item": "extendedae:entro_block"

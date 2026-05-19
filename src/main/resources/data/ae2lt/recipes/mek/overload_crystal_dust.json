@@ -7,11 +7,12 @@
   ],
   "type": "mekanism:crushing",
   "input": {
-    "count": 1,
-    "item": "ae2lt:overload_crystal"
+    "ingredient": {
+      "item": "ae2lt:overload_crystal"
+    }
   },
   "output": {
     "count": 1,
-    "id": "ae2lt:overload_crystal_dust"
+    "item": "ae2lt:overload_crystal_dust"
   }
 }
