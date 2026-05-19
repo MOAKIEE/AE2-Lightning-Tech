@@ -20,6 +20,7 @@ import appeng.me.GridConnection;
 
 import com.moakiee.ae2lt.grid.WirelessConnectionCapProvider;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
+import com.moakiee.ae2lt.grid.OverloadedChannelOwnerHelper;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -84,23 +85,15 @@ public class WirelessOverloadedControllerBlockEntity extends OverloadedControlle
 
     /**
      * Channels currently allocated across the grid.
-     * Counts channel-requiring nodes whose requirements are met, instead of
-     * {@code pathingService.getUsedChannels()} — AE2's counter is bugged for
-     * overloaded-only networks (DFS in {@code PathingCalculation.propagateAssignments}
-     * uses {@code getMachineNodes(ControllerBlockEntity.class)} which misses
-     * our controller subclasses due to exact-class indexing).
+     * Uses our helper which de-duplicates multiblock clusters. AE2's
+     * {@code pathingService.getUsedChannels()} is also not reliable for
+     * overloaded-only networks because vanilla pathing indexes controller
+     * machines by exact class.
      */
     public int getGridUsedChannels() {
         var grid = getMainNode().getGrid();
         if (grid == null) return 0;
-        int count = 0;
-        for (var node : grid.getNodes()) {
-            if (node.hasFlag(appeng.api.networking.GridFlags.REQUIRE_CHANNEL)
-                    && node.meetsChannelRequirements()) {
-                count++;
-            }
-        }
-        return count;
+        return OverloadedChannelOwnerHelper.countUsedChannels(grid);
     }
 
     /**

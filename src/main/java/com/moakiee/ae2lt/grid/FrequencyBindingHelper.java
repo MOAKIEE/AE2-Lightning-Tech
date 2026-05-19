@@ -6,7 +6,6 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridConnection;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
@@ -188,14 +187,7 @@ public final class FrequencyBindingHelper
     public int getGridUsedChannels() {
         var grid = host.getFrequencyBindingMainNode().getGrid();
         if (grid == null) return 0;
-
-        int count = 0;
-        for (var node : grid.getNodes()) {
-            if (node.hasFlag(GridFlags.REQUIRE_CHANNEL) && node.meetsChannelRequirements()) {
-                count++;
-            }
-        }
-        return count;
+        return OverloadedChannelOwnerHelper.countUsedChannels(grid);
     }
 
     public int getGridMaxChannels() {
