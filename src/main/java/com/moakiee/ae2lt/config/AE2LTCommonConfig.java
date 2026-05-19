@@ -44,6 +44,10 @@ public final class AE2LTCommonConfig {
         return VALUES.overloadedControllerPassiveAePerTick.get();
     }
 
+    public static int wirelessConnectorMaxDistance() {
+        return VALUES.wirelessConnectorMaxDistance.get();
+    }
+
     public static int overloadFactoryParallelPerMatrix() {
         return VALUES.overloadFactoryParallelPerMatrix.get();
     }
@@ -160,6 +164,7 @@ public final class AE2LTCommonConfig {
         private final ForgeConfigSpec.IntValue overloadTntGlobalLightningBudgetPerTick;
         private final ForgeConfigSpec.IntValue overloadedControllerChannelsPerController;
         private final ForgeConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
+        private final ForgeConfigSpec.IntValue wirelessConnectorMaxDistance;
         private final ForgeConfigSpec.IntValue overloadFactoryParallelPerMatrix;
         private final ForgeConfigSpec.LongValue overloadFactoryEnergyCapacity;
         private final ForgeConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
@@ -262,6 +267,13 @@ public final class AE2LTCommonConfig {
             overloadedControllerPassiveAePerTick = builder
                     .comment("Passive AE injected per tick by an overloaded controller.")
                     .defineInRange("passiveAePerTick", 100.0D, 0.0D, Double.MAX_VALUE);
+            builder.pop();
+            builder.push("wirelessConnector");
+            wirelessConnectorMaxDistance = builder
+                    .comment("Maximum block distance for Overloaded Wireless Connect Tool links.",
+                            "Only limits links from overloaded providers, interfaces, and power supplies to target machines.",
+                            "Set to 0 to disable this distance limit.")
+                    .defineInRange("maxDistance", 128, 0, Integer.MAX_VALUE);
             builder.pop();
             builder.pop();
 
