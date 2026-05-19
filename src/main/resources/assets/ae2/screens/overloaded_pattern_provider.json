@@ -20,7 +20,7 @@
   "text": {
     "dialog_title": {
       "text": {
-        "translate": "block.ae2lt.overloaded_pattern_provider"
+        "translate": "ae2lt.gui.title.overloaded_pattern_provider"
       },
       "position": {
         "left": 8,

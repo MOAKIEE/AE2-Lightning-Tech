@@ -1,6 +1,8 @@
 package com.moakiee.ae2lt.client.gui;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -27,6 +29,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.renderer.Rect2i;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
@@ -266,6 +269,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
     private Component inlineError = null;
     private long inlineErrorExpiresAt = 0L;
     private static final long INLINE_ERROR_DURATION_MS = 4000L;
+    private final List<FittedTextTooltip> fittedTextTooltips = new ArrayList<>();
 
     /**
      * Called by {@link FrequencyResponsePacket}'s client handler when
@@ -1471,6 +1475,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
 
     @Override
     protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
+        fittedTextTooltips.clear();
+
         drawFlatCentered(g,
                 Component.translatable(currentTab.getTranslationKey()),
                 imageWidth / 2, 6, AE2_TEXT_TITLE);
@@ -1509,9 +1515,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // Password prompt modal contents. Panel sits at local y=50..116
             // (same footprint as the delete modal); header above the
             // text field at y=68 and Cancel/Submit at y=92.
-            drawFlatCentered(g,
+            drawFlatCenteredFitted(g,
                     Component.translatable("ae2lt.gui.password_prompt.title", passwordPromptFreqName),
-                    imageWidth / 2, 58, AE2_TEXT_TITLE);
+                    imageWidth / 2, 58, 136, AE2_TEXT_TITLE);
         }
 
         if (popupMemberUUID != null) {
@@ -1536,7 +1542,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                         .append(Component.literal(" [" + accessLabel(popupMemberAccess) + "]")
                                 .withStyle(ChatFormatting.DARK_GRAY));
             }
-            drawFlatCentered(g, header, imageWidth / 2, 30, AE2_TEXT_TITLE);
+            drawFlatCenteredFitted(g, header, imageWidth / 2, 30, 148, AE2_TEXT_TITLE);
         }
 
         // Hover feedback for the tab strip is handled natively by
@@ -1552,13 +1558,22 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         // legible on top of the recessed shelf + list rows.
         if (inlineError != null) {
             if (System.currentTimeMillis() < inlineErrorExpiresAt) {
-                int textW = font.width(inlineError);
+                int maxTextW = imageWidth - 16;
+                String full = inlineError.getString();
+                String fitted = FittingText.fit(full, maxTextW, font::width);
+                Component display = full.equals(fitted)
+                        ? inlineError
+                        : Component.literal(fitted).setStyle(inlineError.getStyle());
+                int textW = font.width(display);
                 int bgW = Math.min(imageWidth - 8, textW + 8);
                 int bgX = (imageWidth - bgW) / 2;
                 int bgY = imageHeight - 14;
                 g.fill(bgX, bgY, bgX + bgW, bgY + 12, 0xD0202028);
                 g.fill(bgX, bgY, bgX + bgW, bgY + 1, 0xFFD04848);   // top accent
-                drawFlatCentered(g, inlineError, imageWidth / 2, bgY + 2, 0xFFFFB4B4);
+                drawFlatCentered(g, display, imageWidth / 2, bgY + 2, 0xFFFFB4B4);
+                if (!full.equals(fitted)) {
+                    addFittedTooltip(bgX, bgY, bgW, 12, inlineError);
+                }
             } else {
                 inlineError = null;
             }
@@ -1587,6 +1602,44 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         g.drawString(font, text, centerX - w / 2, y, color, false);
     }
 
+    private void drawFlatFitted(GuiGraphics g, Component text, int x, int y, int maxWidth, int color) {
+        String full = text.getString();
+        String fitted = FittingText.fit(full, maxWidth, font::width);
+        Component display = full.equals(fitted)
+                ? text
+                : Component.literal(fitted).setStyle(text.getStyle());
+        g.drawString(font, display, x, y, color, false);
+        if (!full.equals(fitted)) {
+            addFittedTooltip(x, y, Math.min(maxWidth, font.width(display)), 9, text);
+        }
+    }
+
+    private void drawFlatFitted(GuiGraphics g, String text, int x, int y, int maxWidth, int color) {
+        String fitted = FittingText.fit(text, maxWidth, font::width);
+        g.drawString(font, fitted, x, y, color, false);
+        if (!text.equals(fitted)) {
+            addFittedTooltip(x, y, Math.min(maxWidth, font.width(fitted)), 9, Component.literal(text));
+        }
+    }
+
+    private void drawFlatCenteredFitted(GuiGraphics g, Component text, int centerX, int y, int maxWidth, int color) {
+        String full = text.getString();
+        String fitted = FittingText.fit(full, maxWidth, font::width);
+        Component display = full.equals(fitted)
+                ? text
+                : Component.literal(fitted).setStyle(text.getStyle());
+        int w = font.width(display);
+        int x = centerX - w / 2;
+        g.drawString(font, display, x, y, color, false);
+        if (!full.equals(fitted)) {
+            addFittedTooltip(x, y, Math.min(maxWidth, w), 9, text);
+        }
+    }
+
+    private void addFittedTooltip(int x, int y, int width, int height, Component text) {
+        fittedTextTooltips.add(new FittedTextTooltip(new Rect2i(leftPos + x, topPos + y, width, height), text));
+    }
+
     private void renderHomeLabels(GuiGraphics g) {
         // Five info lines sit inside the wide info shelf baked into
         // wireless_overloaded_home.png (shelf y=39..111). 14-px row pitch
@@ -1603,24 +1656,25 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                     .setStyle(Style.EMPTY.withColor(TextColor.fromRgb(freq.color() & 0xFFFFFF)));
             Component line = Component.translatable("ae2lt.gui.frequency.current")
                     .append(": ").append(name);
-            drawFlat(g, line, 10, y, AE2_TEXT_BODY);
+            drawFlatFitted(g, line, 10, y, imageWidth - 20, AE2_TEXT_BODY);
         } else {
-            drawFlat(g, Component.translatable("ae2lt.gui.frequency.none"),
-                    10, y, AE2_TEXT_MUTED);
+            drawFlatFitted(g, Component.translatable("ae2lt.gui.frequency.none"),
+                    10, y, imageWidth - 20, AE2_TEXT_MUTED);
         }
         y += 14;
 
-        drawFlat(g, Component.translatable("ae2lt.gui.home.device_type")
-                .append(": ").append(Component.translatable(freqMenu().getDeviceName())), 10, y, AE2_TEXT_BODY);
+        drawFlatFitted(g, Component.translatable("ae2lt.gui.home.device_type")
+                .append(": ").append(Component.translatable(freqMenu().getDeviceName())),
+                10, y, imageWidth - 20, AE2_TEXT_BODY);
         y += 14;
 
         boolean connected = freqMenu().isLinkActive();
-        drawFlat(g, Component.translatable("ae2lt.gui.home.status")
+        drawFlatFitted(g, Component.translatable("ae2lt.gui.home.status")
                         .append(": ")
                         .append(connected
                                 ? Component.translatable("ae2lt.gui.home.connected")
                                 : Component.translatable("ae2lt.gui.home.disconnected")),
-                10, y, AE2_TEXT_BODY);
+                10, y, imageWidth - 20, AE2_TEXT_BODY);
         y += 14;
 
         int used = freqMenu().getUsedChannels();
@@ -1634,18 +1688,18 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int remain = Math.max(0, max - used);
             channelsValue = Component.translatable("ae2lt.gui.home.grid_channels.value", used, max, remain);
         }
-        drawFlat(g, Component.translatable("ae2lt.gui.home.grid_channels")
+        drawFlatFitted(g, Component.translatable("ae2lt.gui.home.grid_channels")
                         .append(": ")
                         .append(channelsValue),
-                10, y, AE2_TEXT_BODY);
+                10, y, imageWidth - 20, AE2_TEXT_BODY);
         y += 14;
 
         if (freqMenu().isController()) {
-            drawFlat(g, Component.translatable("ae2lt.gui.home.cross_dimension")
+            drawFlatFitted(g, Component.translatable("ae2lt.gui.home.cross_dimension")
                     .append(": ").append(freqMenu().isAdvanced()
                             ? Component.translatable("ae2lt.gui.home.cross_dimension.yes")
                             : Component.translatable("ae2lt.gui.home.cross_dimension.no")),
-                    10, y, AE2_TEXT_BODY);
+                    10, y, imageWidth - 20, AE2_TEXT_BODY);
         }
     }
 
@@ -1663,10 +1717,10 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
                         ? Component.literal(current.name()).setStyle(
                                 Style.EMPTY.withColor(TextColor.fromRgb(current.color() & 0xFFFFFF)))
                         : Component.translatable("ae2lt.gui.frequency.none").withStyle(ChatFormatting.DARK_GRAY));
-        drawFlat(g, left, 10, 18, AE2_TEXT_BODY);
-
         Component right = Component.translatable("ae2lt.gui.frequency.total").append(": " + freqs.size());
-        drawFlat(g, right, imageWidth - 10 - font.width(right), 18, AE2_TEXT_MUTED);
+        int rightX = imageWidth - 10 - font.width(right);
+        drawFlatFitted(g, left, 10, 18, Math.max(20, rightX - 24), AE2_TEXT_BODY);
+        drawFlat(g, right, rightX, 18, AE2_TEXT_MUTED);
         // No "password:" label here — the AETextField placeholder
         // communicates that already, and keeping the label out of the
         // shelf's bottom bevel avoids the prior clipping/overlap.
@@ -1705,11 +1759,18 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             String typeKey = c.deviceName();
             ChatFormatting typeColor = c.controller() ? ChatFormatting.DARK_AQUA : ChatFormatting.DARK_GREEN;
 
-            drawFlat(g, Component.translatable(typeKey).withStyle(typeColor),
-                    LIST_ROW_X, yTop, AE2_TEXT_BODY);
+            drawFlatFitted(g, Component.translatable(typeKey).withStyle(typeColor),
+                    LIST_ROW_X, yTop, 145, AE2_TEXT_BODY);
 
             String posStr = "(" + c.pos().getX() + "," + c.pos().getY() + "," + c.pos().getZ() + ")";
-            drawFlat(g, posStr, LIST_ROW_X, yBot, AE2_TEXT_MUTED);
+
+            String dim = c.dimension();
+            int slash = dim.indexOf(':');
+            String shortDim = slash >= 0 ? dim.substring(slash + 1) : dim;
+            if (shortDim.length() > 8) shortDim = shortDim.substring(0, 8);
+            int dimX = 168 - font.width(shortDim);
+            drawFlatFitted(g, posStr, LIST_ROW_X, yBot,
+                    Math.max(20, dimX - LIST_ROW_X - 6), AE2_TEXT_MUTED);
 
             int dotColor = c.loaded() ? 0xFF3AA55A : 0xFF7F7F7F;
             // Centre the 6-px loaded/unloaded dot vertically between the
@@ -1718,14 +1779,10 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             int dotY = yTop + 5;
             g.fill(160, dotY, 166, dotY + 6, dotColor);
 
-            String dim = c.dimension();
-            int slash = dim.indexOf(':');
-            String shortDim = slash >= 0 ? dim.substring(slash + 1) : dim;
-            if (shortDim.length() > 8) shortDim = shortDim.substring(0, 8);
             // Right-align inside the well (right edge at x=168) rather
             // than against the chassis edge so it doesn't poke past
             // the recessed shelf.
-            drawFlat(g, shortDim, 168 - font.width(shortDim), yBot, AE2_TEXT_MUTED);
+            drawFlat(g, shortDim, dimX, yBot, AE2_TEXT_MUTED);
         }
     }
 
@@ -1742,12 +1799,12 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         Component left = Component.translatable("ae2lt.gui.member.your_access",
                 Component.translatable("ae2lt.gui.access." + myAccess.name().toLowerCase())
                         .withStyle(myAccess.getFormatting()));
-        drawFlat(g, left, 10, 18, AE2_TEXT_BODY);
-
         var members = ClientFrequencyCache.getMembers(currentId);
         Component right = Component.translatable("ae2lt.gui.frequency.total")
                 .append(": " + members.size());
-        drawFlat(g, right, imageWidth - 10 - font.width(right), 18, AE2_TEXT_MUTED);
+        int rightX = imageWidth - 10 - font.width(right);
+        drawFlatFitted(g, left, 10, 18, Math.max(20, rightX - 24), AE2_TEXT_BODY);
+        drawFlat(g, right, rightX, 18, AE2_TEXT_MUTED);
 
         if (members.isEmpty()) {
             drawFlatCentered(g, Component.translatable("ae2lt.gui.member.none"),
@@ -1794,7 +1851,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         // row at y=138 — inset 2 px so it visually nests under the grid.
         g.fill(16, 124, 28, 134, editColor | 0xFF000000);
         if (nameField != null && !nameField.getValue().isBlank()) {
-            drawFlat(g, nameField.getValue(), 32, 125, editColor | 0xFF000000);
+            drawFlatFitted(g, nameField.getValue(), 32, 125,
+                    imageWidth - 42, editColor | 0xFF000000);
         }
     }
 
@@ -1823,9 +1881,28 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         renderBackground(g);
         super.render(g, mouseX, mouseY, partialTick);
         renderTooltip(g, mouseX, mouseY);
+        renderFittedTextTooltip(g, mouseX, mouseY);
     }
 
     // Helpers
+
+    private void renderFittedTextTooltip(GuiGraphics g, int mouseX, int mouseY) {
+        for (int i = fittedTextTooltips.size() - 1; i >= 0; i--) {
+            var tooltip = fittedTextTooltips.get(i);
+            var area = tooltip.area();
+            if (isWithinArea(mouseX, mouseY, area)) {
+                g.renderComponentTooltip(font, List.of(tooltip.text()), mouseX, mouseY);
+                return;
+            }
+        }
+    }
+
+    private static boolean isWithinArea(int mouseX, int mouseY, Rect2i area) {
+        return mouseX >= area.getX()
+                && mouseX < area.getX() + area.getWidth()
+                && mouseY >= area.getY()
+                && mouseY < area.getY() + area.getHeight();
+    }
 
     private boolean isSelf(UUID uuid) {
         var mc = Minecraft.getInstance();
@@ -1860,6 +1937,8 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         return Component.translatable("ae2lt.gui.access." + a.name().toLowerCase()).getString();
     }
 
+    private record FittedTextTooltip(Rect2i area, Component text) {}
+
     /**
      * List-row button that paints the row sprite baked at the bottom
      * of the chassis PNG instead of the AE2 button background. Idle
@@ -1877,6 +1956,9 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         RowSpriteButton(int x, int y, int width, int height,
                 Component message, OnPress onPress) {
             super(Button.builder(message, onPress).bounds(x, y, width, height));
+            if (!message.getString().equals(FittingText.fit(message.getString(), width - 8, font::width))) {
+                setTooltip(Tooltip.create(message));
+            }
         }
 
         @Override
@@ -1899,9 +1981,14 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
             // is only used for unstyled glyphs — pick black on the
             // light idle sprite, dark blue-gray on the disabled sprite.
             int fallback = active ? 0x000000 : 0x404040;
+            String full = getMessage().getString();
+            String fitted = FittingText.fit(full, getWidth() - 8, font::width);
+            Component display = full.equals(fitted)
+                    ? getMessage()
+                    : Component.literal(fitted).setStyle(getMessage().getStyle());
             int textY = getY() + (getHeight() - 8) / 2;
-            int textX = getX() + (getWidth() - font.width(getMessage())) / 2;
-            g.drawString(font, getMessage(), textX, textY, fallback, false);
+            int textX = getX() + 4 + (getWidth() - 8 - font.width(display)) / 2;
+            g.drawString(font, display, textX, textY, fallback, false);
         }
     }
 
