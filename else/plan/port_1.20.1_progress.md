@@ -37,10 +37,30 @@
 - 过载线缆去色配方
 - 发光/组合方块模型
 
+### 1.20.1 数据包目录约定
+
+已对照本地 AE2 / AdvancedAE 1.20.1 参考源码，将资源目录改为 1.20.1 可读取的复数路径：
+
+| 原目录 | 1.20.1 目录 |
+| --- | --- |
+| `data/*/tags/item` | `data/*/tags/items` |
+| `data/*/tags/block` | `data/*/tags/blocks` |
+| `data/*/loot_table` | `data/*/loot_tables` |
+
+涉及范围：
+
+- Minecraft 挖掘/工具等级方块标签
+- AE2 `growth_acceleratable` 和 `inscriber_presses` 标签
+- AE2LT 过载线缆标签
+- `c` 命名空间的方块/物品通用标签
+- AE2LT 全部方块掉落表
+
 ## 已验证
 
 - `rg -n 'neoforge:|neoforge_data|\"loader\"\\s*:\\s*\"neoforge' src\\main\\resources -g "*.json"`
   - 结果：无残留匹配
+- `rg --files src\\main\\resources\\data | rg '(^|/|\\\\)tags(\\\\|/)(item|block)(\\\\|/)|(^|/|\\\\)loot_table(\\\\|/)'`
+  - 结果：无旧数据包目录残留
 - PowerShell `ConvertFrom-Json -AsHashtable` 解析 `src/main/resources` 下全部 JSON
   - 结果：全部 JSON 可解析
 - `./gradlew.bat compileJava`
