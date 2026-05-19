@@ -600,7 +600,10 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
 
     @Override
     public void saveAdditional(CompoundTag data) {
-        logic.persistCellCache();
+        // Only copy the cell's in-memory state into its ItemStack before the
+        // inventory is serialized. Do not call saveChanges() from this path:
+        // the chunk is already being saved, and re-marking it dirty here makes
+        // /save-all flush pick it up again in the next dirty pass.
         AppFluxBridge.persistCellStorage(cachedCellView);
         super.saveAdditional(data);
         data.putString(TAG_MODE, mode.name());
