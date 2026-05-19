@@ -176,17 +176,8 @@ public final class FixedInfiniteCellItem extends AE2LTItem {
     public static CellOutcome getOutcomeFromSeed(ItemStack stack) {
         UUID seed = getSeed(stack);
         if (seed == null) return CellOutcome.LIGHTNING_ROD;
-        long worldSeed;
-        if (hasWorldSeed(stack)) {
-            worldSeed = getWorldSeed(stack);
-        } else {
-            worldSeed = 0L;
-            var server = ServerLifecycleHooks.getCurrentServer();
-            if (server != null) {
-                worldSeed = server.overworld().getSeed();
-            }
-        }
-        return resolveOutcome(seed, worldSeed);
+        if (!hasWorldSeed(stack)) return CellOutcome.LIGHTNING_ROD;
+        return resolveOutcome(seed, getWorldSeed(stack));
     }
 
     // ── Type byte (inner cell only) ──
