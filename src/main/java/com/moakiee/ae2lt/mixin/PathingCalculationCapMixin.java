@@ -61,6 +61,7 @@ public abstract class PathingCalculationCapMixin {
     @Unique private List<IGridNode> ae2lt$overloadedControllers;
     @Unique private boolean ae2lt$useMaxFlow;
     @Unique private BorrowedCapacityCalculator.Result ae2lt$flowResult;
+    @Unique private int ae2lt$maxFlowChannelsInUse = -1;
 
     // ── Phase 1: constructor – identify & unify overloaded controllers ──
 
@@ -231,8 +232,20 @@ public abstract class PathingCalculationCapMixin {
             for (var entry : connFlow.reference2IntEntrySet()) {
                 entry.getKey().setAdHocChannels(entry.getIntValue());
             }
+
+            // PathingService reads getChannelsInUse() after compute(). AE2's
+            // vanilla DFS can miss overloaded-controller-only roots, so keep
+            // the max-flow winner count for the status/menu readback path.
+            ae2lt$maxFlowChannelsInUse = ae2lt$flowResult.channelNodes().size();
         }
         BorrowedCapacityCalculator.clearActiveData();
         ae2lt$flowResult = null;
+    }
+
+    @Inject(method = "getChannelsInUse", at = @At("HEAD"), cancellable = true)
+    private void ae2lt$overrideChannelsInUse(CallbackInfoReturnable<Integer> cir) {
+        if (ae2lt$maxFlowChannelsInUse >= 0) {
+            cir.setReturnValue(ae2lt$maxFlowChannelsInUse);
+        }
     }
 }
