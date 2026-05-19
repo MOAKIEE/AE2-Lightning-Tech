@@ -77,6 +77,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         implements OverloadedGridNodeOwner, FrequencyBindingHost {
 
     public static final int SLOT_COUNT = 36;
+    public static final int MAX_WIRELESS_CONNECTIONS = 1024;
 
     // ── Idle power (recomputed on mode/connection changes) ───────────────
     // Base interface upkeep is already heavier than vanilla because the
@@ -830,24 +831,42 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     public List<WirelessConnection> getConnections() { return Collections.unmodifiableList(connections); }
 
-    public void addOrUpdateConnection(WirelessConnection conn) {
+    public boolean addOrUpdateConnection(WirelessConnection conn) {
         if (!isLocalDimension(conn.dimension())) {
-            return;
+            return false;
         }
-        connections.removeIf(c ->
-                c.dimension().equals(conn.dimension()) && c.pos().equals(conn.pos()));
+        for (int i = 0; i < connections.size(); i++) {
+            var existing = connections.get(i);
+            if (existing.dimension().equals(conn.dimension()) && existing.pos().equals(conn.pos())) {
+                if (existing.equals(conn)) {
+                    return true;
+                }
+                connections.set(i, conn);
+                invalidateConnectionCache(); refreshEjectRegistrations();
+                recomputeIdlePower();
+                saveChanges(); markForUpdate();
+                return true;
+            }
+        }
+        if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
+            return false;
+        }
         connections.add(conn);
         invalidateConnectionCache(); refreshEjectRegistrations();
         recomputeIdlePower();
         saveChanges(); markForUpdate();
+        return true;
     }
 
-    public void removeConnection(ResourceKey<Level> dim, BlockPos pos) {
-        connections.removeIf(c ->
+    public boolean removeConnection(ResourceKey<Level> dim, BlockPos pos) {
+        boolean removed = connections.removeIf(c ->
                 c.dimension().equals(dim) && c.pos().equals(pos));
-        invalidateConnectionCache(); refreshEjectRegistrations();
-        recomputeIdlePower();
-        saveChanges(); markForUpdate();
+        if (removed) {
+            invalidateConnectionCache(); refreshEjectRegistrations();
+            recomputeIdlePower();
+            saveChanges(); markForUpdate();
+        }
+        return removed;
     }
 
     private boolean isLocalDimension(ResourceKey<Level> dimension) {
@@ -1833,13 +1852,15 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
 
         int count = data.readVarInt();
-        var newConnections = new ArrayList<WirelessConnection>(count);
+        var newConnections = new ArrayList<WirelessConnection>(Math.min(count, MAX_WIRELESS_CONNECTIONS));
         for (int i = 0; i < count; i++) {
             var dim = ResourceKey.create(net.minecraft.core.registries.Registries.DIMENSION,
                     data.readResourceLocation());
             var pos = data.readBlockPos();
             var face = Direction.from3DDataValue(data.readByte());
-            newConnections.add(new WirelessConnection(dim, pos, face));
+            if (newConnections.size() < MAX_WIRELESS_CONNECTIONS) {
+                newConnections.add(new WirelessConnection(dim, pos, face));
+            }
         }
 
         boolean unlimitedChanged = false;
@@ -1924,7 +1945,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         connections.clear();
         if (d.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
             var cl = d.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < cl.size(); i++)
+            for (int i = 0; i < cl.size() && connections.size() < MAX_WIRELESS_CONNECTIONS; i++)
                 connections.add(WirelessConnection.fromTag(cl.getCompound(i)));
         }
         filterInv.readFromNBT(d, TAG_FILTER_INV);
