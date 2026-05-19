@@ -7,6 +7,8 @@ import net.minecraftforge.network.NetworkDirection;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
+import java.util.Optional;
+
 public final class NetworkInit {
     private static final String PROTOCOL_VERSION = "1";
     public static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
@@ -32,13 +34,15 @@ public final class NetworkInit {
                 WirelessConnectorUsePacket.class,
                 WirelessConnectorUsePacket::encode,
                 WirelessConnectorUsePacket::decode,
-                WirelessConnectorUsePacket::handle);
+                WirelessConnectorUsePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 OpenFrequencyMenuPacket.class,
                 OpenFrequencyMenuPacket::encode,
                 OpenFrequencyMenuPacket::decode,
-                OpenFrequencyMenuPacket::handle);
+                OpenFrequencyMenuPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
 
         // frequency system: C→S
         CHANNEL.registerMessage(
@@ -46,31 +50,36 @@ public final class NetworkInit {
                 CreateFrequencyPacket.class,
                 CreateFrequencyPacket::encode,
                 CreateFrequencyPacket::decode,
-                CreateFrequencyPacket::handle);
+                CreateFrequencyPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 DeleteFrequencyPacket.class,
                 DeleteFrequencyPacket::encode,
                 DeleteFrequencyPacket::decode,
-                DeleteFrequencyPacket::handle);
+                DeleteFrequencyPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 EditFrequencyPacket.class,
                 EditFrequencyPacket::encode,
                 EditFrequencyPacket::decode,
-                EditFrequencyPacket::handle);
+                EditFrequencyPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 SelectFrequencyPacket.class,
                 SelectFrequencyPacket::encode,
                 SelectFrequencyPacket::decode,
-                SelectFrequencyPacket::handle);
+                SelectFrequencyPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 ChangeMemberPacket.class,
                 ChangeMemberPacket::encode,
                 ChangeMemberPacket::decode,
-                ChangeMemberPacket::handle);
+                ChangeMemberPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_SERVER));
 
         // S→C
         CHANNEL.registerMessage(
@@ -78,31 +87,36 @@ public final class NetworkInit {
                 EasterEggPacket.class,
                 EasterEggPacket::encode,
                 EasterEggPacket::decode,
-                EasterEggPacket::handle);
+                EasterEggPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 SyncFrequencyListPacket.class,
                 SyncFrequencyListPacket::encode,
                 SyncFrequencyListPacket::decode,
-                SyncFrequencyListPacket::handle);
+                SyncFrequencyListPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 SyncFrequencyDetailPacket.class,
                 SyncFrequencyDetailPacket::encode,
                 SyncFrequencyDetailPacket::decode,
-                SyncFrequencyDetailPacket::handle);
+                SyncFrequencyDetailPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 UpdateFrequencyBasicPacket.class,
                 UpdateFrequencyBasicPacket::encode,
                 UpdateFrequencyBasicPacket::decode,
-                UpdateFrequencyBasicPacket::handle);
+                UpdateFrequencyBasicPacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
         CHANNEL.registerMessage(
                 nextPacketId++,
                 FrequencyResponsePacket.class,
                 FrequencyResponsePacket::encode,
                 FrequencyResponsePacket::decode,
-                FrequencyResponsePacket::handle);
+                FrequencyResponsePacket::handle,
+                Optional.of(NetworkDirection.PLAY_TO_CLIENT));
     }
 
     public static ResourceLocation id(String path) {
