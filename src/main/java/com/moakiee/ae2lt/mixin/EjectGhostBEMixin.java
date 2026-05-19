@@ -17,9 +17,8 @@ import com.moakiee.ae2lt.logic.EjectModeRegistry;
  * at eject-mode interception positions when the original block is air (null).
  * <p>
  * This satisfies machines that check {@code getBlockEntity(adjacent) != null}
- * before querying capabilities. Returns the GhostBE regardless of whether
- * the owning pattern provider is currently loaded, so that the capability
- * mixin can then return a rejecting handler when the provider is offline.
+ * before querying Forge capabilities. The GhostBE itself proxies or rejects
+ * capability access depending on the owning pattern provider's availability.
  */
 @Mixin(Level.class)
 public abstract class EjectGhostBEMixin {
