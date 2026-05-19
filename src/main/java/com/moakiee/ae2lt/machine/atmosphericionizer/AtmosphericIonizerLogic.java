@@ -21,7 +21,12 @@ public final class AtmosphericIonizerLogic implements IGridTickable {
 
     @Override
     public TickRateModulation tickingRequest(IGridNode node, int ticksSinceLastCall) {
-        if (host.isRemoved() || host.getLevel() == null || host.isClientSide()) {
+        if (host.getLevel() == null || host.isClientSide() || host.isRemoved()) {
+            return TickRateModulation.SLEEP;
+        }
+
+        if (!host.isInstalledInWorld()) {
+            host.cancelProcessingForRemoval();
             return TickRateModulation.SLEEP;
         }
 
