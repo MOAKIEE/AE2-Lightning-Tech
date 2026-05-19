@@ -139,10 +139,6 @@ public class TeslaCoilBlockEntity extends AENetworkBlockEntity implements IActio
     }
 
     public void cycleMode() {
-        if (lockedMode != null) {
-            return;
-        }
-
         selectedMode = selectedMode.next();
         saveChanges();
         markForUpdate();
