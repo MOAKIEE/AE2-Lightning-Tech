@@ -9,11 +9,9 @@ import appeng.api.stacks.KeyCounter;
 import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.server.ServerLifecycleHooks;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -33,7 +31,6 @@ public class InfiniteCellInventory implements StorageCell {
     private static final String TAG_CELL_ID = "ae2lt:cell_id";
 
     private final ItemStack stack;
-    private final @Nullable HolderLookup.Provider explicitRegistries;
     private final @Nullable ISaveProvider saveProvider;
     private final IndexedStorage storage;
     private final ByteTracker byteTracker;
@@ -43,20 +40,18 @@ public class InfiniteCellInventory implements StorageCell {
     private int lastWrittenTypes = -1;
     private long lastWrittenBytes = -1;
 
-    private InfiniteCellInventory(ItemStack stack, @Nullable HolderLookup.Provider registries,
-                                  @Nullable ISaveProvider saveProvider,
+    private InfiniteCellInventory(ItemStack stack, @Nullable ISaveProvider saveProvider,
                                   int bytesPerType, int maxTypes,
                                   long capacityLo, long capacityHi,
                                   double idleDrain) {
         this.stack = stack;
-        this.explicitRegistries = registries;
         this.saveProvider = saveProvider;
         this.idleDrain = idleDrain;
         this.cellId = readCellId();
 
         var savedData = InfiniteCellSavedData.getOrNull();
         if (cellId != null && savedData != null) {
-            this.storage = savedData.getOrCreateStorage(cellId, resolveRegistries());
+            this.storage = savedData.getOrCreateStorage(cellId);
         } else {
             this.storage = new IndexedStorage();
         }
@@ -79,27 +74,18 @@ public class InfiniteCellInventory implements StorageCell {
         }
     }
 
-    private HolderLookup.Provider resolveRegistries() {
-        if (explicitRegistries != null) return explicitRegistries;
-        var server = ServerLifecycleHooks.getCurrentServer();
-        if (server != null) return server.registryAccess();
-        throw new IllegalStateException("No registries available — server not running");
-    }
-
-    public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
-                                               @Nullable ISaveProvider saveProvider,
+    public static InfiniteCellInventory create(ItemStack stack, @Nullable ISaveProvider saveProvider,
                                                int bytesPerType, int maxTypes,
                                                long capacityLo, long capacityHi,
                                                double idleDrain) {
-        return new InfiniteCellInventory(stack, registries,
-                saveProvider,
+        return new InfiniteCellInventory(stack, saveProvider,
                 bytesPerType, maxTypes, capacityLo, capacityHi, idleDrain);
     }
 
-    public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
+    public static InfiniteCellInventory create(ItemStack stack,
                                                int bytesPerType, int maxTypes,
                                                long capacity, double idleDrain) {
-        return create(stack, registries, null, bytesPerType, maxTypes, capacity, 0, idleDrain);
+        return create(stack, null, bytesPerType, maxTypes, capacity, 0, idleDrain);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -210,7 +196,7 @@ public class InfiniteCellInventory implements StorageCell {
             writeCellId(cellId);
         }
 
-        savedData.persistStorage(cellId, storage, resolveRegistries());
+        savedData.persistStorage(cellId, storage);
         ensureSync();
         syncSummary();
     }

@@ -6,7 +6,6 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
@@ -50,7 +49,7 @@ public final class InfiniteCellSavedData extends SavedData {
      * loading from NBT on first access. Multiple callers with the same UUID
      * receive the same instance — this is the primary anti-duplication guard.
      */
-    public IndexedStorage getOrCreateStorage(UUID id, HolderLookup.Provider registries) {
+    public IndexedStorage getOrCreateStorage(UUID id) {
         IndexedStorage cached = storageCache.get(id);
         if (cached != null) return cached;
 
@@ -73,7 +72,7 @@ public final class InfiniteCellSavedData extends SavedData {
      * (e.g. by {@link #removeCell(UUID)}) — the caller's wrapper may still hold
      * a live reference that must continue to persist.
      */
-    public void persistStorage(UUID id, IndexedStorage storage, HolderLookup.Provider registries) {
+    public void persistStorage(UUID id, IndexedStorage storage) {
         if (storage == null) return;
         storageCache.put(id, storage);
         CompoundTag lastRoot = cells.get(id);
