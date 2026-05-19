@@ -3,15 +3,12 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
@@ -32,7 +29,6 @@ import appeng.api.storage.StorageCells;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 import appeng.util.inv.AppEngInternalInventory;
@@ -45,6 +41,9 @@ import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
+import com.moakiee.ae2lt.logic.WirelessConnectionLists;
+import com.moakiee.ae2lt.logic.WirelessConnectionRef;
+import com.moakiee.ae2lt.logic.WirelessConnectionValidator;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -72,14 +71,10 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
             ResourceKey<Level> dimension,
             BlockPos pos,
             Direction boundFace
-    ) {
+    ) implements WirelessConnectionRef {
         private static final String TAG_DIM = "Dim";
         private static final String TAG_POS = "Pos";
         private static final String TAG_FACE = "Face";
-
-        public boolean sameTarget(ResourceKey<Level> otherDim, BlockPos otherPos) {
-            return dimension.equals(otherDim) && pos.equals(otherPos);
-        }
 
         public CompoundTag toTag() {
             var tag = new CompoundTag();
@@ -119,6 +114,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
 
     private final List<WirelessConnection> connections = new ArrayList<>();
     private final List<WirelessConnection> readOnlyConnections = Collections.unmodifiableList(connections);
+    private int invalidConnectionScanCursor;
     /**
      * Monotonic version stamp bumped whenever {@link #connections} is mutated.
      * Lets the supply logic skip an O(n) per-tick {@code List.equals} when the
@@ -146,6 +142,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
     public static void serverTick(Level level, BlockPos pos, BlockState state, OverloadedPowerSupplyBlockEntity be) {
         if (!level.isClientSide()) {
             be.frequencyBinding.serverTick();
+            if (level instanceof ServerLevel serverLevel) {
+                be.tickWirelessConnectionCleanup(serverLevel);
+            }
         }
     }
 
@@ -329,13 +328,14 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
         if (!isLocalDimension(dimension)) {
             return false;
         }
-        int index = findConnectionIndex(connections, dimension, pos);
+        int index = WirelessConnectionLists.indexOf(connections, dimension, pos);
         if (index >= 0) {
             var updated = new WirelessConnection(dimension, pos.immutable(), face);
             if (connections.get(index).equals(updated)) {
                 return false;
             }
             connections.set(index, updated);
+            invalidConnectionScanCursor = 0;
             notifyConnectionsChanged();
             return true;
         }
@@ -344,6 +344,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
             return false;
         }
         connections.add(new WirelessConnection(dimension, pos.immutable(), face));
+        invalidConnectionScanCursor = 0;
         notifyConnectionsChanged();
         return true;
     }
@@ -367,16 +368,18 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
 
         for (var rawPos : positions) {
             var targetPos = rawPos.immutable();
-            int index = findConnectionIndex(connections, dimension, targetPos);
+            int index = WirelessConnectionLists.indexOf(connections, dimension, targetPos);
             if (index >= 0) {
                 var existing = connections.get(index);
                 if (existing.boundFace() == face) {
                     connections.remove(index);
                     disconnected.add(targetPos);
+                    invalidConnectionScanCursor = 0;
                     changed = true;
                 } else {
                     connections.set(index, new WirelessConnection(dimension, targetPos, face));
                     updated.add(targetPos);
+                    invalidConnectionScanCursor = 0;
                     changed = true;
                 }
                 continue;
@@ -389,6 +392,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
 
             connections.add(new WirelessConnection(dimension, targetPos, face));
             connected.add(targetPos);
+            invalidConnectionScanCursor = 0;
             changed = true;
         }
 
@@ -404,9 +408,10 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
     }
 
     public boolean removeConnection(ResourceKey<Level> dimension, BlockPos pos) {
-        int index = findConnectionIndex(connections, dimension, pos);
+        int index = WirelessConnectionLists.indexOf(connections, dimension, pos);
         if (index >= 0) {
             connections.remove(index);
+            invalidConnectionScanCursor = 0;
             notifyConnectionsChanged();
             return true;
         }
@@ -420,6 +425,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
 
         boolean removed = connections.removeIf(removedConnections::contains);
         if (removed) {
+            invalidConnectionScanCursor = 0;
             notifyConnectionsChanged();
         }
         return removed;
@@ -440,55 +446,31 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
     }
 
     public int clearInvalidConnections() {
+        return pruneInvalidConnections(Integer.MAX_VALUE);
+    }
+
+    public int pruneInvalidConnections(int maxChecks) {
         var hostLevel = getLevel();
-        var server = hostLevel instanceof ServerLevel sl ? sl.getServer() : null;
-        if (server == null) {
+        if (!(hostLevel instanceof ServerLevel serverLevel) || maxChecks <= 0 || connections.isEmpty()) {
             return 0;
         }
 
-        int removed = 0;
-        Iterator<WirelessConnection> iterator = connections.iterator();
-        while (iterator.hasNext()) {
-            var connection = iterator.next();
-            if (!connection.dimension().equals(hostLevel.dimension())) {
-                iterator.remove();
-                removed++;
-                continue;
-            }
-            ServerLevel targetLevel = server.getLevel(connection.dimension());
-            if (targetLevel == null) {
-                iterator.remove();
-                removed++;
-                continue;
-            }
-
-            if (!targetLevel.isLoaded(connection.pos())) {
-                continue;
-            }
-
-            var state = targetLevel.getBlockState(connection.pos());
-            if (state.isAir() || targetLevel.getBlockEntity(connection.pos()) == null) {
-                iterator.remove();
-                removed++;
-            }
-        }
-
-        if (removed > 0) {
+        var result = WirelessConnectionLists.pruneInvalid(
+                connections, invalidConnectionScanCursor, maxChecks,
+                serverLevel, worldPosition);
+        invalidConnectionScanCursor = result.nextCursor();
+        if (result.removed() > 0) {
             notifyConnectionsChanged();
         }
-        return removed;
+        return result.removed();
     }
 
-    private void addLoadedConnection(WirelessConnection connection) {
-        if (!isLocalDimension(connection.dimension())) {
+    private void tickWirelessConnectionCleanup(ServerLevel level) {
+        if (connections.isEmpty()
+                || !WirelessConnectionValidator.shouldRunPeriodicPrune(level, worldPosition)) {
             return;
         }
-        int index = findConnectionIndex(connections, connection.dimension(), connection.pos());
-        if (index >= 0) {
-            connections.set(index, connection);
-        } else if (connections.size() < MAX_WIRELESS_CONNECTIONS) {
-            connections.add(connection);
-        }
+        pruneInvalidConnections(WirelessConnectionValidator.PERIODIC_PRUNE_MAX_CHECKS);
     }
 
     private void notifyConnectionsChanged() {
@@ -498,20 +480,8 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
         logic.onStateChanged();
     }
 
-    private static int findConnectionIndex(
-            List<WirelessConnection> source,
-            ResourceKey<Level> dimension,
-            BlockPos pos) {
-        for (int i = 0; i < source.size(); i++) {
-            if (source.get(i).sameTarget(dimension, pos)) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     private boolean isLocalDimension(ResourceKey<Level> dimension) {
-        return level == null || level.dimension().equals(dimension);
+        return WirelessConnectionLists.isLocalDimension(level, dimension);
     }
 
     @Override
@@ -610,11 +580,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
         data.putString(TAG_MODE, mode.name());
         cellInv.writeToNBT(data, TAG_CELL_INV);
 
-        var list = new ListTag();
-        for (var connection : connections) {
-            list.add(connection.toTag());
-        }
-        data.put(TAG_CONNECTIONS, list);
+        data.put(TAG_CONNECTIONS, WirelessConnectionLists.writeTagList(connections));
         frequencyBinding.save(data);
     }
 
@@ -636,13 +602,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
         cellViewDirty = true;
         cellCapacityDirty = true;
         cachedCellView = null;
-        connections.clear();
-        if (data.contains(TAG_CONNECTIONS, Tag.TAG_LIST)) {
-            var list = data.getList(TAG_CONNECTIONS, Tag.TAG_COMPOUND);
-            for (int i = 0; i < list.size(); i++) {
-                addLoadedConnection(WirelessConnection.fromTag(list.getCompound(i)));
-            }
-        }
+        WirelessConnectionLists.readTagList(
+                data, TAG_CONNECTIONS, connections, MAX_WIRELESS_CONNECTIONS, WirelessConnection::fromTag);
+        invalidConnectionScanCursor = 0;
         connectionVersion++;
 
         frequencyBinding.load(data);
@@ -679,18 +641,14 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
             var face = (rawFace >= 0 && rawFace < Direction.values().length)
                     ? Direction.from3DDataValue(rawFace) : Direction.DOWN;
             var connection = new WirelessConnection(dim, pos, face);
-            int existing = findConnectionIndex(newConnections, dim, pos);
-            if (existing >= 0) {
-                newConnections.set(existing, connection);
-            } else if (newConnections.size() < MAX_WIRELESS_CONNECTIONS) {
-                newConnections.add(connection);
-            }
+            WirelessConnectionLists.addOrReplace(newConnections, connection, MAX_WIRELESS_CONNECTIONS);
         }
 
         if (newMode != mode || !newConnections.equals(connections)) {
             mode = newMode;
             connections.clear();
             connections.addAll(newConnections);
+            invalidConnectionScanCursor = 0;
             connectionVersion++;
             logic.onStateChanged();
             changed = true;
@@ -700,6 +658,9 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
     }
 
     public void openMenu(Player player, MenuLocator locator) {
+        if (level instanceof ServerLevel) {
+            clearInvalidConnections();
+        }
         MenuOpener.open(OverloadedPowerSupplyMenu.TYPE, player, locator);
     }
 }
