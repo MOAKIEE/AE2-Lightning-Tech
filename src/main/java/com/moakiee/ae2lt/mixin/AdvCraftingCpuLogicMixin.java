@@ -241,9 +241,7 @@ public abstract class AdvCraftingCpuLogicMixin {
         var cpu = ae2lt$getCpu();
         if (cpu == null) return;
 
-        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(
-                this,
-                ((AdvCraftingCpuAccessor) cpu).invokeGetLevel().registryAccess());
+        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(this);
         if (overloadStateTag != null) {
             data.put("ae2ltOverloadState", overloadStateTag);
         } else {
@@ -264,8 +262,7 @@ public abstract class AdvCraftingCpuLogicMixin {
                 OverloadCpuStateManager.INSTANCE.readFromTag(
                         this,
                         link.getCraftingID(),
-                        data.getCompound("ae2ltOverloadState"),
-                        ((AdvCraftingCpuAccessor) cpu).invokeGetLevel().registryAccess());
+                        data.getCompound("ae2ltOverloadState"));
             }
         }
     }

@@ -153,7 +153,7 @@ public abstract class CraftingCpuLogicMixin {
     @Inject(method = "writeToNBT", at = @At("RETURN"))
     private void ae2lt$writeOverloadState(CompoundTag data, CallbackInfo ci) {
         var logic = (CraftingCpuLogic) (Object) this;
-        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic, cluster.getLevel().registryAccess());
+        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic);
         if (overloadStateTag != null) {
             data.put("ae2ltOverloadState", overloadStateTag);
         } else {
@@ -169,8 +169,7 @@ public abstract class CraftingCpuLogicMixin {
         if (job != null && data.contains("ae2ltOverloadState", CompoundTag.TAG_COMPOUND)) {
             OverloadCpuStateManager.INSTANCE.readFromTag(
                     logic,
-                    data.getCompound("ae2ltOverloadState"),
-                    cluster.getLevel().registryAccess());
+                    data.getCompound("ae2ltOverloadState"));
         }
     }
 
