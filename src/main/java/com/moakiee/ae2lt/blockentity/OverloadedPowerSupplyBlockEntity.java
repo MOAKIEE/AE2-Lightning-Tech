@@ -43,6 +43,7 @@ import org.jetbrains.annotations.Nullable;
 import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPowerSupplyLogic;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.menu.OverloadedPowerSupplyMenu;
@@ -50,7 +51,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
-        implements InternalInventoryHost, FrequencyBindingHost {
+        implements InternalInventoryHost, FrequencyBindingHost, OverloadedGridNodeOwner {
 
     public static final int MAX_WIRELESS_CONNECTIONS = 64;
 

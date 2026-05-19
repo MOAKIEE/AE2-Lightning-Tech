@@ -43,6 +43,7 @@ import appeng.menu.locator.MenuLocator;
 import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
+import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.AdjacentItemAutoExportHelper;
 import com.moakiee.ae2lt.logic.FluidStackHelper;
 import com.moakiee.ae2lt.logic.MemoryCardConfigSupport;
@@ -62,7 +63,7 @@ import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 public class CrystalCatalyzerBlockEntity extends AENetworkBlockEntity
-        implements IActionHost, IUpgradeableObject, FrequencyBindingHost,
+        implements IActionHost, IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
         GridRecipeMachineHost<CrystalCatalyzerLockedRecipe, CrystalCatalyzerRecipeCandidate> {
 
     private static final String TAG_INVENTORY = "Inventory";
