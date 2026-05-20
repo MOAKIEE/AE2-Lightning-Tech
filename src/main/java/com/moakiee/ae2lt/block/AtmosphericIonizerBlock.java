@@ -31,7 +31,6 @@ import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
 
-import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
