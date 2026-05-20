@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.mixin;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 
 import com.google.common.collect.Iterables;
@@ -25,12 +26,12 @@ public abstract class GridGetMachineNodesMixin {
 
     @Inject(method = "getMachineClasses", at = @At("HEAD"), cancellable = true)
     private void ae2lt$normalizeControllerMachineClasses(CallbackInfoReturnable<Iterable<Class<?>>> cir) {
-        if (!this.machines.containsKey(OverloadedControllerBlockEntity.class)) {
+        if (!ae2lt$hasOverloadedControllerClass()) {
             return;
         }
 
         var machineClasses = new LinkedHashSet<Class<?>>(this.machines.keySet());
-        machineClasses.remove(OverloadedControllerBlockEntity.class);
+        machineClasses.removeIf(OverloadedControllerBlockEntity.class::isAssignableFrom);
         machineClasses.add(ControllerBlockEntity.class);
         cir.setReturnValue(machineClasses);
     }
@@ -42,18 +43,33 @@ public abstract class GridGetMachineNodesMixin {
             return;
         }
 
-        var overloadedControllers = this.machines.get(OverloadedControllerBlockEntity.class);
-        if (overloadedControllers.isEmpty()) {
+        var controllerNodeSets = new ArrayList<Iterable<IGridNode>>();
+        controllerNodeSets.add(this.machines.get(ControllerBlockEntity.class));
+
+        for (var clazz : this.machines.keySet()) {
+            if (OverloadedControllerBlockEntity.class.isAssignableFrom(clazz)) {
+                controllerNodeSets.add(this.machines.get(clazz));
+            }
+        }
+
+        if (controllerNodeSets.size() == 1) {
             return;
         }
 
         // Compatibility shim only:
         // AE2 stores nodes by exact owner class, so a query for
         // ControllerBlockEntity.class would miss our subclass otherwise.
-        // This only affects controller-class queries and only appends AE2LT's
-        // explicit overloaded controller subtype, leaving vanilla lookups intact.
-        cir.setReturnValue(Iterables.concat(
-                this.machines.get(ControllerBlockEntity.class),
-                overloadedControllers));
+        // This only affects controller-class queries and appends all AE2LT
+        // overloaded controller subtypes, leaving vanilla lookups intact.
+        cir.setReturnValue(Iterables.concat(controllerNodeSets));
+    }
+
+    private boolean ae2lt$hasOverloadedControllerClass() {
+        for (var clazz : this.machines.keySet()) {
+            if (OverloadedControllerBlockEntity.class.isAssignableFrom(clazz)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

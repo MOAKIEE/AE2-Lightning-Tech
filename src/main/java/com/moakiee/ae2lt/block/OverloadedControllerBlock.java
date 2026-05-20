@@ -14,7 +14,6 @@ import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
 import org.jetbrains.annotations.Nullable;
 
-import appeng.block.AEBaseEntityBlock;
 import appeng.block.networking.ControllerBlock;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocators;
@@ -91,10 +90,6 @@ public class OverloadedControllerBlock extends AE2LTBaseEntityBlock<OverloadedCo
             BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof OverloadedControllerBlockEntity be) {
             if (!level.isClientSide) {
-                // AE2 1.21.1 uses NetworkStatusMenu.CONTROLLER_TYPE for controller right-click.
-                // If menu/locator names differ in another version, verify this hook first.
-                // This only adds the same network-status entry point to AE2LT's controller
-                // and does not modify vanilla controller interaction.
                 MenuOpener.open(NetworkStatusMenu.CONTROLLER_TYPE, player, MenuLocators.forBlockEntity(be));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);

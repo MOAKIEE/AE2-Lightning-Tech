@@ -52,8 +52,6 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
 
     @Override
     protected IManagedGridNode createMainNode() {
-        // AE2 1.21.1 uses IManagedGridNode#setTagName here.
-        // If your target AE2/MC version renames this API, adjust this override accordingly.
         // The tag/visual representation are AE2LT-specific, but the underlying node
         // still follows vanilla AE2 controller behavior unless an owner-scoped mixin says otherwise.
         return super.createMainNode()
@@ -68,9 +66,6 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
 
     @Override
     protected Item getItemFromBlockEntity() {
-        // AE2 network tool / network status uses the node's visual representation,
-        // which defaults to this representative item in AENetworkedPoweredBlockEntity.
-        // If this hook is renamed in another AE2/MC version, adjust accordingly.
         return ModBlocks.OVERLOADED_CONTROLLER.get().asItem();
     }
 }
