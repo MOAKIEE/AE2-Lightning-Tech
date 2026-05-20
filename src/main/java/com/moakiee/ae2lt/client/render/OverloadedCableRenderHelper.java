@@ -130,7 +130,7 @@ public final class OverloadedCableRenderHelper {
             List<BakedQuad> quadsOut) {
         var cubeBuilder = new CubeBuilder(quadsOut);
         cubeBuilder.setTexture(texture);
-        setStraightCableUVs(cubeBuilder, facing, 3 / 16f, 13 / 16f);
+        setStraightCableUVs(cubeBuilder, facing, 3, 13);
         addStraightDenseCableSizedCube(facing, cubeBuilder);
     }
 

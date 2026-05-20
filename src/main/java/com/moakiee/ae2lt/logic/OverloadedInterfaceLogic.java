@@ -46,7 +46,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     private static final Field F_UPGRADES;
     private static final Field F_CRAFTING_TRACKER;
     private static final Method M_ON_CONFIG_CHANGED;
-    private static final Method M_IS_ALLOWED_IN_SLOT;
     private static final Method M_ON_STORAGE_CHANGED;
     private static final Method M_ON_UPGRADES_CHANGED;
 
@@ -62,9 +61,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
             F_CRAFTING_TRACKER.setAccessible(true);
             M_ON_CONFIG_CHANGED = InterfaceLogic.class.getDeclaredMethod("onConfigRowChanged");
             M_ON_CONFIG_CHANGED.setAccessible(true);
-            M_IS_ALLOWED_IN_SLOT = InterfaceLogic.class.getDeclaredMethod(
-                    "isAllowedInStorageSlot", int.class, AEKey.class);
-            M_IS_ALLOWED_IN_SLOT.setAccessible(true);
             M_ON_STORAGE_CHANGED = InterfaceLogic.class.getDeclaredMethod("onStorageChanged");
             M_ON_STORAGE_CHANGED.setAccessible(true);
             M_ON_UPGRADES_CHANGED = InterfaceLogic.class.getDeclaredMethod("onUpgradesChanged");
@@ -106,7 +102,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         proxiedStorage = new ProxiedStorageInv(
                 this, com.google.common.collect.Sets.newHashSet(AEKeyTypes.getAll()),
-                (slot, key) -> invokeSlotFilter(M_IS_ALLOWED_IN_SLOT, this, slot, key),
+                null,
                 slots,
                 () -> invokeQuietly(M_ON_STORAGE_CHANGED, this));
         setField(F_STORAGE, proxiedStorage);
@@ -215,10 +211,6 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         } catch (Exception e) {
             LOG.warn("Reflection invoke failed: {}.{}", m.getDeclaringClass().getSimpleName(), m.getName(), e);
         }
-    }
-
-    private static boolean invokeSlotFilter(Method m, Object target, int slot, AEKey key) {
-        try { return (boolean) m.invoke(target, slot, key); } catch (Exception e) { return false; }
     }
 
     // ══════════════════════════════════════════════════════════════════════

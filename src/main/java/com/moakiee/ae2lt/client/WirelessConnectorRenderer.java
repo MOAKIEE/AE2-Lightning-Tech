@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.function.Function;
 
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -51,8 +50,8 @@ import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
  *   <li>The chunk/BE scan is performed at most once every {@link #RESCAN_INTERVAL_TICKS}
  *       game ticks, not every frame. At 200fps this turns ~200 scans/sec into ~5 scans/sec
  *       while remaining visually instantaneous (≤200ms staleness).</li>
- *   <li>Hot-path objects ({@link Quaternionf}, scratch {@link HashSet}) are reused across
- *       frames instead of re-allocated, to keep GC pressure flat under high frame rates
+ *   <li>Hot-path objects (scratch {@link HashSet}) are reused across frames instead of
+ *       re-allocated, to keep GC pressure flat under high frame rates
  *       (the report flags high-FPS as an amplifier of any per-frame leak path).</li>
  * </ul>
  */
@@ -83,8 +82,6 @@ public class WirelessConnectorRenderer {
     /** Dimension key of the last scan; if it changes we force a re-scan immediately. */
     private static ResourceKey<Level> lastScanDimension = null;
 
-    /** Reusable rotation; avoids {@code new Quaternionf(...)} every frame. */
-    private static final Quaternionf scratchRotation = new Quaternionf();
     /** Reusable scratch set used by {@link #collectConnectionsForFace}; cleared between calls. */
     private static final Set<BlockPos> scratchConnectionSet = new HashSet<>();
 
@@ -119,13 +116,6 @@ public class WirelessConnectorRenderer {
 
         poseStack.pushPose();
         Vec3 cam = mc.gameRenderer.getMainCamera().getPosition();
-        // Reuse a single Quaternionf instance instead of allocating per frame.
-        // mc.gameRenderer.getMainCamera().rotation() returns a reference Quaternionf
-        // owned by the camera; copying-and-inverting through scratchRotation keeps
-        // the camera's value untouched while avoiding a per-frame allocation.
-        scratchRotation.set(mc.gameRenderer.getMainCamera().rotation());
-        scratchRotation.invert();
-        poseStack.mulPose(scratchRotation);
         poseStack.translate(-cam.x, -cam.y, -cam.z);
 
         // Resolve selected host for special coloring and preview rendering.

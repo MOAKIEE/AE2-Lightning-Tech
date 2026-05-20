@@ -55,8 +55,8 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     private static final int ENTRY_TEXT_X = 90;
     private static final int ENTRY_SWITCH_X = 138;
     private static final int ENTRY_ROW_HEIGHT = 22;
-    private static final int ENTRY_SWITCH_WIDTH = 22;
-    private static final int ENTRY_SWITCH_HEIGHT = 12;
+    private static final int ENTRY_SWITCH_WIDTH = 14;
+    private static final int ENTRY_SWITCH_HEIGHT = 14;
     private static final int VISIBLE_ROWS = 3;
 
     private int scrollOffset;
@@ -170,11 +170,11 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
 
         graphics.drawString(font, entryLabel(entry), textX, contentY + 5, 0x404040, false);
 
-        renderModeSwitch(graphics, switchX, contentY + 3, entry.mode());
+        renderModeSwitch(graphics, switchX, contentY + 2, entry.mode());
     }
 
     private void renderModeSwitch(GuiGraphics graphics, int x, int y, MatchMode mode) {
-        int v = mode.ignoresComponents() ? 40 : 28;
+        int v = mode.ignoresComponents() ? ENTRY_SWITCH_HEIGHT : 0;
         graphics.blit(CHECKBOX_TEXTURE, x, y, 0, v, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT, CHECKBOX_TEXTURE_SIZE, CHECKBOX_TEXTURE_SIZE);
     }
 
@@ -292,7 +292,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     private boolean isWithinEntrySwitch(double mouseX, double mouseY, int row) {
-        int y = topPos + PANEL_Y + ENTRY_TOP_OFFSET + row * ENTRY_ROW_HEIGHT + ENTRY_CONTENT_Y_OFFSET + 3;
+        int y = topPos + PANEL_Y + ENTRY_TOP_OFFSET + row * ENTRY_ROW_HEIGHT + ENTRY_CONTENT_Y_OFFSET + 2;
         return isWithin(mouseX, mouseY, leftPos + ENTRY_SWITCH_X, y, ENTRY_SWITCH_WIDTH, ENTRY_SWITCH_HEIGHT);
     }
 

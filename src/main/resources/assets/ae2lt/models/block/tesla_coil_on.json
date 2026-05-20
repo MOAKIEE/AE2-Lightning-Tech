@@ -300,7 +300,7 @@
 			"faces": {
 				"east": {"uv": [8.25, 6.25, 5.5, 5.5], "texture": "#0", "forge_data": {"block_light": 15, "sky_light": 15}},
 				"south": {"uv": [8.25, 5.5, 9, 6.25], "texture": "#0", "forge_data": {"block_light": 15, "sky_light": 15}},
-				"west": {"uv": [5.5, 5.5, 8.25, 6.25], "texture": "#0"},
+				"west": {"uv": [5.5, 5.5, 8.25, 6.25], "texture": "#0", "forge_data": {"block_light": 15, "sky_light": 15}},
 				"up": {"uv": [8.25, 7, 5.5, 6.25], "rotation": 270, "texture": "#0", "cullface": "up", "forge_data": {"block_light": 15, "sky_light": 15}},
 				"down": {"uv": [8.25, 6.25, 5.5, 7], "rotation": 90, "texture": "#0", "forge_data": {"block_light": 15, "sky_light": 15}}
 			}
