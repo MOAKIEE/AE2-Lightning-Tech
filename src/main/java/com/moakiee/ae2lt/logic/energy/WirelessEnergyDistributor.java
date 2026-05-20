@@ -572,9 +572,9 @@ public final class WirelessEnergyDistributor {
 
     /**
      * Per-target lazy cache of the Applied Flux cap-cache wrapper. Forge 1.20.1
-     * does not expose NeoForge's position listener API, so we recreate the live
-     * target handle on demand from the cached wrapper instead of subscribing to
-     * invalidation callbacks.
+     * does not expose block-position capability invalidation listeners, so we
+     * recreate the live target handle on demand from the cached wrapper instead
+     * of subscribing to invalidation callbacks.
      */
     public final class BlockEnergyTargetCache {
         private final WirelessEnergyAPI.Target target;
