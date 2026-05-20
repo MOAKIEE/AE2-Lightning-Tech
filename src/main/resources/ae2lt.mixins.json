@@ -15,8 +15,6 @@
     "ElapsedTimeTrackerAccessor",
     "AdvCraftingCpuAccessor",
     "AdvCraftingCpuLogicMixin",
-    "ECOCraftingCpuAccessor",
-    "ECOCraftingCpuLogicMixin",
     "CraftingCpuLogicMixin",
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",

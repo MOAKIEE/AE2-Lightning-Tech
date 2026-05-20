@@ -109,6 +109,11 @@ public final class LightningStrikeRecipe implements Recipe<LightningStrikeRecipe
         return ModRecipeTypes.LIGHTNING_STRIKE_TYPE.get();
     }
 
+    @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
     public static final class Serializer implements RecipeSerializer<LightningStrikeRecipe> {
         @Override
         public LightningStrikeRecipe fromJson(ResourceLocation recipeId, JsonObject json) {

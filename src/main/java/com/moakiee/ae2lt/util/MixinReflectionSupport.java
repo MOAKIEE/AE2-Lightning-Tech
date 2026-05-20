@@ -13,7 +13,7 @@ import com.mojang.logging.LogUtils;
 
 /**
  * Shared reflection helpers for {@link org.spongepowered.asm.mixin.Pseudo} mixins
- * that target optional dependencies (AdvancedAE, NeoECOAEExtension, ...).
+ * that target optional dependencies such as AdvancedAE.
  * <p>
  * Lookup helpers return {@code null} on failure instead of throwing, so static
  * field initializers in mixin classes never crash class loading. Invocation

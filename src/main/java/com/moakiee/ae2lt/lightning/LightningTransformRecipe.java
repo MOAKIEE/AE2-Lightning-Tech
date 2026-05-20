@@ -168,6 +168,11 @@ public final class LightningTransformRecipe implements Recipe<LightningTransform
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
     public boolean isIncomplete() {
         return inputs.isEmpty()
                 || result.isEmpty()
