@@ -266,6 +266,11 @@ public final class OverloadProcessingRecipe implements Recipe<OverloadProcessing
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
     public boolean isIncomplete() {
         return totalEnergy < MIN_TOTAL_ENERGY
                 || lightningCost <= 0
