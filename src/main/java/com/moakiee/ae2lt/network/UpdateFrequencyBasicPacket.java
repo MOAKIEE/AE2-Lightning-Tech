@@ -3,12 +3,15 @@ package com.moakiee.ae2lt.network;
 import java.util.UUID;
 import java.util.function.Supplier;
 
+import com.moakiee.ae2lt.client.ClientNetworkPacketHandlers;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequency;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 
 /**
@@ -76,14 +79,9 @@ public record UpdateFrequencyBasicPacket(
 
     public static void handle(UpdateFrequencyBasicPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
         var ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            if (pkt.deleted) {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.removeFrequency(pkt.frequencyId);
-            } else {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.upsertFrequency(
-                        pkt.frequencyId, pkt.name, pkt.color, pkt.ownerUUID, pkt.security);
-            }
-        });
+        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientNetworkPacketHandlers.handleFrequencyBasicUpdate(pkt)));
         ctx.setPacketHandled(true);
     }
 }

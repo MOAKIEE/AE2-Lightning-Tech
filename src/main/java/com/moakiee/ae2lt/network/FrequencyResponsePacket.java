@@ -1,10 +1,10 @@
 package com.moakiee.ae2lt.network;
 
-import com.moakiee.ae2lt.client.gui.FrequencyScreen;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.player.LocalPlayer;
+import com.moakiee.ae2lt.client.ClientNetworkPacketHandlers;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
@@ -36,24 +36,10 @@ public record FrequencyResponsePacket(int responseCode) {
 
     public static void handle(FrequencyResponsePacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
         var ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            Minecraft minecraft = Minecraft.getInstance();
-            LocalPlayer player = minecraft.player;
-            if (player == null) return;
-            Component message = pkt.toMessage();
-            // Container screens cover the hotbar / action-bar region, so
-            // a stock {@code displayClientMessage(..., true)} is painted
-            // underneath the GUI and the player never sees it. Route
-            // the toast into the FrequencyScreen's inline banner when
-            // it's open, and fall back to the action-bar only when it
-            // isn't (e.g. an error arrives after the user closed the
-            // GUI). Chat stays untouched either way.
-            if (minecraft.screen instanceof FrequencyScreen fs) {
-                fs.showInlineError(message);
-            } else {
-                player.displayClientMessage(message, true);
-            }
-        });
+        Component message = pkt.toMessage();
+        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientNetworkPacketHandlers.handleFrequencyResponse(message)));
         ctx.setPacketHandled(true);
     }
 }

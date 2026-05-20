@@ -1,6 +1,9 @@
 package com.moakiee.ae2lt.network;
 
+import com.moakiee.ae2lt.client.ClientNetworkPacketHandlers;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
@@ -14,9 +17,9 @@ public record EasterEggPacket() {
 
     public static void handle(EasterEggPacket payload, Supplier<NetworkEvent.Context> ctxSupplier) {
         var ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            com.moakiee.ae2lt.client.EasterEggOverlay.trigger();
-        });
+        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> ClientNetworkPacketHandlers::handleEasterEgg));
         ctx.setPacketHandled(true);
     }
 }

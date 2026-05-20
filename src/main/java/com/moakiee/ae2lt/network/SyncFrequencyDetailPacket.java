@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.network;
 
+import com.moakiee.ae2lt.client.ClientNetworkPacketHandlers;
 import com.moakiee.ae2lt.grid.WirelessFrequency;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
@@ -9,6 +10,8 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.fml.DistExecutor;
 import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
@@ -122,13 +125,12 @@ public record SyncFrequencyDetailPacket(int frequencyId, byte syncType, Compound
 
     public static void handle(SyncFrequencyDetailPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
         var ctx = ctxSupplier.get();
-        ctx.enqueueWork(() -> {
-            if (pkt.syncType == TYPE_MEMBERS) {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.updateMembers(pkt.frequencyId, pkt.data);
-            } else if (pkt.syncType == TYPE_CONNECTIONS) {
-                com.moakiee.ae2lt.client.ClientFrequencyCache.updateConnections(pkt.frequencyId, pkt.data);
-            }
-        });
+        ctx.enqueueWork(() -> DistExecutor.unsafeRunWhenOn(
+                Dist.CLIENT,
+                () -> () -> ClientNetworkPacketHandlers.handleFrequencyDetail(
+                        pkt.frequencyId(),
+                        pkt.syncType(),
+                        pkt.data())));
         ctx.setPacketHandled(true);
     }
 }
