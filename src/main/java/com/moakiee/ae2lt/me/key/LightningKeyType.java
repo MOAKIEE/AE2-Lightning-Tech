@@ -2,8 +2,6 @@ package com.moakiee.ae2lt.me.key;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.mojang.serialization.MapCodec;
-
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import net.minecraft.nbt.CompoundTag;
@@ -15,10 +13,6 @@ public final class LightningKeyType extends AEKeyType {
 
     private LightningKeyType() {
         super(LightningKey.TYPE_ID, LightningKey.class, Component.translatable("key_type.ae2lt.lightning"));
-    }
-
-    public MapCodec<? extends AEKey> codec() {
-        return LightningKey.MAP_CODEC;
     }
 
     @Override

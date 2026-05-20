@@ -2,8 +2,6 @@ package com.moakiee.ae2lt.me.key;
 
 import java.util.List;
 
-import com.mojang.serialization.MapCodec;
-
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
 import net.minecraft.core.BlockPos;
@@ -29,11 +27,6 @@ public final class LightningKey extends AEKey {
 
     public static final LightningKey HIGH_VOLTAGE = new LightningKey(Tier.HIGH_VOLTAGE);
     public static final LightningKey EXTREME_HIGH_VOLTAGE = new LightningKey(Tier.EXTREME_HIGH_VOLTAGE);
-    // Be permissive when decoding persisted data: if "tier" is missing, fall back to
-    // HIGH_VOLTAGE instead of failing hard and risking broken cell/network data migration.
-    public static final MapCodec<LightningKey> MAP_CODEC =
-            Tier.CODEC.optionalFieldOf("tier", Tier.HIGH_VOLTAGE)
-                .xmap(LightningKey::of, LightningKey::tier);
 
     private final Tier tier;
 
@@ -169,10 +162,6 @@ public final class LightningKey extends AEKey {
 
     @Override
     public void addDrops(long amount, List<ItemStack> drops, Level level, BlockPos pos) {
-    }
-
-    public boolean hasComponents() {
-        return false;
     }
 
     @Override
