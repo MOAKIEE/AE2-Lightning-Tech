@@ -13,7 +13,6 @@ import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
 import appeng.blockentity.grid.AENetworkBlockEntity;
-import appeng.blockentity.grid.AENetworkBlockEntity;
 import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuLocator;
 
