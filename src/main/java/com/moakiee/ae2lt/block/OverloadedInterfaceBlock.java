@@ -9,8 +9,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
-import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
+import appeng.util.InteractionUtil;
 
 public class OverloadedInterfaceBlock extends AE2LTBaseEntityBlock<OverloadedInterfaceBlockEntity> {
 
@@ -21,6 +21,10 @@ public class OverloadedInterfaceBlock extends AE2LTBaseEntityBlock<OverloadedInt
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos,
                                                Player player, BlockHitResult hitResult) {
+        if (InteractionUtil.isInAlternateUseMode(player)) {
+            return InteractionResult.PASS;
+        }
+
         var be = this.getBlockEntity(level, pos);
         if (be != null) {
             if (!level.isClientSide()) {
