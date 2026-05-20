@@ -19,9 +19,8 @@ import appeng.api.inventories.InternalInventory;
  * than 64 items in a single slot.
  *
  * <p>Do not replace this with a plain ItemStackHandler + getSlotLimit override.
- * NeoForge's default insert path still clamps to the inserted stack's own max
- * size, which means automation commonly stops at 64 even when the slot says
- * 1024.</p>
+ * Forge's default insert path still clamps to the inserted stack's own max size,
+ * which means automation commonly stops at 64 even when the slot says 1024.</p>
  */
 public abstract class LargeStackItemHandler implements IItemHandlerModifiable, InternalInventory {
     private static final String TAG_SLOT = "Slot";

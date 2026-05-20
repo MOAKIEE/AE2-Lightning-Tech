@@ -201,6 +201,11 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
     public boolean isIncomplete() {
         return inputs.isEmpty()
                 || result.isEmpty()
