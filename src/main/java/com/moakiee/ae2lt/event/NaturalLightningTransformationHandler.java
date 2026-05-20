@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.event;
 
-import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.lightning.strike.LightningStrikeRecipe;
 import com.moakiee.ae2lt.lightning.strike.StructureRequirement;
@@ -18,13 +17,9 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import org.joml.Vector3f;
 import org.slf4j.Logger;
 
-@Mod.EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class NaturalLightningTransformationHandler {
     public static final String NATURAL_WEATHER_LIGHTNING_TAG = "ae2lt.natural_weather_lightning";
     private static final String TRANSFORMATION_CHECKED_TAG = "ae2lt.natural_transform_checked";
@@ -50,10 +45,8 @@ public final class NaturalLightningTransformationHandler {
     private NaturalLightningTransformationHandler() {
     }
 
-    @SubscribeEvent
-    public static void onLightningSpawn(EntityJoinLevelEvent event) {
-        if (!(event.getEntity() instanceof LightningBolt lightningBolt)
-                || !(lightningBolt.level() instanceof ServerLevel serverLevel)) {
+    public static void handleLightningTick(LightningBolt lightningBolt) {
+        if (!(lightningBolt.level() instanceof ServerLevel serverLevel)) {
             return;
         }
 

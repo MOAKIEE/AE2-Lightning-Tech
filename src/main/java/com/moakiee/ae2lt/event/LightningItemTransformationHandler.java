@@ -15,7 +15,6 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.event.TickEvent;
-import net.minecraftforge.event.entity.EntityJoinLevelEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.event.entity.EntityStruckByLightningEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -30,10 +29,8 @@ public final class LightningItemTransformationHandler {
     private LightningItemTransformationHandler() {
     }
 
-    @SubscribeEvent
-    public static void onLightningSpawn(EntityJoinLevelEvent event) {
-        if (!(event.getEntity() instanceof LightningBolt lightningBolt)
-                || !(lightningBolt.level() instanceof ServerLevel serverLevel)) {
+    public static void handleLightningTick(LightningBolt lightningBolt) {
+        if (!(lightningBolt.level() instanceof ServerLevel serverLevel)) {
             return;
         }
 

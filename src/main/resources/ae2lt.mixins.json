@@ -6,6 +6,8 @@
   "refmap": "ae2lt.refmap.json",
   "mixins": [
     "ServerLevelMixin",
+    "LightningBoltMixin",
+    "ItemEntityMixin",
     "PatternProviderLogicAccessor",
     "PatternProviderLogicMixin",
     "CraftingCpuLogicAccessor",
