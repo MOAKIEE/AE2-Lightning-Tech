@@ -24,10 +24,33 @@ run
 run2/
 
 # Local assistant/docs
+.aiassistant/
+.docs/
+archive/
+docs/
 .claude/
 CLAUDE.local.md
 else/
 bin/
+
+# OS files
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Runtime / temporary files
+tmp/
+tmp_extae/
+appeng/
+net/
+META-INF/
+
+# Local dev logs / scratch
+DevLog/
+.codex-tmp/
 
 # Bundled source mirrors / references
 Source Code/
