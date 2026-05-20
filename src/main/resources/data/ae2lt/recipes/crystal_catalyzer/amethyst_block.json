@@ -8,5 +8,7 @@
     "id": "minecraft:amethyst_shard",
     "count": 1
   },
-  "energyPerCycle": 100000
+  "energyPerCycle": 100000,
+  "lightningCost": 1,
+  "lightningTier": "high_voltage"
 }

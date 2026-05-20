@@ -15,6 +15,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 import com.moakiee.ae2lt.util.RecipeSerializationHelper;
 
@@ -36,11 +37,16 @@ import com.moakiee.ae2lt.util.RecipeSerializationHelper;
  */
 public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerRecipeInput> {
     public static final int MIN_ENERGY_PER_CYCLE = 1;
+    public static final int DEFAULT_LIGHTNING_COST = 1;
+    public static final LightningKey.Tier DEFAULT_LIGHTNING_TIER = LightningKey.Tier.HIGH_VOLTAGE;
+
     private final ResourceLocation id;
     private final Optional<Ingredient> catalyst;
     private final int catalystCount;
     private final CrystalCatalyzerOutput output;
     private final int energyPerCycle;
+    private final int lightningCost;
+    private final LightningKey.Tier lightningTier;
     private final Mode mode;
 
     public CrystalCatalyzerRecipe(
@@ -49,7 +55,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             int catalystCount,
             ItemStack output,
             int energyPerCycle) {
-        this(id, catalyst, catalystCount, CrystalCatalyzerOutput.ofItem(output), energyPerCycle, Mode.CRYSTAL);
+        this(id, catalyst, catalystCount, CrystalCatalyzerOutput.ofItem(output), energyPerCycle,
+                DEFAULT_LIGHTNING_COST, DEFAULT_LIGHTNING_TIER, Mode.CRYSTAL);
     }
 
     public CrystalCatalyzerRecipe(
@@ -58,18 +65,25 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             int catalystCount,
             CrystalCatalyzerOutput output,
             int energyPerCycle,
+            int lightningCost,
+            LightningKey.Tier lightningTier,
             Mode mode) {
         this.id = Objects.requireNonNull(id, "id");
         this.catalyst = Objects.requireNonNull(catalyst, "catalyst");
         this.catalystCount = catalystCount;
         this.output = Objects.requireNonNull(output, "output");
         this.energyPerCycle = energyPerCycle;
+        this.lightningCost = lightningCost;
+        this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
         this.mode = Objects.requireNonNull(mode, "mode");
         if (catalyst.isPresent() && catalystCount <= 0) {
             throw new IllegalArgumentException("catalystCount must be positive when catalyst is present");
         }
         if (energyPerCycle < MIN_ENERGY_PER_CYCLE) {
             throw new IllegalArgumentException("energyPerCycle must be at least " + MIN_ENERGY_PER_CYCLE);
+        }
+        if (lightningCost < 1) {
+            throw new IllegalArgumentException("lightningCost must be at least 1");
         }
     }
 
@@ -91,6 +105,14 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     public int energyPerCycle() {
         return energyPerCycle;
+    }
+
+    public int lightningCost() {
+        return lightningCost;
+    }
+
+    public LightningKey.Tier lightningTier() {
+        return lightningTier;
     }
 
     public Mode mode() {
@@ -150,9 +172,15 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     @Override
+    public boolean isSpecial() {
+        return true;
+    }
+
+    @Override
     public boolean isIncomplete() {
         return output.resolve().isEmpty()
                 || energyPerCycle < MIN_ENERGY_PER_CYCLE
+                || lightningCost < 1
                 || (catalyst.isPresent() && catalystCount <= 0);
     }
 
@@ -164,6 +192,12 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                     : Optional.empty();
             int catalystCount = GsonHelper.getAsInt(json, "catalystCount", 0);
             int energyPerCycle = GsonHelper.getAsInt(json, "energyPerCycle");
+            int lightningCost = GsonHelper.getAsInt(json, "lightningCost", DEFAULT_LIGHTNING_COST);
+            LightningKey.Tier lightningTier = RecipeSerializationHelper.enumFromJson(
+                    json,
+                    "lightningTier",
+                    DEFAULT_LIGHTNING_TIER,
+                    LightningKey.Tier.values());
             Mode mode = RecipeSerializationHelper.enumFromJson(
                     json,
                     "mode",
@@ -176,6 +210,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                     catalystCount,
                     CrystalCatalyzerOutput.fromJson(GsonHelper.getAsJsonObject(json, "output")),
                     energyPerCycle,
+                    lightningCost,
+                    lightningTier,
                     mode);
         }
 
@@ -190,6 +226,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                     buffer.readInt(),
                     CrystalCatalyzerOutput.decode(buffer),
                     buffer.readInt(),
+                    buffer.readInt(),
+                    buffer.readEnum(LightningKey.Tier.class),
                     buffer.readEnum(Mode.class));
         }
 
@@ -200,6 +238,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             buffer.writeInt(recipe.catalystCount());
             CrystalCatalyzerOutput.encode(buffer, recipe.outputSpec());
             buffer.writeInt(recipe.energyPerCycle());
+            buffer.writeInt(recipe.lightningCost());
+            buffer.writeEnum(recipe.lightningTier());
             buffer.writeEnum(recipe.mode());
         }
     }

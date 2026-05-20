@@ -25,7 +25,7 @@ public final class CrystalCatalyzerLogic extends AbstractGridRecipeMachineLogic<
 
     @Override
     protected int getMinProcessTicks() {
-        return CrystalCatalyzerBlockEntity.CYCLE_TICKS;
+        return host.getMode().getMinProcessTicks();
     }
 
     @Override

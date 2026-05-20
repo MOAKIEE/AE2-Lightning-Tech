@@ -15,5 +15,7 @@
     "id": "neoecoae:energized_crystal_dust",
     "count": 1
   },
-  "energyPerCycle": 100000
+  "energyPerCycle": 100000,
+  "lightningCost": 1,
+  "lightningTier": "high_voltage"
 }

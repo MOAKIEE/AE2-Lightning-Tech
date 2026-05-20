@@ -18,5 +18,7 @@
     "tag": "c:dusts/amethyst",
     "count": 1
   },
-  "energyPerCycle": 100000
+  "energyPerCycle": 100000,
+  "lightningCost": 1,
+  "lightningTier": "high_voltage"
 }

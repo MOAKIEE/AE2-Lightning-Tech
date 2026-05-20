@@ -9,26 +9,36 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import com.moakiee.ae2lt.me.key.LightningKey;
+
 public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_RECIPE_ID = "RecipeId";
     private static final String TAG_OUTPUT = "Output";
     private static final String TAG_ENERGY = "Energy";
     private static final String TAG_OUTPUT_MULTIPLIER = "OutputMultiplier";
+    private static final String TAG_LIGHTNING_COST = "LightningCost";
+    private static final String TAG_LIGHTNING_TIER = "LightningTier";
 
     private final ResourceLocation recipeId;
     private final ItemStack output;
     private final int energyPerCycle;
     private final int outputMultiplier;
+    private final int lightningCost;
+    private final LightningKey.Tier lightningTier;
 
     public CrystalCatalyzerLockedRecipe(
             ResourceLocation recipeId,
             ItemStack output,
             int energyPerCycle,
-            int outputMultiplier) {
+            int outputMultiplier,
+            int lightningCost,
+            LightningKey.Tier lightningTier) {
         this.recipeId = Objects.requireNonNull(recipeId, "recipeId");
         this.output = Objects.requireNonNull(output, "output").copy();
         this.energyPerCycle = energyPerCycle;
         this.outputMultiplier = outputMultiplier;
+        this.lightningCost = lightningCost;
+        this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
         if (output.isEmpty()) {
             throw new IllegalArgumentException("output cannot be empty");
         }
@@ -37,6 +47,9 @@ public final class CrystalCatalyzerLockedRecipe {
         }
         if (outputMultiplier <= 0) {
             throw new IllegalArgumentException("outputMultiplier must be positive");
+        }
+        if (lightningCost < 1) {
+            throw new IllegalArgumentException("lightningCost must be positive");
         }
     }
 
@@ -48,7 +61,9 @@ public final class CrystalCatalyzerLockedRecipe {
                 recipe.getId(),
                 recipe.getOutputTemplate(),
                 recipe.energyPerCycle(),
-                outputMultiplier);
+                outputMultiplier,
+                recipe.lightningCost(),
+                recipe.lightningTier());
     }
 
     public ResourceLocation recipeId() {
@@ -67,6 +82,14 @@ public final class CrystalCatalyzerLockedRecipe {
         return outputMultiplier;
     }
 
+    public int lightningCost() {
+        return lightningCost;
+    }
+
+    public LightningKey.Tier lightningTier() {
+        return lightningTier;
+    }
+
     public long totalEnergy() {
         return energyPerCycle;
     }
@@ -77,6 +100,8 @@ public final class CrystalCatalyzerLockedRecipe {
         tag.put(TAG_OUTPUT, output.save(new CompoundTag()));
         tag.putInt(TAG_ENERGY, energyPerCycle);
         tag.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
+        tag.putInt(TAG_LIGHTNING_COST, lightningCost);
+        tag.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
         return tag;
     }
 
@@ -110,10 +135,23 @@ public final class CrystalCatalyzerLockedRecipe {
             return null;
         }
 
+        int lightningCost = tag.contains(TAG_LIGHTNING_COST, Tag.TAG_ANY_NUMERIC)
+                ? tag.getInt(TAG_LIGHTNING_COST)
+                : CrystalCatalyzerRecipe.DEFAULT_LIGHTNING_COST;
+        if (lightningCost < 1) {
+            lightningCost = CrystalCatalyzerRecipe.DEFAULT_LIGHTNING_COST;
+        }
+
+        LightningKey.Tier lightningTier = tag.contains(TAG_LIGHTNING_TIER, Tag.TAG_STRING)
+                ? LightningKey.Tier.fromSerializedName(tag.getString(TAG_LIGHTNING_TIER))
+                : CrystalCatalyzerRecipe.DEFAULT_LIGHTNING_TIER;
+
         return new CrystalCatalyzerLockedRecipe(
                 new ResourceLocation(tag.getString(TAG_RECIPE_ID)),
                 output,
                 energy,
-                outputMultiplier);
+                outputMultiplier,
+                lightningCost,
+                lightningTier);
     }
 }
