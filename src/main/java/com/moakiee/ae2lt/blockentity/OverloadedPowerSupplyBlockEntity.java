@@ -235,7 +235,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
      * AE2 ME Chest pattern, deferred-persist variant: every cell mutation
      * (extract/insert) routes through {@link FluxCellInventory#saveChanges()},
      * which fires this callback. We do NOT call {@code persist()} here —
-     * doing so on every mutation would write the ItemStack data component
+     * doing so on every mutation would write the ItemStack NBT
      * 64+ times per OVERLOAD tick, AND would briefly flash the post-extract
      * value (often 0) into the ItemStack between distribution and refill.
      *
@@ -256,7 +256,7 @@ public class OverloadedPowerSupplyBlockEntity extends AENetworkBlockEntity
     /**
      * Externally-invoked persist (lifecycle hooks: cell removed, BE saved,
      * chunk unloaded). Forces the latest in-memory cell state to be flushed
-     * into the ItemStack data component before the stack leaves the BE.
+     * into the ItemStack NBT before the stack leaves the BE.
      */
     public void persistCellStorage() {
         AppFluxBridge.persistCellStorage(cachedCellView);

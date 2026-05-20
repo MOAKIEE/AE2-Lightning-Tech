@@ -8,12 +8,12 @@ package com.moakiee.ae2lt.overload.model;
  */
 public enum MatchMode {
     /**
-     * Compare item id and all attached data/components.
+     * Compare item id and all attached NBT.
      */
     STRICT,
 
     /**
-     * Compare item id only and ignore attached data/components.
+     * Compare item id only and ignore attached NBT.
      */
     ID_ONLY;
 

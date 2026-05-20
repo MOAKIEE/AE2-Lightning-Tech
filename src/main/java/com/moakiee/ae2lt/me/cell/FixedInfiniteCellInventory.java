@@ -70,7 +70,7 @@ public final class FixedInfiniteCellInventory implements StorageCell {
 
     @Override
     public void persist() {
-        // 所有可变状态（"ResultConsumed" 标记）都已在 extract() 中直接写回 ItemStack NBT，
+        // All mutable state ("ResultConsumed") is written back to ItemStack NBT in extract(),
         // 无需在此再序列化。
         //
         // 若此处再调用 host.saveChanges()，会被 AE2 的 MEChestBlockEntity#onCellContentChanged

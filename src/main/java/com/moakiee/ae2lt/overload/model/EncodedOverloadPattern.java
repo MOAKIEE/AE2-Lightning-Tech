@@ -12,7 +12,7 @@ import java.util.TreeMap;
  * <p>
  * The actual encoded recipe payload still belongs to AE2's pattern item. This
  * object only carries overload matching metadata for each logical input/output
- * slot and can be attached to a future item component or custom data payload.
+ * slot and can be attached to an item NBT payload.
  */
 public final class EncodedOverloadPattern {
     private static final EncodedOverloadPattern EMPTY = new EncodedOverloadPattern(List.of(), List.of());

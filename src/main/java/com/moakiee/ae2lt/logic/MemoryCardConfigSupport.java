@@ -48,7 +48,7 @@ public final class MemoryCardConfigSupport {
 
     /**
      * Retrieve the machine-config tag previously stored via {@link #writeCustomTag}.
-     * Returns {@code null} if no such component exists on the card.
+     * Returns {@code null} if no such tag exists on the card.
      */
     @Nullable
     public static CompoundTag readCustomTag(CompoundTag input) {
@@ -76,7 +76,7 @@ public final class MemoryCardConfigSupport {
 
     /**
      * Reads our custom memory-card tag if present. The reader is only invoked
-     * for memory-card imports with an exported AE2LT machine config component.
+     * for memory-card imports with an exported AE2LT machine config tag.
      */
     public static void importMemoryCardSettings(SettingsFrom mode, CompoundTag input,
                                                 Consumer<CompoundTag> reader) {

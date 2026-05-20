@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Compare key that only cares about item identity and ignores attached
- * data/components.
+ * NBT.
  */
 public final class IdOnlyCompareKey implements CompareKey {
     private final Item item;

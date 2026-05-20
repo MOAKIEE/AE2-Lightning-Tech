@@ -100,7 +100,7 @@ public final class WirelessEnergyDistributor {
         /**
          * Optional callback fired by {@link BufferedMEStorage#endTick} after
          * the cell's in-memory state has been written back to its ItemStack
-         * data component. Hosts without cells return {@code null}.
+         * NBT. Hosts without cells return {@code null}.
          */
         @Nullable
         default Runnable getCellPersistCallback() {

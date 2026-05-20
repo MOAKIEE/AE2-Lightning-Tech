@@ -7,7 +7,7 @@ import net.minecraft.world.item.ItemStack;
 
 /**
  * Compare key that requires the same item id and the same attached
- * data/components.
+ * NBT.
  */
 public final class StrictCompareKey implements CompareKey {
     private final ItemStack template;
