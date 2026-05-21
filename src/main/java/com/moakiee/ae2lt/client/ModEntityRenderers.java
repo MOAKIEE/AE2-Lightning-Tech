@@ -27,6 +27,17 @@ public final class ModEntityRenderers {
                 ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 CrystalCatalyzerRenderer::new);
         event.registerBlockEntityRenderer(
+                ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
+                WirelessConnectorHostRenderer::new);
+        event.registerBlockEntityRenderer(
+                ModBlockEntities.OVERLOADED_INTERFACE.get(),
+                WirelessConnectorHostRenderer::new);
+        if (ModBlockEntities.OVERLOADED_POWER_SUPPLY != null) {
+            event.registerBlockEntityRenderer(
+                    ModBlockEntities.OVERLOADED_POWER_SUPPLY.get(),
+                    WirelessConnectorHostRenderer::new);
+        }
+        event.registerBlockEntityRenderer(
                 ModBlockEntities.FUMO.get(),
                 FumoBlockRenderer::new);
     }
