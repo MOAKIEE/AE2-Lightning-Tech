@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.item;
 
 import appeng.core.particles.ParticleTypes;
 import com.moakiee.ae2lt.event.ArtificialLightningHandler;
-import net.minecraft.client.Minecraft;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.Entity;
@@ -82,7 +81,7 @@ public class OverloadCrystalItem extends Item {
         double y = handPos.y + (random.nextDouble() - 0.5D) * 0.12D;
         double z = handPos.z + (random.nextDouble() - 0.5D) * 0.12D;
 
-        spawnParticle(x, y, z);
+        spawnParticle(level, x, y, z);
     }
 
     @OnlyIn(Dist.CLIENT)
@@ -96,12 +95,11 @@ public class OverloadCrystalItem extends Item {
         double y = entity.getY() + 0.1D + (random.nextDouble() - 0.5D) * 0.2D;
         double z = entity.getZ() + (random.nextDouble() - 0.5D) * 0.3D;
 
-        spawnParticle(x, y, z);
+        spawnParticle(entity.level(), x, y, z);
     }
 
     @OnlyIn(Dist.CLIENT)
-    private static void spawnParticle(double x, double y, double z) {
-        var particle = Minecraft.getInstance().particleEngine.createParticle(
-                ParticleTypes.LIGHTNING, x, y, z, 0.0D, 0.0D, 0.0D);
+    private static void spawnParticle(Level level, double x, double y, double z) {
+        level.addParticle(ParticleTypes.LIGHTNING, x, y, z, 0.0D, 0.0D, 0.0D);
     }
 }

@@ -178,6 +178,48 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
 // Include the output of "generateModMetadata" as an input directory for the build
 // this works with both building through Gradle and the IDE.
 sourceSets.main.resources.srcDir generateModMetadata
+
+var mainJavaSources = fileTree("src/main/java") {
+    include "**/*.java"
+}
+var projectRootPath = layout.projectDirectory.asFile.toPath()
+
+tasks.register("checkServerSourcesAvoidClientApis") {
+    group = "verification"
+    description = "Checks that server-loaded sources do not directly use client-only APIs."
+    inputs.files(mainJavaSources).withPathSensitivity(PathSensitivity.RELATIVE)
+
+    doLast {
+        def forbidden = [
+                "appeng.api.client.",
+                "appeng.client.",
+                "net.minecraft.client."
+        ]
+        def violations = []
+
+        inputs.files.each { source ->
+            def path = source.toPath().normalize().toString().replace(File.separatorChar, '/' as char)
+            if (path.contains("/client/") || path.contains("/mixin/client/") || path.contains("/integration/jei/")) {
+                return
+            }
+
+            def text = source.getText("UTF-8")
+            forbidden.each { api ->
+                if (text.contains(api)) {
+                    violations << "${projectRootPath.relativize(source.toPath()).toString()} uses ${api}"
+                }
+            }
+        }
+
+        if (!violations.isEmpty()) {
+            throw new GradleException("Client-only API used from server-loaded source:\n" + violations.join("\n"))
+        }
+    }
+}
+
+tasks.named("check") {
+    dependsOn("checkServerSourcesAvoidClientApis")
+}
 // To avoid having to run "generateModMetadata" manually, make it run on every project reload
 neoForge.ideSyncTask generateModMetadata
 

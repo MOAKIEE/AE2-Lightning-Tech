@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.util.RandomSource;
@@ -160,7 +159,6 @@ public class OverloadCrystalClusterBlock extends Block implements SimpleWaterlog
         y += (random.nextFloat() - 0.5) * 0.4;
         z += (random.nextFloat() - 0.5) * 0.4;
 
-        var particle = Minecraft.getInstance().particleEngine.createParticle(
-                ParticleTypes.LIGHTNING, x, y, z, 0, 0, 0);
+        level.addParticle(ParticleTypes.LIGHTNING, x, y, z, 0, 0, 0);
     }
 }

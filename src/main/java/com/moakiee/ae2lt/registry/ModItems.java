@@ -15,12 +15,10 @@ import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.registries.DeferredItem;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
-import appeng.api.client.StorageCellModels;
 import appeng.api.util.AEColor;
 import appeng.items.parts.ColoredPartItem;
 
@@ -193,16 +191,6 @@ public final class ModItems {
     private ModItems() {
     }
 
-    public static void registerStorageCellModels() {
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_I);
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_II);
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_III);
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_IV);
-        registerStorageCellModel(LIGHTNING_STORAGE_COMPONENT_V);
-        registerStorageCellModel(INFINITE_STORAGE_CELL);
-        registerStorageCellModel(MYSTERIOUS_CELL, "256k_item_cell");
-    }
-
     public static ColoredPartItem<OverloadedCablePart> getOverloadedCable(AEColor color) {
         return switch (color) {
             case TRANSPARENT -> OVERLOADED_CABLE.get();
@@ -232,20 +220,6 @@ public final class ModItems {
         return ITEMS.registerItem(
                 id,
                 properties -> new LightningStorageComponentItem(properties, totalBytes, idleDrain));
-    }
-
-    private static void registerStorageCellModel(DeferredItem<? extends Item> item) {
-        StorageCellModels.registerModel(
-                item.get(),
-                Identifier.fromNamespaceAndPath(
-                        AE2LightningTech.MODID,
-                        "block/drive/cells/" + item.getId().getPath()));
-    }
-
-    private static void registerStorageCellModel(DeferredItem<? extends Item> item, String modelName) {
-        StorageCellModels.registerModel(
-                item.get(),
-                Identifier.fromNamespaceAndPath("ae2", "block/drive_" + modelName));
     }
 
     private static DeferredItem<ColoredPartItem<OverloadedCablePart>> registerOverloadedCable(String id, AEColor color) {
