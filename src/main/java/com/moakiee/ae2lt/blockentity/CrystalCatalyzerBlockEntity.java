@@ -65,6 +65,7 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.util.LargeStackStreamCodecs;
 
 public class CrystalCatalyzerBlockEntity extends AENetworkBlockEntity
         implements IActionHost, IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
@@ -706,7 +707,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkBlockEntity
         for (int slot = CrystalCatalyzerInventory.SLOT_CATALYST;
              slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
-            data.writeItem(inventory.getStackInSlot(slot));
+            LargeStackStreamCodecs.writeItemStack(data, inventory.getStackInSlot(slot));
         }
     }
 
@@ -717,7 +718,7 @@ public class CrystalCatalyzerBlockEntity extends AENetworkBlockEntity
              slot <= CrystalCatalyzerInventory.SLOT_MATRIX;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
-            ItemStack newStack = data.readItem();
+            ItemStack newStack = LargeStackStreamCodecs.readItemStack(data);
             if (!ItemStack.matches(oldStack, newStack)) {
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;

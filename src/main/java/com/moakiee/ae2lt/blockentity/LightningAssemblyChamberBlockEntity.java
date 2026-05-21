@@ -58,6 +58,7 @@ import com.moakiee.ae2lt.machine.lightningassembly.recipe.LightningAssemblyRecip
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.util.LargeStackStreamCodecs;
 
 public class LightningAssemblyChamberBlockEntity extends AENetworkBlockEntity
     implements IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
@@ -566,9 +567,9 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkBlockEntity
         for (int slot = LightningAssemblyChamberInventory.SLOT_INPUT_0;
              slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
              slot++) {
-            data.writeItem(inventory.getStackInSlot(slot));
+            LargeStackStreamCodecs.writeItemStack(data, inventory.getStackInSlot(slot));
         }
-        data.writeItem(lockedRecipe != null ? lockedRecipe.result() : ItemStack.EMPTY);
+        LargeStackStreamCodecs.writeItemStack(data, lockedRecipe != null ? lockedRecipe.result() : ItemStack.EMPTY);
     }
 
     @Override
@@ -578,13 +579,13 @@ public class LightningAssemblyChamberBlockEntity extends AENetworkBlockEntity
              slot <= LightningAssemblyChamberInventory.SLOT_INPUT_8;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
-            ItemStack newStack = data.readItem();
+            ItemStack newStack = LargeStackStreamCodecs.readItemStack(data);
             if (!ItemStack.matches(oldStack, newStack)) {
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;
             }
         }
-        ItemStack newResult = data.readItem();
+        ItemStack newResult = LargeStackStreamCodecs.readItemStack(data);
         if (!ItemStack.matches(clientRecipeResult, newResult)) {
             clientRecipeResult = newResult;
             changed = true;

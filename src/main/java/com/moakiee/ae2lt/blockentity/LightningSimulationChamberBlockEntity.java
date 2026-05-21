@@ -57,6 +57,7 @@ import com.moakiee.ae2lt.machine.lightningchamber.recipe.LightningSimulationReci
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
+import com.moakiee.ae2lt.util.LargeStackStreamCodecs;
 
 public class LightningSimulationChamberBlockEntity extends AENetworkBlockEntity
     implements IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
@@ -542,7 +543,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkBlockEntity
         for (int slot = LightningSimulationChamberInventory.SLOT_INPUT_0;
              slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
              slot++) {
-            data.writeItem(inventory.getStackInSlot(slot));
+            LargeStackStreamCodecs.writeItemStack(data, inventory.getStackInSlot(slot));
         }
     }
 
@@ -553,7 +554,7 @@ public class LightningSimulationChamberBlockEntity extends AENetworkBlockEntity
              slot <= LightningSimulationChamberInventory.SLOT_INPUT_2;
              slot++) {
             ItemStack oldStack = inventory.getStackInSlot(slot);
-            ItemStack newStack = data.readItem();
+            ItemStack newStack = LargeStackStreamCodecs.readItemStack(data);
             if (!ItemStack.matches(oldStack, newStack)) {
                 inventory.setClientRenderStack(slot, newStack);
                 changed = true;
