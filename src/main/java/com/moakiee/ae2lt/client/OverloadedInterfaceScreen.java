@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
+import com.moakiee.ae2lt.client.gui.GuiTextLayout;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -40,6 +41,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
     private static final int AMT_ROW1_Y = 35;
     private static final int AMT_ROW2_Y = 95;
     private static final int AMT_START_X = 8;
+    private static final int PAGE_INDICATOR_Y = 18;
 
     private final SettingToggleButton<FuzzyMode> fuzzyMode;
     private final TextureToggleButton modeButton;
@@ -191,7 +193,8 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
 
         String pageText = (menu.currentPage + 1) + "/" + menu.totalPages;
         int textWidth = this.font.width(pageText);
-        guiGraphics.text(this.font, pageText, (176 - textWidth) / 2, 7,
+        guiGraphics.text(this.font, pageText,
+                GuiTextLayout.centeredX(this.imageWidth, textWidth), PAGE_INDICATOR_Y,
                 style.getColor(PaletteColor.DEFAULT_TEXT_COLOR).toARGB(), false);
 
         int page = menu.currentPage;

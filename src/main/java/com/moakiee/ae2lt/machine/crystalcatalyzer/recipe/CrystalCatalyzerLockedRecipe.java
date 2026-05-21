@@ -13,26 +13,36 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
 
+import com.moakiee.ae2lt.me.key.LightningKey;
+
 public final class CrystalCatalyzerLockedRecipe {
     private static final String TAG_RECIPE_ID = "RecipeId";
     private static final String TAG_OUTPUT = "Output";
     private static final String TAG_ENERGY = "Energy";
     private static final String TAG_OUTPUT_MULTIPLIER = "OutputMultiplier";
+    private static final String TAG_LIGHTNING_COST = "LightningCost";
+    private static final String TAG_LIGHTNING_TIER = "LightningTier";
 
     private final Identifier recipeId;
     private final ItemStack output;
     private final int energyPerCycle;
     private final int outputMultiplier;
+    private final int lightningCost;
+    private final LightningKey.Tier lightningTier;
 
     public CrystalCatalyzerLockedRecipe(
             Identifier recipeId,
             ItemStack output,
             int energyPerCycle,
-            int outputMultiplier) {
+            int outputMultiplier,
+            int lightningCost,
+            LightningKey.Tier lightningTier) {
         this.recipeId = Objects.requireNonNull(recipeId, "recipeId");
         this.output = Objects.requireNonNull(output, "output").copy();
         this.energyPerCycle = energyPerCycle;
         this.outputMultiplier = outputMultiplier;
+        this.lightningCost = lightningCost;
+        this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
         if (output.isEmpty()) {
             throw new IllegalArgumentException("output cannot be empty");
         }
@@ -41,6 +51,9 @@ public final class CrystalCatalyzerLockedRecipe {
         }
         if (outputMultiplier <= 0) {
             throw new IllegalArgumentException("outputMultiplier must be positive");
+        }
+        if (lightningCost < 1) {
+            throw new IllegalArgumentException("lightningCost must be positive");
         }
     }
 
@@ -53,7 +66,9 @@ public final class CrystalCatalyzerLockedRecipe {
                 holder.id().identifier(),
                 recipe.getOutputTemplate(),
                 recipe.energyPerCycle(),
-                outputMultiplier);
+                outputMultiplier,
+                recipe.lightningCost(),
+                recipe.lightningTier());
     }
 
     public Identifier recipeId() {
@@ -72,6 +87,14 @@ public final class CrystalCatalyzerLockedRecipe {
         return outputMultiplier;
     }
 
+    public int lightningCost() {
+        return lightningCost;
+    }
+
+    public LightningKey.Tier lightningTier() {
+        return lightningTier;
+    }
+
     public long totalEnergy() {
         return energyPerCycle;
     }
@@ -85,6 +108,8 @@ public final class CrystalCatalyzerLockedRecipe {
         tag.put(TAG_OUTPUT, outputTag);
         tag.putInt(TAG_ENERGY, energyPerCycle);
         tag.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
+        tag.putInt(TAG_LIGHTNING_COST, lightningCost);
+        tag.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
         return tag;
     }
 
@@ -93,6 +118,8 @@ public final class CrystalCatalyzerLockedRecipe {
         data.child(TAG_OUTPUT).store(ItemStack.MAP_CODEC, output);
         data.putInt(TAG_ENERGY, energyPerCycle);
         data.putInt(TAG_OUTPUT_MULTIPLIER, outputMultiplier);
+        data.putInt(TAG_LIGHTNING_COST, lightningCost);
+        data.putString(TAG_LIGHTNING_TIER, lightningTier.getSerializedName());
     }
 
     @Nullable
@@ -123,7 +150,12 @@ public final class CrystalCatalyzerLockedRecipe {
             return null;
         }
 
-        return createOrNull(tag.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier);
+        int lightningCost = Math.max(1, tag.getIntOr(TAG_LIGHTNING_COST, 1));
+        LightningKey.Tier lightningTier = LightningKey.Tier.fromSerializedName(
+                tag.getStringOr(TAG_LIGHTNING_TIER, LightningKey.Tier.HIGH_VOLTAGE.getSerializedName()));
+
+        return createOrNull(tag.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier,
+                lightningCost, lightningTier);
     }
 
     @Nullable
@@ -137,7 +169,11 @@ public final class CrystalCatalyzerLockedRecipe {
 
         int energy = data.getIntOr(TAG_ENERGY, 0);
         int outputMultiplier = data.getIntOr(TAG_OUTPUT_MULTIPLIER, defaultOutputMultiplier);
-        return createOrNull(data.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier);
+        int lightningCost = Math.max(1, data.getIntOr(TAG_LIGHTNING_COST, 1));
+        LightningKey.Tier lightningTier = LightningKey.Tier.fromSerializedName(
+                data.getStringOr(TAG_LIGHTNING_TIER, LightningKey.Tier.HIGH_VOLTAGE.getSerializedName()));
+        return createOrNull(data.getStringOr(TAG_RECIPE_ID, ""), output, energy, outputMultiplier,
+                lightningCost, lightningTier);
     }
 
     @Nullable
@@ -145,8 +181,10 @@ public final class CrystalCatalyzerLockedRecipe {
             String recipeId,
             ItemStack output,
             int energy,
-            int outputMultiplier) {
-        if (recipeId.isEmpty() || energy <= 0 || outputMultiplier <= 0) {
+            int outputMultiplier,
+            int lightningCost,
+            LightningKey.Tier lightningTier) {
+        if (recipeId.isEmpty() || energy <= 0 || outputMultiplier <= 0 || lightningCost < 1) {
             return null;
         }
 
@@ -155,7 +193,9 @@ public final class CrystalCatalyzerLockedRecipe {
                     Identifier.parse(recipeId),
                     output,
                     energy,
-                    outputMultiplier);
+                    outputMultiplier,
+                    lightningCost,
+                    lightningTier);
         } catch (RuntimeException e) {
             return null;
         }

@@ -22,7 +22,7 @@ public class CrystalCatalyzerRenderer
         implements BlockEntityRenderer<CrystalCatalyzerBlockEntity, CrystalCatalyzerRenderState> {
     private static final double CAVITY_CENTER_Y = 8.0D / 16.0D;
     private static final float ITEM_SCALE = 0.50F;
-    private static final float WORKING_ROTATION_SPEED = 4.0F;
+    private static final float ROTATION_SPEED = 2.0F;
 
     private final ItemModelResolver itemModelResolver;
 
@@ -50,8 +50,8 @@ public class CrystalCatalyzerRenderer
         itemModelResolver.updateForTopItem(state.item, stack, ItemDisplayContext.FIXED, be.getLevel(), null, 0);
 
         var level = be.getLevel();
-        if (level != null && be.isWorking()) {
-            state.rotationDegrees = (level.getGameTime() + partialTicks) * WORKING_ROTATION_SPEED;
+        if (level != null) {
+            state.rotationDegrees = (level.getGameTime() + partialTicks) * ROTATION_SPEED;
         } else {
             state.rotationDegrees = 0.0F;
         }

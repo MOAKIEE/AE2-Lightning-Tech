@@ -17,6 +17,8 @@ import com.moakiee.ae2lt.client.gui.LargeStackCountRenderer;
 import com.moakiee.ae2lt.integration.jei.LargeStackJeiItemRenderer;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipe;
+import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
@@ -68,12 +70,15 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<RecipeHolder<Cr
     private static final int PROCESS_OVERLAY_V = 18;
     private static final int PROCESS_OVERLAY_WIDTH = 35;
     private static final int PROCESS_OVERLAY_HEIGHT = 10;
-    private static final long PROCESS_CYCLE_MS = 1_500L;
+    private static final long PROCESS_CYCLE_MS_CRYSTAL = 1_000L;
+    private static final long PROCESS_CYCLE_MS_DUST = 2_000L;
 
     private static final int ENERGY_TEXT_Y = BACKGROUND_HEIGHT + 2;       // 64
-    private static final int MATRIX_LINE1_Y = BACKGROUND_HEIGHT + 12;     // 74
-    private static final int MATRIX_LINE2_Y = BACKGROUND_HEIGHT + 22;     // 84
-    private static final int HEIGHT = MATRIX_LINE2_Y + 10;                // 94
+    private static final int TIME_TEXT_Y = BACKGROUND_HEIGHT + 12;        // 74
+    private static final int LIGHTNING_TEXT_Y = BACKGROUND_HEIGHT + 22;   // 84
+    private static final int MATRIX_LINE1_Y = BACKGROUND_HEIGHT + 32;     // 94
+    private static final int MATRIX_LINE2_Y = BACKGROUND_HEIGHT + 42;     // 104
+    private static final int HEIGHT = MATRIX_LINE2_Y + 10;                // 114
 
     private final IDrawable icon;
     private final IDrawable background;
@@ -162,7 +167,7 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<RecipeHolder<Cr
             double mouseY) {
         var recipe = holder.value();
         background.draw(guiGraphics);
-        drawProcessOverlay(guiGraphics);
+        drawProcessOverlay(guiGraphics, recipe.mode());
 
         var font = Minecraft.getInstance().font;
         var energyText = Component.translatable(
@@ -170,6 +175,21 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<RecipeHolder<Cr
                 formatCompactEnergy(recipe.energyPerCycle()));
         int energyX = (WIDTH - font.width(energyText)) / 2;
         guiGraphics.text(font, energyText, energyX, ENERGY_TEXT_Y, 0xFF404040, false);
+
+        String timeStr = recipe.mode() == Mode.CRYSTAL ? "1s" : "2s";
+        var timeText = Component.translatable(
+                "jei.ae2lt.crystal_catalyzer.time", timeStr);
+        int timeX = (WIDTH - font.width(timeText)) / 2;
+        guiGraphics.text(font, timeText, timeX, TIME_TEXT_Y, 0xFF404040, false);
+
+        var lightningText = Component.translatable(
+                "jei.ae2lt.crystal_catalyzer.lightning",
+                recipe.lightningCost(),
+                Component.translatable(recipe.lightningTier() == LightningKey.Tier.EXTREME_HIGH_VOLTAGE
+                        ? "ae2lt.gui.lightning_simulation.tier.extreme_high_voltage"
+                        : "ae2lt.gui.lightning_simulation.tier.high_voltage"));
+        int lightningX = (WIDTH - font.width(lightningText)) / 2;
+        guiGraphics.text(font, lightningText, lightningX, LIGHTNING_TEXT_Y, 0xFF404040, false);
 
         var matrixLine1 = Component.translatable("jei.ae2lt.crystal_catalyzer.matrix_note_line1");
         int matrixLine1X = (WIDTH - font.width(matrixLine1)) / 2;
@@ -182,9 +202,10 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<RecipeHolder<Cr
         guiGraphics.text(font, matrixLine2, matrixLine2X, MATRIX_LINE2_Y, 0xFF404040, false);
     }
 
-    private void drawProcessOverlay(GuiGraphicsExtractor guiGraphics) {
-        long elapsed = Util.getMillis() % PROCESS_CYCLE_MS;
-        double progress = elapsed / (double) PROCESS_CYCLE_MS;
+    private void drawProcessOverlay(GuiGraphicsExtractor guiGraphics, Mode mode) {
+        long cycleMs = mode == Mode.CRYSTAL ? PROCESS_CYCLE_MS_CRYSTAL : PROCESS_CYCLE_MS_DUST;
+        long elapsed = Util.getMillis() % cycleMs;
+        double progress = elapsed / (double) cycleMs;
         int width = Mth.clamp((int) Math.ceil(progress * PROCESS_OVERLAY_WIDTH), 0, PROCESS_OVERLAY_WIDTH);
         if (width <= 0) {
             return;

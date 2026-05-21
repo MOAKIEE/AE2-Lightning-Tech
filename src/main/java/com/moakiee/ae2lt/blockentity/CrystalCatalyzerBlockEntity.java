@@ -26,12 +26,17 @@ import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 import net.neoforged.neoforge.transfer.fluid.FluidResource;
 import net.neoforged.neoforge.transfer.item.ItemResource;
 
+import appeng.api.config.Actionable;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
+import appeng.api.networking.IStackWatcher;
 import appeng.api.networking.security.IActionHost;
+import appeng.api.networking.security.IActionSource;
+import appeng.api.networking.storage.IStorageWatcherNode;
 import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
+import appeng.api.stacks.AEKey;
 import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
@@ -57,6 +62,7 @@ import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.CrystalCatalyzerRecipeS
 import com.moakiee.ae2lt.machine.crystalcatalyzer.recipe.Mode;
 import com.moakiee.ae2lt.machine.overloadfactory.NotifyingFluidTank;
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryEnergyStorage;
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.menu.CrystalCatalyzerMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
@@ -77,7 +83,6 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
 
     public static final int ENERGY_CAPACITY = 1_000_000;
     public static final int FLUID_TANK_CAPACITY_MB = 16_000;
-    public static final int CYCLE_TICKS = 5;
     public static final int MATRIX_OUTPUT_MULTIPLIER = 4;
     /** 每轮固定消耗 1B (1000 mB) 水 —— 配方里已经不再带 fluid 字段,所有配方共用此常量。 */
     public static final int FIXED_FLUID_PER_CYCLE_MB = 1_000;
@@ -116,7 +121,18 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         this.logic = new CrystalCatalyzerLogic(this);
         getMainNode()
                 .setIdlePowerUsage(0)
-                .addService(IGridTickable.class, logic);
+                .addService(IGridTickable.class, logic)
+                .addService(IStorageWatcherNode.class, new IStorageWatcherNode() {
+                    @Override
+                    public void updateWatcher(IStackWatcher newWatcher) {
+                        configureLightningWatcher(newWatcher);
+                    }
+
+                    @Override
+                    public void onStackChange(AEKey what, long amount) {
+                        onLightningStackChanged(what);
+                    }
+                });
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, CrystalCatalyzerBlockEntity be) {
@@ -492,6 +508,50 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
         logic.onStateChanged();
     }
 
+    public long getAvailableHighVoltage() {
+        return simulateLightningExtract(LightningKey.HIGH_VOLTAGE, Long.MAX_VALUE);
+    }
+
+    public long getAvailableExtremeHighVoltage() {
+        return simulateLightningExtract(LightningKey.EXTREME_HIGH_VOLTAGE, Long.MAX_VALUE);
+    }
+
+    private long simulateLightningExtract(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .extract(key, amount, Actionable.SIMULATE, IActionSource.ofMachine(this));
+    }
+
+    private long extractLightning(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .extract(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
+    }
+
+    private long insertLightning(LightningKey key, long amount) {
+        if (amount <= 0L) {
+            return 0L;
+        }
+        var grid = getMainNode().getGrid();
+        if (grid == null) {
+            return 0L;
+        }
+        return grid.getStorageService().getInventory()
+                .insert(key, amount, Actionable.MODULATE, IActionSource.ofMachine(this));
+    }
+
     public void onNeighborChanged(@Nullable BlockPos changedPos) {
         if (changedPos == null || worldPosition.distManhattan(changedPos) == 1) {
             exportTargetCache.invalidate();
@@ -521,17 +581,33 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
             return false;
         }
 
+        LightningKey lightningKey = LightningKey.of(lockedRecipe.lightningTier());
+        long lightningCost = lockedRecipe.lightningCost();
+        if (simulateLightningExtract(lightningKey, lightningCost) < lightningCost) {
+            return false;
+        }
+
+        long extractedLightning = extractLightning(lightningKey, lightningCost);
+        if (extractedLightning < lightningCost) {
+            if (extractedLightning > 0L) {
+                insertLightning(lightningKey, extractedLightning);
+            }
+            return false;
+        }
+
         FluidStack drained = tank.extractFluid(requiredFluid);
         if (drained.getAmount() != requiredFluid.getAmount()) {
             if (!drained.isEmpty()) {
                 tank.insertFluid(drained);
             }
+            insertLightning(lightningKey, extractedLightning);
             return false;
         }
 
         ItemStack leftover = inventory.insertRecipeOutput(resultStack, false);
         if (!leftover.isEmpty()) {
             tank.insertFluid(drained);
+            insertLightning(lightningKey, extractedLightning);
             return false;
         }
 
@@ -756,5 +832,17 @@ public class CrystalCatalyzerBlockEntity extends AENetworkedBlockEntity
     private void onUpgradesChanged() {
         saveChanges();
         logic.onStateChanged();
+    }
+
+    private void configureLightningWatcher(IStackWatcher watcher) {
+        watcher.reset();
+        watcher.add(LightningKey.HIGH_VOLTAGE);
+        watcher.add(LightningKey.EXTREME_HIGH_VOLTAGE);
+    }
+
+    private void onLightningStackChanged(AEKey what) {
+        if (LightningKey.HIGH_VOLTAGE.equals(what) || LightningKey.EXTREME_HIGH_VOLTAGE.equals(what)) {
+            logic.onStateChanged();
+        }
     }
 }

@@ -22,6 +22,7 @@ import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
 
+import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 /**
@@ -57,10 +58,24 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         return DataResult.success(count);
     });
 
+    private static final Codec<Integer> POSITIVE_LIGHTNING_COST_CODEC = Codec.INT.validate(cost -> {
+        if (cost < 1) {
+            return DataResult.error(() -> "lightningCost must be at least 1");
+        }
+        return DataResult.success(cost);
+    });
+
+    private static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
+            StreamCodec.of(
+                    (buffer, tier) -> buffer.writeEnum(tier),
+                    buffer -> buffer.readEnum(LightningKey.Tier.class));
+
     private final Optional<Ingredient> catalyst;
     private final int catalystCount;
     private final CrystalCatalyzerOutput output;
     private final int energyPerCycle;
+    private final int lightningCost;
+    private final LightningKey.Tier lightningTier;
     private final Mode mode;
 
     public CrystalCatalyzerRecipe(
@@ -68,7 +83,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             int catalystCount,
             ItemStack output,
             int energyPerCycle) {
-        this(catalyst, catalystCount, CrystalCatalyzerOutput.ofItem(output), energyPerCycle, Mode.CRYSTAL);
+        this(catalyst, catalystCount, CrystalCatalyzerOutput.ofItem(output), energyPerCycle, 1,
+                LightningKey.Tier.HIGH_VOLTAGE, Mode.CRYSTAL);
     }
 
     public CrystalCatalyzerRecipe(
@@ -76,17 +92,24 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             int catalystCount,
             CrystalCatalyzerOutput output,
             int energyPerCycle,
+            int lightningCost,
+            LightningKey.Tier lightningTier,
             Mode mode) {
         this.catalyst = Objects.requireNonNull(catalyst, "catalyst");
         this.catalystCount = catalystCount;
         this.output = Objects.requireNonNull(output, "output");
         this.energyPerCycle = energyPerCycle;
+        this.lightningCost = lightningCost;
+        this.lightningTier = Objects.requireNonNull(lightningTier, "lightningTier");
         this.mode = Objects.requireNonNull(mode, "mode");
         if (catalyst.isPresent() && catalystCount <= 0) {
             throw new IllegalArgumentException("catalystCount must be positive when catalyst is present");
         }
         if (energyPerCycle < MIN_ENERGY_PER_CYCLE) {
             throw new IllegalArgumentException("energyPerCycle must be at least " + MIN_ENERGY_PER_CYCLE);
+        }
+        if (lightningCost < 1) {
+            throw new IllegalArgumentException("lightningCost must be at least 1");
         }
     }
 
@@ -108,6 +131,14 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
 
     public int energyPerCycle() {
         return energyPerCycle;
+    }
+
+    public int lightningCost() {
+        return lightningCost;
+    }
+
+    public LightningKey.Tier lightningTier() {
+        return lightningTier;
     }
 
     public Mode mode() {
@@ -182,6 +213,7 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     public boolean isIncomplete() {
         return output.resolve().isEmpty()
                 || energyPerCycle < MIN_ENERGY_PER_CYCLE
+                || lightningCost < 1
                 || (catalyst.isPresent() && catalystCount <= 0);
     }
 
@@ -191,6 +223,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
                         NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
                         CrystalCatalyzerOutput.CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::outputSpec),
                         POSITIVE_ENERGY_CODEC.fieldOf("energyPerCycle").forGetter(CrystalCatalyzerRecipe::energyPerCycle),
+                        POSITIVE_LIGHTNING_COST_CODEC.fieldOf("lightningCost").forGetter(CrystalCatalyzerRecipe::lightningCost),
+                        LightningKey.Tier.CODEC.optionalFieldOf("lightningTier", LightningKey.Tier.HIGH_VOLTAGE).forGetter(CrystalCatalyzerRecipe::lightningTier),
                         Mode.CODEC.optionalFieldOf("mode", Mode.CRYSTAL).forGetter(CrystalCatalyzerRecipe::mode))
                 .apply(instance, CrystalCatalyzerRecipe::new));
 
@@ -205,6 +239,8 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             ByteBufCodecs.VAR_INT.encode(buf, recipe.catalystCount);
             CrystalCatalyzerOutput.STREAM_CODEC.encode(buf, recipe.output);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.energyPerCycle);
+            ByteBufCodecs.VAR_INT.encode(buf, recipe.lightningCost);
+            TIER_STREAM_CODEC.encode(buf, recipe.lightningTier);
             ByteBufCodecs.VAR_INT.encode(buf, recipe.mode.ordinal());
         }
 
@@ -213,11 +249,14 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
             int catalystCount = ByteBufCodecs.VAR_INT.decode(buf);
             CrystalCatalyzerOutput output = CrystalCatalyzerOutput.STREAM_CODEC.decode(buf);
             int energyPerCycle = ByteBufCodecs.VAR_INT.decode(buf);
+            int lightningCost = ByteBufCodecs.VAR_INT.decode(buf);
+            LightningKey.Tier lightningTier = TIER_STREAM_CODEC.decode(buf);
             int modeOrdinal = ByteBufCodecs.VAR_INT.decode(buf);
             Mode mode = modeOrdinal >= 0 && modeOrdinal < Mode.values().length
                     ? Mode.values()[modeOrdinal]
                     : Mode.CRYSTAL;
-            return new CrystalCatalyzerRecipe(catalyst, catalystCount, output, energyPerCycle, mode);
+            return new CrystalCatalyzerRecipe(catalyst, catalystCount, output, energyPerCycle,
+                    lightningCost, lightningTier, mode);
         }
         public MapCodec<CrystalCatalyzerRecipe> codec() {
             return CODEC;

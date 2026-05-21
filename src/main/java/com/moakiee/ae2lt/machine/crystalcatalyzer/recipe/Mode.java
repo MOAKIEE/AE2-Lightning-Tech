@@ -16,15 +16,21 @@ import net.minecraft.util.StringRepresentable;
  * 当前模式只匹配同模式的配方。模式切换会中断当前正在进行的配方。</p>
  */
 public enum Mode implements StringRepresentable {
-    CRYSTAL("crystal"),
-    DUST("dust");
+    CRYSTAL("crystal", 20),
+    DUST("dust", 40);
 
     public static final Codec<Mode> CODEC = StringRepresentable.fromEnum(Mode::values);
 
     private final String name;
+    private final int minProcessTicks;
 
-    Mode(String name) {
+    Mode(String name, int minProcessTicks) {
         this.name = name;
+        this.minProcessTicks = minProcessTicks;
+    }
+
+    public int getMinProcessTicks() {
+        return minProcessTicks;
     }
 
     public Mode next() {
