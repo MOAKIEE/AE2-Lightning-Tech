@@ -13,6 +13,7 @@ import appeng.menu.SlotSemantics;
 
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.mixin.client.PatternProviderScreenAccessor;
 
 public class OverloadedPatternProviderScreen extends PatternProviderScreen<OverloadedPatternProviderMenu> {
 
@@ -139,7 +140,11 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
 
         this.menu.showPage(this.menu.getCurrentPage());
 
+        setTextContent("dialog_title", Component.translatable(this.menu.getTitleTranslationKey()));
+        setBlockingModeButtonVisible(this.menu.isBlockingModeVisible());
+
         this.modeButton.setState(this.menu.isWirelessMode());
+        this.modeButton.setVisibility(this.menu.isModeSwitchVisible());
 
         this.autoReturnButton.setTooltipAt(ReturnMode.OFF.ordinal(), RETURN_TIP_OFF);
         this.autoReturnButton.setTooltipAt(ReturnMode.AUTO.ordinal(), RETURN_TIP_AUTO);
@@ -147,19 +152,27 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
         this.autoReturnButton.setStateIndex(this.menu.getReturnModeOrdinal());
 
         this.filteredImportButton.setState(this.menu.isFilteredImport());
-        this.filteredImportButton.setVisibility(true);
+        this.filteredImportButton.setVisibility(this.menu.isFilteredImportVisible());
 
         this.wirelessStrategyButton.setState(this.menu.isEvenDistributionMode());
-        this.wirelessStrategyButton.setVisibility(this.menu.isWirelessMode());
+        this.wirelessStrategyButton.setVisibility(
+                this.menu.isWirelessMode() && this.menu.isWirelessTuningVisible());
 
         this.wirelessSpeedButton.setState(this.menu.isFastSpeedMode());
-        this.wirelessSpeedButton.setVisibility(this.menu.isWirelessMode());
+        this.wirelessSpeedButton.setVisibility(
+                this.menu.isWirelessMode() && this.menu.isWirelessTuningVisible());
 
         boolean multiPage = this.menu.getTotalPages() > 1;
         prevPageButton.visible = multiPage;
         nextPageButton.visible = multiPage;
         prevPageButton.active = multiPage && this.menu.getCurrentPage() > 0;
         nextPageButton.active = multiPage && this.menu.getCurrentPage() < this.menu.getTotalPages() - 1;
+    }
+
+    private void setBlockingModeButtonVisible(boolean visible) {
+        var button = ((PatternProviderScreenAccessor) this).ae2lt$getBlockingModeButton();
+        button.visible = visible;
+        button.active = visible;
     }
 
 }
