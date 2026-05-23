@@ -25,7 +25,8 @@ import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 public class OverloadedPatternProviderMenu extends PatternProviderMenu implements FrequencyBindingMenu {
 
     public static final MenuType<OverloadedPatternProviderMenu> TYPE = MenuTypeBuilder
-            .create(OverloadedPatternProviderMenu::new, PatternProviderLogicHost.class)
+            .create((id, playerInventory, host) ->
+                    new OverloadedPatternProviderMenu(id, playerInventory, host), PatternProviderLogicHost.class)
             .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
                     AE2LightningTech.MODID, "overloaded_pattern_provider"));
 
@@ -71,7 +72,14 @@ public class OverloadedPatternProviderMenu extends PatternProviderMenu implement
     private int lastShownPage = -1;
 
     public OverloadedPatternProviderMenu(int id, Inventory playerInventory, PatternProviderLogicHost host) {
-        super(TYPE, id, playerInventory, host);
+        this(TYPE, id, playerInventory, host);
+    }
+
+    protected OverloadedPatternProviderMenu(MenuType<? extends OverloadedPatternProviderMenu> menuType,
+                                            int id,
+                                            Inventory playerInventory,
+                                            PatternProviderLogicHost host) {
+        super(menuType, id, playerInventory, host);
         this.host = host;
 
         registerClientAction("toggleMode", this::toggleMode);

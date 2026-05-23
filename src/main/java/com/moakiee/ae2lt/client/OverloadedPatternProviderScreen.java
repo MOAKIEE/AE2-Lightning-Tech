@@ -15,7 +15,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.Return
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
 import com.moakiee.ae2lt.mixin.client.PatternProviderScreenAccessor;
 
-public class OverloadedPatternProviderScreen extends PatternProviderScreen<OverloadedPatternProviderMenu> {
+public class OverloadedPatternProviderScreen<M extends OverloadedPatternProviderMenu> extends PatternProviderScreen<M> {
 
     private static final List<Component> RETURN_TIP_OFF =
             List.of(Component.translatable("ae2lt.gui.return_mode.off"));
@@ -47,7 +47,7 @@ public class OverloadedPatternProviderScreen extends PatternProviderScreen<Overl
     private Button prevPageButton;
     private Button nextPageButton;
 
-    public OverloadedPatternProviderScreen(OverloadedPatternProviderMenu menu, Inventory playerInventory,
+    public OverloadedPatternProviderScreen(M menu, Inventory playerInventory,
                                            Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
 
