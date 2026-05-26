@@ -10,8 +10,6 @@ public final class RailgunEnergyRules {
     public static final long FIRE_COST_MV_FE = 2_000_000L;
     public static final long FIRE_COST_HV_FE = 8_000_000L;
     public static final long OVERLOAD_EXECUTION_COST_FE = 20_000_000L;
-    public static final long PULSE_STRIKE_COST_PER_RADIUS_FE = 1_000_000L;
-    public static final long CHAIN_COST_PER_SEGMENT_FE = 500_000L;
 
     private RailgunEnergyRules() {
     }
@@ -36,14 +34,6 @@ public final class RailgunEnergyRules {
 
     public static long overloadExecutionCostFe() {
         return OVERLOAD_EXECUTION_COST_FE;
-    }
-
-    public static long pulseStrikeCostFe(double radius) {
-        return Math.max(0L, (long) Math.ceil(radius * PULSE_STRIKE_COST_PER_RADIUS_FE));
-    }
-
-    public static long chainCostFe(int segments) {
-        return Math.max(0L, segments) * CHAIN_COST_PER_SEGMENT_FE;
     }
 
     public static int receivableFe(long stored, long capacity, int requested) {

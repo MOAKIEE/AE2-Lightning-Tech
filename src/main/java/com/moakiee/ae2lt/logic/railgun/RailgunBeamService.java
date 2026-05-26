@@ -35,7 +35,6 @@ import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
-import com.moakiee.ae2lt.item.railgun.RailgunOverloadBudget;
 import com.moakiee.ae2lt.item.railgun.RailgunStructuralCore;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -77,13 +76,6 @@ public final class RailgunBeamService {
 
     public static void setFiring(ServerPlayer player, InteractionHand hand, boolean firing) {
         if (firing) {
-            ItemStack stack = player.getItemInHand(hand);
-            if (stack.getItem() instanceof ElectromagneticRailgunItem
-                    && RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
-                RailgunFireService.sendFail(player, "ae2lt.railgun.fail.overload_locked");
-                broadcastStop(player);
-                return;
-            }
             int max = RailgunDefaults.BEAM_MAX_CONCURRENT;
             if (ACTIVE.size() >= max && !ACTIVE.containsKey(player.getUUID())) {
                 broadcastStop(player);
@@ -93,7 +85,6 @@ public final class RailgunBeamService {
         } else {
             BeamState removed = ACTIVE.remove(player.getUUID());
             if (removed != null) {
-                clearBeamState(player, removed);
                 broadcastStop(player);
             }
         }
@@ -120,14 +111,12 @@ public final class RailgunBeamService {
             }
             ItemStack stack = player.getItemInHand(s.hand);
             if (!(stack.getItem() instanceof ElectromagneticRailgunItem)) {
-                RailgunOverloadBudget.INSTANCE.clearBeam(stack);
                 it.remove();
                 broadcastStop(player);
                 continue;
             }
             // Cannot fire beam while charged-using.
             if (player.isUsingItem() && player.getUseItem() == stack) {
-                RailgunOverloadBudget.INSTANCE.clearBeam(stack);
                 it.remove();
                 broadcastStop(player);
                 continue;
@@ -141,7 +130,6 @@ public final class RailgunBeamService {
             s.settleCount++;
             boolean cont = settle((ServerLevel) player.level(), player, stack, s, chainThrottle);
             if (!cont) {
-                RailgunOverloadBudget.INSTANCE.clearBeam(stack);
                 it.remove();
                 broadcastStop(player);
             }
@@ -155,10 +143,6 @@ public final class RailgunBeamService {
             return false;
         }
         RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
-        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
-            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.overload_locked");
-            return false;
-        }
         var bound = RailgunBinding.resolve(stack, player);
         if (!bound.success()) {
             RailgunFireService.sendFail(player, RailgunBinding.failKey(bound.failure()));
@@ -166,7 +150,6 @@ public final class RailgunBeamService {
         }
         IGrid grid = bound.grid();
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
-        RailgunOverloadBudget.INSTANCE.setBeamLoad(stack, settings.beamMode());
 
         long feCost = AmmoCost.beamFeCost(mods);
         IActionSource src = IActionSource.ofPlayer(player);
@@ -284,7 +267,6 @@ public final class RailgunBeamService {
                 // (RailgunChargeTier.EHV3 only) ignores it for any non-EHv3 value.
                 RailgunFireService.applyAll(level, player, chain, ctx, stack, RailgunChargeTier.HV);
                 if (!chain.isEmpty()) {
-                    RailgunOverloadBudget.INSTANCE.addChainPulse(stack, chain.size());
                     broadcastBeamChainFx(level, player, primary, chain);
                 }
             }
@@ -356,12 +338,5 @@ public final class RailgunBeamService {
         if (!(player.level() instanceof ServerLevel sl)) return;
         var pkt = new RailgunBeamUpdatePacket(player.getUUID(), Vec3.ZERO, Vec3.ZERO, false);
         NetworkHandler.sendToTrackingChunk(sl, player.chunkPosition(), pkt);
-    }
-
-    private static void clearBeamState(ServerPlayer player, BeamState state) {
-        ItemStack stack = player.getItemInHand(state.hand);
-        if (stack.getItem() instanceof ElectromagneticRailgunItem) {
-            RailgunOverloadBudget.INSTANCE.clearBeam(stack);
-        }
     }
 }

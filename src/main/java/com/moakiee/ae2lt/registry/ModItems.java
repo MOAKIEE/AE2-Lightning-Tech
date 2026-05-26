@@ -247,20 +247,20 @@ public final class ModItems {
             PhaseFlightSubmoduleItem::new,
             new Item.Properties().stacksTo(1));
 
-    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T1 = ITEMS.register(
-            "armor_energy_module_t1",
+    public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T1 = ITEMS.register(
+            "energy_module_t1",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
                     ArmorEnergyRules.MODULE_T1_CAPACITY_FE));
 
-    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T2 = ITEMS.register(
-            "armor_energy_module_t2",
+    public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T2 = ITEMS.register(
+            "energy_module_t2",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
                     ArmorEnergyRules.MODULE_T2_CAPACITY_FE));
 
-    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T3 = ITEMS.register(
-            "armor_energy_module_t3",
+    public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T3 = ITEMS.register(
+            "energy_module_t3",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.EPIC).fireResistant(),
                     ArmorEnergyRules.MODULE_T3_CAPACITY_FE));

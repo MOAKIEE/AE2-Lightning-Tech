@@ -35,15 +35,6 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
         };
     }
 
-    public int getIdleOverload() {
-        return switch (type) {
-            case CORE -> 0;
-            case COMPUTE -> 24;
-            case ACCELERATION -> 16;
-            case OVERLOAD_EXECUTION -> 32;
-        };
-    }
-
     @Override
     public Set<DeviceKind> acceptableDevices() {
         return ACCEPTS;

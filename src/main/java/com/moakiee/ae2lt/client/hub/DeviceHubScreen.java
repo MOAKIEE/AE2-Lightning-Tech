@@ -96,6 +96,9 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
         int selectedTab = menu.getSelectedTab();
         int tabMask = menu.getTabAvailability();
+        boolean railgunTab = selectedTab == DeviceHubMenu.TAB_RAILGUN;
+        int statusLineY = railgunTab ? LOAD_BAR_Y : STATE_LINE_Y;
+        int modulesY = railgunTab ? STATE_LINE_Y : MODULES_Y;
 
         // ── Tab bar ──
         renderTabBar(gfx, leftPos + 8, topPos + TAB_Y, selectedTab, tabMask);
@@ -154,14 +157,16 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         gfx.drawString(font, Component.literal(energyText), barX + BAR_WIDTH + 4, topPos + ENERGY_BAR_Y, TEXT_SECONDARY, false);
 
         // ── Load bar ──
-        int load = menu.data.get(DeviceHubMenu.DATA_DYNAMIC_LOAD);
-        int cap = menu.data.get(DeviceHubMenu.DATA_OVERLOAD_CAP);
-        gfx.drawString(font, Component.translatable("ae2lt.device_hub.load"), x, topPos + LOAD_BAR_Y - 1, TEXT_PRIMARY, false);
-        int loadColor = load > cap ? LOCK_RED : LOAD_GOLD;
-        drawBar(gfx, barX, topPos + LOAD_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
-                cap > 0 ? Math.min(1.0, (double) load / cap) : 0, loadColor);
-        String loadText = load + " / " + cap;
-        gfx.drawString(font, Component.literal(loadText), barX + BAR_WIDTH + 4, topPos + LOAD_BAR_Y, TEXT_SECONDARY, false);
+        if (!railgunTab) {
+            int load = menu.data.get(DeviceHubMenu.DATA_DYNAMIC_LOAD);
+            int cap = menu.data.get(DeviceHubMenu.DATA_OVERLOAD_CAP);
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.load"), x, topPos + LOAD_BAR_Y - 1, TEXT_PRIMARY, false);
+            int loadColor = load > cap ? LOCK_RED : LOAD_GOLD;
+            drawBar(gfx, barX, topPos + LOAD_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
+                    cap > 0 ? Math.min(1.0, (double) load / cap) : 0, loadColor);
+            String loadText = load + " / " + cap;
+            gfx.drawString(font, Component.literal(loadText), barX + BAR_WIDTH + 4, topPos + LOAD_BAR_Y, TEXT_SECONDARY, false);
+        }
 
         // ── Status line ──
         int lockState = menu.data.get(DeviceHubMenu.DATA_LOCK_STATE);
@@ -169,10 +174,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         boolean powered = menu.data.get(DeviceHubMenu.DATA_POWERED) != 0;
         Component statusText;
         int statusColor;
-        if (lockState == 2) {
+        if (!railgunTab && lockState == 2) {
             statusText = Component.translatable("ae2lt.device_hub.status.locked", lockValue / 20);
             statusColor = LOCK_RED;
-        } else if (lockState == 1) {
+        } else if (!railgunTab && lockState == 1) {
             statusText = Component.translatable("ae2lt.device_hub.status.overloaded", lockValue);
             statusColor = FLUX_MISSING;
         } else if (!powered) {
@@ -182,10 +187,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             statusText = Component.translatable("ae2lt.device_hub.status.normal");
             statusColor = FLUX_ONLINE;
         }
-        gfx.drawString(font, Component.translatable("ae2lt.device_hub.status.line", statusText), x, topPos + STATE_LINE_Y, statusColor, false);
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.status.line", statusText), x, topPos + statusLineY, statusColor, false);
 
         // ── Separator ──
-        gfx.fill(leftPos + 6, topPos + MODULES_Y - 4, leftPos + imageWidth - 6, topPos + MODULES_Y - 3, BG_DEEP);
+        gfx.fill(leftPos + 6, topPos + modulesY - 4, leftPos + imageWidth - 6, topPos + modulesY - 3, BG_DEEP);
 
         // ── Module list ──
         List<String> moduleNameKeys = menu.getModuleNameKeys();
@@ -196,9 +201,9 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         int moduleMask = menu.data.get(DeviceHubMenu.DATA_MODULE_MASK);
 
         gfx.drawString(font, Component.translatable("ae2lt.device_hub.modules", moduleCount, moduleSlotCount),
-                x, topPos + MODULES_Y, TEXT_PRIMARY, false);
+                x, topPos + modulesY, TEXT_PRIMARY, false);
 
-        int moduleListY = topPos + MODULES_Y + 14;
+        int moduleListY = topPos + modulesY + 14;
         int maxVisible = (topPos + imageHeight - 30 - moduleListY) / MODULE_ROW_H;
         for (int i = 0; i < Math.min(moduleNameKeys.size(), maxVisible); i++) {
             int idx = i + scrollOffset;
@@ -211,21 +216,19 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
             // Module name
             gfx.drawString(font, moduleName(moduleNameKeys.get(idx), count), x, rowY, TEXT_PRIMARY, false);
-            Component loadLabel = Component.translatable("ae2lt.device_hub.module.load", moduleLoad);
-            int loadTextX = selectedTab != DeviceHubMenu.TAB_RAILGUN
-                    ? leftPos + imageWidth - 56 - font.width(loadLabel)
-                    : leftPos + imageWidth - 12 - font.width(loadLabel);
-            gfx.drawString(font, loadLabel, loadTextX, rowY, moduleLoad > 0 ? LOAD_GOLD : TEXT_SECONDARY, false);
 
             // Toggle button (only for armor modules, not railgun)
-            if (selectedTab != DeviceHubMenu.TAB_RAILGUN) {
+            if (!railgunTab) {
+                Component loadLabel = Component.translatable("ae2lt.device_hub.module.load", moduleLoad);
+                int loadTextX = leftPos + imageWidth - 56 - font.width(loadLabel);
+                gfx.drawString(font, loadLabel, loadTextX, rowY, moduleLoad > 0 ? LOAD_GOLD : TEXT_SECONDARY, false);
                 int toggleX = leftPos + imageWidth - 48;
                 drawToggleButton(gfx, toggleX, rowY - 1, enabled);
             }
         }
 
         // ── Railgun settings toggles ──
-        if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
+        if (railgunTab) {
             int toggleY = moduleListY + Math.min(moduleNameKeys.size(), maxVisible) * MODULE_ROW_H + 8;
             boolean terrain = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN) != 0;
             boolean terrainAllowed = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN_ALLOWED) != 0;
@@ -305,8 +308,9 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // Check railgun setting toggles
         if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
             List<String> moduleNames = menu.getModuleNameKeys();
-            int maxVisible = (topPos + imageHeight - 30 - (topPos + MODULES_Y + 14)) / MODULE_ROW_H;
-            int toggleY = topPos + MODULES_Y + 14 + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8 + 14;
+            int moduleListY = topPos + STATE_LINE_Y + 14;
+            int maxVisible = (topPos + imageHeight - 30 - moduleListY) / MODULE_ROW_H;
+            int toggleY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8 + 14;
             int toggleX = leftPos + imageWidth - 48;
 
             if (mouseX >= toggleX && mouseX <= toggleX + TOGGLE_W) {

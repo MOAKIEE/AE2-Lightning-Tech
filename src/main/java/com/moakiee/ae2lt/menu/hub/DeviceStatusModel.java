@@ -11,9 +11,7 @@ import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.DeviceKind;
-import com.moakiee.ae2lt.device.overload.LockState;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleStorage;
-import com.moakiee.ae2lt.item.railgun.RailgunOverloadBudget;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.logic.railgun.RailgunBinding;
@@ -130,19 +128,6 @@ public record DeviceStatusModel(
         long stored = RailgunEnergyBuffer.read(railgun);
         long capacity = RailgunEnergyBuffer.capacity(railgun);
 
-        // Overload
-        int dynamicLoad = RailgunOverloadBudget.INSTANCE.currentLoad(railgun);
-        int cap = RailgunOverloadBudget.INSTANCE.budgetCap(railgun);
-        LockState ls = RailgunOverloadBudget.INSTANCE.lockState(railgun);
-        int lockStateVal = 0;
-        int lockValueVal = 0;
-        if (ls instanceof LockState.Locked locked) {
-            lockStateVal = 2;
-            lockValueVal = locked.ticksRemaining();
-        } else if (ls instanceof LockState.Debt debt) {
-            lockStateVal = 1;
-            lockValueVal = debt.ticksRemaining();
-        }
         boolean powered = stored > 0 || gridReachable;
 
         // Modules
@@ -182,7 +167,7 @@ public record DeviceStatusModel(
 
         return new DeviceStatusModel(
                 DeviceKind.RAILGUN, name, hasBound, boundDim, bx, by, bz, gridReachable, appFlux,
-                stored, capacity, dynamicLoad, cap, lockStateVal, lockValueVal, powered,
+                stored, capacity, 0, 0, 0, 0, powered,
                 modules, 5,
                 terrainAllowed && settings.terrainDestruction(), settings.pvpLock(), terrainAllowed);
     }

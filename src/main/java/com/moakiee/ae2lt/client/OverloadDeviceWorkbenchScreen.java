@@ -120,7 +120,9 @@ public class OverloadDeviceWorkbenchScreen extends AbstractContainerScreen<Overl
 
         // Structural info
         if (menu.hasCoreInstalled()) {
-            String coreInfo = "模块槽:" + menu.moduleTypeCount + "  cap:" + menu.baseOverload;
+            String coreInfo = menu.isRailgunDevice()
+                    ? "模块:" + menu.moduleTypeCount
+                    : "模块槽:" + menu.moduleTypeCount + "  cap:" + menu.baseOverload;
             gfx.drawString(font, Component.literal(coreInfo), x, y + 24, TEXT_SECONDARY, false);
         } else {
             gfx.drawString(font, Component.translatable("ae2lt.overload_armor.status.missing_core"),
@@ -228,6 +230,7 @@ public class OverloadDeviceWorkbenchScreen extends AbstractContainerScreen<Overl
     }
 
     private void renderOverloadBar(GuiGraphics gfx) {
+        if (menu.isRailgunDevice()) return;
         if (menu.baseOverload <= 0) return;
         int barX = leftPos + MODULE_LIST_X;
         int barY = topPos + MODULE_LIST_Y + ROW_HEIGHT * VISIBLE_ROWS + 16;

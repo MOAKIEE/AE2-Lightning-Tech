@@ -24,6 +24,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.OverloadDeviceWorkbenchBlockEntity;
 import com.moakiee.ae2lt.blockentity.workbench.StructuralSlotSpec;
 import com.moakiee.ae2lt.device.DeviceItem;
+import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.DeviceSlotType;
 
 public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
@@ -70,6 +71,8 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
     public int installProgress;
     @GuiSync(9)
     public int gridConnected;
+    @GuiSync(10)
+    public int railgunDevice;
 
     public static final int INSTALL_TICKS = 20;
 
@@ -198,6 +201,10 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         return energyModuleInstalled != 0;
     }
 
+    public boolean isRailgunDevice() {
+        return railgunDevice != 0;
+    }
+
     public List<StructuralSlotSpec> getStructuralSlotSpecs() {
         return host.getStructuralSlots();
     }
@@ -299,9 +306,11 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
             energyModuleInstalled = 0;
             energyStored = 0L;
             moduleLoadUsed = 0;
+            railgunDevice = 0;
             return;
         }
 
+        railgunDevice = adapter.deviceKind() == DeviceKind.RAILGUN ? 1 : 0;
         moduleTypeCount = host.getModuleList(registryAccess()).size();
         baseOverload = host.baseOverloadBudget(registryAccess());
         energyCapacity = adapter.energyBuffer().capacity(device);

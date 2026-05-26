@@ -23,12 +23,12 @@ public final class RailgunModuleStorage implements DeviceModuleStorage {
 
     @Override
     public int baseOverloadBudget(ItemStack device) {
-        return RailgunStructuralCore.baseOverloadBudget(device);
+        return 0;
     }
 
     @Override
     public int currentIdleOverload(ItemStack device) {
-        return currentIdleOverload(entryData(device));
+        return 0;
     }
 
     @Override
@@ -60,8 +60,7 @@ public final class RailgunModuleStorage implements DeviceModuleStorage {
             return false;
         }
 
-        int nextLoad = currentIdleOverload(entries) + module.getIdleOverload();
-        return nextLoad <= baseOverloadBudget(device);
+        return true;
     }
 
     @Override
@@ -154,15 +153,5 @@ public final class RailgunModuleStorage implements DeviceModuleStorage {
         } else {
             device.set(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), entries);
         }
-    }
-
-    private static int currentIdleOverload(RailgunModuleEntries entries) {
-        int total = 0;
-        for (var stack : entries.entries()) {
-            if (stack.getItem() instanceof RailgunModuleItem module) {
-                total += module.getIdleOverload() * stack.getCount();
-            }
-        }
-        return total;
     }
 }

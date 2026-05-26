@@ -28,7 +28,6 @@ import appeng.menu.locator.ItemMenuHostLocator;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
-import com.moakiee.ae2lt.logic.railgun.RailgunBeamService;
 import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.menu.railgun.RailgunHost;
@@ -66,16 +65,8 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
             }
             return InteractionResultHolder.fail(stack);
         }
-        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
-            if (!level.isClientSide) {
-                player.displayClientMessage(
-                        Component.translatable("ae2lt.railgun.fail.overload_locked"), true);
-            }
-            return InteractionResultHolder.fail(stack);
-        }
         player.startUsingItem(hand);
         if (!level.isClientSide) {
-            RailgunOverloadBudget.ensureDeviceId(stack);
             stack.set(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
         }
         return new InteractionResultHolder<>(InteractionResult.CONSUME, stack);
@@ -104,20 +95,9 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         }
         boolean inHand = isSelected || player.getOffhandItem() == stack;
         if (inHand) {
-            RailgunOverloadBudget.ensureDeviceId(stack);
             if (player instanceof ServerPlayer serverPlayer) {
                 refillFromBoundNetwork(stack, serverPlayer);
             }
-            if (!player.isUsingItem() || player.getUseItem() != stack) {
-                RailgunOverloadBudget.INSTANCE.clearCharging(stack);
-            }
-            if (!(player instanceof ServerPlayer serverPlayer) || !RailgunBeamService.isFiring(serverPlayer)) {
-                RailgunOverloadBudget.INSTANCE.clearBeam(stack);
-            }
-            RailgunOverloadBudget.INSTANCE.tick(stack, player);
-        } else {
-            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
-            RailgunOverloadBudget.INSTANCE.clearBeam(stack);
         }
     }
 
@@ -130,35 +110,21 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
             return;
         }
         if (!hasOverloadCoreModule(stack)) {
-            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
             stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
             player.stopUsingItem();
             player.displayClientMessage(Component.translatable("ae2lt.railgun.core_required"), true);
             return;
         }
-        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
-            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
-            stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
-            player.stopUsingItem();
-            player.displayClientMessage(
-                    Component.translatable("ae2lt.railgun.fail.overload_locked"), true);
-            return;
-        }
         long current = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
-        RailgunChargeTier chargingTier = RailgunOverloadRules.chargingTierForCharge(
-                current,
-                RailgunDefaults.CHARGE_TICKS_TIER2,
-                RailgunDefaults.CHARGE_TICKS_TIER3);
+        RailgunChargeTier chargingTier = chargingCostTier(current);
         long chargeCost = RailgunEnergyRules.chargeCostPerTickFe(chargingTier);
         refillMissingFe(stack, player, chargeCost);
         if (!RailgunEnergyBuffer.tryConsume(stack, player, chargeCost)) {
-            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
             stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
             player.stopUsingItem();
             player.displayClientMessage(Component.translatable("ae2lt.railgun.fail.no_fe"), true);
             return;
         }
-        RailgunOverloadBudget.INSTANCE.setChargingLoad(stack, chargingTier);
         // ACCEL module step-up: each module adds +1 charge-ticks per real tick.
         //   0 modules → +1 / tick (baseline)
         //   1 module  → +2 / tick (2× speed)
@@ -179,7 +145,6 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         }
         long charged = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
         stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
-        RailgunOverloadBudget.INSTANCE.clearCharging(stack);
         RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunChargeTier tier = RailgunFireService.tierForCharge(charged, mods);
         if (tier == RailgunChargeTier.HV) {
@@ -228,6 +193,16 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         return stack.getOrDefault(
                 ModDataComponents.RAILGUN_MODULE_ENTRIES.get(),
                 RailgunModuleEntries.EMPTY).hasCore();
+    }
+
+    private static RailgunChargeTier chargingCostTier(long current) {
+        if (current >= RailgunDefaults.CHARGE_TICKS_TIER3) {
+            return RailgunChargeTier.EHV3;
+        }
+        if (current >= RailgunDefaults.CHARGE_TICKS_TIER2) {
+            return RailgunChargeTier.EHV2;
+        }
+        return RailgunChargeTier.EHV1;
     }
 
     private static void refillFromBoundNetwork(ItemStack stack, ServerPlayer player) {

@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.menu.SlotSemantic;
@@ -166,27 +165,6 @@ public final class RailgunWorkbenchAdapter implements DeviceWorkbenchAdapter {
             case ENERGY -> RailgunEnergyModuleStorage.canInstall(stack);
             default -> false;
         };
-    }
-
-    @Override
-    public boolean mayPickupStructural(
-            ItemStack device,
-            HolderLookup.Provider registries,
-            StructuralSlotSpec spec,
-            Player player,
-            ItemStack carried) {
-        if (device.isEmpty()) {
-            return false;
-        }
-        if (spec.slotType() == DeviceSlotType.ENERGY) {
-            return true;
-        }
-        if (!RailgunModuleStorage.INSTANCE.hasAnyInstalled(device)) {
-            return true;
-        }
-        return !carried.isEmpty()
-                && carried.is(ModItems.ULTIMATE_OVERLOAD_CORE.get())
-                && RailgunStructuralCore.canInstallCore(device, carried);
     }
 
     private static StructuralSlotSpec slot(int index, DeviceSlotType type, SlotSemantic semantic) {
