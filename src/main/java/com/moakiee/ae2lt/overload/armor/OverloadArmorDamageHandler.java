@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.overload.armor;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -12,6 +13,7 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
+import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 
 /**
  * Applies staged mitigation and reflect tuning from active armor modules.
@@ -28,46 +30,82 @@ public final class OverloadArmorDamageHandler {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPre(LivingDamageEvent.Pre event) {
         if (!(event.getEntity() instanceof Player player) || player.level().isClientSide()) return;
-        double passRate = collectPassRate(player);
+        var capabilities = collectActiveCapabilities(player);
+        double passRate = collectPassRate(capabilities);
         if (passRate < 1.0D) {
-            event.setNewDamage(event.getOriginalDamage() * (float) passRate);
+            float incoming = event.getNewDamage();
+            event.setNewDamage(incoming * (float) passRate);
+            applyMitigationLoad(capabilities);
         }
     }
 
     @SubscribeEvent(priority = EventPriority.LOW)
     public static void onPost(LivingDamageEvent.Post event) {
         if (!(event.getEntity() instanceof Player player) || player.level().isClientSide()) return;
-        double reflect = collectReflect(player);
-        if (reflect <= 0.0D) return;
         if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
-        float reflected = event.getOriginalDamage() * (float) reflect;
+        float reflected = collectReflectedDamage(player, event.getNewDamage());
         if (reflected > 0.0F) {
             attacker.hurt(event.getSource(), reflected);
         }
     }
 
-    private static double collectPassRate(Player player) {
+    private static double collectPassRate(java.util.List<ActiveCapability> capabilities) {
         double passRate = 1.0D;
-        for (var cap : collectCapabilities(player)) {
-            if (cap instanceof DeviceCapability.StagedMitigation mitigation) {
+        for (var active : capabilities) {
+            if (active.capability() instanceof DeviceCapability.StagedMitigation mitigation) {
                 passRate *= Math.clamp(mitigation.passRate(), 0.0D, 1.0D);
             }
         }
         return passRate;
     }
 
-    private static double collectReflect(Player player) {
-        double total = 0.0D;
-        for (var cap : collectCapabilities(player)) {
-            if (cap instanceof DeviceCapability.ReflectTuning reflect && reflect.reflectPct() > 0.0D) {
-                total = Math.min(1.0D, total + reflect.reflectPct());
+    private static void applyMitigationLoad(java.util.List<ActiveCapability> capabilities) {
+        for (var active : capabilities) {
+            if (active.capability() instanceof DeviceCapability.StagedMitigation mitigation) {
+                OverloadArmorState.addPulseLoad(active.armor(), Math.max(0, mitigation.loadPerHit()));
             }
         }
-        return total;
     }
 
-    private static java.util.List<DeviceCapability> collectCapabilities(Player player) {
-        var out = new java.util.ArrayList<DeviceCapability>();
+    private static float collectReflectedDamage(Player player, float damage) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return 0.0F;
+        }
+        if (damage <= 0.0F) {
+            return 0.0F;
+        }
+        float reflected = 0.0F;
+        for (var active : collectActiveCapabilities(player)) {
+            if (!(active.capability() instanceof DeviceCapability.ReflectTuning reflect)
+                    || reflect.reflectPct() <= 0.0D) {
+                continue;
+            }
+            float remaining = Math.max(0.0F, damage - reflected);
+            float amount = Math.min(remaining, damage * (float) reflect.reflectPct());
+            if (amount <= 0.0F) {
+                continue;
+            }
+            long cost = (long) Math.ceil(amount * Math.max(0L, reflect.fePerDamage()));
+            if (cost > 0L) {
+                ArmorEnergyBuffer.refillFromNetwork(
+                        active.armor(),
+                        serverPlayer,
+                        Math.max(0L, cost - ArmorEnergyBuffer.read(active.armor())));
+                if (!ArmorEnergyBuffer.tryConsume(active.armor(), serverPlayer, cost)) {
+                    continue;
+                }
+            }
+            reflected += amount;
+            OverloadArmorState.addPulseLoad(active.armor(), Math.max(0, (int) Math.ceil(amount * reflect.loadPerDamage())));
+            if (reflected >= damage) {
+                break;
+            }
+        }
+        return reflected;
+    }
+
+    private static java.util.List<ActiveCapability> collectActiveCapabilities(Player player) {
+        var out = new java.util.ArrayList<ActiveCapability>();
         for (EquipmentSlot slot : java.util.List.of(
                 EquipmentSlot.HEAD,
                 EquipmentSlot.CHEST,
@@ -83,11 +121,33 @@ public final class OverloadArmorDamageHandler {
             }
             var stacks = OverloadArmorState.loadModuleStacks(armor, player.level().registryAccess());
             for (ItemStack s : stacks) {
-                if (!s.isEmpty() && s.getItem() instanceof OverloadDeviceModuleItem m) {
-                    out.addAll(m.capabilities(s));
+                if (!s.isEmpty() && s.getItem() instanceof OverloadDeviceModuleItem m && moduleRuntimeActive(armor, s)) {
+                    int count = Math.max(1, s.getCount());
+                    for (int i = 0; i < count; i++) {
+                        ItemStack unit = s.copyWithCount(1);
+                        for (var capability : m.capabilities(unit)) {
+                            out.add(new ActiveCapability(armor, capability));
+                        }
+                    }
                 }
             }
         }
         return out;
+    }
+
+    private static boolean moduleRuntimeActive(ItemStack armor, ItemStack module) {
+        if (!(module.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
+            return false;
+        }
+        boolean[] active = {false};
+        provider.collectSubmodules(module, submodule -> {
+            if (submodule != null && OverloadArmorState.isSubmoduleRuntimeActive(armor, submodule.id())) {
+                active[0] = true;
+            }
+        });
+        return active[0];
+    }
+
+    private record ActiveCapability(ItemStack armor, DeviceCapability capability) {
     }
 }

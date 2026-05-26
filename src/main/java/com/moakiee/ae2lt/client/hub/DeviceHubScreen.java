@@ -222,7 +222,6 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             int toggleY = moduleListY + Math.min(moduleNameKeys.size(), maxVisible) * MODULE_ROW_H + 8;
             boolean terrain = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN) != 0;
             boolean terrainAllowed = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN_ALLOWED) != 0;
-            boolean aoe = menu.data.get(DeviceHubMenu.DATA_RAILGUN_AOE) != 0;
             boolean pvp = menu.data.get(DeviceHubMenu.DATA_RAILGUN_PVP) != 0;
 
             gfx.fill(leftPos + 6, toggleY - 4, leftPos + imageWidth - 6, toggleY - 3, BG_DEEP);
@@ -230,8 +229,6 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             toggleY += 14;
 
             drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.terrain"), terrain, terrainAllowed ? 0xFFCC4444 : TAB_DISABLED);
-            toggleY += MODULE_ROW_H + 2;
-            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.aoe"), aoe, 0xFFAA66CC);
             toggleY += MODULE_ROW_H + 2;
             drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.pvp_lock"), pvp, 0xFF4488CC);
         }
@@ -308,12 +305,6 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             if (mouseX >= toggleX && mouseX <= toggleX + TOGGLE_W) {
                 if (mouseY >= toggleY && mouseY <= toggleY + TOGGLE_H) {
                     PacketDistributor.sendToServer(new DeviceHubActionPacket(DeviceHubActionPacket.ACTION_TOGGLE_TERRAIN, 0));
-                    playClick();
-                    return true;
-                }
-                toggleY += MODULE_ROW_H + 2;
-                if (mouseY >= toggleY && mouseY <= toggleY + TOGGLE_H) {
-                    PacketDistributor.sendToServer(new DeviceHubActionPacket(DeviceHubActionPacket.ACTION_TOGGLE_AOE, 0));
                     playClick();
                     return true;
                 }

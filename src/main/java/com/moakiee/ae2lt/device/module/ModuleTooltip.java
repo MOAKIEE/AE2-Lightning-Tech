@@ -8,7 +8,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 
 import com.moakiee.ae2lt.device.DeviceKind;
-import com.moakiee.ae2lt.device.DeviceSlotType;
 
 public final class ModuleTooltip {
     private ModuleTooltip() {
@@ -21,9 +20,6 @@ public final class ModuleTooltip {
         tooltip.add(Component.translatable(
                 "ae2lt.module.tooltip.installable_on",
                 deviceList(module)).withStyle(ChatFormatting.GRAY));
-        tooltip.add(Component.translatable(
-                "ae2lt.module.tooltip.slot",
-                Component.translatable(slotKey(module.acceptableSlot()))).withStyle(ChatFormatting.GRAY));
     }
 
     private static Component deviceList(OverloadDeviceModuleItem module) {
@@ -45,7 +41,4 @@ public final class ModuleTooltip {
         return "ae2lt.module.device." + kind.name().toLowerCase(java.util.Locale.ROOT);
     }
 
-    private static String slotKey(DeviceSlotType slot) {
-        return "ae2lt.module.slot." + slot.name().toLowerCase(java.util.Locale.ROOT);
-    }
 }

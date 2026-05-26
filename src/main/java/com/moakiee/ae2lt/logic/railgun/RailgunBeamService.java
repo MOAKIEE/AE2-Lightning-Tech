@@ -277,7 +277,7 @@ public final class RailgunBeamService {
             }
             // Beam never triggers Overload Execution — that's reserved for EHv3 charged shots.
             // Throttled chain
-            if (settings.aoeEnabled() && player.tickCount - s.lastChainTick >= chainThrottle) {
+            if (player.tickCount - s.lastChainTick >= chainThrottle) {
                 s.lastChainTick = player.tickCount;
                 List<RailgunChainResolver.Hit> chain = RailgunChainResolver.resolveChain(level, player, primary, ctx);
                 // Pass HV as the "tier" sentinel — applyAll's Overload-Execution gate

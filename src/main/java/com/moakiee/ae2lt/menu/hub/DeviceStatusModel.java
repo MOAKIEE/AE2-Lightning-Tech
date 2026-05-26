@@ -23,6 +23,7 @@ import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
 import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.BaseOverloadArmorItem;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
+import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.device.network.ArmorNetworkBinding;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
@@ -45,7 +46,7 @@ public record DeviceStatusModel(
         List<ModuleInfo> modules,
         int moduleSlotCount,
         // railgun specific
-        boolean terrainDestruction, boolean aoeEnabled, boolean pvpLock, boolean terrainDestructionAllowed
+        boolean terrainDestruction, boolean pvpLock, boolean terrainDestructionAllowed
 ) {
     public record ModuleInfo(String id, String nameKey, int count, boolean enabled, int load) {
     }
@@ -53,7 +54,7 @@ public record DeviceStatusModel(
     public static final DeviceStatusModel EMPTY = new DeviceStatusModel(
             DeviceKind.CELESTWEAVE_OCULUS, "", false, "", 0, 0, 0, false, false,
             0, 0, 0, 0, 0, 0, false, List.of(), 0,
-            false, false, false, false);
+            false, false, false);
 
     /** Build status snapshot from an armor stack worn by the player. */
     public static DeviceStatusModel fromArmorStack(ItemStack armor, ServerPlayer player) {
@@ -100,19 +101,24 @@ public record DeviceStatusModel(
         boolean powered = stored > 0 || gridReachable;
 
         // Modules
-        var submodules = OverloadArmorState.collectSubmodules(armor, player.registryAccess());
         List<ModuleInfo> modules = new ArrayList<>();
-        for (var sub : submodules) {
-            boolean enabled = OverloadArmorState.isSubmoduleEnabled(armor, sub);
-            int load = OverloadArmorState.getSubmoduleDynamicLoad(armor, sub);
-            modules.add(new ModuleInfo(sub.id(), sub.nameKey(), 1, enabled, load));
+        for (var stack : OverloadArmorState.loadModuleStacks(armor, player.registryAccess())) {
+            if (!(stack.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
+                continue;
+            }
+            int count = Math.max(1, stack.getCount());
+            provider.collectSubmodules(stack, sub -> {
+                boolean enabled = OverloadArmorState.isSubmoduleEnabled(armor, sub);
+                int load = OverloadArmorState.getSubmoduleDynamicLoad(armor, sub);
+                modules.add(new ModuleInfo(sub.id(), sub.nameKey(), count, enabled, load));
+            });
         }
 
         return new DeviceStatusModel(
                 kind, name, hasBound, boundDim, bx, by, bz, gridReachable, appFlux,
                 stored, capacity, dynamicLoad, cap, lockStateVal, lockValue, powered,
                 modules, part.moduleSlotCount(),
-                false, false, false, false);
+                false, false, false);
     }
 
     /** Build status snapshot from a railgun stack held by the player. */
@@ -191,7 +197,6 @@ public record DeviceStatusModel(
                 DeviceKind.RAILGUN, name, hasBound, boundDim, bx, by, bz, gridReachable, appFlux,
                 stored, capacity, dynamicLoad, cap, lockStateVal, lockValueVal, powered,
                 modules, 5,
-                terrainAllowed && settings.terrainDestruction(), settings.aoeEnabled(), settings.pvpLock(),
-                terrainAllowed);
+                terrainAllowed && settings.terrainDestruction(), settings.pvpLock(), terrainAllowed);
     }
 }

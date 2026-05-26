@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.overload.armor;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
@@ -153,8 +154,19 @@ public final class OverloadArmorState {
         if (max > 0 && current >= max) {
             return false;
         }
-        if (current == 0 && loadModuleStacks(armor, registries).size() >= Math.min(MAX_MODULE_TYPES, part.moduleSlotCount())) {
+        if (getInstalledUnitCount(armor, registries) >= part.moduleSlotCount()) {
             return false;
+        }
+        if (current == 0 && loadModuleStacks(armor, registries).size() >= MAX_MODULE_TYPES) {
+            return false;
+        }
+        int cap = getBaseOverload(armor, registries);
+        if (cap > 0) {
+            int nextLoad = computeTotalIdleOverload(armor, registries)
+                    + computeStackIdleOverload(armor, candidate, 1, Dist.DEDICATED_SERVER);
+            if (nextLoad > cap) {
+                return false;
+            }
         }
         return true;
     }
@@ -260,14 +272,17 @@ public final class OverloadArmorState {
                     return existing;
                 });
             }
-            int written = 0;
-            int max = Math.min(MAX_MODULE_TYPES, armorPart(armor).moduleSlotCount());
+            int writtenTypes = 0;
+            int writtenUnits = 0;
+            int maxUnits = armorPart(armor).moduleSlotCount();
             for (var stack : merged.values()) {
-                if (written >= max) {
+                if (writtenTypes >= MAX_MODULE_TYPES || writtenUnits >= maxUnits) {
                     break;
                 }
-                out.add(stack.saveOptional(registries));
-                written++;
+                int count = Math.min(Math.max(1, stack.getCount()), maxUnits - writtenUnits);
+                out.add(stack.copyWithCount(count).saveOptional(registries));
+                writtenTypes++;
+                writtenUnits += count;
             }
             if (out.isEmpty()) {
                 armorTag.remove(TAG_INSTALLED_SUBMODULES);
@@ -294,18 +309,28 @@ public final class OverloadArmorState {
         return 0;
     }
 
+    private static int getInstalledUnitCount(ItemStack armor, HolderLookup.Provider registries) {
+        int total = 0;
+        for (var stack : loadModuleStacks(armor, registries)) {
+            total += Math.max(1, stack.getCount());
+        }
+        return total;
+    }
+
     public static int computeTotalIdleOverload(ItemStack armor, HolderLookup.Provider registries) {
-        return 0;
+        int total = 0;
+        for (var entry : collectInstalledSubmoduleEntries(armor, registries)) {
+            if (isSubmoduleEnabled(armor, entry.submodule())) {
+                total += idleLoadFor(null, armor, entry, Dist.DEDICATED_SERVER);
+            }
+        }
+        return total;
     }
 
     public static List<OverloadArmorSubmodule> collectSubmodules(ItemStack armor, HolderLookup.Provider registries) {
-        var result = new ArrayList<OverloadArmorSubmodule>();
-        for (var stack : loadModuleStacks(armor, registries)) {
-            if (stack.getItem() instanceof OverloadArmorSubmoduleItem provider) {
-                provider.collectSubmodules(stack, result::add);
-            }
-        }
-        return List.copyOf(result);
+        return collectInstalledSubmoduleEntries(armor, registries).stream()
+                .map(InstalledSubmodule::submodule)
+                .toList();
     }
 
     public static String moduleTypeId(ItemStack stack) {
@@ -436,6 +461,7 @@ public final class OverloadArmorState {
             if (active) {
                 submodule.onActivated(player, dist, armor);
             } else {
+                OverloadRuntime.get(armorId).bucket().clearState(submodule.id());
                 submodule.onDeactivated(player, dist, armor);
             }
         }
@@ -457,11 +483,12 @@ public final class OverloadArmorState {
             ItemStack armor,
             HolderLookup.Provider registries,
             Dist dist) {
-        for (var submodule : collectSubmodules(armor, registries)) {
+        for (var entry : collectInstalledSubmoduleEntries(armor, registries)) {
+            var submodule = entry.submodule();
             if (!isSubmoduleRuntimeActive(armor, submodule.id())) {
                 continue;
             }
-            int load = Math.max(0, submodule.tickActive(player, dist, armor));
+            int load = Math.max(0, submodule.tickActive(player, dist, armor)) * entry.count();
             setSubmoduleRuntimeDynamicLoad(armor, submodule.id(), load);
         }
     }
@@ -469,9 +496,17 @@ public final class OverloadArmorState {
     public static Snapshot tickEquipped(Player player, ItemStack armor, HolderLookup.Provider registries) {
         UUID id = ensureArmorId(armor);
         var runtime = OverloadRuntime.get(id);
-        for (var submodule : collectSubmodules(armor, registries)) {
+        var entries = collectInstalledSubmoduleEntries(armor, registries);
+        var installedIds = new HashSet<String>();
+        for (var entry : entries) {
+            installedIds.add(entry.submodule().id());
+        }
+        pruneRemovedRuntime(id, installedIds, runtime);
+        for (var entry : entries) {
+            var submodule = entry.submodule();
             int load = isSubmoduleRuntimeActive(armor, submodule.id())
-                    ? getSubmoduleDynamicLoadFor(armor, submodule.id())
+                    ? idleLoadFor(player, armor, entry, Dist.DEDICATED_SERVER)
+                            + getSubmoduleDynamicLoadFor(armor, submodule.id())
                     : 0;
             if (load > 0) {
                 runtime.bucket().setState(submodule.id(), load);
@@ -502,6 +537,7 @@ public final class OverloadArmorState {
         boolean hasCore = hasCore(armor, registries);
         boolean hasEnergy = !getSlot(armor, registries, SLOT_ENERGY).isEmpty();
         int cap = getBaseOverload(armor, registries);
+        int moduleLoad = computeTotalIdleOverload(armor, registries);
         return new Snapshot(
                 equipped,
                 hasCore,
@@ -510,7 +546,7 @@ public final class OverloadArmorState {
                 debtTicks,
                 lockedTicks,
                 cap,
-                0,
+                moduleLoad,
                 currentLoad,
                 capacity);
     }
@@ -525,6 +561,13 @@ public final class OverloadArmorState {
 
     public static long addStoredEnergy(ItemStack armor, HolderLookup.Provider registries, long amount) {
         return ArmorEnergyBuffer.receiveFe(armor, (int) Math.min(Integer.MAX_VALUE, amount), false);
+    }
+
+    public static void addPulseLoad(ItemStack armor, int load) {
+        if (armor == null || armor.isEmpty() || load <= 0) {
+            return;
+        }
+        OverloadRuntime.get(ensureArmorId(armor)).bucket().addPulse(load);
     }
 
     public static void flushRuntimeToNbt(ItemStack armor) {
@@ -564,6 +607,68 @@ public final class OverloadArmorState {
             }
         });
         return ref[0];
+    }
+
+    private static List<InstalledSubmodule> collectInstalledSubmoduleEntries(
+            ItemStack armor,
+            HolderLookup.Provider registries) {
+        var result = new ArrayList<InstalledSubmodule>();
+        for (var stack : loadModuleStacks(armor, registries)) {
+            if (!(stack.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
+                continue;
+            }
+            int count = Math.max(1, stack.getCount());
+            ItemStack installedStack = stack.copyWithCount(count);
+            provider.collectSubmodules(installedStack, submodule -> {
+                if (submodule != null && !submodule.id().isBlank()) {
+                    result.add(new InstalledSubmodule(installedStack, submodule, count));
+                }
+            });
+        }
+        return List.copyOf(result);
+    }
+
+    private static int idleLoadFor(
+            @Nullable Player player,
+            ItemStack armor,
+            InstalledSubmodule entry,
+            Dist dist) {
+        return Math.max(0, entry.submodule().getIdleOverloaded(player, dist, armor)) * entry.count();
+    }
+
+    private static int computeStackIdleOverload(
+            ItemStack armor,
+            ItemStack stack,
+            int count,
+            Dist dist) {
+        if (stack == null || stack.isEmpty() || !(stack.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
+            return 0;
+        }
+        int multiplier = Math.max(1, count);
+        int[] total = {0};
+        provider.collectSubmodules(stack.copyWithCount(multiplier), submodule -> {
+            if (submodule != null && isSubmoduleEnabled(armor, submodule.id(), submodule.defaultEnabled())) {
+                total[0] += Math.max(0, submodule.getIdleOverloaded(null, dist, armor)) * multiplier;
+            }
+        });
+        return total[0];
+    }
+
+    private static void pruneRemovedRuntime(UUID armorId, java.util.Set<String> installedIds, OverloadRuntime runtime) {
+        String prefix = armorId + "#";
+        for (String key : List.copyOf(SUBMODULE_RUNTIME_CACHE.keySet())) {
+            if (!key.startsWith(prefix)) {
+                continue;
+            }
+            String submoduleId = key.substring(prefix.length());
+            if (installedIds.contains(submoduleId)) {
+                continue;
+            }
+            runtime.bucket().clearState(submoduleId);
+            SUBMODULE_RUNTIME_CACHE.remove(key);
+            SERVER_ACTIVE_CACHE.remove(key);
+            CLIENT_ACTIVE_CACHE.remove(key);
+        }
     }
 
     private static void setSubmoduleRuntimeActive(ItemStack armor, String submoduleId, boolean active) {
@@ -646,6 +751,9 @@ public final class OverloadArmorState {
     }
 
     private record SubmoduleRuntime(boolean active, int dynamicLoad) {
+    }
+
+    private record InstalledSubmodule(ItemStack stack, OverloadArmorSubmodule submodule, int count) {
     }
 
     public record Snapshot(

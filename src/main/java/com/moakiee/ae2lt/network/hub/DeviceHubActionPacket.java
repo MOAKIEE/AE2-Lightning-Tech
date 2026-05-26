@@ -12,15 +12,14 @@ import com.moakiee.ae2lt.network.NetworkInit;
 /**
  * Client → Server: hub UI actions.
  * <p>
- * Action codes: 0=SELECT_TAB, 1=TOGGLE_MODULE, 2=TOGGLE_TERRAIN, 3=TOGGLE_AOE, 4=TOGGLE_PVP.
+ * Action codes: 0=SELECT_TAB, 1=TOGGLE_MODULE, 2=TOGGLE_TERRAIN, 3=TOGGLE_PVP.
  */
 public record DeviceHubActionPacket(int action, int value) implements CustomPacketPayload {
 
     public static final int ACTION_SELECT_TAB = 0;
     public static final int ACTION_TOGGLE_MODULE = 1;
     public static final int ACTION_TOGGLE_TERRAIN = 2;
-    public static final int ACTION_TOGGLE_AOE = 3;
-    public static final int ACTION_TOGGLE_PVP = 4;
+    public static final int ACTION_TOGGLE_PVP = 3;
 
     public static final Type<DeviceHubActionPacket> TYPE =
             new Type<>(NetworkInit.id("device_hub_action"));
@@ -51,7 +50,6 @@ public record DeviceHubActionPacket(int action, int value) implements CustomPack
                 case ACTION_SELECT_TAB -> menu.selectTab(pkt.value());
                 case ACTION_TOGGLE_MODULE -> menu.toggleModule(pkt.value());
                 case ACTION_TOGGLE_TERRAIN -> menu.toggleRailgunTerrain();
-                case ACTION_TOGGLE_AOE -> menu.toggleRailgunAoe();
                 case ACTION_TOGGLE_PVP -> menu.toggleRailgunPvp();
             }
         });

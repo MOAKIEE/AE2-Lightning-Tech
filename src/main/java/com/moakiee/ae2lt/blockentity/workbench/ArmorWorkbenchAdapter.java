@@ -138,7 +138,9 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
             HolderLookup.Provider registries,
             StructuralSlotSpec spec,
             ItemStack stack) {
-        if (spec.slotType() == DeviceSlotType.CORE
+        if (stack != null
+                && !stack.isEmpty()
+                && spec.slotType() == DeviceSlotType.CORE
                 && !OverloadArmorState.canInstallCore(device, registries, stack)) {
             return;
         }

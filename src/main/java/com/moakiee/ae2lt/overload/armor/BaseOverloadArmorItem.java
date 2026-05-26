@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
+import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.util.EnergyText;
 
 import top.theillusivec4.curios.api.SlotContext;
@@ -151,6 +152,7 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
             refillFromBoundNetwork(stack, serverPlayer);
             if (!passiveDrain(serverPlayer, stack)) {
                 OverloadArmorState.syncSubmoduleActiveState(player, stack, registries, false, dist);
+                OverloadArmorState.tickEquipped(player, stack, registries);
                 return;
             }
         }
@@ -167,6 +169,9 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
         double multiplier = 1.0D;
         for (ItemStack module : OverloadArmorState.loadModuleStacks(armor, player.level().registryAccess())) {
             if (!(module.getItem() instanceof OverloadDeviceModuleItem provider)) {
+                continue;
+            }
+            if (!moduleRuntimeActive(armor, module)) {
                 continue;
             }
             for (var capability : provider.capabilities(module)) {
@@ -186,6 +191,19 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
                 player,
                 Math.max(0L, adjusted - ArmorEnergyBuffer.read(armor)));
         return ArmorEnergyBuffer.tryConsume(armor, player, adjusted);
+    }
+
+    private static boolean moduleRuntimeActive(ItemStack armor, ItemStack module) {
+        if (!(module.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
+            return false;
+        }
+        boolean[] active = {false};
+        provider.collectSubmodules(module, submodule -> {
+            if (submodule != null && OverloadArmorState.isSubmoduleRuntimeActive(armor, submodule.id())) {
+                active[0] = true;
+            }
+        });
+        return active[0];
     }
 
     private static Dist resolveDist(Level level) {

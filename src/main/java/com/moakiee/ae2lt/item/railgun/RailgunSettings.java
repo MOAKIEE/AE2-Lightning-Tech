@@ -9,38 +9,32 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.util.StringRepresentable;
 
-public record RailgunSettings(boolean terrainDestruction, boolean pvpLock, boolean aoeEnabled, BeamMode beamMode) {
+public record RailgunSettings(boolean terrainDestruction, boolean pvpLock, BeamMode beamMode) {
 
-    public static final RailgunSettings DEFAULT = new RailgunSettings(false, false, true, BeamMode.HV);
+    public static final RailgunSettings DEFAULT = new RailgunSettings(false, false, BeamMode.HV);
 
     public static final Codec<RailgunSettings> CODEC = RecordCodecBuilder.create(b -> b.group(
             Codec.BOOL.fieldOf("terrain").forGetter(RailgunSettings::terrainDestruction),
             Codec.BOOL.fieldOf("pvp_lock").forGetter(RailgunSettings::pvpLock),
-            Codec.BOOL.optionalFieldOf("aoe", true).forGetter(RailgunSettings::aoeEnabled),
             BeamMode.CODEC.optionalFieldOf("beam_mode", BeamMode.HV).forGetter(RailgunSettings::beamMode))
             .apply(b, RailgunSettings::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, RailgunSettings> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BOOL, RailgunSettings::terrainDestruction,
             ByteBufCodecs.BOOL, RailgunSettings::pvpLock,
-            ByteBufCodecs.BOOL, RailgunSettings::aoeEnabled,
             BeamMode.STREAM_CODEC.cast(), RailgunSettings::beamMode,
             RailgunSettings::new);
 
     public RailgunSettings withTerrain(boolean v) {
-        return new RailgunSettings(v, this.pvpLock, this.aoeEnabled, this.beamMode);
+        return new RailgunSettings(v, this.pvpLock, this.beamMode);
     }
 
     public RailgunSettings withPvpLock(boolean v) {
-        return new RailgunSettings(this.terrainDestruction, v, this.aoeEnabled, this.beamMode);
-    }
-
-    public RailgunSettings withAoeEnabled(boolean v) {
-        return new RailgunSettings(this.terrainDestruction, this.pvpLock, v, this.beamMode);
+        return new RailgunSettings(this.terrainDestruction, v, this.beamMode);
     }
 
     public RailgunSettings withBeamMode(BeamMode mode) {
-        return new RailgunSettings(this.terrainDestruction, this.pvpLock, this.aoeEnabled, mode);
+        return new RailgunSettings(this.terrainDestruction, this.pvpLock, mode);
     }
 
     /**

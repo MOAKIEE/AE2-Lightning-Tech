@@ -53,10 +53,9 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     public static final int DATA_MODULE_SLOT_COUNT = 14;
     public static final int DATA_MODULE_MASK = 15;
     public static final int DATA_RAILGUN_TERRAIN = 16;
-    public static final int DATA_RAILGUN_AOE = 17;
-    public static final int DATA_RAILGUN_PVP = 18;
-    public static final int DATA_RAILGUN_TERRAIN_ALLOWED = 19;
-    public static final int DATA_COUNT = 20;
+    public static final int DATA_RAILGUN_PVP = 17;
+    public static final int DATA_RAILGUN_TERRAIN_ALLOWED = 18;
+    public static final int DATA_COUNT = 19;
 
     public static final int TAB_HELMET = 0;
     public static final int TAB_CHESTPLATE = 1;
@@ -174,7 +173,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         }
         sd.values[DATA_MODULE_MASK] = moduleMask;
         sd.values[DATA_RAILGUN_TERRAIN] = status.terrainDestruction() ? 1 : 0;
-        sd.values[DATA_RAILGUN_AOE] = status.aoeEnabled() ? 1 : 0;
         sd.values[DATA_RAILGUN_PVP] = status.pvpLock() ? 1 : 0;
         sd.values[DATA_RAILGUN_TERRAIN_ALLOWED] = status.terrainDestructionAllowed() ? 1 : 0;
 
@@ -301,14 +299,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         if (railgun.isEmpty()) return;
         RailgunSettings s = railgun.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withTerrain(!s.terrainDestruction()));
-    }
-
-    public void toggleRailgunAoe() {
-        if (!(getPlayer() instanceof ServerPlayer player)) return;
-        ItemStack railgun = findDevice(player, TAB_RAILGUN);
-        if (railgun.isEmpty()) return;
-        RailgunSettings s = railgun.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
-        railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withAoeEnabled(!s.aoeEnabled()));
     }
 
     public void toggleRailgunPvp() {
