@@ -10,6 +10,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
+import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
@@ -69,6 +71,15 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
         if (!sub.isActive(armor)) return;
         if (getCooldown(armor) > 0) {
             player.displayClientMessage(Component.translatable("ae2lt.overload_armor.feature.dash.cooldown"), true);
+            return;
+        }
+        long feCost = ArmorOverloadRules.DASH_ACTIVE_COST_FE;
+        ArmorEnergyBuffer.refillFromNetwork(
+                armor,
+                player,
+                Math.max(0L, feCost - ArmorEnergyBuffer.read(armor)));
+        if (!ArmorEnergyBuffer.tryConsume(armor, player, feCost)) {
+            player.displayClientMessage(Component.translatable("ae2lt.overload_armor.fail.no_fe"), true);
             return;
         }
 

@@ -10,6 +10,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.device.module.ModuleTooltip;
 import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmodule;
@@ -43,7 +44,8 @@ public final class ReflectSubmoduleItem extends Item implements OverloadArmorSub
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ae2lt.chestplate_module_reflect.tooltip")
+        tooltip.add(Component.translatable("item.ae2lt.module_reflect.tooltip")
                 .withStyle(ChatFormatting.GRAY));
+        ModuleTooltip.appendInstallInfo(this, tooltip);
     }
 }

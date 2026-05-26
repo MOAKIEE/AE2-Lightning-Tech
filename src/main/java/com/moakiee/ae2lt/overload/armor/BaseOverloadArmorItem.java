@@ -18,6 +18,7 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.level.Level;
 import net.neoforged.api.distmarker.Dist;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
@@ -147,12 +148,25 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
         if (!equipped) {
             return;
         }
-        if (player instanceof ServerPlayer serverPlayer && !passiveDrain(serverPlayer, stack)) {
-            OverloadArmorState.syncSubmoduleActiveState(player, stack, registries, false, dist);
-            return;
+        if (player instanceof ServerPlayer serverPlayer) {
+            refillFromBoundNetwork(stack, serverPlayer);
+            if (!passiveDrain(serverPlayer, stack)) {
+                OverloadArmorState.syncSubmoduleActiveState(player, stack, registries, false, dist);
+                return;
+            }
         }
         OverloadArmorState.tickActiveSubmodules(player, stack, registries, dist);
         OverloadArmorState.tickEquipped(player, stack, registries);
+    }
+
+    private static void refillFromBoundNetwork(ItemStack armor, ServerPlayer player) {
+        int interval = Math.max(1, AE2LTCommonConfig.railgunBufferRefillIntervalTicks());
+        long rate = Math.max(0L, AE2LTCommonConfig.railgunBufferRefillRatePerTick());
+        if (rate <= 0L || player.tickCount % interval != 0) {
+            return;
+        }
+        long request = rate > Long.MAX_VALUE / interval ? Long.MAX_VALUE : rate * interval;
+        ArmorEnergyBuffer.refillFromNetwork(armor, player, request);
     }
 
     private static boolean passiveDrain(ServerPlayer player, ItemStack armor) {
@@ -171,7 +185,14 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
             }
         }
         long adjusted = (long) Math.ceil(drain * multiplier);
-        return adjusted <= 0L || ArmorEnergyBuffer.tryConsume(armor, player, adjusted);
+        if (adjusted <= 0L) {
+            return true;
+        }
+        ArmorEnergyBuffer.refillFromNetwork(
+                armor,
+                player,
+                Math.max(0L, adjusted - ArmorEnergyBuffer.read(armor)));
+        return ArmorEnergyBuffer.tryConsume(armor, player, adjusted);
     }
 
     private static Dist resolveDist(Level level) {

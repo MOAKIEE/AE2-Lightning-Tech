@@ -53,8 +53,20 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     private static final int TOGGLE_W = 30;
     private static final int TOGGLE_H = 12;
 
-    private static final String[] TAB_LABELS = {"头盔", "胸甲", "护腿", "靴子", "电磁炮"};
-    private static final String[] TAB_REQUIRED = {"需要装备头盔", "需要装备胸甲", "需要装备护腿", "需要装备靴子", "需要手持电磁炮"};
+    private static final String[] TAB_LABEL_KEYS = {
+            "ae2lt.device_hub.tab.helmet",
+            "ae2lt.device_hub.tab.chestplate",
+            "ae2lt.device_hub.tab.leggings",
+            "ae2lt.device_hub.tab.boots",
+            "ae2lt.device_hub.tab.railgun"
+    };
+    private static final String[] TAB_REQUIRED_KEYS = {
+            "ae2lt.device_hub.tab.required.helmet",
+            "ae2lt.device_hub.tab.required.chestplate",
+            "ae2lt.device_hub.tab.required.leggings",
+            "ae2lt.device_hub.tab.required.boots",
+            "ae2lt.device_hub.tab.required.railgun"
+    };
 
     private int scrollOffset = 0;
 
@@ -94,7 +106,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // ── Check if device available for current tab ──
         boolean hasDevice = (tabMask & (1 << selectedTab)) != 0;
         if (!hasDevice) {
-            gfx.drawString(font, Component.literal("无设备"), x, topPos + STATUS_Y, TEXT_SECONDARY, false);
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.no_device"), x, topPos + STATUS_Y, TEXT_SECONDARY, false);
             renderTooltip(gfx, mouseX, mouseY);
             return;
         }
@@ -110,19 +122,23 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         boolean gridReachable = menu.data.get(DeviceHubMenu.DATA_GRID_REACHABLE) != 0;
         int bx = 0, by = 0, bz = 0; // Not exposed in data slots; use boundDim presence
         if (!boundDim.isEmpty()) {
-            String bindText = "AP: " + boundDim;
             int bindColor = gridReachable ? FLUX_ONLINE : WARNING_RED;
-            String reach = gridReachable ? " ✓" : " ✗";
-            gfx.drawString(font, Component.literal(bindText + reach), x, topPos + STATUS_Y + 12, bindColor, false);
+            gfx.drawString(font, Component.translatable(
+                            gridReachable
+                                    ? "ae2lt.device_hub.ap.bound.reachable"
+                                    : "ae2lt.device_hub.ap.bound.unreachable",
+                            boundDim),
+                    x, topPos + STATUS_Y + 12, bindColor, false);
         } else {
-            gfx.drawString(font, Component.literal("AP: 未绑定"), x, topPos + STATUS_Y + 12, TEXT_SECONDARY, false);
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.ap.unbound"), x, topPos + STATUS_Y + 12, TEXT_SECONDARY, false);
         }
 
         // ── AppFlux ──
         boolean appFlux = menu.data.get(DeviceHubMenu.DATA_APP_FLUX_ONLINE) != 0;
-        String fluxText = appFlux ? "AppFlux: ✓ 在线" : "AppFlux: ✗ 未安装";
         int fluxColor = appFlux ? FLUX_ONLINE : FLUX_MISSING;
-        gfx.drawString(font, Component.literal(fluxText), x, topPos + STATUS_Y + 24, fluxColor, false);
+        gfx.drawString(font, Component.translatable(
+                        appFlux ? "ae2lt.device_hub.appflux.online" : "ae2lt.device_hub.appflux.missing"),
+                x, topPos + STATUS_Y + 24, fluxColor, false);
 
         // ── Separator ──
         gfx.fill(leftPos + 6, topPos + ENERGY_BAR_Y - 4, leftPos + imageWidth - 6, topPos + ENERGY_BAR_Y - 3, BG_DEEP);
@@ -130,7 +146,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // ── Energy bar ──
         long stored = menu.getEnergyStored();
         long capacity = menu.getEnergyCapacity();
-        gfx.drawString(font, Component.literal("能量"), x, topPos + ENERGY_BAR_Y - 1, TEXT_PRIMARY, false);
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.energy"), x, topPos + ENERGY_BAR_Y - 1, TEXT_PRIMARY, false);
         int barX = x + 30;
         drawBar(gfx, barX, topPos + ENERGY_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
                 capacity > 0 ? (double) stored / capacity : 0, ENERGY_GREEN);
@@ -140,7 +156,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // ── Load bar ──
         int load = menu.data.get(DeviceHubMenu.DATA_DYNAMIC_LOAD);
         int cap = menu.data.get(DeviceHubMenu.DATA_OVERLOAD_CAP);
-        gfx.drawString(font, Component.literal("负载"), x, topPos + LOAD_BAR_Y - 1, TEXT_PRIMARY, false);
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.load"), x, topPos + LOAD_BAR_Y - 1, TEXT_PRIMARY, false);
         int loadColor = load > cap ? LOCK_RED : LOAD_GOLD;
         drawBar(gfx, barX, topPos + LOAD_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
                 cap > 0 ? Math.min(1.0, (double) load / cap) : 0, loadColor);
@@ -151,46 +167,48 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         int lockState = menu.data.get(DeviceHubMenu.DATA_LOCK_STATE);
         int lockValue = menu.data.get(DeviceHubMenu.DATA_LOCK_VALUE);
         boolean powered = menu.data.get(DeviceHubMenu.DATA_POWERED) != 0;
-        String statusText;
+        Component statusText;
         int statusColor;
         if (lockState == 2) {
-            statusText = "🔒 锁死 " + (lockValue / 20) + "s";
+            statusText = Component.translatable("ae2lt.device_hub.status.locked", lockValue / 20);
             statusColor = LOCK_RED;
         } else if (lockState == 1) {
-            statusText = "⚠ 超载 " + lockValue + " ticks";
+            statusText = Component.translatable("ae2lt.device_hub.status.overloaded", lockValue);
             statusColor = FLUX_MISSING;
         } else if (!powered) {
-            statusText = "⚡ 断能";
+            statusText = Component.translatable("ae2lt.device_hub.status.unpowered");
             statusColor = FLUX_MISSING;
         } else {
-            statusText = "状态: 正常";
+            statusText = Component.translatable("ae2lt.device_hub.status.normal");
             statusColor = FLUX_ONLINE;
         }
-        gfx.drawString(font, Component.literal("状态    " + statusText), x, topPos + STATE_LINE_Y, statusColor, false);
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.status.line", statusText), x, topPos + STATE_LINE_Y, statusColor, false);
 
         // ── Separator ──
         gfx.fill(leftPos + 6, topPos + MODULES_Y - 4, leftPos + imageWidth - 6, topPos + MODULES_Y - 3, BG_DEEP);
 
         // ── Module list ──
-        List<String> moduleNames = menu.getModuleNames();
+        List<String> moduleNameKeys = menu.getModuleNameKeys();
+        List<Integer> moduleCounts = menu.getModuleCounts();
         int moduleCount = menu.data.get(DeviceHubMenu.DATA_MODULE_COUNT);
         int moduleSlotCount = menu.data.get(DeviceHubMenu.DATA_MODULE_SLOT_COUNT);
         int moduleMask = menu.data.get(DeviceHubMenu.DATA_MODULE_MASK);
 
-        gfx.drawString(font, Component.literal("模块 (" + moduleCount + "/" + moduleSlotCount + ")"),
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.modules", moduleCount, moduleSlotCount),
                 x, topPos + MODULES_Y, TEXT_PRIMARY, false);
 
         int moduleListY = topPos + MODULES_Y + 14;
         int maxVisible = (topPos + imageHeight - 30 - moduleListY) / MODULE_ROW_H;
-        for (int i = 0; i < Math.min(moduleNames.size(), maxVisible); i++) {
+        for (int i = 0; i < Math.min(moduleNameKeys.size(), maxVisible); i++) {
             int idx = i + scrollOffset;
-            if (idx >= moduleNames.size()) break;
+            if (idx >= moduleNameKeys.size()) break;
 
             int rowY = moduleListY + i * MODULE_ROW_H;
             boolean enabled = (moduleMask & (1 << idx)) != 0;
+            int count = idx < moduleCounts.size() ? moduleCounts.get(idx) : 1;
 
             // Module name
-            gfx.drawString(font, Component.literal("  " + moduleNames.get(idx)), x, rowY, TEXT_PRIMARY, false);
+            gfx.drawString(font, moduleName(moduleNameKeys.get(idx), count), x, rowY, TEXT_PRIMARY, false);
 
             // Toggle button (only for armor modules, not railgun)
             if (selectedTab != DeviceHubMenu.TAB_RAILGUN) {
@@ -201,25 +219,25 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
         // ── Railgun settings toggles ──
         if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
-            int toggleY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8;
+            int toggleY = moduleListY + Math.min(moduleNameKeys.size(), maxVisible) * MODULE_ROW_H + 8;
             boolean terrain = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN) != 0;
             boolean terrainAllowed = menu.data.get(DeviceHubMenu.DATA_RAILGUN_TERRAIN_ALLOWED) != 0;
             boolean aoe = menu.data.get(DeviceHubMenu.DATA_RAILGUN_AOE) != 0;
             boolean pvp = menu.data.get(DeviceHubMenu.DATA_RAILGUN_PVP) != 0;
 
             gfx.fill(leftPos + 6, toggleY - 4, leftPos + imageWidth - 6, toggleY - 3, BG_DEEP);
-            gfx.drawString(font, Component.literal("设置"), x, toggleY, TEXT_PRIMARY, false);
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.settings"), x, toggleY, TEXT_PRIMARY, false);
             toggleY += 14;
 
-            drawSettingRow(gfx, x, toggleY, "地形破坏", terrain, terrainAllowed ? 0xFFCC4444 : TAB_DISABLED);
+            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.terrain"), terrain, terrainAllowed ? 0xFFCC4444 : TAB_DISABLED);
             toggleY += MODULE_ROW_H + 2;
-            drawSettingRow(gfx, x, toggleY, "AOE", aoe, 0xFFAA66CC);
+            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.aoe"), aoe, 0xFFAA66CC);
             toggleY += MODULE_ROW_H + 2;
-            drawSettingRow(gfx, x, toggleY, "PVP 锁定", pvp, 0xFF4488CC);
+            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.pvp_lock"), pvp, 0xFF4488CC);
         }
 
         // ── Bottom hint ──
-        gfx.drawString(font, Component.literal("装/卸模块请使用工作台"),
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.workbench_hint"),
                 x, topPos + imageHeight - 14, TEXT_SECONDARY, false);
 
         // ── Tooltips ──
@@ -229,7 +247,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
     @Override
     protected void renderLabels(GuiGraphics gfx, int mouseX, int mouseY) {
-        gfx.drawString(this.font, Component.literal("过载设备"), this.titleLabelX, this.titleLabelY, TEXT_PRIMARY, false);
+        gfx.drawString(this.font, Component.translatable("ae2lt.device_hub.title"), this.titleLabelX, this.titleLabelY, TEXT_PRIMARY, false);
     }
 
     @Override
@@ -263,7 +281,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
         // Check module toggle clicks (armor only)
         if (selectedTab != DeviceHubMenu.TAB_RAILGUN) {
-            List<String> moduleNames = menu.getModuleNames();
+            List<String> moduleNames = menu.getModuleNameKeys();
             int moduleListY = topPos + MODULES_Y + 14;
             int maxVisible = (topPos + imageHeight - 30 - moduleListY) / MODULE_ROW_H;
             for (int i = 0; i < Math.min(moduleNames.size(), maxVisible); i++) {
@@ -282,7 +300,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
         // Check railgun setting toggles
         if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
-            List<String> moduleNames = menu.getModuleNames();
+            List<String> moduleNames = menu.getModuleNameKeys();
             int maxVisible = (topPos + imageHeight - 30 - (topPos + MODULES_Y + 14)) / MODULE_ROW_H;
             int toggleY = topPos + MODULES_Y + 14 + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8 + 14;
             int toggleX = leftPos + imageWidth - 48;
@@ -358,10 +376,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             gfx.fill(tx, y, tx + TAB_WIDTH, y + TAB_HEIGHT, fillColor);
 
             // Label
-            String label = TAB_LABELS[i];
+            Component label = Component.translatable(TAB_LABEL_KEYS[i]);
             int textW = font.width(label);
             int textColor = active ? TEXT_PRIMARY : (available ? TEXT_SECONDARY : darken(TEXT_SECONDARY));
-            gfx.drawString(font, Component.literal(label),
+            gfx.drawString(font, label,
                     tx + (TAB_WIDTH - textW) / 2, y + 4, textColor, false);
         }
     }
@@ -371,7 +389,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             int tx = startX + i * (TAB_WIDTH + TAB_GAP);
             boolean available = (tabMask & (1 << i)) != 0;
             if (!available && mouseX >= tx && mouseX <= tx + TAB_WIDTH && mouseY >= y && mouseY <= y + TAB_HEIGHT) {
-                gfx.renderTooltip(font, Component.literal(TAB_REQUIRED[i]), mouseX, mouseY);
+                gfx.renderTooltip(font, Component.translatable(TAB_REQUIRED_KEYS[i]), mouseX, mouseY);
                 return;
             }
         }
@@ -401,8 +419,16 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         gfx.drawString(font, Component.literal(text), x + (TOGGLE_W - tw) / 2, y + 2, textColor, false);
     }
 
-    private void drawSettingRow(GuiGraphics gfx, int x, int y, String label, boolean on, int onColor) {
-        gfx.drawString(font, Component.literal("  " + label), x, y + 1, TEXT_PRIMARY, false);
+    private static Component moduleName(String nameKey, int count) {
+        Component name = Component.translatable(nameKey);
+        if (count > 1) {
+            return Component.translatable("ae2lt.device_hub.module.counted", name, count);
+        }
+        return Component.literal("  ").append(name);
+    }
+
+    private void drawSettingRow(GuiGraphics gfx, int x, int y, Component label, boolean on, int onColor) {
+        gfx.drawString(font, Component.literal("  ").append(label), x, y + 1, TEXT_PRIMARY, false);
         int toggleX = leftPos + imageWidth - 48;
         int borderColor = on ? onColor : TAB_DISABLED;
         int fillColor = on ? darken(onColor) : 0xFF2A2A2A;

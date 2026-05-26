@@ -192,9 +192,6 @@ public class AE2LightningTech {
                         output.accept(ModItems.RAILGUN_MODULE_COMPUTE);
                         output.accept(ModItems.RAILGUN_MODULE_ACCELERATION);
                         output.accept(ModItems.RAILGUN_MODULE_OVERLOAD_EXECUTION);
-                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T1);
-                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T2);
-                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T3);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);

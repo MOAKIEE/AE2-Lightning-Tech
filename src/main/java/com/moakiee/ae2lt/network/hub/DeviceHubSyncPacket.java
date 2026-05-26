@@ -11,13 +11,14 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
 import com.moakiee.ae2lt.menu.hub.DeviceHubMenu;
 import com.moakiee.ae2lt.network.NetworkInit;
 
-/** Server → Client: sync string data for the hub (module names, device name, bound dim). */
+/** Server -> Client: sync string data for the hub (module name keys, device name, bound dim). */
 public record DeviceHubSyncPacket(
         int containerId,
         String deviceName,
         String boundDim,
         List<String> moduleIds,
-        List<String> moduleNames
+        List<String> moduleNameKeys,
+        List<Integer> moduleCounts
 ) implements CustomPacketPayload {
 
     public static final Type<DeviceHubSyncPacket> TYPE =
@@ -37,23 +38,26 @@ public record DeviceHubSyncPacket(
         String boundDim = buf.readUtf(256);
         int count = buf.readVarInt();
         List<String> ids = new ArrayList<>(count);
-        List<String> names = new ArrayList<>(count);
+        List<String> nameKeys = new ArrayList<>(count);
+        List<Integer> counts = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             ids.add(buf.readUtf(256));
-            names.add(buf.readUtf(256));
+            nameKeys.add(buf.readUtf(256));
+            counts.add(buf.readVarInt());
         }
-        return new DeviceHubSyncPacket(containerId, deviceName, boundDim, ids, names);
+        return new DeviceHubSyncPacket(containerId, deviceName, boundDim, ids, nameKeys, counts);
     }
 
     public void write(RegistryFriendlyByteBuf buf) {
         buf.writeVarInt(containerId);
         buf.writeUtf(deviceName, 256);
         buf.writeUtf(boundDim, 256);
-        int count = Math.min(moduleIds.size(), moduleNames.size());
+        int count = Math.min(Math.min(moduleIds.size(), moduleNameKeys.size()), moduleCounts.size());
         buf.writeVarInt(count);
         for (int i = 0; i < count; i++) {
             buf.writeUtf(moduleIds.get(i), 256);
-            buf.writeUtf(moduleNames.get(i), 256);
+            buf.writeUtf(moduleNameKeys.get(i), 256);
+            buf.writeVarInt(moduleCounts.get(i));
         }
     }
 
@@ -61,7 +65,12 @@ public record DeviceHubSyncPacket(
         ctx.enqueueWork(() -> {
             if (ctx.player().containerMenu instanceof DeviceHubMenu menu
                     && menu.containerId == pkt.containerId()) {
-                menu.receiveSync(pkt.deviceName(), pkt.boundDim(), pkt.moduleIds(), pkt.moduleNames());
+                menu.receiveSync(
+                        pkt.deviceName(),
+                        pkt.boundDim(),
+                        pkt.moduleIds(),
+                        pkt.moduleNameKeys(),
+                        pkt.moduleCounts());
             }
         });
     }

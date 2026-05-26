@@ -3,12 +3,15 @@ package com.moakiee.ae2lt.item.railgun;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
 
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.DeviceSlotType;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.device.module.ModuleTooltip;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 
 public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem {
@@ -68,5 +71,11 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
             case ACCELERATION -> List.of(new DeviceCapability.AccelerationFactor(0.30D));
             case OVERLOAD_EXECUTION -> List.of(new DeviceCapability.OverloadExecutionTuning(0.02D, 200, 8));
         };
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+        super.appendHoverText(stack, context, tooltip, flag);
+        ModuleTooltip.appendInstallInfo(this, tooltip);
     }
 }

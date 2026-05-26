@@ -25,6 +25,7 @@ import appeng.api.implementations.menuobjects.IMenuItem;
 import appeng.api.implementations.menuobjects.ItemMenuHost;
 import appeng.menu.locator.ItemMenuHostLocator;
 
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
@@ -53,6 +54,13 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         if (!RailgunStructuralCore.hasCore(stack)) {
+            if (!level.isClientSide) {
+                player.displayClientMessage(
+                        Component.translatable("ae2lt.railgun.structural_core_required"), true);
+            }
+            return InteractionResultHolder.fail(stack);
+        }
+        if (!hasOverloadCoreModule(stack)) {
             if (!level.isClientSide) {
                 player.displayClientMessage(
                         Component.translatable("ae2lt.railgun.core_required"), true);
@@ -98,6 +106,9 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         boolean inHand = isSelected || player.getOffhandItem() == stack;
         if (inHand) {
             RailgunOverloadBudget.ensureDeviceId(stack);
+            if (player instanceof ServerPlayer serverPlayer) {
+                refillFromBoundNetwork(stack, serverPlayer);
+            }
             if (!player.isUsingItem() || player.getUseItem() != stack) {
                 RailgunOverloadBudget.INSTANCE.clearCharging(stack);
             }
@@ -119,6 +130,13 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         if (!(user instanceof ServerPlayer player)) {
             return;
         }
+        if (!hasOverloadCoreModule(stack)) {
+            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
+            stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
+            player.stopUsingItem();
+            player.displayClientMessage(Component.translatable("ae2lt.railgun.core_required"), true);
+            return;
+        }
         if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
             RailgunOverloadBudget.INSTANCE.clearCharging(stack);
             stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
@@ -132,11 +150,13 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
                 current,
                 RailgunDefaults.CHARGE_TICKS_TIER2,
                 RailgunDefaults.CHARGE_TICKS_TIER3);
-        if (!RailgunEnergyBuffer.tryConsume(stack, player, RailgunEnergyRules.chargeCostPerTickFe(chargingTier))) {
+        long chargeCost = RailgunEnergyRules.chargeCostPerTickFe(chargingTier);
+        refillMissingFe(stack, player, chargeCost);
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, chargeCost)) {
             RailgunOverloadBudget.INSTANCE.clearCharging(stack);
             stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
             player.stopUsingItem();
-            player.displayClientMessage(Component.translatable("ae2lt.railgun.fail.no_ae"), true);
+            player.displayClientMessage(Component.translatable("ae2lt.railgun.fail.no_fe"), true);
             return;
         }
         RailgunOverloadBudget.INSTANCE.setChargingLoad(stack, chargingTier);
@@ -203,5 +223,31 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
     public int getBarColor(ItemStack stack) {
         // Standard green of full durability bars, matching AE2 wireless terminals
         return Mth.hsvToRgb(1 / 3.0F, 1.0F, 1.0F);
+    }
+
+    private static boolean hasOverloadCoreModule(ItemStack stack) {
+        return stack.getOrDefault(
+                ModDataComponents.RAILGUN_MODULE_ENTRIES.get(),
+                RailgunModuleEntries.EMPTY).hasCore();
+    }
+
+    private static void refillFromBoundNetwork(ItemStack stack, ServerPlayer player) {
+        int interval = Math.max(1, AE2LTCommonConfig.railgunBufferRefillIntervalTicks());
+        long rate = Math.max(0L, AE2LTCommonConfig.railgunBufferRefillRatePerTick());
+        if (rate <= 0L || player.tickCount % interval != 0) {
+            return;
+        }
+        long request = rate > Long.MAX_VALUE / interval ? Long.MAX_VALUE : rate * interval;
+        RailgunEnergyBuffer.refillFromNetwork(stack, player, request);
+    }
+
+    private static void refillMissingFe(ItemStack stack, ServerPlayer player, long required) {
+        if (required <= 0L) {
+            return;
+        }
+        RailgunEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, required - RailgunEnergyBuffer.read(stack)));
     }
 }

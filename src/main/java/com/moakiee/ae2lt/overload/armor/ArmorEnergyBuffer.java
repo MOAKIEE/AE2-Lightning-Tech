@@ -45,34 +45,38 @@ public final class ArmorEnergyBuffer {
             write(stack, buffered - amount);
             return true;
         }
+        return false;
+    }
+
+    public static long refillFromNetwork(ItemStack stack, ServerPlayer player, long maxAmount) {
+        if (stack == null || stack.isEmpty() || player == null || maxAmount <= 0L) {
+            return 0L;
+        }
+        long room = capacity(stack) - read(stack);
+        if (room <= 0L) {
+            return 0L;
+        }
         if (!AppFluxBridge.isAvailable() || AppFluxBridge.FE_KEY == null) {
-            return false;
+            return 0L;
         }
 
-        long shortfall = amount - buffered;
         var bound = ArmorNetworkBinding.INSTANCE.resolve(stack, player);
         if (!bound.success()) {
-            return false;
+            return 0L;
         }
         IGrid grid = bound.grid();
         if (grid == null) {
-            return false;
+            return 0L;
         }
         var storage = grid.getStorageService().getInventory();
         IActionSource source = IActionSource.ofPlayer(player);
-        long sim = storage.extract(AppFluxBridge.FE_KEY, shortfall, Actionable.SIMULATE, source);
-        if (sim < shortfall) {
-            return false;
+        long request = Math.min(room, maxAmount);
+        long got = storage.extract(AppFluxBridge.FE_KEY, request, Actionable.MODULATE, source);
+        if (got <= 0L) {
+            return 0L;
         }
-        long got = storage.extract(AppFluxBridge.FE_KEY, shortfall, Actionable.MODULATE, source);
-        if (got < shortfall) {
-            if (got > 0L) {
-                storage.insert(AppFluxBridge.FE_KEY, got, Actionable.MODULATE, source);
-            }
-            return false;
-        }
-        write(stack, 0L);
-        return true;
+        write(stack, read(stack) + got);
+        return got;
     }
 
     public static int receiveFe(ItemStack stack, int amount, boolean simulate) {

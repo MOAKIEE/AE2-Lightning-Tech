@@ -29,6 +29,10 @@ public final class ArmorDeviceEnergyBuffer implements DeviceEnergyBuffer {
 
     @Override
     public void refill(ItemStack stack, ServerPlayer player) {
+        ArmorEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, ArmorEnergyBuffer.capacity(stack) - ArmorEnergyBuffer.read(stack)));
     }
 
     @Override

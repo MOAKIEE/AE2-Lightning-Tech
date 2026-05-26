@@ -7,7 +7,7 @@ import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 /**
  * Per-shot FE and lightning-ammo costs for railgun actions.
  */
-public record AmmoCost(long aeEnergy, long ehv) {
+public record AmmoCost(long feEnergy, long ehv) {
 
     public static AmmoCost forCharged(RailgunChargeTier tier, RailgunModuleEntries mods) {
         long ehv = switch (tier) {
@@ -19,7 +19,7 @@ public record AmmoCost(long aeEnergy, long ehv) {
         return new AmmoCost(RailgunEnergyRules.fireCostFe(tier), ehv);
     }
 
-    public static long beamAeCost(RailgunModuleEntries mods) {
+    public static long beamFeCost(RailgunModuleEntries mods) {
         return RailgunEnergyRules.CHARGE_COST_LV_PER_TICK_FE;
     }
 

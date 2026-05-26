@@ -117,8 +117,13 @@ public final class OverloadExecutionService {
             RailgunFireService.sendFail(player, "ae2lt.railgun.fail.overload_locked");
             return;
         }
-        if (!RailgunEnergyBuffer.tryConsume(stack, player, RailgunEnergyRules.overloadExecutionCostFe())) {
-            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_ae");
+        long feCost = RailgunEnergyRules.overloadExecutionCostFe();
+        RailgunEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, feCost - RailgunEnergyBuffer.read(stack)));
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, feCost)) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_fe");
             return;
         }
         RailgunOverloadBudget.INSTANCE.addOverloadExecutionPulse(stack, comboPulse);

@@ -59,14 +59,6 @@ public final class ModDataComponents {
                             .persistent(ItemStack.OPTIONAL_CODEC)
                             .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
 
-    /** Structural FE capacity module installed in an electromagnetic railgun. */
-    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemStack>>
-            RAILGUN_STRUCTURAL_ENERGY_MODULE = DATA_COMPONENTS.registerComponentType(
-                    "railgun_structural_energy_module",
-                    builder -> builder
-                            .persistent(ItemStack.OPTIONAL_CODEC)
-                            .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
-
     /** Persistent UI toggles for the railgun (terrain destruction, PVP lock). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunSettings>>
             RAILGUN_SETTINGS = DATA_COMPONENTS.registerComponentType(

@@ -33,6 +33,10 @@ public final class NetworkBoundEnergyBuffer implements DeviceEnergyBuffer {
 
     @Override
     public void refill(ItemStack stack, ServerPlayer player) {
+        RailgunEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, RailgunEnergyBuffer.capacity(stack) - RailgunEnergyBuffer.read(stack)));
     }
 
     @Override

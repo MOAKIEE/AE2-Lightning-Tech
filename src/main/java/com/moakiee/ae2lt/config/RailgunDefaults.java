@@ -11,8 +11,8 @@ package com.moakiee.ae2lt.config;
  * that, when touched, tend to break the design rather than rebalance it.
  *
  * <p>Things that <em>are</em> still in {@link AE2LTCommonConfig} (and should
- * stay there): per-tier base damage, per-tier AE/EHV cost, beam settle
- * damage / AE / HV cost, PvP toggles, terrain drop toggle, terrain
+ * stay there): per-tier base damage, per-tier FE/EHV cost, beam settle
+ * damage / FE / HV cost, PvP toggles, terrain drop toggle, terrain
  * blocks-per-tick budget. Those are the dials a server actually wants.
  */
 public final class RailgunDefaults {

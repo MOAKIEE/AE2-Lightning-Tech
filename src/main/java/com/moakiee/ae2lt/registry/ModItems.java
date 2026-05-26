@@ -25,8 +25,6 @@ import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
-import com.moakiee.ae2lt.item.railgun.RailgunEnergyModuleItem;
-import com.moakiee.ae2lt.item.railgun.RailgunEnergyRules;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleItem;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleType;
 import com.moakiee.ae2lt.overload.armor.ArmorEnergyModuleItem;
@@ -196,32 +194,32 @@ public final class ModItems {
             new Item.Properties().rarity(Rarity.EPIC));
 
     public static final DeferredItem<NightVisionSubmoduleItem> ARMOR_SUBMODULE_NIGHT_VISION = ITEMS.registerItem(
-            "helmet_module_night_vision",
+            "module_night_vision",
             NightVisionSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<WaterBreathingSubmoduleItem> ARMOR_SUBMODULE_WATER_BREATHING = ITEMS.registerItem(
-            "helmet_module_water_breathing",
+            "module_water_breathing",
             WaterBreathingSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_RESISTANCE = ITEMS.registerItem(
-            "chestplate_module_mitigation",
+            "module_mitigation",
             ResistanceSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<ReflectSubmoduleItem> ARMOR_SUBMODULE_REFLECT = ITEMS.registerItem(
-            "chestplate_module_reflect",
+            "module_reflect",
             ReflectSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<DashSubmoduleItem> ARMOR_SUBMODULE_DASH = ITEMS.registerItem(
-            "boots_module_dash",
+            "module_dash",
             DashSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<FlightSubmoduleItem> ARMOR_SUBMODULE_FLIGHT = ITEMS.registerItem(
-            "leggings_module_creative_flight",
+            "module_creative_flight",
             FlightSubmoduleItem::new,
             new Item.Properties().stacksTo(1));
 
@@ -275,24 +273,6 @@ public final class ModItems {
             () -> new RailgunModuleItem(
                     new Item.Properties().stacksTo(1).rarity(Rarity.EPIC),
                     RailgunModuleType.OVERLOAD_EXECUTION));
-
-    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T1 = ITEMS.register(
-            "railgun_energy_module_t1",
-            () -> new RailgunEnergyModuleItem(
-                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-                    RailgunEnergyRules.MODULE_T1_CAPACITY_FE));
-
-    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T2 = ITEMS.register(
-            "railgun_energy_module_t2",
-            () -> new RailgunEnergyModuleItem(
-                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
-                    RailgunEnergyRules.MODULE_T2_CAPACITY_FE));
-
-    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T3 = ITEMS.register(
-            "railgun_energy_module_t3",
-            () -> new RailgunEnergyModuleItem(
-                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC).fireResistant(),
-                    RailgunEnergyRules.MODULE_T3_CAPACITY_FE));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);

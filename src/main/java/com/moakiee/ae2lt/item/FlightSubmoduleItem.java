@@ -11,6 +11,7 @@ import net.minecraft.world.item.TooltipFlag;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.capability.FlightKind;
+import com.moakiee.ae2lt.device.module.ModuleTooltip;
 import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.module.FlightSubmodule;
@@ -44,7 +45,8 @@ public final class FlightSubmoduleItem extends Item implements OverloadArmorSubm
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ae2lt.leggings_module_creative_flight.tooltip")
+        tooltip.add(Component.translatable("item.ae2lt.module_creative_flight.tooltip")
                 .withStyle(ChatFormatting.GRAY));
+        ModuleTooltip.appendInstallInfo(this, tooltip);
     }
 }

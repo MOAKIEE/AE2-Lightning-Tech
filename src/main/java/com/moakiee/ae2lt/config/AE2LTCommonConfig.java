@@ -162,11 +162,11 @@ public final class AE2LTCommonConfig {
     public static int railgunBaseDamageEhv3() { return VALUES.railgunBaseDamageEhv3.get(); }
     public static double railgunChargedBypass() { return VALUES.railgunChargedBypass.get(); }
 
-    // ── Railgun: AE energy + lightning ammo ───────────────────────────────────
-    public static long railgunBeamAeCostPerSettle() { return VALUES.railgunBeamAeCostPerSettle.get(); }
-    public static long railgunAeCostTier1() { return VALUES.railgunAeCostTier1.get(); }
-    public static long railgunAeCostTier2() { return VALUES.railgunAeCostTier2.get(); }
-    public static long railgunAeCostTier3() { return VALUES.railgunAeCostTier3.get(); }
+    // ── Railgun: FE energy + lightning ammo ───────────────────────────────────
+    public static long railgunBeamFeCostPerSettle() { return VALUES.railgunBeamFeCostPerSettle.get(); }
+    public static long railgunFeCostTier1() { return VALUES.railgunFeCostTier1.get(); }
+    public static long railgunFeCostTier2() { return VALUES.railgunFeCostTier2.get(); }
+    public static long railgunFeCostTier3() { return VALUES.railgunFeCostTier3.get(); }
     public static int railgunBeamHvCostInterval() { return VALUES.railgunBeamHvCostInterval.get(); }
     public static long railgunBeamEhvCostPerSettle() { return VALUES.railgunBeamEhvCostPerSettle.get(); }
     public static long railgunEhvCostTier1() { return VALUES.railgunEhvCostTier1.get(); }
@@ -234,10 +234,10 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue railgunBaseDamageEhv2;
         private final ModConfigSpec.IntValue railgunBaseDamageEhv3;
         private final ModConfigSpec.DoubleValue railgunChargedBypass;
-        private final ModConfigSpec.LongValue railgunBeamAeCostPerSettle;
-        private final ModConfigSpec.LongValue railgunAeCostTier1;
-        private final ModConfigSpec.LongValue railgunAeCostTier2;
-        private final ModConfigSpec.LongValue railgunAeCostTier3;
+        private final ModConfigSpec.LongValue railgunBeamFeCostPerSettle;
+        private final ModConfigSpec.LongValue railgunFeCostTier1;
+        private final ModConfigSpec.LongValue railgunFeCostTier2;
+        private final ModConfigSpec.LongValue railgunFeCostTier3;
         private final ModConfigSpec.IntValue railgunBeamHvCostInterval;
         private final ModConfigSpec.LongValue railgunBeamEhvCostPerSettle;
         private final ModConfigSpec.LongValue railgunEhvCostTier1;
@@ -420,20 +420,20 @@ public final class AE2LTCommonConfig {
             builder.pop();
 
             builder.push("energy");
-            railgunBeamAeCostPerSettle = builder
-                    .comment("AE energy consumed per beam settle.")
-                    .defineInRange("beamAeCostPerSettle", 400L, 0L, Long.MAX_VALUE);
-            railgunAeCostTier1 = builder
-                    .comment("AE energy consumed per tier-1 charged shot.")
-                    .defineInRange("aeCostTier1", 8000L, 0L, Long.MAX_VALUE);
-            railgunAeCostTier2 = builder
-                    .comment("AE energy consumed per tier-2 charged shot.")
-                    .defineInRange("aeCostTier2", 40000L, 0L, Long.MAX_VALUE);
-            railgunAeCostTier3 = builder
-                    .comment("AE energy consumed per tier-3 (max) charged shot.")
-                    .defineInRange("aeCostTier3", 200000L, 0L, Long.MAX_VALUE);
+            railgunBeamFeCostPerSettle = builder
+                    .comment("FE energy consumed per beam settle.")
+                    .defineInRange("beamFeCostPerSettle", 400L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier1 = builder
+                    .comment("FE energy consumed per tier-1 charged shot.")
+                    .defineInRange("feCostTier1", 8000L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier2 = builder
+                    .comment("FE energy consumed per tier-2 charged shot.")
+                    .defineInRange("feCostTier2", 40000L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier3 = builder
+                    .comment("FE energy consumed per tier-3 (max) charged shot.")
+                    .defineInRange("feCostTier3", 200000L, 0L, Long.MAX_VALUE);
             railgunBeamHvCostInterval = builder
-                    .comment("HV beam consumes 1 HV every N settles (settle = 2 ticks). N=8 means ~1.25 HV/sec; energy module triples N.")
+                    .comment("HV beam consumes 1 HV every N settles (settle = 2 ticks). N=8 means ~1.25 HV/sec.")
                     .defineInRange("beamHvCostInterval", 8, 1, 64);
             railgunBeamEhvCostPerSettle = builder
                     .comment("EHV beam: EHV consumed per settle (each settle = 2 ticks). 1 = 10 EHV/sec sustained.")
@@ -448,12 +448,12 @@ public final class AE2LTCommonConfig {
                     .comment("EHV consumed per tier-3 (max) charged shot.")
                     .defineInRange("ehvCostTier3", 256L, 0L, Long.MAX_VALUE);
             railgunBufferCapacity = builder
-                    .comment("Maximum AE energy stored in the railgun's internal buffer.",
-                            "Default 1,000,000 AE = ~5 tier-3 shots, ~125 tier-1 shots, or ~250 seconds of beam.")
+                    .comment("Maximum FE stored in the railgun's internal buffer.",
+                            "Default 1,000,000 FE = ~5 tier-3 shots, ~125 tier-1 shots, or ~250 seconds of beam.")
                     .defineInRange("bufferCapacity", 1_000_000L, 0L, Long.MAX_VALUE);
             railgunBufferRefillRatePerTick = builder
-                    .comment("AE energy passively pulled from the bound ME network per tick while the railgun is held.",
-                            "Default 5,000 AE/tick = full buffer in ~10 seconds. Set to 0 to disable passive refill.")
+                    .comment("FE passively pulled from the bound ME network per tick while the railgun is held.",
+                            "Default 5,000 FE/tick = full buffer in ~10 seconds. Set to 0 to disable passive refill.")
                     .defineInRange("bufferRefillRatePerTick", 5_000L, 0L, Long.MAX_VALUE);
             railgunBufferRefillIntervalTicks = builder
                     .comment("How often (in ticks) the passive refill check runs while the railgun is held.",

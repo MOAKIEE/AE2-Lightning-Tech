@@ -2,9 +2,6 @@ package com.moakiee.ae2lt.item.railgun;
 
 public final class RailgunEnergyRules {
     public static final long BASE_CAPACITY_FE = 10_000_000L;
-    public static final long MODULE_T1_CAPACITY_FE = 100_000_000L;
-    public static final long MODULE_T2_CAPACITY_FE = 500_000_000L;
-    public static final long MODULE_T3_CAPACITY_FE = 2_000_000_000L;
 
     public static final long CHARGE_COST_LV_PER_TICK_FE = 1_000L;
     public static final long CHARGE_COST_MV_PER_TICK_FE = 4_000L;
@@ -17,10 +14,6 @@ public final class RailgunEnergyRules {
     public static final long CHAIN_COST_PER_SEGMENT_FE = 500_000L;
 
     private RailgunEnergyRules() {
-    }
-
-    public static long capacityForExtraModuleFe(long extraModuleFe) {
-        return BASE_CAPACITY_FE + Math.max(0L, extraModuleFe);
     }
 
     public static long fireCostFe(RailgunChargeTier tier) {

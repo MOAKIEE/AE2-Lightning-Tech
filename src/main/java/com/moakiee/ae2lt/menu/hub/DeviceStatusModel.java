@@ -47,7 +47,7 @@ public record DeviceStatusModel(
         // railgun specific
         boolean terrainDestruction, boolean aoeEnabled, boolean pvpLock, boolean terrainDestructionAllowed
 ) {
-    public record ModuleInfo(String id, String name, boolean enabled, int load) {
+    public record ModuleInfo(String id, String nameKey, int count, boolean enabled, int load) {
     }
 
     public static final DeviceStatusModel EMPTY = new DeviceStatusModel(
@@ -105,7 +105,7 @@ public record DeviceStatusModel(
         for (var sub : submodules) {
             boolean enabled = OverloadArmorState.isSubmoduleEnabled(armor, sub);
             int load = OverloadArmorState.getSubmoduleDynamicLoad(armor, sub);
-            modules.add(new ModuleInfo(sub.id(), sub.id(), enabled, load));
+            modules.add(new ModuleInfo(sub.id(), sub.nameKey(), 1, enabled, load));
         }
 
         return new DeviceStatusModel(
@@ -156,16 +156,31 @@ public record DeviceStatusModel(
         var entries = RailgunModuleStorage.entryData(railgun);
         List<ModuleInfo> modules = new ArrayList<>();
         if (entries.hasCore()) {
-            modules.add(new ModuleInfo("core", "Core", true, 0));
+            modules.add(new ModuleInfo("core", "ae2lt.device_hub.module.railgun.core", 1, true, 0));
         }
         if (entries.computeCount() > 0) {
-            modules.add(new ModuleInfo("compute", "Compute x" + entries.computeCount(), true, 0));
+            modules.add(new ModuleInfo(
+                    "compute",
+                    "ae2lt.device_hub.module.railgun.compute",
+                    entries.computeCount(),
+                    true,
+                    0));
         }
         if (entries.accelerationCount() > 0) {
-            modules.add(new ModuleInfo("acceleration", "Acceleration x" + entries.accelerationCount(), true, 0));
+            modules.add(new ModuleInfo(
+                    "acceleration",
+                    "ae2lt.device_hub.module.railgun.acceleration",
+                    entries.accelerationCount(),
+                    true,
+                    0));
         }
         if (entries.hasOverloadExecution()) {
-            modules.add(new ModuleInfo("overload_execution", "Overload Execution", true, 0));
+            modules.add(new ModuleInfo(
+                    "overload_execution",
+                    "ae2lt.device_hub.module.railgun.overload_execution",
+                    1,
+                    true,
+                    0));
         }
 
         // Settings

@@ -73,13 +73,15 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     private String deviceName = "";
     private String boundDim = "";
     private List<String> moduleIds = List.of();
-    private List<String> moduleNames = List.of();
+    private List<String> moduleNameKeys = List.of();
+    private List<Integer> moduleCounts = List.of();
 
     // ── Server-side state ──
     private int selectedTab;
     @Nullable
     private DeviceStatusModel lastStatus;
-    private List<String> lastModuleNames = List.of();
+    private List<String> lastModuleNameKeys = List.of();
+    private List<Integer> lastModuleCounts = List.of();
 
     // ── Client constructor ──
     public DeviceHubMenu(int containerId, Inventory inv, FriendlyByteBuf buf) {
@@ -179,12 +181,22 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         super.broadcastChanges();
 
         // Sync string data if changed
-        List<String> currentNames = status.modules().stream().map(DeviceStatusModel.ModuleInfo::name).toList();
+        List<String> currentNameKeys = status.modules().stream().map(DeviceStatusModel.ModuleInfo::nameKey).toList();
+        List<Integer> currentCounts = status.modules().stream().map(DeviceStatusModel.ModuleInfo::count).toList();
         List<String> currentIds = status.modules().stream().map(DeviceStatusModel.ModuleInfo::id).toList();
-        if (!currentNames.equals(lastModuleNames) || !status.displayName().equals(deviceName)) {
-            lastModuleNames = currentNames;
+        if (!currentNameKeys.equals(lastModuleNameKeys)
+                || !currentCounts.equals(lastModuleCounts)
+                || !status.displayName().equals(deviceName)) {
+            lastModuleNameKeys = currentNameKeys;
+            lastModuleCounts = currentCounts;
             PacketDistributor.sendToPlayer(serverPlayer,
-                    new DeviceHubSyncPacket(containerId, status.displayName(), status.boundDim(), currentIds, currentNames));
+                    new DeviceHubSyncPacket(
+                            containerId,
+                            status.displayName(),
+                            status.boundDim(),
+                            currentIds,
+                            currentNameKeys,
+                            currentCounts));
         }
     }
 
@@ -209,11 +221,12 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     }
 
     // ── Client-side: receive sync packet ──
-    public void receiveSync(String name, String dim, List<String> ids, List<String> names) {
+    public void receiveSync(String name, String dim, List<String> ids, List<String> nameKeys, List<Integer> counts) {
         this.deviceName = name;
         this.boundDim = dim;
         this.moduleIds = ids;
-        this.moduleNames = names;
+        this.moduleNameKeys = nameKeys;
+        this.moduleCounts = counts;
     }
 
     // ── Client-side accessors ──
@@ -246,7 +259,15 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     }
 
     public List<String> getModuleNames() {
-        return moduleNames;
+        return moduleNameKeys;
+    }
+
+    public List<String> getModuleNameKeys() {
+        return moduleNameKeys;
+    }
+
+    public List<Integer> getModuleCounts() {
+        return moduleCounts;
     }
 
     // ── Server-side actions ──

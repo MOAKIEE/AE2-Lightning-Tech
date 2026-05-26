@@ -46,9 +46,8 @@ import com.moakiee.ae2lt.registry.ModMobEffects;
 /**
  * Central charged-fire service. Encapsulates the right-click charged fire path:
  * 1. Resolve bound grid; abort with HUD message if invalid.
- * 2. Deduct AE via the per-stack {@link RailgunEnergyBuffer} (buffer first,
- *    falls back to the bound network for any shortfall) and extract EHV/HV
- *    ammunition from the network's storage. AE is refunded if EHV/HV fails.
+ * 2. Deduct FE via the per-stack {@link RailgunEnergyBuffer} and extract EHV/HV
+ *    ammunition from the network's storage. FE is refunded if EHV/HV fails.
  * 3. Raycast first target; build damage context; fan out chain + penetration +
  *    pulse hits.
  * 4. Apply damage to each target (ELECTROMAGNETIC damage type, manually
@@ -84,6 +83,11 @@ public final class RailgunFireService {
     public static void fireCharged(ServerLevel level, ServerPlayer player, ItemStack stack, RailgunChargeTier tier, long chargedTicks) {
         if (tier == RailgunChargeTier.HV) return;
         if (!RailgunStructuralCore.hasCore(stack)) {
+            sendFail(player, "ae2lt.railgun.structural_core_required");
+            return;
+        }
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
+        if (!mods.hasCore()) {
             sendFail(player, "ae2lt.railgun.core_required");
             return;
         }
@@ -99,7 +103,6 @@ public final class RailgunFireService {
         }
         IGrid grid = bound.grid();
 
-        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         boolean aoeEnabled = settings.aoeEnabled();
         AmmoCost cost = AmmoCost.forCharged(tier, mods);
@@ -107,11 +110,12 @@ public final class RailgunFireService {
         IActionSource src = IActionSource.ofPlayer(player);
         var inv = grid.getStorageService().getInventory();
 
-        // 1. Try AE energy via the per-stack buffer. tryConsume prefers to deduct
-        //    from the buffer; if short, it pulls the remainder from the bound
-        //    network in a SIMULATE→MODULATE pair. Failure leaves both untouched.
-        if (!RailgunEnergyBuffer.tryConsume(stack, player, cost.aeEnergy())) {
-            sendFail(player, "ae2lt.railgun.fail.no_ae");
+        RailgunEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, cost.feEnergy() - RailgunEnergyBuffer.read(stack)));
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, cost.feEnergy())) {
+            sendFail(player, "ae2lt.railgun.fail.no_fe");
             return;
         }
         // 2. Try EHV; fall back to HV compensation if the core module is present.
@@ -121,7 +125,7 @@ public final class RailgunFireService {
         if (ehvShort > 0L) {
             if (!mods.hasCore()) {
                 inv.insert(LightningKey.EXTREME_HIGH_VOLTAGE, ehvGot, Actionable.MODULATE, src);
-                RailgunEnergyBuffer.refund(stack, cost.aeEnergy());
+                RailgunEnergyBuffer.refund(stack, cost.feEnergy());
                 sendFail(player, "ae2lt.railgun.fail.no_ehv");
                 return;
             }
@@ -130,7 +134,7 @@ public final class RailgunFireService {
             if (gotHv < needHv) {
                 inv.insert(LightningKey.EXTREME_HIGH_VOLTAGE, ehvGot, Actionable.MODULATE, src);
                 inv.insert(LightningKey.HIGH_VOLTAGE, gotHv, Actionable.MODULATE, src);
-                RailgunEnergyBuffer.refund(stack, cost.aeEnergy());
+                RailgunEnergyBuffer.refund(stack, cost.feEnergy());
                 sendFail(player, "ae2lt.railgun.fail.no_compensation_hv");
                 return;
             }
@@ -148,8 +152,6 @@ public final class RailgunFireService {
                 e -> e instanceof LivingEntity le && le != player && !le.isSpectator());
 
         DamageContext ctx = DamageContext.buildCharged(player, tier, mods, level, settings.pvpLock());
-        sendChargedDebug(player, tier, chargedTicks, mods, ctx.firstDamage());
-
         Vec3 firstHitPos = ehr != null ? ehr.getLocation() : endBlock;
         List<RailgunChainResolver.Hit> hits = new ArrayList<>();
         int primaryId = -1;
@@ -349,29 +351,6 @@ public final class RailgunFireService {
     public static void sendFail(@Nullable ServerPlayer player, String key) {
         if (player == null) return;
         player.displayClientMessage(Component.translatable(key), true);
-    }
-
-    private static void sendChargedDebug(ServerPlayer player, RailgunChargeTier tier, long chargedTicks,
-                                         RailgunModuleEntries mods, double baseDamage) {
-        int accel = countAccelerationModules(mods);
-        int compute = countChainTuning(mods);
-        String chargedText = chargedTicks >= 0L ? Long.toString(chargedTicks) : "?";
-        player.displayClientMessage(Component.literal(String.format(
-                "railgun tier=%s charge=%s step=%d compute=%d base=%.1f",
-                tierLabel(tier),
-                chargedText,
-                1 + accel,
-                compute,
-                baseDamage)), true);
-    }
-
-    private static String tierLabel(RailgunChargeTier tier) {
-        return switch (tier) {
-            case EHV1 -> "EHv1";
-            case EHV2 -> "EHv2";
-            case EHV3 -> "EHv3";
-            default -> "HV";
-        };
     }
 
     private static int countAccelerationFactor(RailgunModuleEntries mods) {

@@ -151,6 +151,11 @@ public final class RailgunBeamService {
     private static boolean settle(ServerLevel level, ServerPlayer player, ItemStack stack,
                                   BeamState s, int chainThrottle) {
         if (!RailgunStructuralCore.hasCore(stack)) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.structural_core_required");
+            return false;
+        }
+        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
+        if (!mods.hasCore()) {
             RailgunFireService.sendFail(player, "ae2lt.railgun.core_required");
             return false;
         }
@@ -164,16 +169,15 @@ public final class RailgunBeamService {
             return false;
         }
         IGrid grid = bound.grid();
-        RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         RailgunOverloadBudget.INSTANCE.setBeamLoad(stack, settings.beamMode());
 
-        long aeCost = AmmoCost.beamAeCost(mods);
+        long feCost = AmmoCost.beamFeCost(mods);
         IActionSource src = IActionSource.ofPlayer(player);
         RailgunSettings.BeamMode beamMode = settings.beamMode();
 
         // Resolve lightning ammunition cost for this settle.
-        //  HV mode  : 1 HV every N settles (configurable interval, energy module ×3).
+        //  HV mode  : 1 HV every N settles (configurable interval).
         //  EHV mode : N EHV per settle (config; default 1). If EHV is short and the
         //             CORE module is installed, fall back to 16:1 HV compensation —
         //             same semantics as the charged-fire path.
@@ -195,7 +199,7 @@ public final class RailgunBeamService {
         }
 
         // SIMULATE phase: prove we can afford the shot, without committing anything,
-        // so a later failure cannot leave AE deducted but ammo missing.
+        // so a later failure cannot leave FE deducted but ammo missing.
         long primaryAvail = 0L;
         long compensationHvNeeded = 0L;
         if (primaryNeeded > 0L) {
@@ -217,21 +221,25 @@ public final class RailgunBeamService {
             }
         }
 
-        if (!RailgunEnergyBuffer.tryConsume(stack, player, aeCost)) {
-            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_ae");
+        RailgunEnergyBuffer.refillFromNetwork(
+                stack,
+                player,
+                Math.max(0L, feCost - RailgunEnergyBuffer.read(stack)));
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, feCost)) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_fe");
             return false;
         }
 
         // MODULATE phase: actually deduct. After a successful SIMULATE in the same
         // tick this should always succeed; if it doesn't, roll back everything we
-        // committed (AE + any earlier ammo extracted this settle).
+        // committed (FE + any earlier ammo extracted this settle).
         if (primaryNeeded > 0L) {
             long takePrimary = Math.min(primaryAvail, primaryNeeded);
             long gotPrimary = (takePrimary > 0L)
                     ? grid.getStorageService().getInventory().extract(primaryKey, takePrimary, Actionable.MODULATE, src)
                     : 0L;
             if (gotPrimary < takePrimary) {
-                RailgunEnergyBuffer.refund(stack, aeCost);
+                RailgunEnergyBuffer.refund(stack, feCost);
                 RailgunFireService.sendFail(player, failKey);
                 return false;
             }
@@ -239,7 +247,7 @@ public final class RailgunBeamService {
                 long gotHv = grid.getStorageService().getInventory().extract(
                         LightningKey.HIGH_VOLTAGE, compensationHvNeeded, Actionable.MODULATE, src);
                 if (gotHv < compensationHvNeeded) {
-                    // Defensive rollback: undo primary + AE so the player isn't half-charged.
+                    // Defensive rollback: undo primary + FE so the player isn't half-charged.
                     if (gotPrimary > 0L) {
                         grid.getStorageService().getInventory().insert(primaryKey, gotPrimary, Actionable.MODULATE, src);
                     }
@@ -247,7 +255,7 @@ public final class RailgunBeamService {
                         grid.getStorageService().getInventory().insert(
                                 LightningKey.HIGH_VOLTAGE, gotHv, Actionable.MODULATE, src);
                     }
-                    RailgunEnergyBuffer.refund(stack, aeCost);
+                    RailgunEnergyBuffer.refund(stack, feCost);
                     RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_compensation_hv");
                     return false;
                 }

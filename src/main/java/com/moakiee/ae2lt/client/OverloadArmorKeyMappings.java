@@ -21,15 +21,17 @@ import com.moakiee.ae2lt.overload.armor.BaseOverloadArmorItem;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class OverloadArmorKeyMappings {
+    private static final String CATEGORY = "key.categories.ae2lt";
+
     public static final KeyMapping DASH = new KeyMapping(
             "key.ae2lt.dash",
             GLFW.GLFW_KEY_V,
-            "key.categories.ae2lt.overload_armor");
+            CATEGORY);
 
-    public static final KeyMapping OPEN_HUB = new KeyMapping(
-            "key.ae2lt.open_hub",
-            GLFW.GLFW_KEY_H,
-            "key.categories.ae2lt.overload_armor");
+    public static final KeyMapping OPEN_CONFIG = new KeyMapping(
+            "key.ae2lt.open_config",
+            GLFW.GLFW_KEY_G,
+            CATEGORY);
 
     private OverloadArmorKeyMappings() {
     }
@@ -37,7 +39,7 @@ public final class OverloadArmorKeyMappings {
     @SubscribeEvent
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(DASH);
-        event.register(OPEN_HUB);
+        event.register(OPEN_CONFIG);
     }
 
     @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
@@ -56,8 +58,15 @@ public final class OverloadArmorKeyMappings {
                 PacketDistributor.sendToServer(new DashPacket());
             }
 
-            while (OPEN_HUB.consumeClick()) {
-                // Find the first equipped overload armor piece for the default tab
+            while (OPEN_CONFIG.consumeClick()) {
+                if (minecraft.player.getMainHandItem().getItem()
+                        instanceof com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem
+                        || minecraft.player.getOffhandItem().getItem()
+                        instanceof com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem) {
+                    PacketDistributor.sendToServer(new OpenDeviceHubPacket(DeviceHubMenu.TAB_RAILGUN));
+                    continue;
+                }
+
                 int defaultTab = DeviceHubMenu.TAB_CHESTPLATE;
                 for (EquipmentSlot slot : new EquipmentSlot[]{EquipmentSlot.CHEST, EquipmentSlot.HEAD, EquipmentSlot.LEGS, EquipmentSlot.FEET}) {
                     ItemStack armor = minecraft.player.getItemBySlot(slot);

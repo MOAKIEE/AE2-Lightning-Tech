@@ -8,7 +8,6 @@ import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
 
-import com.moakiee.ae2lt.item.railgun.RailgunEnergyModuleStorage;
 import com.moakiee.ae2lt.item.railgun.RailgunEnergyRules;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.registry.ModDataComponents;
@@ -16,8 +15,8 @@ import com.moakiee.ae2lt.registry.ModDataComponents;
 /**
  * Stateless service for the per-stack FE buffer carried by the electromagnetic
  * railgun. The buffer is manually chargeable through the standard FE item
- * capability and, when Applied Flux is present, can pull FE from the bound ME
- * network on demand when a consume call would otherwise underflow.
+ * capability and can be refilled from the bound ME network when Applied Flux is
+ * present. Consumption itself only spends the local stack buffer.
  */
 public final class RailgunEnergyBuffer {
 
@@ -29,9 +28,9 @@ public final class RailgunEnergyBuffer {
         return Math.max(0L, Math.min(capacity(stack), v == null ? 0L : v));
     }
 
-    /** Capacity = railgun base capacity plus one optional structural energy module. */
+    /** Capacity of the railgun's built-in FE buffer. */
     public static long capacity(ItemStack stack) {
-        return RailgunEnergyRules.capacityForExtraModuleFe(RailgunEnergyModuleStorage.capacityFe(stack));
+        return RailgunEnergyRules.BASE_CAPACITY_FE;
     }
 
     /** Write the new buffer level, clamping to [0, capacity]. */
@@ -50,12 +49,9 @@ public final class RailgunEnergyBuffer {
      * Try to deduct {@code amount} FE.
      *
      * <p>Order of operations:
-     * <ol>
-     *   <li>If the buffer alone covers it, deduct and return true.</li>
-     *   <li>Otherwise compute the shortfall and try to extract exactly that
-     *       shortfall as FE from the bound ME network via AppFlux.</li>
-     *   <li>On commit, drain the local buffer. No background refill occurs.</li>
-     * </ol>
+     * <p>This method intentionally does not pull from the ME network. Network FE
+     * is first refilled into the stack buffer via {@link #refillFromNetwork}; all
+     * railgun actions then pay from that local cache.
      *
      * @return true if the full amount was consumed; false if anything went wrong
      *         (in which case both buffer and network are unchanged)
@@ -68,35 +64,39 @@ public final class RailgunEnergyBuffer {
             write(stack, buffered - amount);
             return true;
         }
+        return false;
+    }
+
+    public static long refillFromNetwork(ItemStack stack, ServerPlayer player, long maxAmount) {
+        if (stack == null || stack.isEmpty() || player == null || maxAmount <= 0L) {
+            return 0L;
+        }
+        long room = capacity(stack) - read(stack);
+        if (room <= 0L) {
+            return 0L;
+        }
 
         if (!AppFluxBridge.isAvailable() || AppFluxBridge.FE_KEY == null) {
-            return false;
+            return 0L;
         }
-        long shortfall = amount - buffered;
         var bound = RailgunBinding.resolve(stack, player);
         if (!bound.success()) {
-            return false;
+            return 0L;
         }
         IGrid grid = bound.grid();
         if (grid == null) {
-            return false;
+            return 0L;
         }
 
         var storage = grid.getStorageService().getInventory();
         IActionSource source = IActionSource.ofPlayer(player);
-        long sim = storage.extract(AppFluxBridge.FE_KEY, shortfall, Actionable.SIMULATE, source);
-        if (sim < shortfall) {
-            return false;
+        long request = Math.min(room, maxAmount);
+        long got = storage.extract(AppFluxBridge.FE_KEY, request, Actionable.MODULATE, source);
+        if (got <= 0L) {
+            return 0L;
         }
-        long got = storage.extract(AppFluxBridge.FE_KEY, shortfall, Actionable.MODULATE, source);
-        if (got < shortfall) {
-            if (got > 0L) {
-                storage.insert(AppFluxBridge.FE_KEY, got, Actionable.MODULATE, source);
-            }
-            return false;
-        }
-        write(stack, 0L);
-        return true;
+        write(stack, read(stack) + got);
+        return got;
     }
 
     public static int receiveFe(ItemStack stack, int amount, boolean simulate) {

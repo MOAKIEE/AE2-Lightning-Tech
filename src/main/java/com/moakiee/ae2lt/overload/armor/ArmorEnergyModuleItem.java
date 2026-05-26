@@ -11,6 +11,7 @@ import net.minecraft.world.item.TooltipFlag;
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.DeviceSlotType;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.device.module.ModuleTooltip;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 import com.moakiee.ae2lt.util.EnergyText;
 
@@ -51,5 +52,6 @@ public final class ArmorEnergyModuleItem extends Item implements OverloadDeviceM
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
         tooltip.add(EnergyText.capacityFe(capacityFe));
+        ModuleTooltip.appendInstallInfo(this, tooltip);
     }
 }
