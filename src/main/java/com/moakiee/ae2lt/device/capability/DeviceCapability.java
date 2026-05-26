@@ -4,6 +4,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.effect.MobEffect;
 
+import com.moakiee.ae2lt.overload.armor.ArmorPart;
+
 /**
  * Capability records emitted by device modules and consumed by device services.
  * Mid-grained: ~10 records + 1 escape hatch. Each device only reads the variants
@@ -16,8 +18,14 @@ public sealed interface DeviceCapability {
     /** Railgun: -charge interval. Armor: +movement speed. */
     record AccelerationFactor(double factor) implements DeviceCapability {}
 
-    /** Multiplier on energy consumption + optional flat capacity addition. */
-    record EnergyTuning(double consumeMul, long capacityAdd) implements DeviceCapability {}
+    /** Structural energy module capacity contribution in FE. */
+    record EnergyCapacity(long fe) implements DeviceCapability {}
+
+    /** Passive FE drain declared by a module. */
+    record PassiveDrain(long fePerTick) implements DeviceCapability {}
+
+    /** Active FE cost declared by a triggerable module behavior. */
+    record ActiveCost(String trigger, long fe) implements DeviceCapability {}
 
     // --- railgun only ---
 
@@ -32,8 +40,17 @@ public sealed interface DeviceCapability {
 
     // --- armor only ---
 
-    /** Damage mitigation: reflect ratio + post-armor resist ratio. */
-    record DamageMitigation(double reflectPct, double resistPct) implements DeviceCapability {}
+    /** Stage-aware mitigation applied by chestplate modules. */
+    record StagedMitigation(String stage, double passRate, int loadPerHit) implements DeviceCapability {}
+
+    /** Reflects a fraction of post-armor damage back to attackers. */
+    record ReflectTuning(double reflectPct, long fePerDamage, int loadPerDamage) implements DeviceCapability {}
+
+    /** Last-stand fatal damage interception. */
+    record LastStandTuning(long feCost, int cooldownTicks, int comboWindowTicks) implements DeviceCapability {}
+
+    /** Periodic negative-effect cleansing. */
+    record CleanseTuning(int periodTicks, int strength) implements DeviceCapability {}
 
     /** Dash impulse + cooldown ticks. */
     record DashEffect(double impulse, int cooldownTicks) implements DeviceCapability {}
@@ -43,6 +60,30 @@ public sealed interface DeviceCapability {
 
     /** Generic status effect grant (night vision / water breathing / ...). */
     record StatusEffectGrant(Holder<MobEffect> effect, int amplifier) implements DeviceCapability {}
+
+    /** Passive auto-feed threshold. */
+    record AutoFeed(int hungerThreshold) implements DeviceCapability {}
+
+    /** Digging speed compensation in difficult environments. */
+    record DigAffinity(String env, double speedMul) implements DeviceCapability {}
+
+    /** Fall damage reduction. */
+    record FallProtection(double damageReduction) implements DeviceCapability {}
+
+    /** Jump boost amplifier. */
+    record JumpBoost(int amplifier) implements DeviceCapability {}
+
+    /** Alternate vision mode. */
+    record Vision(String kind, int amplifier) implements DeviceCapability {}
+
+    /** Passive energy consumption multiplier. */
+    record EnergyEfficiency(double drainMul) implements DeviceCapability {}
+
+    /** Lock recovery acceleration. */
+    record OverloadRecovery(int lockReductionTicks) implements DeviceCapability {}
+
+    /** Declares which armor part an armor module belongs to. */
+    record ArmorPartTag(ArmorPart part) implements DeviceCapability {}
 
     // --- escape hatch ---
 

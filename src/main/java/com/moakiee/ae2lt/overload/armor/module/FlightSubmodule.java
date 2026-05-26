@@ -2,28 +2,15 @@ package com.moakiee.ae2lt.overload.armor.module;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
-
-import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
-
-import net.minecraft.world.entity.EquipmentSlotGroup;
-import net.minecraft.world.entity.ai.attributes.AttributeModifier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.resources.ResourceLocation;
-import com.moakiee.ae2lt.AE2LightningTech;
 
 public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
 
     public static final FlightSubmodule INSTANCE = new FlightSubmodule();
 
     private static final int IDLE_LOAD = 64;
-    private static final ResourceLocation FLIGHT_MODIFIER_ID =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "armor_submodule_flight");
 
     private FlightSubmodule() {}
 

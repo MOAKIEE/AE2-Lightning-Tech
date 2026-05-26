@@ -11,18 +11,15 @@ import net.minecraft.world.item.TooltipFlag;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.capability.FlightKind;
+import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
+import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.module.FlightSubmodule;
-import com.moakiee.ae2lt.overload.armor.module.OverloadArmorFeatureCatalog;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 
 public final class FlightSubmoduleItem extends Item implements OverloadArmorSubmoduleItem {
 
     private static final FlightSubmodule INSTANCE = FlightSubmodule.INSTANCE;
-
-    static {
-        OverloadArmorFeatureCatalog.registerSubmodule(INSTANCE);
-    }
 
     public FlightSubmoduleItem(Properties properties) {
         super(properties.stacksTo(1));
@@ -34,13 +31,20 @@ public final class FlightSubmoduleItem extends Item implements OverloadArmorSubm
     }
 
     @Override
+    public ArmorPart armorPart() {
+        return ArmorPart.LEGS;
+    }
+
+    @Override
     public List<DeviceCapability> capabilities(ItemStack stack) {
-        return List.of(new DeviceCapability.FlightMode(FlightKind.CREATIVE));
+        return List.of(
+                new DeviceCapability.FlightMode(FlightKind.CREATIVE),
+                new DeviceCapability.PassiveDrain(ArmorOverloadRules.FLIGHT_HOVER_DRAIN_FE));
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ae2lt.armor_submodule_flight.tooltip")
+        tooltip.add(Component.translatable("item.ae2lt.leggings_module_creative_flight.tooltip")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

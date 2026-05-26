@@ -13,7 +13,10 @@ public final class DeviceWorkbenchAdapters {
     private static final Map<DeviceKind, DeviceWorkbenchAdapter> BY_KIND = new EnumMap<>(DeviceKind.class);
 
     static {
-        register(ArmorWorkbenchAdapter.INSTANCE);
+        register(ArmorWorkbenchAdapter.HELMET);
+        register(ArmorWorkbenchAdapter.CHESTPLATE);
+        register(ArmorWorkbenchAdapter.LEGGINGS);
+        register(ArmorWorkbenchAdapter.BOOTS);
         register(RailgunWorkbenchAdapter.INSTANCE);
     }
 

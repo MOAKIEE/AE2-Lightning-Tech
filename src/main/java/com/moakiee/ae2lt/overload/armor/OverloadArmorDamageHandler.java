@@ -12,12 +12,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
-import com.moakiee.ae2lt.item.OverloadArmorItem;
 
 /**
- * Applies DamageMitigation (resist + reflect) from armor module capabilities.
+ * Applies staged mitigation and reflect tuning from active armor modules.
  *
- * <p>{@code resistPct} is applied multiplicatively after vanilla armor in Pre.
+ * <p>{@code passRate} is applied multiplicatively after vanilla armor in Pre.
  * {@code reflectPct} bounces post-resist damage back to LivingEntity attackers in Post.
  * Environmental damage (fire/fall/drown) is never reflected.
  */
@@ -29,9 +28,9 @@ public final class OverloadArmorDamageHandler {
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPre(LivingDamageEvent.Pre event) {
         if (!(event.getEntity() instanceof Player player) || player.level().isClientSide()) return;
-        double resist = collectResist(player);
-        if (resist > 0.0D) {
-            event.setNewDamage(event.getOriginalDamage() * (float) (1.0D - resist));
+        double passRate = collectPassRate(player);
+        if (passRate < 1.0D) {
+            event.setNewDamage(event.getOriginalDamage() * (float) passRate);
         }
     }
 
@@ -47,36 +46,46 @@ public final class OverloadArmorDamageHandler {
         }
     }
 
-    private static double collectResist(Player player) {
-        double total = 0.0D;
+    private static double collectPassRate(Player player) {
+        double passRate = 1.0D;
         for (var cap : collectCapabilities(player)) {
-            if (cap instanceof DeviceCapability.DamageMitigation dm && dm.resistPct() > 0.0D) {
-                total = 1.0D - (1.0D - total) * (1.0D - dm.resistPct());
+            if (cap instanceof DeviceCapability.StagedMitigation mitigation) {
+                passRate *= Math.clamp(mitigation.passRate(), 0.0D, 1.0D);
             }
         }
-        return total;
+        return passRate;
     }
 
     private static double collectReflect(Player player) {
         double total = 0.0D;
         for (var cap : collectCapabilities(player)) {
-            if (cap instanceof DeviceCapability.DamageMitigation dm && dm.reflectPct() > 0.0D) {
-                total = Math.min(1.0D, total + dm.reflectPct());
+            if (cap instanceof DeviceCapability.ReflectTuning reflect && reflect.reflectPct() > 0.0D) {
+                total = Math.min(1.0D, total + reflect.reflectPct());
             }
         }
         return total;
     }
 
     private static java.util.List<DeviceCapability> collectCapabilities(Player player) {
-        ItemStack armor = player.getItemBySlot(EquipmentSlot.CHEST);
-        if (armor.isEmpty() || !(armor.getItem() instanceof OverloadArmorItem)) {
-            return java.util.List.of();
-        }
-        var stacks = OverloadArmorState.loadModuleStacks(armor, player.level().registryAccess());
         var out = new java.util.ArrayList<DeviceCapability>();
-        for (ItemStack s : stacks) {
-            if (!s.isEmpty() && s.getItem() instanceof OverloadDeviceModuleItem m) {
-                out.addAll(m.capabilities(s));
+        for (EquipmentSlot slot : java.util.List.of(
+                EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS,
+                EquipmentSlot.FEET)) {
+            ItemStack armor = player.getItemBySlot(slot);
+            if (armor.isEmpty() || !(armor.getItem() instanceof BaseOverloadArmorItem)) {
+                continue;
+            }
+            var snapshot = OverloadArmorState.snapshot(player, armor, player.level().registryAccess(), true);
+            if (!snapshot.hasCore() || snapshot.locked()) {
+                continue;
+            }
+            var stacks = OverloadArmorState.loadModuleStacks(armor, player.level().registryAccess());
+            for (ItemStack s : stacks) {
+                if (!s.isEmpty() && s.getItem() instanceof OverloadDeviceModuleItem m) {
+                    out.addAll(m.capabilities(s));
+                }
             }
         }
         return out;

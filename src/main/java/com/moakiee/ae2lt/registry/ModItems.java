@@ -6,16 +6,17 @@ import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
-import com.moakiee.ae2lt.item.OverloadArmorItem;
+import com.moakiee.ae2lt.item.OverloadBootsItem;
+import com.moakiee.ae2lt.item.OverloadChestplateItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
+import com.moakiee.ae2lt.item.OverloadHelmetItem;
+import com.moakiee.ae2lt.item.OverloadLeggingsItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
-import com.moakiee.ae2lt.item.TestOverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.item.NightVisionSubmoduleItem;
 import com.moakiee.ae2lt.item.WaterBreathingSubmoduleItem;
-import com.moakiee.ae2lt.item.SpeedSubmoduleItem;
 import com.moakiee.ae2lt.item.ResistanceSubmoduleItem;
 import com.moakiee.ae2lt.item.ReflectSubmoduleItem;
 import com.moakiee.ae2lt.item.DashSubmoduleItem;
@@ -24,8 +25,12 @@ import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
+import com.moakiee.ae2lt.item.railgun.RailgunEnergyModuleItem;
+import com.moakiee.ae2lt.item.railgun.RailgunEnergyRules;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleItem;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleType;
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyModuleItem;
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyRules;
 import com.moakiee.ae2lt.part.OverloadedCablePart;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.Item;
@@ -170,50 +175,73 @@ public final class ModItems {
             new Item.Properties().stacksTo(1));
 
     // ── Overload Armor ──────────────────────────────────────────────────────
-    public static final DeferredItem<Item> OVERLOAD_ARMOR = ITEMS.registerItem(
-            "overload_armor",
-            OverloadArmorItem::new,
-            new Item.Properties());
+    public static final DeferredItem<OverloadHelmetItem> OVERLOAD_HELMET = ITEMS.registerItem(
+            "overload_helmet",
+            OverloadHelmetItem::new,
+            new Item.Properties().rarity(Rarity.EPIC));
 
-    public static final DeferredItem<TestOverloadArmorSubmoduleItem> TEST_OVERLOAD_ARMOR_SUBMODULE = ITEMS.registerItem(
-            "test_overload_armor_submodule",
-            TestOverloadArmorSubmoduleItem::new,
-            new Item.Properties());
+    public static final DeferredItem<OverloadChestplateItem> OVERLOAD_CHESTPLATE = ITEMS.registerItem(
+            "overload_chestplate",
+            OverloadChestplateItem::new,
+            new Item.Properties().rarity(Rarity.EPIC));
+
+    public static final DeferredItem<OverloadLeggingsItem> OVERLOAD_LEGGINGS = ITEMS.registerItem(
+            "overload_leggings",
+            OverloadLeggingsItem::new,
+            new Item.Properties().rarity(Rarity.EPIC));
+
+    public static final DeferredItem<OverloadBootsItem> OVERLOAD_BOOTS = ITEMS.registerItem(
+            "overload_boots",
+            OverloadBootsItem::new,
+            new Item.Properties().rarity(Rarity.EPIC));
 
     public static final DeferredItem<NightVisionSubmoduleItem> ARMOR_SUBMODULE_NIGHT_VISION = ITEMS.registerItem(
-            "armor_submodule_night_vision",
+            "helmet_module_night_vision",
             NightVisionSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<WaterBreathingSubmoduleItem> ARMOR_SUBMODULE_WATER_BREATHING = ITEMS.registerItem(
-            "armor_submodule_water_breathing",
+            "helmet_module_water_breathing",
             WaterBreathingSubmoduleItem::new,
             new Item.Properties());
 
-    public static final DeferredItem<SpeedSubmoduleItem> ARMOR_SUBMODULE_SPEED = ITEMS.registerItem(
-            "armor_submodule_speed",
-            SpeedSubmoduleItem::new,
-            new Item.Properties());
-
     public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_RESISTANCE = ITEMS.registerItem(
-            "armor_submodule_resistance",
+            "chestplate_module_mitigation",
             ResistanceSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<ReflectSubmoduleItem> ARMOR_SUBMODULE_REFLECT = ITEMS.registerItem(
-            "armor_submodule_reflect",
+            "chestplate_module_reflect",
             ReflectSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<DashSubmoduleItem> ARMOR_SUBMODULE_DASH = ITEMS.registerItem(
-            "armor_submodule_dash",
+            "boots_module_dash",
             DashSubmoduleItem::new,
             new Item.Properties());
 
     public static final DeferredItem<FlightSubmoduleItem> ARMOR_SUBMODULE_FLIGHT = ITEMS.registerItem(
-            "armor_submodule_flight",
+            "leggings_module_creative_flight",
             FlightSubmoduleItem::new,
             new Item.Properties().stacksTo(1));
+
+    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T1 = ITEMS.register(
+            "armor_energy_module_t1",
+            () -> new ArmorEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    ArmorEnergyRules.MODULE_T1_CAPACITY_FE));
+
+    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T2 = ITEMS.register(
+            "armor_energy_module_t2",
+            () -> new ArmorEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
+                    ArmorEnergyRules.MODULE_T2_CAPACITY_FE));
+
+    public static final DeferredItem<ArmorEnergyModuleItem> ARMOR_ENERGY_MODULE_T3 = ITEMS.register(
+            "armor_energy_module_t3",
+            () -> new ArmorEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC).fireResistant(),
+                    ArmorEnergyRules.MODULE_T3_CAPACITY_FE));
 
     public static final DeferredItem<Item> OVERLOAD_MODULE_BASE =
             ITEMS.registerSimpleItem("overload_module_base", new Item.Properties());
@@ -242,17 +270,29 @@ public final class ModItems {
                     new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
                     RailgunModuleType.ACCELERATION));
 
-    public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_ENERGY = ITEMS.register(
-            "railgun_module_energy",
-            () -> new RailgunModuleItem(
-                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-                    RailgunModuleType.ENERGY));
-
     public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_OVERLOAD_EXECUTION = ITEMS.register(
             "railgun_module_overload_execution",
             () -> new RailgunModuleItem(
                     new Item.Properties().stacksTo(1).rarity(Rarity.EPIC),
                     RailgunModuleType.OVERLOAD_EXECUTION));
+
+    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T1 = ITEMS.register(
+            "railgun_energy_module_t1",
+            () -> new RailgunEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
+                    RailgunEnergyRules.MODULE_T1_CAPACITY_FE));
+
+    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T2 = ITEMS.register(
+            "railgun_energy_module_t2",
+            () -> new RailgunEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
+                    RailgunEnergyRules.MODULE_T2_CAPACITY_FE));
+
+    public static final DeferredItem<RailgunEnergyModuleItem> RAILGUN_ENERGY_MODULE_T3 = ITEMS.register(
+            "railgun_energy_module_t3",
+            () -> new RailgunEnergyModuleItem(
+                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC).fireResistant(),
+                    RailgunEnergyRules.MODULE_T3_CAPACITY_FE));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =
             registerOverloadedCable("overloaded_cable", AEColor.TRANSPARENT);

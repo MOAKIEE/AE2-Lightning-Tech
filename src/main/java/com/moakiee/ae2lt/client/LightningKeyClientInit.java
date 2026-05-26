@@ -2,16 +2,13 @@ package com.moakiee.ae2lt.client;
 
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
 import net.neoforged.neoforge.client.extensions.common.RegisterClientExtensionsEvent;
-import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 
 import appeng.api.client.AEKeyRendering;
-import appeng.items.storage.BasicStorageCell;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
@@ -67,14 +64,4 @@ public final class LightningKeyClientInit {
         event.registerItem(RailgunClientExtensions.INSTANCE, ModItems.ELECTROMAGNETIC_RAILGUN.get());
     }
 
-    @SubscribeEvent
-    public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
-        event.register(
-                (stack, tintIndex) -> FastColor.ARGB32.opaque(BasicStorageCell.getColor(stack, tintIndex)),
-                ModItems.LIGHTNING_STORAGE_COMPONENT_I.get(),
-                ModItems.LIGHTNING_STORAGE_COMPONENT_II.get(),
-                ModItems.LIGHTNING_STORAGE_COMPONENT_III.get(),
-                ModItems.LIGHTNING_STORAGE_COMPONENT_IV.get(),
-                ModItems.LIGHTNING_STORAGE_COMPONENT_V.get());
-    }
 }

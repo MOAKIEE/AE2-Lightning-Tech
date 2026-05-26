@@ -11,7 +11,6 @@ public enum RailgunModuleType implements StringRepresentable {
     CORE("core"),
     COMPUTE("compute"),
     ACCELERATION("acceleration"),
-    ENERGY("energy"),
     OVERLOAD_EXECUTION("overload_execution");
 
     public static final Codec<RailgunModuleType> CODEC = StringRepresentable.fromEnum(RailgunModuleType::values);

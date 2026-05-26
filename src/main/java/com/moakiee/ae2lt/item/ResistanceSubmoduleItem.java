@@ -10,7 +10,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
-import com.moakiee.ae2lt.overload.armor.module.OverloadArmorFeatureCatalog;
+import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
+import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.overload.armor.module.ResistanceSubmodule;
@@ -18,10 +19,6 @@ import com.moakiee.ae2lt.overload.armor.module.ResistanceSubmodule;
 public final class ResistanceSubmoduleItem extends Item implements OverloadArmorSubmoduleItem {
 
     private static final ResistanceSubmodule INSTANCE = ResistanceSubmodule.INSTANCE;
-
-    static {
-        OverloadArmorFeatureCatalog.registerSubmodule(INSTANCE);
-    }
 
     public ResistanceSubmoduleItem(Properties properties) {
         super(properties.stacksTo(64));
@@ -33,14 +30,20 @@ public final class ResistanceSubmoduleItem extends Item implements OverloadArmor
     }
 
     @Override
+    public ArmorPart armorPart() {
+        return ArmorPart.CHEST;
+    }
+
+    @Override
     public List<DeviceCapability> capabilities(ItemStack stack) {
-        // 30% post-armor damage resistance per module instance.
-        return List.of(new DeviceCapability.DamageMitigation(0.0D, 0.30D));
+        return List.of(
+                new DeviceCapability.StagedMitigation("MID", 0.70D, 2),
+                new DeviceCapability.PassiveDrain(ArmorOverloadRules.RESISTANCE_PASSIVE_DRAIN_FE));
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        tooltip.add(Component.translatable("item.ae2lt.armor_submodule_resistance.tooltip")
+        tooltip.add(Component.translatable("item.ae2lt.chestplate_module_mitigation.tooltip")
                 .withStyle(ChatFormatting.GRAY));
     }
 }

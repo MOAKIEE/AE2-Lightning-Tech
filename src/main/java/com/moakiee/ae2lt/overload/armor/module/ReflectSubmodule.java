@@ -41,7 +41,7 @@ public final class ReflectSubmodule extends AbstractOverloadArmorSubmodule {
 
     @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
-        // Reflect handled by OverloadArmorDamageHandler reading DamageMitigation capability.
+        // Reflect is handled by OverloadArmorDamageHandler reading ReflectTuning.
     }
 
     @Override

@@ -27,7 +27,7 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
 
     public int getMaxInstallAmount() {
         return switch (type) {
-            case CORE, ENERGY, OVERLOAD_EXECUTION -> 1;
+            case CORE, OVERLOAD_EXECUTION -> 1;
             case COMPUTE, ACCELERATION -> 2;
         };
     }
@@ -36,7 +36,7 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
         return switch (type) {
             case CORE -> 0;
             case COMPUTE -> 24;
-            case ACCELERATION, ENERGY -> 16;
+            case ACCELERATION -> 16;
             case OVERLOAD_EXECUTION -> 32;
         };
     }
@@ -52,7 +52,6 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
             case CORE -> DeviceSlotType.CORE;
             case COMPUTE -> DeviceSlotType.COMPUTE;
             case ACCELERATION -> DeviceSlotType.ACCELERATION;
-            case ENERGY -> DeviceSlotType.ENERGY;
             case OVERLOAD_EXECUTION -> DeviceSlotType.OVERLOAD_EXECUTION;
         };
     }
@@ -67,7 +66,6 @@ public class RailgunModuleItem extends Item implements OverloadDeviceModuleItem 
                     new DeviceCapability.ChainTuning(2, 1, 0),
                     new DeviceCapability.PulseTuning(1.5D, 1.0D));
             case ACCELERATION -> List.of(new DeviceCapability.AccelerationFactor(0.30D));
-            case ENERGY -> List.of(new DeviceCapability.EnergyTuning(0.50D, 0L));
             case OVERLOAD_EXECUTION -> List.of(new DeviceCapability.OverloadExecutionTuning(0.02D, 200, 8));
         };
     }

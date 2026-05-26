@@ -40,10 +40,6 @@ public record RailgunModuleEntries(List<ItemStack> entries) {
         return getCount(RailgunModuleType.CORE) > 0;
     }
 
-    public boolean hasEnergy() {
-        return getCount(RailgunModuleType.ENERGY) > 0;
-    }
-
     public boolean hasOverloadExecution() {
         return getCount(RailgunModuleType.OVERLOAD_EXECUTION) > 0;
     }

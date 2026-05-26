@@ -59,6 +59,14 @@ public final class ModDataComponents {
                             .persistent(ItemStack.OPTIONAL_CODEC)
                             .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
 
+    /** Structural FE capacity module installed in an electromagnetic railgun. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemStack>>
+            RAILGUN_STRUCTURAL_ENERGY_MODULE = DATA_COMPONENTS.registerComponentType(
+                    "railgun_structural_energy_module",
+                    builder -> builder
+                            .persistent(ItemStack.OPTIONAL_CODEC)
+                            .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
+
     /** Persistent UI toggles for the railgun (terrain destruction, PVP lock). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunSettings>>
             RAILGUN_SETTINGS = DATA_COMPONENTS.registerComponentType(
@@ -75,15 +83,34 @@ public final class ModDataComponents {
                             .persistent(Codec.LONG)
                             .networkSynchronized(ByteBufCodecs.VAR_LONG));
 
-    /**
-     * Per-stack AE energy buffer. Stored as a long to allow large capacities
-     * without precision loss; the railgun's per-shot AE costs are already
-     * long-typed in {@code AmmoCost}. Synced to the client so HUD/tooltip
-     * can show the current value without a separate packet.
-     */
+    /** Per-stack FE energy buffer for v4 overload-device railguns. */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<Long>>
-            RAILGUN_AE_BUFFER = DATA_COMPONENTS.registerComponentType(
-                    "railgun_ae_buffer",
+            RAILGUN_ENERGY_BUFFER = DATA_COMPONENTS.registerComponentType(
+                    "railgun_energy_buffer",
+                    builder -> builder
+                            .persistent(Codec.LONG)
+                            .networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /** Structural core installed in one overload armor piece. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemStack>>
+            ARMOR_STRUCTURAL_CORE = DATA_COMPONENTS.registerComponentType(
+                    "armor_structural_core",
+                    builder -> builder
+                            .persistent(ItemStack.OPTIONAL_CODEC)
+                            .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
+
+    /** Structural FE capacity module installed in one overload armor piece. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<ItemStack>>
+            ARMOR_STRUCTURAL_ENERGY_MODULE = DATA_COMPONENTS.registerComponentType(
+                    "armor_structural_energy_module",
+                    builder -> builder
+                            .persistent(ItemStack.OPTIONAL_CODEC)
+                            .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
+
+    /** Per-stack FE energy buffer for v4 overload armor pieces. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Long>>
+            ARMOR_ENERGY_BUFFER = DATA_COMPONENTS.registerComponentType(
+                    "armor_energy_buffer",
                     builder -> builder
                             .persistent(Codec.LONG)
                             .networkSynchronized(ByteBufCodecs.VAR_LONG));

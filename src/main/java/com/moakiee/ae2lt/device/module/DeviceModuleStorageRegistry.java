@@ -15,7 +15,10 @@ public final class DeviceModuleStorageRegistry {
 
     static {
         register(RailgunModuleStorage.INSTANCE);
-        register(ArmorModuleStorage.INSTANCE);
+        register(ArmorModuleStorage.HEAD);
+        register(ArmorModuleStorage.CHEST);
+        register(ArmorModuleStorage.LEGS);
+        register(ArmorModuleStorage.FEET);
     }
 
     private DeviceModuleStorageRegistry() {}

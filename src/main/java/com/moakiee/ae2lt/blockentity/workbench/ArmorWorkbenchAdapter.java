@@ -13,38 +13,48 @@ import appeng.menu.SlotSemantic;
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.device.DeviceSlotType;
 import com.moakiee.ae2lt.device.energy.DeviceEnergyBuffer;
-import com.moakiee.ae2lt.device.energy.SelfContainedEnergyBuffer;
 import com.moakiee.ae2lt.device.module.ArmorModuleStorage;
 import com.moakiee.ae2lt.device.module.DeviceModuleStorage;
 import com.moakiee.ae2lt.device.network.ArmorNetworkBinding;
 import com.moakiee.ae2lt.device.network.DeviceNetworkBinding;
-import com.moakiee.ae2lt.item.LightningStorageComponentItem;
+import com.moakiee.ae2lt.overload.armor.ArmorDeviceEnergyBuffer;
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyModuleStorage;
+import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.registry.ModItems;
 
 public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
-    public static final ArmorWorkbenchAdapter INSTANCE = new ArmorWorkbenchAdapter();
+    public static final ArmorWorkbenchAdapter HELMET = new ArmorWorkbenchAdapter(ArmorPart.HEAD);
+    public static final ArmorWorkbenchAdapter CHESTPLATE = new ArmorWorkbenchAdapter(ArmorPart.CHEST);
+    public static final ArmorWorkbenchAdapter LEGGINGS = new ArmorWorkbenchAdapter(ArmorPart.LEGS);
+    public static final ArmorWorkbenchAdapter BOOTS = new ArmorWorkbenchAdapter(ArmorPart.FEET);
 
     private static final List<StructuralSlotSpec> STRUCTURAL_SLOTS = List.of(
             slot(0, DeviceSlotType.CORE, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_CORE),
-            slot(1, DeviceSlotType.BUFFER, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER));
+            slot(1, DeviceSlotType.ENERGY, com.moakiee.ae2lt.menu.Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_ENERGY));
 
-    private ArmorWorkbenchAdapter() {}
+    private final ArmorPart part;
+    private final ArmorModuleStorage moduleStorage;
+
+    private ArmorWorkbenchAdapter(ArmorPart part) {
+        this.part = part;
+        this.moduleStorage = new ArmorModuleStorage(part);
+    }
 
     @Override
     public DeviceKind deviceKind() {
-        return DeviceKind.OVERLOAD_ARMOR;
+        return part.deviceKind();
     }
 
     @Override
     public DeviceModuleStorage moduleStorage() {
-        return ArmorModuleStorage.INSTANCE;
+        return moduleStorage;
     }
 
     @Override
     public DeviceEnergyBuffer energyBuffer() {
-        return SelfContainedEnergyBuffer.INSTANCE;
+        return ArmorDeviceEnergyBuffer.INSTANCE;
     }
 
     @Override
@@ -171,7 +181,7 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
         return switch (spec.slotType()) {
             case CORE -> stack.is(ModItems.ULTIMATE_OVERLOAD_CORE.get())
                     && OverloadArmorState.canInstallCore(device, registries, stack);
-            case BUFFER -> stack.getItem() instanceof LightningStorageComponentItem;
+            case ENERGY -> ArmorEnergyModuleStorage.canInstall(stack);
             default -> false;
         };
     }
@@ -186,15 +196,7 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
         if (device.isEmpty()) {
             return false;
         }
-        if (spec.slotType() != DeviceSlotType.CORE) {
-            return true;
-        }
-        if (!OverloadArmorState.hasAnyInstalledModule(device, registries)) {
-            return true;
-        }
-        return !carried.isEmpty()
-                && carried.is(ModItems.ULTIMATE_OVERLOAD_CORE.get())
-                && OverloadArmorState.canInstallCore(device, registries, carried);
+        return true;
     }
 
     @Override
@@ -215,7 +217,7 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
     private static int toArmorSlot(StructuralSlotSpec spec) {
         return switch (spec.slotType()) {
             case CORE -> OverloadArmorState.SLOT_CORE;
-            case BUFFER -> OverloadArmorState.SLOT_BUFFER;
+            case ENERGY -> OverloadArmorState.SLOT_ENERGY;
             default -> -1;
         };
     }

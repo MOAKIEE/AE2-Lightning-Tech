@@ -4,7 +4,6 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -16,9 +15,10 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
-import com.moakiee.ae2lt.network.railgun.RailgunOpenGuiPacket;
+import com.moakiee.ae2lt.menu.hub.DeviceHubMenu;
+import com.moakiee.ae2lt.network.hub.OpenDeviceHubPacket;
 
-@EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
+@EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class RailgunKeyBindings {
 
     public static final String CATEGORY = "key.categories.ae2lt";
@@ -35,19 +35,24 @@ public final class RailgunKeyBindings {
         e.register(OPEN_RAILGUN_GUI);
     }
 
-    @SubscribeEvent
-    public static void onPlayerTick(PlayerTickEvent.Post e) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.screen != null) return;
-        if (e.getEntity() != mc.player) return;
-        while (OPEN_RAILGUN_GUI.consumeClick()) {
-            ItemStack main = mc.player.getMainHandItem();
-            ItemStack off = mc.player.getOffhandItem();
-            InteractionHand hand;
-            if (main.getItem() instanceof ElectromagneticRailgunItem) hand = InteractionHand.MAIN_HAND;
-            else if (off.getItem() instanceof ElectromagneticRailgunItem) hand = InteractionHand.OFF_HAND;
-            else continue;
-            PacketDistributor.sendToServer(new RailgunOpenGuiPacket(hand));
+    @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
+    public static final class RuntimeHandler {
+        private RuntimeHandler() {
+        }
+
+        @SubscribeEvent
+        public static void onPlayerTick(PlayerTickEvent.Post e) {
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.player == null || mc.screen != null) return;
+            if (e.getEntity() != mc.player) return;
+            while (OPEN_RAILGUN_GUI.consumeClick()) {
+                ItemStack main = mc.player.getMainHandItem();
+                ItemStack off = mc.player.getOffhandItem();
+                if (main.getItem() instanceof ElectromagneticRailgunItem
+                        || off.getItem() instanceof ElectromagneticRailgunItem) {
+                    PacketDistributor.sendToServer(new OpenDeviceHubPacket(DeviceHubMenu.TAB_RAILGUN));
+                }
+            }
         }
     }
 }

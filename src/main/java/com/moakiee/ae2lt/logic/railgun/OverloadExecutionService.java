@@ -22,7 +22,9 @@ import net.neoforged.neoforge.entity.PartEntity;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.RailgunDefaults;
+import com.moakiee.ae2lt.item.railgun.RailgunEnergyRules;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
+import com.moakiee.ae2lt.item.railgun.RailgunOverloadBudget;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
@@ -94,7 +96,6 @@ public final class OverloadExecutionService {
 
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         if (settings.pvpLock() && target instanceof Player) return;
-
         int maxTracked = AE2LTCommonConfig.overloadExecutionMaxTracked();
         int decayWindow = AE2LTCommonConfig.overloadExecutionDecayWindowTicks();
         double decayPower = AE2LTCommonConfig.overloadExecutionDecayPower();
@@ -106,9 +107,23 @@ public final class OverloadExecutionService {
 
         CompoundTag root = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
         ListTag targets = root.getList(TAG_TARGETS, Tag.TAG_COMPOUND);
+        int existingIdx = indexOf(targets, targetUuid);
+        boolean comboPulse = false;
+        if (existingIdx >= 0) {
+            CompoundTag existing = targets.getCompound(existingIdx);
+            comboPulse = now - existing.getLong(TAG_LAST_HIT_TICK) < decayWindow;
+        }
+        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.overload_locked");
+            return;
+        }
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, RailgunEnergyRules.overloadExecutionCostFe())) {
+            RailgunFireService.sendFail(player, "ae2lt.railgun.fail.no_ae");
+            return;
+        }
+        RailgunOverloadBudget.INSTANCE.addOverloadExecutionPulse(stack, comboPulse);
 
         // 1. Resolve "basis HP" from the record (or current HP if no record / expired).
-        int existingIdx = indexOf(targets, targetUuid);
         double basis;
         if (existingIdx < 0) {
             basis = currentHp;

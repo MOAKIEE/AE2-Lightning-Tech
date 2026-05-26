@@ -26,8 +26,10 @@ import appeng.api.implementations.menuobjects.ItemMenuHost;
 import appeng.core.localization.Tooltips;
 import appeng.menu.locator.ItemMenuHostLocator;
 
+import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
+import com.moakiee.ae2lt.logic.railgun.RailgunBeamService;
 import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.menu.railgun.RailgunHost;
@@ -57,8 +59,16 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
             }
             return InteractionResultHolder.fail(stack);
         }
+        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
+            if (!level.isClientSide) {
+                player.displayClientMessage(
+                        Component.translatable("ae2lt.railgun.fail.overload_locked"), true);
+            }
+            return InteractionResultHolder.fail(stack);
+        }
         player.startUsingItem(hand);
         if (!level.isClientSide) {
+            RailgunOverloadBudget.ensureDeviceId(stack);
             stack.set(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
         }
         return new InteractionResultHolder<>(InteractionResult.CONSUME, stack);
@@ -80,11 +90,56 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
     }
 
     @Override
+    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
+        super.inventoryTick(stack, level, entity, slotId, isSelected);
+        if (level.isClientSide || !(entity instanceof Player player)) {
+            return;
+        }
+        boolean inHand = isSelected || player.getOffhandItem() == stack;
+        if (inHand) {
+            RailgunOverloadBudget.ensureDeviceId(stack);
+            if (!player.isUsingItem() || player.getUseItem() != stack) {
+                RailgunOverloadBudget.INSTANCE.clearCharging(stack);
+            }
+            if (!(player instanceof ServerPlayer serverPlayer) || !RailgunBeamService.isFiring(serverPlayer)) {
+                RailgunOverloadBudget.INSTANCE.clearBeam(stack);
+            }
+            RailgunOverloadBudget.INSTANCE.tick(stack, player);
+        } else {
+            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
+            RailgunOverloadBudget.INSTANCE.clearBeam(stack);
+        }
+    }
+
+    @Override
     public void onUseTick(Level level, LivingEntity user, ItemStack stack, int remaining) {
         if (level.isClientSide) {
             return;
         }
+        if (!(user instanceof ServerPlayer player)) {
+            return;
+        }
+        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
+            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
+            stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
+            player.stopUsingItem();
+            player.displayClientMessage(
+                    Component.translatable("ae2lt.railgun.fail.overload_locked"), true);
+            return;
+        }
         long current = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
+        RailgunChargeTier chargingTier = RailgunOverloadRules.chargingTierForCharge(
+                current,
+                RailgunDefaults.CHARGE_TICKS_TIER2,
+                RailgunDefaults.CHARGE_TICKS_TIER3);
+        if (!RailgunEnergyBuffer.tryConsume(stack, player, RailgunEnergyRules.chargeCostPerTickFe(chargingTier))) {
+            RailgunOverloadBudget.INSTANCE.clearCharging(stack);
+            stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
+            player.stopUsingItem();
+            player.displayClientMessage(Component.translatable("ae2lt.railgun.fail.no_ae"), true);
+            return;
+        }
+        RailgunOverloadBudget.INSTANCE.setChargingLoad(stack, chargingTier);
         // ACCEL module step-up: each module adds +1 charge-ticks per real tick.
         //   0 modules → +1 / tick (baseline)
         //   1 module  → +2 / tick (2× speed)
@@ -105,6 +160,7 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         }
         long charged = stack.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
         stack.remove(ModDataComponents.RAILGUN_CHARGE_TICKS.get());
+        RailgunOverloadBudget.INSTANCE.clearCharging(stack);
         RailgunModuleEntries mods = stack.getOrDefault(ModDataComponents.RAILGUN_MODULE_ENTRIES.get(), RailgunModuleEntries.EMPTY);
         RailgunChargeTier tier = RailgunFireService.tierForCharge(charged, mods);
         if (tier == RailgunChargeTier.HV) {
@@ -119,28 +175,12 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         return new RailgunHost(this, player, locator);
     }
 
-    /**
-     * Passive AE buffer top-up while the player holds the railgun. Only runs
-     * server-side and only when the stack is in the main hand or off-hand —
-     * inventory-resident railguns intentionally do not drain the network.
-     * The actual throttling and grid lookup happens inside
-     * {@link RailgunEnergyBuffer#refillFromNetwork}.
-     */
-    @Override
-    public void inventoryTick(ItemStack stack, Level level, Entity entity, int slotId, boolean isSelected) {
-        super.inventoryTick(stack, level, entity, slotId, isSelected);
-        if (level.isClientSide || !(entity instanceof ServerPlayer player)) return;
-        boolean inHand = isSelected || player.getOffhandItem() == stack;
-        if (!inHand) return;
-        RailgunEnergyBuffer.refillFromNetwork(stack, player);
-    }
-
     @Override
     public void appendHoverText(ItemStack stack, Item.TooltipContext context,
                                 List<Component> tooltip, TooltipFlag tooltipFlag) {
         super.appendHoverText(stack, context, tooltip, tooltipFlag);
         long current = RailgunEnergyBuffer.read(stack);
-        long capacity = RailgunEnergyBuffer.capacity();
+        long capacity = RailgunEnergyBuffer.capacity(stack);
         tooltip.add(Tooltips.energyStorageComponent((double) current, (double) capacity));
     }
 
@@ -151,7 +191,7 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
 
     @Override
     public int getBarWidth(ItemStack stack) {
-        long capacity = RailgunEnergyBuffer.capacity();
+        long capacity = RailgunEnergyBuffer.capacity(stack);
         if (capacity <= 0L) {
             return 0;
         }

@@ -30,7 +30,6 @@ import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem.CellOutcome;
-import com.moakiee.ae2lt.item.OverloadArmorItem;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
@@ -59,7 +58,6 @@ import appeng.api.upgrades.Upgrades;
 import appeng.block.AEBaseEntityBlock;
 import appeng.blockentity.AEBaseBlockEntity;
 import appeng.core.definitions.AEItems;
-import appeng.menu.locator.MenuLocators;
 
 import com.moakiee.ae2lt.api.AE2LTCapabilities;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
@@ -68,9 +66,10 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
-import com.moakiee.ae2lt.overload.armor.OverloadArmorMenuLocator;
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -152,12 +151,12 @@ public class AE2LightningTech {
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         // 存储组件
                         output.accept(ModItems.LIGHTNING_ITEM_CELL_HOUSING);
+                        // 元件
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_I);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_II);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
-                        // 元件
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_I);
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_II);
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_III);
@@ -172,16 +171,30 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
-                        // 过载护甲
-                        output.accept(ModItems.OVERLOAD_ARMOR);
-                        output.accept(ModItems.TEST_OVERLOAD_ARMOR_SUBMODULE);
+                        // 过载护甲 + 模块
+                        output.accept(ModItems.OVERLOAD_MODULE_BASE);
+                        output.accept(ModItems.OVERLOAD_HELMET);
+                        output.accept(ModItems.OVERLOAD_CHESTPLATE);
+                        output.accept(ModItems.OVERLOAD_LEGGINGS);
+                        output.accept(ModItems.OVERLOAD_BOOTS);
+                        output.accept(ModItems.ARMOR_ENERGY_MODULE_T1);
+                        output.accept(ModItems.ARMOR_ENERGY_MODULE_T2);
+                        output.accept(ModItems.ARMOR_ENERGY_MODULE_T3);
+                        output.accept(ModItems.ARMOR_SUBMODULE_NIGHT_VISION);
+                        output.accept(ModItems.ARMOR_SUBMODULE_WATER_BREATHING);
+                        output.accept(ModItems.ARMOR_SUBMODULE_RESISTANCE);
+                        output.accept(ModItems.ARMOR_SUBMODULE_REFLECT);
+                        output.accept(ModItems.ARMOR_SUBMODULE_DASH);
+                        output.accept(ModItems.ARMOR_SUBMODULE_FLIGHT);
                         // 电磁炮 + 模块
                         output.accept(ModItems.ELECTROMAGNETIC_RAILGUN);
                         output.accept(ModItems.RAILGUN_MODULE_CORE);
                         output.accept(ModItems.RAILGUN_MODULE_COMPUTE);
                         output.accept(ModItems.RAILGUN_MODULE_ACCELERATION);
-                        output.accept(ModItems.RAILGUN_MODULE_ENERGY);
                         output.accept(ModItems.RAILGUN_MODULE_OVERLOAD_EXECUTION);
+                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T1);
+                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T2);
+                        output.accept(ModItems.RAILGUN_ENERGY_MODULE_T3);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -203,8 +216,6 @@ public class AE2LightningTech {
                     .build());
 
     public AE2LightningTech(IEventBus modEventBus, ModContainer modContainer) {
-        registerMenuLocators();
-
         ModFumos.register();
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
@@ -225,18 +236,6 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerStarting);
         NeoForge.EVENT_BUS.addListener(this::onServerStopped);
         NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
-
-        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onLivingEquipmentChange);
-        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onLevelSave);
-        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onPlayerLoggedOut);
-        NeoForge.EVENT_BUS.addListener(OverloadArmorItem::onPlayerLoggedIn);
-    }
-
-    private static void registerMenuLocators() {
-        MenuLocators.register(
-                OverloadArmorMenuLocator.class,
-                OverloadArmorMenuLocator::writeToPacket,
-                OverloadArmorMenuLocator::readFromPacket);
     }
 
     // Prevents automation from accessing the workbench inventory
@@ -305,6 +304,19 @@ public class AE2LightningTech {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.OVERLOAD_DEVICE_WORKBENCH.get(),
                 (blockEntity, side) -> WORKBENCH_REJECTING_ITEM_HANDLER);
+
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> RailgunEnergyBuffer.asEnergyStorage(stack),
+                ModItems.ELECTROMAGNETIC_RAILGUN.get());
+
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> ArmorEnergyBuffer.asEnergyStorage(stack),
+                ModItems.OVERLOAD_HELMET.get(),
+                ModItems.OVERLOAD_CHESTPLATE.get(),
+                ModItems.OVERLOAD_LEGGINGS.get(),
+                ModItems.OVERLOAD_BOOTS.get());
 
         event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,

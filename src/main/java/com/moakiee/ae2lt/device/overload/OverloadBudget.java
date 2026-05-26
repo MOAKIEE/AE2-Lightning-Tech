@@ -3,11 +3,6 @@ package com.moakiee.ae2lt.device.overload;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
-/**
- * Per-device overload budget tracking. The armor implementation is the primary
- * consumer; the railgun gets a no-op wrapper (cap = MAX_VALUE) until D-something
- * enables the budget on weapons.
- */
 public interface OverloadBudget {
 
     int currentLoad(ItemStack stack);
@@ -17,4 +12,16 @@ public interface OverloadBudget {
     LockState lockState(ItemStack stack);
 
     void tick(ItemStack stack, Player player);
+
+    default void contributeState(ItemStack stack, String key, int loadPerTick) {
+    }
+
+    default void clearState(ItemStack stack, String key) {
+    }
+
+    default void contributePulse(ItemStack stack, int base) {
+    }
+
+    default void contributePulse(ItemStack stack, int base, double decay, int maxTicks) {
+    }
 }

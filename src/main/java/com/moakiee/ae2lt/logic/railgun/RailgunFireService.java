@@ -33,6 +33,7 @@ import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
+import com.moakiee.ae2lt.item.railgun.RailgunOverloadBudget;
 import com.moakiee.ae2lt.item.railgun.RailgunStructuralCore;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -86,6 +87,10 @@ public final class RailgunFireService {
             sendFail(player, "ae2lt.railgun.core_required");
             return;
         }
+        if (RailgunOverloadBudget.INSTANCE.isLocked(stack)) {
+            sendFail(player, "ae2lt.railgun.fail.overload_locked");
+            return;
+        }
 
         var bound = RailgunBinding.resolve(stack, player);
         if (!bound.success()) {
@@ -130,6 +135,7 @@ public final class RailgunFireService {
                 return;
             }
         }
+        RailgunOverloadBudget.INSTANCE.addFirePulse(stack, tier);
 
         // 3. Raycast first hit.
         Vec3 from = player.getEyePosition();
@@ -203,6 +209,13 @@ public final class RailgunFireService {
             hits.addAll(RailgunChainResolver.resolveChainForkedFrom(
                     level, player, splashAnchor, ctx, alreadyHit, firstHitPos));
         }
+        if (aoeEnabled) {
+            double pulseRadius = Math.max(effectivePulseRadius, impactRadius);
+            if (pulseRadius > 0.0D) {
+                RailgunOverloadBudget.INSTANCE.addPulseStrike(stack, pulseRadius);
+            }
+        }
+        RailgunOverloadBudget.INSTANCE.addChainPulse(stack, countChainSegments(hits, primaryId));
         if (!hits.isEmpty()) {
             applyAll(level, player, hits, ctx, stack, tier);
         }
@@ -375,5 +388,19 @@ public final class RailgunFireService {
             if (cap instanceof DeviceCapability.ChainTuning) n++;
         }
         return n;
+    }
+
+    private static int countChainSegments(List<RailgunChainResolver.Hit> hits, int primaryId) {
+        int segments = 0;
+        for (var hit : hits) {
+            if (hit.target() == null || hit.penetration() || hit.pulse()) {
+                continue;
+            }
+            if (hit.target().getId() == primaryId) {
+                continue;
+            }
+            segments++;
+        }
+        return segments;
     }
 }

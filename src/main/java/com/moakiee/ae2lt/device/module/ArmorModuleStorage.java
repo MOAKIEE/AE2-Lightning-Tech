@@ -7,16 +7,24 @@ import java.util.stream.Stream;
 import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.device.DeviceKind;
+import com.moakiee.ae2lt.overload.armor.ArmorPart;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class ArmorModuleStorage implements DeviceModuleStorage {
-    public static final ArmorModuleStorage INSTANCE = new ArmorModuleStorage();
+    public static final ArmorModuleStorage HEAD = new ArmorModuleStorage(ArmorPart.HEAD);
+    public static final ArmorModuleStorage CHEST = new ArmorModuleStorage(ArmorPart.CHEST);
+    public static final ArmorModuleStorage LEGS = new ArmorModuleStorage(ArmorPart.LEGS);
+    public static final ArmorModuleStorage FEET = new ArmorModuleStorage(ArmorPart.FEET);
 
-    private ArmorModuleStorage() {}
+    private final ArmorPart part;
+
+    public ArmorModuleStorage(ArmorPart part) {
+        this.part = part;
+    }
 
     @Override
     public DeviceKind deviceKind() {
-        return DeviceKind.OVERLOAD_ARMOR;
+        return part.deviceKind();
     }
 
     @Override

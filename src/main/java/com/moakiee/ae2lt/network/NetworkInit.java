@@ -1,16 +1,15 @@
 package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.network.hub.DeviceHubActionPacket;
+import com.moakiee.ae2lt.network.hub.DeviceHubSyncPacket;
+import com.moakiee.ae2lt.network.hub.OpenDeviceHubPacket;
 import com.moakiee.ae2lt.network.railgun.RailgunBeamChainFxPacket;
 import com.moakiee.ae2lt.network.railgun.RailgunBeamModePacket;
 import com.moakiee.ae2lt.network.railgun.RailgunBeamTogglePacket;
 import com.moakiee.ae2lt.network.railgun.RailgunBeamUpdatePacket;
 import com.moakiee.ae2lt.network.railgun.RailgunFirePacket;
-import com.moakiee.ae2lt.network.railgun.RailgunOpenGuiPacket;
 import com.moakiee.ae2lt.network.railgun.RailgunRecoilFxPacket;
-import com.moakiee.ae2lt.network.OpenOverloadArmorMenuPacket;
-import com.moakiee.ae2lt.network.DashPacket;
-import com.moakiee.ae2lt.network.SubmoduleLifecyclePacket;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -74,11 +73,7 @@ public final class NetworkInit {
                 FrequencyResponsePacket.STREAM_CODEC,
                 FrequencyResponsePacket::handle);
 
-        // Railgun: C→S
-        registrar.playToServer(
-                RailgunOpenGuiPacket.TYPE,
-                RailgunOpenGuiPacket.STREAM_CODEC,
-                RailgunOpenGuiPacket::handle);
+        // Railgun: C→S (RailgunOpenGuiPacket removed — replaced by OpenDeviceHubPacket)
         registrar.playToServer(
                 RailgunBeamTogglePacket.TYPE,
                 RailgunBeamTogglePacket.STREAM_CODEC,
@@ -105,22 +100,25 @@ public final class NetworkInit {
                 RailgunRecoilFxPacket.STREAM_CODEC,
                 RailgunRecoilFxPacket::handle);
 
-        // Overload Armor: C→S
-        registrar.playToServer(
-                OpenOverloadArmorMenuPacket.TYPE,
-                OpenOverloadArmorMenuPacket.STREAM_CODEC,
-                OpenOverloadArmorMenuPacket::handle);
-
         registrar.playToServer(
                 DashPacket.TYPE,
                 DashPacket.STREAM_CODEC,
                 DashPacket::handle);
 
-        // Overload Armor: S→C
+        // Device Hub: C→S
+        registrar.playToServer(
+                OpenDeviceHubPacket.TYPE,
+                OpenDeviceHubPacket.STREAM_CODEC,
+                OpenDeviceHubPacket::handle);
+        registrar.playToServer(
+                DeviceHubActionPacket.TYPE,
+                DeviceHubActionPacket.STREAM_CODEC,
+                DeviceHubActionPacket::handle);
+        // Device Hub: S→C
         registrar.playToClient(
-                SubmoduleLifecyclePacket.TYPE,
-                SubmoduleLifecyclePacket.STREAM_CODEC,
-                SubmoduleLifecyclePacket::handle);
+                DeviceHubSyncPacket.TYPE,
+                DeviceHubSyncPacket.STREAM_CODEC,
+                DeviceHubSyncPacket::handle);
     }
 
     public static ResourceLocation id(String path) {

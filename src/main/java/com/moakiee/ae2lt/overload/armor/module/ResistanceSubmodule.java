@@ -43,7 +43,7 @@ public final class ResistanceSubmodule extends AbstractOverloadArmorSubmodule {
 
     @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
-        // Resistance applied via DamageMitigation capability in OverloadArmorDamageHandler event.
+        // Resistance is applied via StagedMitigation in OverloadArmorDamageHandler.
     }
 
     @Override

@@ -1,0 +1,63 @@
+package com.moakiee.ae2lt.item.railgun;
+
+public final class RailgunEnergyRules {
+    public static final long BASE_CAPACITY_FE = 10_000_000L;
+    public static final long MODULE_T1_CAPACITY_FE = 100_000_000L;
+    public static final long MODULE_T2_CAPACITY_FE = 500_000_000L;
+    public static final long MODULE_T3_CAPACITY_FE = 2_000_000_000L;
+
+    public static final long CHARGE_COST_LV_PER_TICK_FE = 1_000L;
+    public static final long CHARGE_COST_MV_PER_TICK_FE = 4_000L;
+    public static final long CHARGE_COST_HV_PER_TICK_FE = 10_000L;
+    public static final long FIRE_COST_LV_FE = 500_000L;
+    public static final long FIRE_COST_MV_FE = 2_000_000L;
+    public static final long FIRE_COST_HV_FE = 8_000_000L;
+    public static final long OVERLOAD_EXECUTION_COST_FE = 20_000_000L;
+    public static final long PULSE_STRIKE_COST_PER_RADIUS_FE = 1_000_000L;
+    public static final long CHAIN_COST_PER_SEGMENT_FE = 500_000L;
+
+    private RailgunEnergyRules() {
+    }
+
+    public static long capacityForExtraModuleFe(long extraModuleFe) {
+        return BASE_CAPACITY_FE + Math.max(0L, extraModuleFe);
+    }
+
+    public static long fireCostFe(RailgunChargeTier tier) {
+        return switch (tier) {
+            case EHV1 -> FIRE_COST_LV_FE;
+            case EHV2 -> FIRE_COST_MV_FE;
+            case EHV3 -> FIRE_COST_HV_FE;
+            default -> 0L;
+        };
+    }
+
+    public static long chargeCostPerTickFe(RailgunChargeTier tier) {
+        return switch (tier) {
+            case EHV1 -> CHARGE_COST_LV_PER_TICK_FE;
+            case EHV2 -> CHARGE_COST_MV_PER_TICK_FE;
+            case EHV3 -> CHARGE_COST_HV_PER_TICK_FE;
+            default -> 0L;
+        };
+    }
+
+    public static long overloadExecutionCostFe() {
+        return OVERLOAD_EXECUTION_COST_FE;
+    }
+
+    public static long pulseStrikeCostFe(double radius) {
+        return Math.max(0L, (long) Math.ceil(radius * PULSE_STRIKE_COST_PER_RADIUS_FE));
+    }
+
+    public static long chainCostFe(int segments) {
+        return Math.max(0L, segments) * CHAIN_COST_PER_SEGMENT_FE;
+    }
+
+    public static int receivableFe(long stored, long capacity, int requested) {
+        if (requested <= 0 || capacity <= 0L || stored >= capacity) {
+            return 0;
+        }
+        long room = capacity - Math.max(0L, stored);
+        return (int) Math.min(Integer.MAX_VALUE, Math.min(room, requested));
+    }
+}

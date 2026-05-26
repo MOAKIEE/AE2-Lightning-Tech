@@ -57,19 +57,25 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
     @GuiSync(2)
     public int baseOverload;
     @GuiSync(3)
-    public long bufferCapacity;
+    public long energyCapacity;
     @GuiSync(4)
     public int coreInstalled;
     @GuiSync(5)
-    public int bufferInstalled;
+    public int energyModuleInstalled;
     @GuiSync(6)
-    public long bufferStored;
+    public long energyStored;
     @GuiSync(7)
-    public int moduleIdleUsed;
+    public int moduleLoadUsed;
+    @GuiSync(8)
+    public int installProgress;
+    @GuiSync(9)
+    public int gridConnected;
+
+    public static final int INSTALL_TICKS = 20;
 
     private static final List<SlotSemantic> STRUCTURAL_SEMANTICS = List.of(
             Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_CORE,
-            Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_BUFFER);
+            Ae2ltSlotSemantics.OVERLOAD_DEVICE_WORKBENCH_ENERGY);
 
     private final OverloadDeviceWorkbenchBlockEntity host;
     private final Slot deviceSlot;
@@ -112,7 +118,7 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
     @Override
     public void broadcastChanges() {
         if (isServerSide()) {
-            autoConsumeInput();
+            tickInstallProgress();
             updateSnapshot();
         }
         super.broadcastChanges();
@@ -188,8 +194,8 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         return coreInstalled != 0;
     }
 
-    public boolean hasBufferInstalled() {
-        return bufferInstalled != 0;
+    public boolean hasEnergyModuleInstalled() {
+        return energyModuleInstalled != 0;
     }
 
     public List<StructuralSlotSpec> getStructuralSlotSpecs() {
@@ -206,9 +212,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         }
         if (!hasCoreInstalled()) {
             return Component.translatable("ae2lt.overload_armor.status.missing_core");
-        }
-        if (!hasBufferInstalled()) {
-            return Component.translatable("ae2lt.overload_armor.status.missing_buffer");
         }
         return Component.translatable("ae2lt.overload_device_workbench.status.ready");
     }
@@ -262,46 +265,52 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         }
     }
 
-    private void autoConsumeInput() {
-        if (!host.hasInstalledDevice()) return;
-        var stack = inputContainer.getItem(0);
-        if (stack.isEmpty()) return;
-        int budget = INSTALL_BATCH_LIMIT;
-        while (budget-- > 0 && !stack.isEmpty()) {
-            var unit = stack.copyWithCount(1);
-            if (!host.installOneModule(registryAccess(), unit)) {
-                break;
-            }
-            stack.shrink(1);
+    private void tickInstallProgress() {
+        if (!host.hasInstalledDevice()) {
+            installProgress = 0;
+            return;
         }
-        inputContainer.setItem(0, stack.isEmpty() ? ItemStack.EMPTY : stack);
+        var stack = inputContainer.getItem(0);
+        if (stack.isEmpty() || !host.canInstallOneModule(registryAccess(), stack)) {
+            installProgress = 0;
+            return;
+        }
+        installProgress++;
+        if (installProgress >= INSTALL_TICKS) {
+            installProgress = 0;
+            var unit = stack.copyWithCount(1);
+            if (host.installOneModule(registryAccess(), unit)) {
+                stack.shrink(1);
+                inputContainer.setItem(0, stack.isEmpty() ? ItemStack.EMPTY : stack);
+            }
+        }
     }
 
-    private static final int INSTALL_BATCH_LIMIT = 8;
-
     private void updateSnapshot() {
+        gridConnected = host.isActive() ? 1 : 0;
         var device = host.getInstalledDevice();
         var adapter = host.currentAdapter();
         devicePresent = adapter == null ? 0 : 1;
         if (adapter == null || device.isEmpty()) {
             moduleTypeCount = 0;
             baseOverload = 0;
-            bufferCapacity = 0L;
+            energyCapacity = 0L;
             coreInstalled = 0;
-            bufferInstalled = 0;
-            moduleIdleUsed = 0;
+            energyModuleInstalled = 0;
+            energyStored = 0L;
+            moduleLoadUsed = 0;
             return;
         }
 
         moduleTypeCount = host.getModuleList(registryAccess()).size();
         baseOverload = host.baseOverloadBudget(registryAccess());
-        bufferCapacity = adapter.energyBuffer().capacity(device);
-        bufferStored = adapter.energyBuffer().stored(device);
-        moduleIdleUsed = host.currentIdleOverload(registryAccess());
+        energyCapacity = adapter.energyBuffer().capacity(device);
+        energyStored = adapter.energyBuffer().stored(device);
+        moduleLoadUsed = host.currentIdleOverload(registryAccess());
 
         coreInstalled = structuralInstalled(DeviceSlotType.CORE) ? 1 : 0;
-        bufferInstalled = hasStructuralSlot(DeviceSlotType.BUFFER)
-                ? (structuralInstalled(DeviceSlotType.BUFFER) ? 1 : 0)
+        energyModuleInstalled = hasStructuralSlot(DeviceSlotType.ENERGY)
+                ? (structuralInstalled(DeviceSlotType.ENERGY) ? 1 : 0)
                 : 1;
     }
 
