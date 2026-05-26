@@ -6,11 +6,11 @@ import com.moakiee.ae2lt.item.ElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
-import com.moakiee.ae2lt.item.OverloadBootsItem;
-import com.moakiee.ae2lt.item.OverloadChestplateItem;
+import com.moakiee.ae2lt.item.CelestweaveConduitItem;
+import com.moakiee.ae2lt.item.CelestweaveCoreItem;
+import com.moakiee.ae2lt.item.CelestweaveOculusItem;
+import com.moakiee.ae2lt.item.CelestweaveStrideItem;
 import com.moakiee.ae2lt.item.OverloadCrystalItem;
-import com.moakiee.ae2lt.item.OverloadHelmetItem;
-import com.moakiee.ae2lt.item.OverloadLeggingsItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
@@ -175,24 +175,24 @@ public final class ModItems {
             new Item.Properties().stacksTo(1));
 
     // ── Overload Armor ──────────────────────────────────────────────────────
-    public static final DeferredItem<OverloadHelmetItem> OVERLOAD_HELMET = ITEMS.registerItem(
-            "overload_helmet",
-            OverloadHelmetItem::new,
+    public static final DeferredItem<CelestweaveOculusItem> CELESTWEAVE_OCULUS = ITEMS.registerItem(
+            "celestweave_oculus",
+            CelestweaveOculusItem::new,
             new Item.Properties().rarity(Rarity.EPIC));
 
-    public static final DeferredItem<OverloadChestplateItem> OVERLOAD_CHESTPLATE = ITEMS.registerItem(
-            "overload_chestplate",
-            OverloadChestplateItem::new,
+    public static final DeferredItem<CelestweaveCoreItem> CELESTWEAVE_CORE = ITEMS.registerItem(
+            "celestweave_core",
+            CelestweaveCoreItem::new,
             new Item.Properties().rarity(Rarity.EPIC));
 
-    public static final DeferredItem<OverloadLeggingsItem> OVERLOAD_LEGGINGS = ITEMS.registerItem(
-            "overload_leggings",
-            OverloadLeggingsItem::new,
+    public static final DeferredItem<CelestweaveConduitItem> CELESTWEAVE_CONDUIT = ITEMS.registerItem(
+            "celestweave_conduit",
+            CelestweaveConduitItem::new,
             new Item.Properties().rarity(Rarity.EPIC));
 
-    public static final DeferredItem<OverloadBootsItem> OVERLOAD_BOOTS = ITEMS.registerItem(
-            "overload_boots",
-            OverloadBootsItem::new,
+    public static final DeferredItem<CelestweaveStrideItem> CELESTWEAVE_STRIDE = ITEMS.registerItem(
+            "celestweave_stride",
+            CelestweaveStrideItem::new,
             new Item.Properties().rarity(Rarity.EPIC));
 
     public static final DeferredItem<NightVisionSubmoduleItem> ARMOR_SUBMODULE_NIGHT_VISION = ITEMS.registerItem(

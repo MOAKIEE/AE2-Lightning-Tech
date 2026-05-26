@@ -16,10 +16,10 @@ import com.moakiee.ae2lt.util.EnergyText;
 
 public final class ArmorEnergyModuleItem extends Item implements OverloadDeviceModuleItem {
     private static final Set<DeviceKind> ACCEPTS = Set.of(
-            DeviceKind.OVERLOAD_HELMET,
-            DeviceKind.OVERLOAD_CHESTPLATE,
-            DeviceKind.OVERLOAD_LEGGINGS,
-            DeviceKind.OVERLOAD_BOOTS);
+            DeviceKind.CELESTWEAVE_OCULUS,
+            DeviceKind.CELESTWEAVE_CORE,
+            DeviceKind.CELESTWEAVE_CONDUIT,
+            DeviceKind.CELESTWEAVE_STRIDE);
 
     private final long capacityFe;
 

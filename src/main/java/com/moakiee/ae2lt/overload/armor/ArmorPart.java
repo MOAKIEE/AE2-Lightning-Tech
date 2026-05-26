@@ -5,25 +5,25 @@ import com.moakiee.ae2lt.device.DeviceSlotType;
 
 public enum ArmorPart {
     HEAD(
-            DeviceKind.OVERLOAD_HELMET,
+            DeviceKind.CELESTWEAVE_OCULUS,
             DeviceSlotType.HEAD_MODULE,
             "head",
             4,
             48),
     CHEST(
-            DeviceKind.OVERLOAD_CHESTPLATE,
+            DeviceKind.CELESTWEAVE_CORE,
             DeviceSlotType.CHEST_MODULE,
             "chest",
             5,
             128),
     LEGS(
-            DeviceKind.OVERLOAD_LEGGINGS,
+            DeviceKind.CELESTWEAVE_CONDUIT,
             DeviceSlotType.LEGS_MODULE,
             "legs",
             4,
             96),
     FEET(
-            DeviceKind.OVERLOAD_BOOTS,
+            DeviceKind.CELESTWEAVE_STRIDE,
             DeviceSlotType.FEET_MODULE,
             "feet",
             4,

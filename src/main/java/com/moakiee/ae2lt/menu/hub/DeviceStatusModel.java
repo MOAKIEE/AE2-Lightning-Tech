@@ -51,7 +51,7 @@ public record DeviceStatusModel(
     }
 
     public static final DeviceStatusModel EMPTY = new DeviceStatusModel(
-            DeviceKind.OVERLOAD_HELMET, "", false, "", 0, 0, 0, false, false,
+            DeviceKind.CELESTWEAVE_OCULUS, "", false, "", 0, 0, 0, false, false,
             0, 0, 0, 0, 0, 0, false, List.of(), 0,
             false, false, false, false);
 

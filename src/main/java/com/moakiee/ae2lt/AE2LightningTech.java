@@ -171,12 +171,12 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
-                        // 过载护甲 + 模块
+                        // 苍穹织雷装备 + 模块
                         output.accept(ModItems.OVERLOAD_MODULE_BASE);
-                        output.accept(ModItems.OVERLOAD_HELMET);
-                        output.accept(ModItems.OVERLOAD_CHESTPLATE);
-                        output.accept(ModItems.OVERLOAD_LEGGINGS);
-                        output.accept(ModItems.OVERLOAD_BOOTS);
+                        output.accept(ModItems.CELESTWEAVE_OCULUS);
+                        output.accept(ModItems.CELESTWEAVE_CORE);
+                        output.accept(ModItems.CELESTWEAVE_CONDUIT);
+                        output.accept(ModItems.CELESTWEAVE_STRIDE);
                         output.accept(ModItems.ARMOR_ENERGY_MODULE_T1);
                         output.accept(ModItems.ARMOR_ENERGY_MODULE_T2);
                         output.accept(ModItems.ARMOR_ENERGY_MODULE_T3);
@@ -313,10 +313,10 @@ public class AE2LightningTech {
         event.registerItem(
                 Capabilities.EnergyStorage.ITEM,
                 (stack, context) -> ArmorEnergyBuffer.asEnergyStorage(stack),
-                ModItems.OVERLOAD_HELMET.get(),
-                ModItems.OVERLOAD_CHESTPLATE.get(),
-                ModItems.OVERLOAD_LEGGINGS.get(),
-                ModItems.OVERLOAD_BOOTS.get());
+                ModItems.CELESTWEAVE_OCULUS.get(),
+                ModItems.CELESTWEAVE_CORE.get(),
+                ModItems.CELESTWEAVE_CONDUIT.get(),
+                ModItems.CELESTWEAVE_STRIDE.get());
 
         event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
