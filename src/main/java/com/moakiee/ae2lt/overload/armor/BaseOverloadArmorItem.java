@@ -27,10 +27,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.util.EnergyText;
 
-import top.theillusivec4.curios.api.SlotContext;
-import top.theillusivec4.curios.api.type.capability.ICurioItem;
-
-public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioItem, DeviceItem {
+public abstract class BaseOverloadArmorItem extends ArmorItem implements DeviceItem {
     private final ArmorPart armorPart;
 
     protected BaseOverloadArmorItem(ArmorPart armorPart, Properties properties) {
@@ -64,37 +61,6 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements ICurioI
         }
         boolean equipped = player.getItemBySlot(equipmentSlot(armorPart)) == stack;
         tickServer(player, stack, equipped, resolveDist(level));
-    }
-
-    @Override
-    public void curioTick(SlotContext slotContext, ItemStack stack) {
-        if (!(slotContext.entity() instanceof Player player)) {
-            return;
-        }
-        OverloadArmorState.ensureArmorId(stack);
-        if (player.level().isClientSide()) {
-            return;
-        }
-        tickServer(player, stack, true, resolveDist(player.level()));
-    }
-
-    @Override
-    public void onEquip(SlotContext slotContext, ItemStack prevStack, ItemStack stack) {
-        if (slotContext.entity() instanceof Player player && !player.level().isClientSide()) {
-            OverloadArmorState.ensureArmorId(stack);
-            OverloadArmorState.reconcileInstalledSubmodules(
-                    player, stack, player.level().registryAccess(), resolveDist(player.level()));
-            OverloadArmorState.syncSubmoduleActiveState(
-                    player, stack, player.level().registryAccess(), true, resolveDist(player.level()));
-        }
-    }
-
-    @Override
-    public void onUnequip(SlotContext slotContext, ItemStack newStack, ItemStack stack) {
-        if (slotContext.entity() instanceof Player player && !player.level().isClientSide()) {
-            OverloadArmorState.syncSubmoduleActiveState(
-                    player, stack, player.level().registryAccess(), false, resolveDist(player.level()));
-        }
     }
 
     @Override

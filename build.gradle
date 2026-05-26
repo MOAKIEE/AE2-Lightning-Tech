@@ -19,10 +19,6 @@ repositories {
         }
     }
     maven {
-        name = "Curios"
-        url = "https://maven.theillusivec4.top/"
-    }
-    maven {
         url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
     }
     maven {
@@ -154,8 +150,6 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:7027323"
-    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
-    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     runtimeOnly "org.appliedenergistics:guideme:${guideme_version}"
     compileOnly "curse.maven:jei-238222:7391682"
     runtimeOnly "curse.maven:jei-238222:7391682"
