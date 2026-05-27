@@ -15,15 +15,8 @@ import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
-import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.ClipContext;
-import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.EntityHitResult;
-import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -31,7 +24,6 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
 import com.moakiee.ae2lt.network.railgun.RailgunBeamUpdatePacket;
 
@@ -128,13 +120,6 @@ public final class RailgunBeamRenderClient {
         if (mc.player == null) return;
         if (!firing) {
             ACTIVE.remove(mc.player.getUUID());
-        } else {
-            long tick = mc.level == null ? 0L : mc.level.getGameTime();
-            float pt = mc.getTimer().getGameTimeDeltaPartialTick(true);
-            Vec3 from = RailgunVisuals.computeBarrelOrigin(mc.player, pt);
-            Vec3 dir = RailgunVisuals.computeBarrelDirection(mc.player, pt);
-            ACTIVE.put(mc.player.getUUID(), new BeamState(mc.player.getUUID(),
-                    from, from.add(dir.scale(RailgunDefaults.BEAM_RANGE)), tick));
         }
     }
 
@@ -155,21 +140,9 @@ public final class RailgunBeamRenderClient {
             return;
         }
         boolean isLocal = mc.player != null && p.shooterId().equals(mc.player.getUUID());
-        // Local player's beam is driven entirely by refreshLocalBeam (runs every
-        // render frame with current camera data); overwriting from/to with server
-        // eye-position values causes length drift during fast head rotation.
         if (isLocal) {
             if (!localRequestedFiring) return;
-            if (!localFiring) {
-                setLocalFiring(true);
-            }
-            // Keep lastUpdateTick fresh so the stale-check doesn't kill the beam,
-            // but do NOT touch from/to — those belong to refreshLocalBeam.
-            ACTIVE.computeIfPresent(p.shooterId(), (k, prev) -> {
-                prev.lastUpdateTick = tick;
-                return prev;
-            });
-            return;
+            localFiring = true;
         }
         ACTIVE.compute(p.shooterId(), (k, prev) -> {
             if (prev == null) {
@@ -258,33 +231,8 @@ public final class RailgunBeamRenderClient {
             return;
         }
 
-        // Raycast from the visual barrel along the rendered look direction.
-        // Server still authoritatively computes damage from the eye position.
-        Vec3 from = RailgunVisuals.computeBarrelOrigin(mc.player, partialTick);
-        Vec3 dir = RailgunVisuals.computeBarrelDirection(mc.player, partialTick);
-        double range = RailgunDefaults.BEAM_RANGE;
-        Vec3 maxTo = from.add(dir.scale(range));
-        HitResult blockHit = mc.level.clip(new ClipContext(
-                from, maxTo, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, mc.player));
-        Vec3 endBlock = blockHit.getType() == HitResult.Type.MISS ? maxTo : blockHit.getLocation();
-        EntityHitResult entityHit = ProjectileUtil.getEntityHitResult(mc.player, from, endBlock,
-                new AABB(from, endBlock).inflate(0.5D),
-                e -> e instanceof LivingEntity le && le != mc.player && !le.isSpectator(),
-                Double.MAX_VALUE);
-        Vec3 to = entityHit == null ? endBlock : lockedTargetPoint(entityHit.getEntity());
-        ACTIVE.compute(mc.player.getUUID(), (k, prev) -> {
-            if (prev == null) {
-                return new BeamState(mc.player.getUUID(), from, to, now);
-            }
-            prev.from = from;
-            prev.to = to;
-            prev.lastUpdateTick = now;
-            return prev;
-        });
-    }
-
-    private static Vec3 lockedTargetPoint(Entity target) {
-        return target.getBoundingBox().getCenter();
+        // Server update packets own the beam trace. Per-frame rendering still
+        // resolves the current barrel origin/direction in resolveBeamGeometry().
     }
 
     /**
