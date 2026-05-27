@@ -12,7 +12,7 @@ public final class ArmorEnergyModuleStorage {
 
     public static long capacityFe(ItemStack armor, HolderLookup.Provider registries) {
         if (registries == null) {
-            return 0L;
+            return OverloadArmorState.getCachedEnergyModuleCapacityFe(armor);
         }
         long capacity = 0L;
         for (ItemStack module : OverloadArmorState.loadModuleStacks(armor, registries)) {
@@ -28,6 +28,8 @@ public final class ArmorEnergyModuleStorage {
                 }
             }
         }
-        return Math.max(0L, capacity);
+        capacity = Math.max(0L, capacity);
+        OverloadArmorState.setCachedEnergyModuleCapacityFe(armor, capacity);
+        return capacity;
     }
 }

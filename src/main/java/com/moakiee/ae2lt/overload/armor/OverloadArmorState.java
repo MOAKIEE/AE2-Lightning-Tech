@@ -20,6 +20,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 import com.moakiee.ae2lt.device.overload.OverloadRuntime;
 import com.moakiee.ae2lt.overload.armor.ArmorEnergyModuleItem;
 import com.moakiee.ae2lt.network.ArmorSubmoduleActivePacket;
@@ -43,6 +45,7 @@ public final class OverloadArmorState {
     private static final String TAG_FEATURE_TOGGLES = "FeatureToggles";
     private static final String TAG_RUNTIME_ACTIVE = "Active";
     private static final String TAG_RUNTIME_DYNAMIC_LOAD = "DynamicLoad";
+    private static final String TAG_ENERGY_MODULE_CAPACITY_FE = "EnergyModuleCapacityFe";
 
     private static final java.util.Map<String, Boolean> SERVER_ACTIVE_CACHE =
             new java.util.concurrent.ConcurrentHashMap<>();
@@ -79,6 +82,30 @@ public final class OverloadArmorState {
         }
         var armorTag = root.getCompound(TAG_ROOT);
         return armorTag.hasUUID(TAG_ARMOR_ID) ? armorTag.getUUID(TAG_ARMOR_ID) : null;
+    }
+
+    public static long getCachedEnergyModuleCapacityFe(ItemStack armor) {
+        var root = rootTag(armor);
+        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
+            return 0L;
+        }
+        var armorTag = root.getCompound(TAG_ROOT);
+        return Math.max(0L, armorTag.getLong(TAG_ENERGY_MODULE_CAPACITY_FE));
+    }
+
+    public static void setCachedEnergyModuleCapacityFe(ItemStack armor, long capacityFe) {
+        if (armor == null || armor.isEmpty()) {
+            return;
+        }
+        CustomData.update(DataComponents.CUSTOM_DATA, armor, root -> {
+            var armorTag = armorTag(root);
+            if (capacityFe > 0L) {
+                armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, capacityFe);
+            } else {
+                armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
+            }
+            root.put(TAG_ROOT, armorTag);
+        });
     }
 
     public static ItemStack getSlot(ItemStack armor, HolderLookup.Provider registries, int slot) {
@@ -282,23 +309,51 @@ public final class OverloadArmorState {
             }
             int writtenTypes = 0;
             int writtenUnits = 0;
+            long energyCapacityFe = 0L;
             int maxUnits = armorPart(armor).moduleSlotCount();
             for (var stack : merged.values()) {
                 if (writtenTypes >= MAX_MODULE_TYPES || writtenUnits >= maxUnits) {
                     break;
                 }
                 int count = Math.min(Math.max(1, stack.getCount()), maxUnits - writtenUnits);
-                out.add(stack.copyWithCount(count).saveOptional(registries));
+                ItemStack writtenStack = stack.copyWithCount(count);
+                out.add(writtenStack.saveOptional(registries));
+                energyCapacityFe = Math.max(energyCapacityFe, energyCapacityFe(writtenStack));
                 writtenTypes++;
                 writtenUnits += count;
             }
             if (out.isEmpty()) {
                 armorTag.remove(TAG_INSTALLED_SUBMODULES);
+                armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
             } else {
                 armorTag.put(TAG_INSTALLED_SUBMODULES, out);
+                if (energyCapacityFe > 0L) {
+                    armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, energyCapacityFe);
+                } else {
+                    armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
+                }
             }
             root.put(TAG_ROOT, armorTag);
         });
+    }
+
+    private static long energyCapacityFe(ItemStack stack) {
+        if (stack.isEmpty()) {
+            return 0L;
+        }
+        if (stack.getItem() instanceof ArmorEnergyModuleItem energyModule) {
+            return energyModule.capacityFe();
+        }
+        if (stack.getItem() instanceof OverloadDeviceModuleItem provider) {
+            long capacity = 0L;
+            for (var capability : provider.capabilities(stack.copyWithCount(1))) {
+                if (capability instanceof DeviceCapability.EnergyCapacity energyCapacity) {
+                    capacity = Math.max(capacity, energyCapacity.fe());
+                }
+            }
+            return capacity;
+        }
+        return 0L;
     }
 
     public static boolean hasAnyInstalledModule(ItemStack armor, HolderLookup.Provider registries) {
