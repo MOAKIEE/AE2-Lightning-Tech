@@ -20,17 +20,14 @@ import com.moakiee.ae2lt.overload.armor.module.ResistanceSubmodule;
 public final class ResistanceSubmoduleItem extends Item implements OverloadArmorSubmoduleItem {
 
     private final ResistanceSubmodule submodule;
-    private final double passRate;
     private final String tooltipKey;
 
     public ResistanceSubmoduleItem(
             Properties properties,
             ResistanceSubmodule submodule,
-            double passRate,
             String tooltipKey) {
         super(properties.stacksTo(1));
         this.submodule = submodule;
-        this.passRate = passRate;
         this.tooltipKey = tooltipKey;
     }
 
@@ -47,7 +44,7 @@ public final class ResistanceSubmoduleItem extends Item implements OverloadArmor
     @Override
     public List<DeviceCapability> capabilities(ItemStack stack) {
         return List.of(
-                new DeviceCapability.StagedMitigation(submodule.id(), passRate, 2),
+                new DeviceCapability.StagedMitigation(submodule.id()),
                 new DeviceCapability.PassiveDrain(ArmorOverloadRules.RESISTANCE_PASSIVE_DRAIN_FE));
     }
 

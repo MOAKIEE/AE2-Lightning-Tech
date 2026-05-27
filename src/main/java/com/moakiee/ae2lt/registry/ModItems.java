@@ -214,7 +214,6 @@ public final class ModItems {
             properties -> new ResistanceSubmoduleItem(
                     properties,
                     ResistanceSubmodule.T1,
-                    0.30D,
                     "item.ae2lt.module_mitigation_t1.tooltip"),
             new Item.Properties());
 
@@ -223,7 +222,6 @@ public final class ModItems {
             properties -> new ResistanceSubmoduleItem(
                     properties,
                     ResistanceSubmodule.T2,
-                    0.0D,
                     "item.ae2lt.module_mitigation_t2.tooltip"),
             new Item.Properties());
 

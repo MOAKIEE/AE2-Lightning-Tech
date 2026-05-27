@@ -41,7 +41,7 @@ public sealed interface DeviceCapability {
     // --- armor only ---
 
     /** Stage-aware mitigation applied by chestplate modules. */
-    record StagedMitigation(String stage, double passRate, int loadPerHit) implements DeviceCapability {}
+    record StagedMitigation(String stage) implements DeviceCapability {}
 
     /** Reflects a fraction of post-armor damage back to attackers. */
     record ReflectTuning(double reflectPct, long fePerDamage, int loadPerDamage) implements DeviceCapability {}
