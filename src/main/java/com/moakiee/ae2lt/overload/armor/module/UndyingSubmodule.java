@@ -14,6 +14,7 @@ public final class UndyingSubmodule extends AbstractOverloadArmorSubmodule {
     public static final UndyingSubmodule INSTANCE = new UndyingSubmodule();
 
     private static final String TAG_COOLDOWN = "UndyingCooldown";
+    private static final String TAG_COOLDOWN_LAST_TICK = "UndyingCooldownLastTick";
     private static final String TAG_COMBO_UNTIL = "UndyingComboUntil";
     private static final String TAG_COMBO_COUNT = "UndyingComboCount";
 
@@ -48,10 +49,7 @@ public final class UndyingSubmodule extends AbstractOverloadArmorSubmodule {
     @Override
     public int tickActive(@Nullable Player player, Dist dist, ItemStack armor) {
         if (dist == Dist.DEDICATED_SERVER) {
-            int cooldown = getCooldown(armor);
-            if (cooldown > 0) {
-                setCooldown(armor, cooldown - 1);
-            }
+            tickCooldown(player, armor);
             if (player != null && getComboUntil(armor) < player.level().getGameTime()) {
                 clearCombo(armor);
             }
@@ -65,11 +63,51 @@ public final class UndyingSubmodule extends AbstractOverloadArmorSubmodule {
     }
 
     public static void setCooldown(ItemStack armor, int ticks) {
+        setCooldown(armor, ticks, -1L);
+    }
+
+    public static void setCooldown(ItemStack armor, int ticks, long gameTime) {
         var data = OverloadArmorState.getSubmoduleData(armor, INSTANCE);
         if (ticks <= 0) {
             data.remove(TAG_COOLDOWN);
+            data.remove(TAG_COOLDOWN_LAST_TICK);
         } else {
             data.putInt(TAG_COOLDOWN, ticks);
+            if (gameTime >= 0L) {
+                data.putLong(TAG_COOLDOWN_LAST_TICK, gameTime);
+            } else {
+                data.remove(TAG_COOLDOWN_LAST_TICK);
+            }
+        }
+        OverloadArmorState.setSubmoduleData(armor, INSTANCE, data);
+    }
+
+    private static void tickCooldown(@Nullable Player player, ItemStack armor) {
+        var data = OverloadArmorState.getSubmoduleData(armor, INSTANCE);
+        int cooldown = data.contains(TAG_COOLDOWN, CompoundTag.TAG_INT) ? data.getInt(TAG_COOLDOWN) : 0;
+        if (cooldown <= 0) {
+            if (data.contains(TAG_COOLDOWN_LAST_TICK, CompoundTag.TAG_LONG)) {
+                data.remove(TAG_COOLDOWN_LAST_TICK);
+                OverloadArmorState.setSubmoduleData(armor, INSTANCE, data);
+            }
+            return;
+        }
+        if (player != null) {
+            long gameTime = player.level().getGameTime();
+            long lastTick = data.contains(TAG_COOLDOWN_LAST_TICK, CompoundTag.TAG_LONG)
+                    ? data.getLong(TAG_COOLDOWN_LAST_TICK)
+                    : -1L;
+            if (lastTick >= gameTime) {
+                return;
+            }
+            data.putLong(TAG_COOLDOWN_LAST_TICK, gameTime);
+        }
+        cooldown--;
+        if (cooldown <= 0) {
+            data.remove(TAG_COOLDOWN);
+            data.remove(TAG_COOLDOWN_LAST_TICK);
+        } else {
+            data.putInt(TAG_COOLDOWN, cooldown);
         }
         OverloadArmorState.setSubmoduleData(armor, INSTANCE, data);
     }

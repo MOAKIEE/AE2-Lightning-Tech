@@ -103,7 +103,7 @@ public final class OverloadArmorUndyingHandler {
                 OverloadArmorState.markEnergyUnpaid(active.armor(), "energy");
                 continue;
             }
-            UndyingSubmodule.setCooldown(active.armor(), Math.max(1, active.tuning().cooldownTicks()));
+            UndyingSubmodule.setCooldown(active.armor(), Math.max(1, active.tuning().cooldownTicks()), now);
             UndyingSubmodule.recordTrigger(
                     active.armor(),
                     now,
