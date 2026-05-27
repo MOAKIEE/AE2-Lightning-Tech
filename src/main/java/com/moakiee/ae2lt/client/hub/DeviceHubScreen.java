@@ -533,8 +533,8 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
     private static Component loadEventName(String id) {
         String key = switch (id) {
-            case "resistance_t1" -> "ae2lt.overload_armor.feature.resistance_t1.name";
-            case "resistance_t2" -> "ae2lt.overload_armor.feature.resistance_t2.name";
+            case "matrix_shield" -> "ae2lt.overload_armor.feature.matrix_shield.name";
+            case "phase_shield" -> "ae2lt.overload_armor.feature.phase_shield.name";
             case "undying" -> "ae2lt.overload_armor.feature.undying.name";
             case "reflect" -> "ae2lt.overload_armor.feature.reflect.name";
             case "dash" -> "ae2lt.overload_armor.feature.dash.name";

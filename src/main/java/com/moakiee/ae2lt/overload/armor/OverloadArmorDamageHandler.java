@@ -76,8 +76,8 @@ public final class OverloadArmorDamageHandler {
 
     private static int mitigationRank(String stage) {
         return switch (stage) {
-            case "resistance_t2" -> 2;
-            case "resistance_t1" -> 1;
+            case "phase_shield" -> 2;
+            case "matrix_shield" -> 1;
             default -> 0;
         };
     }

@@ -19,8 +19,8 @@ public final class ArmorMitigationRules {
             return 0.0F;
         }
         return switch (stage) {
-            case "resistance_t1" -> applyMidStage(damageClass, incoming);
-            case "resistance_t2" -> 0.0F;
+            case "matrix_shield" -> applyMidStage(damageClass, incoming);
+            case "phase_shield" -> 0.0F;
             default -> incoming;
         };
     }

@@ -9,13 +9,13 @@ import net.neoforged.api.distmarker.Dist;
 public final class ResistanceSubmodule extends AbstractOverloadArmorSubmodule {
 
     public static final ResistanceSubmodule T1 = new ResistanceSubmodule(
-            "resistance_t1",
-            "ae2lt.overload_armor.feature.resistance_t1.name",
-            "ae2lt.overload_armor.feature.resistance_t1.desc");
+            "matrix_shield",
+            "ae2lt.overload_armor.feature.matrix_shield.name",
+            "ae2lt.overload_armor.feature.matrix_shield.desc");
     public static final ResistanceSubmodule T2 = new ResistanceSubmodule(
-            "resistance_t2",
-            "ae2lt.overload_armor.feature.resistance_t2.name",
-            "ae2lt.overload_armor.feature.resistance_t2.desc");
+            "phase_shield",
+            "ae2lt.overload_armor.feature.phase_shield.name",
+            "ae2lt.overload_armor.feature.phase_shield.desc");
 
     public static final String INSTALL_GROUP = "mitigation";
 

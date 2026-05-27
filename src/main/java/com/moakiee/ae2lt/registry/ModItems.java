@@ -209,20 +209,20 @@ public final class ModItems {
             WaterBreathingSubmoduleItem::new,
             new Item.Properties());
 
-    public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_RESISTANCE_T1 = ITEMS.registerItem(
-            "module_mitigation_t1",
+    public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_MATRIX_SHIELD = ITEMS.registerItem(
+            "module_matrix_shield",
             properties -> new ResistanceSubmoduleItem(
                     properties,
                     ResistanceSubmodule.T1,
-                    "item.ae2lt.module_mitigation_t1.tooltip"),
+                    "item.ae2lt.module_matrix_shield.tooltip"),
             new Item.Properties());
 
-    public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_RESISTANCE_T2 = ITEMS.registerItem(
-            "module_mitigation_t2",
+    public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_PHASE_SHIELD = ITEMS.registerItem(
+            "module_phase_shield",
             properties -> new ResistanceSubmoduleItem(
                     properties,
                     ResistanceSubmodule.T2,
-                    "item.ae2lt.module_mitigation_t2.tooltip"),
+                    "item.ae2lt.module_phase_shield.tooltip"),
             new Item.Properties());
 
     public static final DeferredItem<ReflectSubmoduleItem> ARMOR_SUBMODULE_REFLECT = ITEMS.registerItem(
