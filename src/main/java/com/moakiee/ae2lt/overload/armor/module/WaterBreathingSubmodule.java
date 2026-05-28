@@ -12,6 +12,12 @@ public final class WaterBreathingSubmodule extends AbstractOverloadArmorSubmodul
 
     public static final WaterBreathingSubmodule INSTANCE = new WaterBreathingSubmodule();
 
+    // Short duration with periodic refresh so effect recovers automatically after
+    // death/respawn or being cleared by milk / other mods. Duration kept above
+    // refresh interval with enough headroom.
+    private static final int EFFECT_DURATION_TICKS = 300;
+    private static final int REFRESH_INTERVAL_TICKS = 60;
+
     private WaterBreathingSubmodule() {}
 
     @Override
@@ -42,7 +48,7 @@ public final class WaterBreathingSubmodule extends AbstractOverloadArmorSubmodul
     @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
         if (player != null && dist == Dist.DEDICATED_SERVER) {
-            player.addEffect(new MobEffectInstance(MobEffects.WATER_BREATHING, Integer.MAX_VALUE, 0, false, false, true));
+            applyEffect(player);
         }
     }
 
@@ -55,6 +61,20 @@ public final class WaterBreathingSubmodule extends AbstractOverloadArmorSubmodul
 
     @Override
     public int tickActive(@Nullable Player player, Dist dist, ItemStack armor) {
+        if (player != null && dist == Dist.DEDICATED_SERVER
+                && player.tickCount % REFRESH_INTERVAL_TICKS == 0) {
+            applyEffect(player);
+        }
         return 0;
+    }
+
+    private static void applyEffect(Player player) {
+        player.addEffect(new MobEffectInstance(
+                MobEffects.WATER_BREATHING,
+                EFFECT_DURATION_TICKS,
+                0,
+                false,
+                false,
+                true));
     }
 }

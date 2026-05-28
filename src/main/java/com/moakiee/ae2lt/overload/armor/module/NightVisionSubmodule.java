@@ -12,6 +12,10 @@ public final class NightVisionSubmodule extends AbstractOverloadArmorSubmodule {
 
     public static final NightVisionSubmodule INSTANCE = new NightVisionSubmodule();
 
+    // Refresh window stays > 200 ticks to avoid vanilla's low-duration screen flicker.
+    private static final int EFFECT_DURATION_TICKS = 300;
+    private static final int REFRESH_INTERVAL_TICKS = 60;
+
     private NightVisionSubmodule() {}
 
     @Override
@@ -42,7 +46,7 @@ public final class NightVisionSubmodule extends AbstractOverloadArmorSubmodule {
     @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
         if (player != null && dist == Dist.DEDICATED_SERVER) {
-            player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION, Integer.MAX_VALUE, 0, false, false, true));
+            applyEffect(player);
         }
     }
 
@@ -55,6 +59,20 @@ public final class NightVisionSubmodule extends AbstractOverloadArmorSubmodule {
 
     @Override
     public int tickActive(@Nullable Player player, Dist dist, ItemStack armor) {
+        if (player != null && dist == Dist.DEDICATED_SERVER
+                && player.tickCount % REFRESH_INTERVAL_TICKS == 0) {
+            applyEffect(player);
+        }
         return 0;
+    }
+
+    private static void applyEffect(Player player) {
+        player.addEffect(new MobEffectInstance(
+                MobEffects.NIGHT_VISION,
+                EFFECT_DURATION_TICKS,
+                0,
+                false,
+                false,
+                true));
     }
 }
