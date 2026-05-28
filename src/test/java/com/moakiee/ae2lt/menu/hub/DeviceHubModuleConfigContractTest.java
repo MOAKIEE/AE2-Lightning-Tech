@@ -27,4 +27,12 @@ final class DeviceHubModuleConfigContractTest {
         assertTrue(action.contains("ACTION_CYCLE_MODULE_CONFIG"));
         assertTrue(action.contains("cycleSelectedModuleConfig"));
     }
+
+    @Test
+    void serverMenuKeepsSelectedModuleAlignedWithStatusSnapshot() throws Exception {
+        String menu = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/menu/hub/DeviceHubMenu.java"));
+
+        assertTrue(menu.contains("selectedModuleIndex = status.selectedModuleIndex()"));
+    }
 }

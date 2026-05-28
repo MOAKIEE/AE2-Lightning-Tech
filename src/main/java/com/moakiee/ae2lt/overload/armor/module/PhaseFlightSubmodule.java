@@ -15,6 +15,7 @@ import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.overload.armor.ArmorDynamicLoadRules;
+import com.moakiee.ae2lt.overload.armor.ArmorFlightSpeedRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
@@ -27,7 +28,6 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
     private static final String PLAYER_PHASE_TAG = "ae2lt.phase_flight.active";
     private static final String PLAYER_ESCAPE_TICKS_TAG = "ae2lt.phase_flight.escape_ticks";
     private static final float DEFAULT_FLYING_SPEED = 0.05F;
-    private static final double SPRINT_SPEED_MULTIPLIER = 1.5D;
     private static final int ESCAPE_PHASE_TICKS = 40;
 
     private PhaseFlightSubmodule() {
@@ -83,7 +83,6 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
 
         grantPhaseFlight(player, armor);
         applyTransientPhaseState(player);
-        applyPhaseMotion(player, armor);
         return ArmorDynamicLoadRules.phaseFlightStateLoad(
                 true,
                 player.isInWall(),
@@ -103,11 +102,7 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
         }
         var option = FlightSpeedOption.fromTag(value);
         var options = getOptions(armor);
-        if (option == FlightSpeedOption.ONE) {
-            options.remove(FlightSpeedOption.CONFIG_KEY);
-        } else {
-            options.put(FlightSpeedOption.CONFIG_KEY, option.toTag());
-        }
+        options.put(FlightSpeedOption.CONFIG_KEY, option.toTag());
         setOptions(armor, options);
         return true;
     }
@@ -154,7 +149,7 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
         }
         abilities.mayfly = true;
         abilities.flying = true;
-        abilities.setFlyingSpeed((float) Math.max(DEFAULT_FLYING_SPEED, phaseSpeed(armor)));
+        abilities.setFlyingSpeed(ArmorFlightSpeedRules.activeFlightSpeed(armor));
         player.onUpdateAbilities();
     }
 
@@ -193,30 +188,10 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
         boolean otherFlightActive = OverloadArmorState.isSubmoduleRuntimeActive(armor, FlightSubmodule.INSTANCE.id());
         abilities.mayfly = hadMayfly || otherFlightActive;
         abilities.flying = (wasFlying || otherFlightActive) && abilities.mayfly;
-        abilities.setFlyingSpeed(previousSpeed > 0.0F ? previousSpeed : DEFAULT_FLYING_SPEED);
+        abilities.setFlyingSpeed(otherFlightActive
+                ? ArmorFlightSpeedRules.activeFlightSpeed(armor)
+                : previousSpeed > 0.0F ? previousSpeed : DEFAULT_FLYING_SPEED);
         player.onUpdateAbilities();
-    }
-
-    private static void applyPhaseMotion(Player player, ItemStack armor) {
-        double speed = phaseSpeed(armor);
-        if (player.isSprinting()) {
-            speed *= SPRINT_SPEED_MULTIPLIER;
-        }
-        if (speed <= 0.0D) {
-            return;
-        }
-        Vec3 forward = new Vec3(player.getLookAngle().x, 0.0D, player.getLookAngle().z);
-        if (forward.lengthSqr() < 1.0E-6D) {
-            forward = Vec3.directionFromRotation(0.0F, player.getYRot());
-        }
-        forward = forward.normalize();
-        Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
-        Vec3 motion = forward.scale(player.zza).add(right.scale(player.xxa)).add(0.0D, player.yya, 0.0D);
-        if (motion.lengthSqr() <= 1.0E-6D) {
-            return;
-        }
-        player.setDeltaMovement(motion.normalize().scale(speed));
-        player.hurtMarked = true;
     }
 
     private static boolean escapeFromBlocks(Player player) {
@@ -270,8 +245,15 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
     public static void applyTransientPhaseState(Player player) {
         player.noPhysics = true;
         player.setNoGravity(true);
+        player.setOnGround(false);
         player.fallDistance = 0.0F;
         player.getPersistentData().putBoolean(PLAYER_PHASE_TAG, true);
+    }
+
+    public static void applyClientPhaseFlightState(Player player) {
+        var abilities = player.getAbilities();
+        abilities.mayfly = true;
+        abilities.flying = true;
     }
 
     public static void clearTransientPhaseState(Player player) {

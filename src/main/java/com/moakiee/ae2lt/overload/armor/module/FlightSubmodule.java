@@ -14,6 +14,7 @@ import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.overload.armor.ArmorDynamicLoadRules;
+import com.moakiee.ae2lt.overload.armor.ArmorFlightSpeedRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
@@ -72,7 +73,7 @@ public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
             if (!player.getAbilities().mayfly) {
                 grantFlight(player, armor);
             } else {
-                player.getAbilities().setFlyingSpeed(flightSpeed(armor));
+                player.getAbilities().setFlyingSpeed(ArmorFlightSpeedRules.activeFlightSpeed(armor));
                 player.onUpdateAbilities();
             }
             if (player.isFallFlying() && player.isSprinting()) {
@@ -100,11 +101,7 @@ public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
         }
         var option = FlightSpeedOption.fromTag(value);
         var options = getOptions(armor);
-        if (option == FlightSpeedOption.ONE) {
-            options.remove(FlightSpeedOption.CONFIG_KEY);
-        } else {
-            options.put(FlightSpeedOption.CONFIG_KEY, option.toTag());
-        }
+        options.put(FlightSpeedOption.CONFIG_KEY, option.toTag());
         setOptions(armor, options);
         return true;
     }
@@ -171,7 +168,7 @@ public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
             OverloadArmorState.setSubmoduleData(armor, INSTANCE, data);
         }
         abilities.mayfly = true;
-        abilities.setFlyingSpeed(flightSpeed(armor));
+        abilities.setFlyingSpeed(ArmorFlightSpeedRules.activeFlightSpeed(armor));
         player.onUpdateAbilities();
     }
 
@@ -200,7 +197,9 @@ public final class FlightSubmodule extends AbstractOverloadArmorSubmodule {
         boolean phaseFlightActive = OverloadArmorState.isSubmoduleRuntimeActive(armor, PhaseFlightSubmodule.INSTANCE.id());
         abilities.mayfly = hadMayfly || phaseFlightActive;
         abilities.flying = (wasFlying || phaseFlightActive) && abilities.mayfly;
-        abilities.setFlyingSpeed(previousSpeed > 0.0F ? previousSpeed : FlightSpeedOption.VANILLA_FLYING_SPEED);
+        abilities.setFlyingSpeed(phaseFlightActive
+                ? ArmorFlightSpeedRules.activeFlightSpeed(armor)
+                : previousSpeed > 0.0F ? previousSpeed : FlightSpeedOption.VANILLA_FLYING_SPEED);
         player.onUpdateAbilities();
     }
 }

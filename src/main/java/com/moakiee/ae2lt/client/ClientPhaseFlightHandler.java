@@ -27,6 +27,7 @@ public final class ClientPhaseFlightHandler {
 
         var player = minecraft.player;
         if (isClientPhaseActive()) {
+            PhaseFlightSubmodule.applyClientPhaseFlightState(player);
             PhaseFlightSubmodule.applyTransientPhaseState(player);
             return;
         }

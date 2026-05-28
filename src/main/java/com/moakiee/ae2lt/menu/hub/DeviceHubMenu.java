@@ -153,6 +153,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         } else {
             status = DeviceStatusModel.fromArmorStack(deviceStack, serverPlayer, selectedModuleIndex);
         }
+        selectedModuleIndex = status.selectedModuleIndex();
         // Update ContainerData
         ServerData sd = (ServerData) data;
         sd.values[DATA_SELECTED_TAB] = selectedTab;

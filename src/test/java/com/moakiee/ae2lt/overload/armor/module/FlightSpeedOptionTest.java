@@ -33,9 +33,9 @@ final class FlightSpeedOptionTest {
                 "src/main/java/com/moakiee/ae2lt/overload/armor/module/PhaseFlightSubmodule.java"));
 
         assertTrue(creativeFlight.contains("FlightSpeedOption.CONFIG_KEY"));
-        assertTrue(creativeFlight.contains("flightSpeed(armor)"));
+        assertTrue(creativeFlight.contains("flightSpeed(ItemStack armor)"));
         assertTrue(phaseFlight.contains("FlightSpeedOption.CONFIG_KEY"));
-        assertTrue(phaseFlight.contains("phaseSpeed(armor)"));
+        assertTrue(phaseFlight.contains("phaseSpeed(ItemStack armor)"));
     }
 
     @Test
@@ -45,5 +45,44 @@ final class FlightSpeedOptionTest {
 
         assertTrue(creativeFlight.contains("TAG_PREVIOUS_SPEED"));
         assertTrue(creativeFlight.contains("restoreStoredAbilities"));
+    }
+
+    @Test
+    void speedConfigPersistsOneTimesAsExplicitChoiceSoFourCanCycleBack() throws Exception {
+        String creativeFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/FlightSubmodule.java"));
+        String phaseFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/PhaseFlightSubmodule.java"));
+
+        assertTrue(creativeFlight.contains("options.put(FlightSpeedOption.CONFIG_KEY, option.toTag())"));
+        assertTrue(phaseFlight.contains("options.put(FlightSpeedOption.CONFIG_KEY, option.toTag())"));
+        assertTrue(!creativeFlight.contains("option == FlightSpeedOption.ONE"));
+        assertTrue(!phaseFlight.contains("option == FlightSpeedOption.ONE"));
+    }
+
+    @Test
+    void flightModulesUseSharedActiveSpeedResolverSoPhaseSpeedIsNotOverwritten() throws Exception {
+        String creativeFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/FlightSubmodule.java"));
+        String phaseFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/PhaseFlightSubmodule.java"));
+
+        assertTrue(creativeFlight.contains("activeFlightSpeed(armor)"));
+        assertTrue(phaseFlight.contains("activeFlightSpeed(armor)"));
+        assertTrue(!creativeFlight.contains("abilities.setFlyingSpeed(flightSpeed(armor))"));
+        assertTrue(!phaseFlight.contains("abilities.setFlyingSpeed((float) Math.max(DEFAULT_FLYING_SPEED, phaseSpeed(armor)))"));
+    }
+
+    @Test
+    void disablingOneFlightModeKeepsRemainingFlightModeSpeed() throws Exception {
+        String creativeFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/FlightSubmodule.java"));
+        String phaseFlight = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/overload/armor/module/PhaseFlightSubmodule.java"));
+
+        assertTrue(creativeFlight.contains("phaseFlightActive"));
+        assertTrue(creativeFlight.contains("? ArmorFlightSpeedRules.activeFlightSpeed(armor)"));
+        assertTrue(phaseFlight.contains("otherFlightActive"));
+        assertTrue(phaseFlight.contains("? ArmorFlightSpeedRules.activeFlightSpeed(armor)"));
     }
 }
