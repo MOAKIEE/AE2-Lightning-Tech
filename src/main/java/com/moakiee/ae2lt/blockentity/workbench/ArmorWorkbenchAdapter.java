@@ -100,16 +100,7 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
 
     @Override
     public String moduleTypeId(ItemStack stack) {
-        if (stack.isEmpty() || !(stack.getItem() instanceof OverloadArmorSubmoduleItem provider)) {
-            return "";
-        }
-        var ref = new String[]{""};
-        provider.collectSubmodules(stack, submodule -> {
-            if (submodule != null && !submodule.id().isBlank() && ref[0].isEmpty()) {
-                ref[0] = submodule.id();
-            }
-        });
-        return ref[0];
+        return OverloadArmorState.moduleTypeId(stack);
     }
 
     @Override
