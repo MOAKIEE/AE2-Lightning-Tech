@@ -10,7 +10,8 @@ public final class ArmorEnergyRules {
     }
 
     public static long capacityForExtraModuleFe(long extraModuleFe) {
-        return BASE_CAPACITY_FE + Math.max(0L, extraModuleFe);
+        long module = Math.max(0L, extraModuleFe);
+        return module > 0L ? module : BASE_CAPACITY_FE;
     }
 
     public static int receivableFe(long stored, long capacity, int requested) {
