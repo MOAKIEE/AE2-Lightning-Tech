@@ -6,7 +6,6 @@ import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
-import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -31,8 +30,6 @@ import com.moakiee.ae2lt.registry.ModDamageTypes;
 public final class OverloadArmorUndyingHandler {
     private static final String TAG_PROTECTED_TICK = "ae2lt.undying_protected_tick";
     private static final String TAG_PROTECTED_UNTIL = "ae2lt.undying_protected_until";
-    private static final float RESTORE_HEALTH = 4.0F;
-    private static final int CLEANSING_LIMIT = 3;
     private static final int PROTECTION_WINDOW_TICKS = 20;
 
     private OverloadArmorUndyingHandler() {
@@ -166,7 +163,6 @@ public final class OverloadArmorUndyingHandler {
                     comboIndex);
             recordProtectionWindow(player, now);
             restoreSurvivalState(player);
-            cleanseHarmfulEffects(player, CLEANSING_LIMIT);
             return true;
         }
         return false;
@@ -217,29 +213,13 @@ public final class OverloadArmorUndyingHandler {
         player.clearFire();
         player.setRemainingFireTicks(0);
         player.resetFallDistance();
-        float targetHealth = Math.max(1.0F, Math.min(player.getMaxHealth(), RESTORE_HEALTH));
+        float targetHealth = Math.max(1.0F, player.getMaxHealth());
         if (player.getHealth() < targetHealth) {
             player.setHealth(targetHealth);
         }
         player.invulnerableTime = Math.max(player.invulnerableTime, 20);
         player.hurtTime = 0;
         player.hurtDuration = 0;
-    }
-
-    private static int cleanseHarmfulEffects(ServerPlayer player, int maxEffects) {
-        int removed = 0;
-        for (var effect : List.copyOf(player.getActiveEffects())) {
-            if (removed >= maxEffects) {
-                break;
-            }
-            if (effect.getEffect().value().getCategory() != MobEffectCategory.HARMFUL) {
-                continue;
-            }
-            if (player.removeEffect(effect.getEffect())) {
-                removed++;
-            }
-        }
-        return removed;
     }
 
     private static List<ActiveLastStand> collectActiveLastStand(ServerPlayer player) {

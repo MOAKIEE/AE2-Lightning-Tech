@@ -53,4 +53,30 @@ final class ArmorUndyingFallbackCoverageTest {
                 compactHandler.contains("tryProtectDeadOrDying(event.getEntity());"),
                 "Both tick handlers should delegate to the same forced-death check.");
     }
+
+    @Test
+    void undyingHooksServerPlayerDieBeforeDeathSideEffects() throws Exception {
+        String mixinsSource = Files.readString(Path.of("src/main/resources/ae2lt.mixins.json"));
+        Path mixinPath = Path.of("src/main/java/com/moakiee/ae2lt/mixin/ServerPlayerUndyingMixin.java");
+        assertTrue(
+                Files.exists(mixinPath),
+                "Undying should add a dedicated ServerPlayer#die mixin fallback.");
+
+        String mixinSource = Files.readString(mixinPath);
+        String compactMixin = mixinSource.replaceAll("\\s+", "");
+
+        assertTrue(
+                mixinsSource.contains("\"ServerPlayerUndyingMixin\""),
+                "The ServerPlayer#die fallback mixin should be registered.");
+        assertTrue(
+                mixinSource.contains("@Mixin(ServerPlayer.class)"),
+                "The fallback should target the server-player death override.");
+        assertTrue(
+                compactMixin.contains("@Inject(method=\"die\",at=@At(\"HEAD\"),cancellable=true)"),
+                "The fallback should run before ServerPlayer#die emits death side effects.");
+        assertTrue(
+                compactMixin.contains("OverloadArmorUndyingHandler.tryProtectForcedDeath(player)")
+                        && compactMixin.contains("ci.cancel();"),
+                "The fallback should cancel ServerPlayer#die when undying protects the player.");
+    }
 }
