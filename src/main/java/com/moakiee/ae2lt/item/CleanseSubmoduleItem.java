@@ -17,7 +17,9 @@ public final class CleanseSubmoduleItem extends AbstractSingleArmorSubmoduleItem
                 CleanseSubmodule.INSTANCE,
                 "item.ae2lt.module_cleanse.tooltip",
                 stack -> List.of(
-                        new DeviceCapability.CleanseTuning(AE2LTCommonConfig.overloadArmorCleansePeriodTicks(), 1),
+                        new DeviceCapability.CleanseTuning(
+                                AE2LTCommonConfig.overloadArmorCleansePeriodTicks(),
+                                Integer.MAX_VALUE),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.CLEANSE_PASSIVE_DRAIN_FE)));
     }
 }

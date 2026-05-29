@@ -438,7 +438,7 @@ public final class AE2LTCommonConfig {
             builder.push("defense");
             overloadArmorCleansePeriodTicks = builder
                     .comment("Ticks between automatic negative effect cleanse attempts.")
-                    .defineInRange("cleansePeriodTicks", 100, 1, 20 * 60 * 60);
+                    .defineInRange("cleansePeriodTicks", 40, 1, 20 * 60 * 60);
             builder.pop();
 
             builder.push("utility");
