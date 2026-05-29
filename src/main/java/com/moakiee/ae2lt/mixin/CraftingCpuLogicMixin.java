@@ -12,7 +12,6 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 
 import appeng.api.config.Actionable;
@@ -31,7 +30,7 @@ import com.moakiee.ae2lt.overload.cpu.OverloadCpuStateManager;
 import com.moakiee.ae2lt.overload.cpu.OverloadPatternReference;
 import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
 
-@Mixin(targets = "appeng.crafting.execution.CraftingCpuLogic", remap = false)
+@Mixin(value = appeng.crafting.execution.CraftingCpuLogic.class, remap = false)
 public abstract class CraftingCpuLogicMixin {
     @Shadow(remap = false)
     CraftingCPUCluster cluster;
@@ -143,7 +142,7 @@ public abstract class CraftingCpuLogicMixin {
                                     overloadDetails.overloadPatternIdentity(),
                                     overloadDetails.overloadPatternDetailsView().sourcePattern()),
                     overloadDetails.overloadPatternDetailsView(),
-                    details.getOutputs(),
+                    java.util.Arrays.asList(details.getOutputs()),
                     finalOutputKey,
                     1L);
         }
@@ -151,9 +150,9 @@ public abstract class CraftingCpuLogicMixin {
     }
 
     @Inject(method = "writeToNBT", at = @At("RETURN"))
-    private void ae2lt$writeOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ae2lt$writeOverloadState(CompoundTag data, CallbackInfo ci) {
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
-        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic, registries);
+        var overloadStateTag = OverloadCpuStateManager.INSTANCE.writeToTag(logic);
         if (overloadStateTag != null) {
             data.put("ae2ltOverloadState", overloadStateTag);
         } else {
@@ -162,12 +161,12 @@ public abstract class CraftingCpuLogicMixin {
     }
 
     @Inject(method = "readFromNBT", at = @At("RETURN"))
-    private void ae2lt$readOverloadState(CompoundTag data, HolderLookup.Provider registries, CallbackInfo ci) {
+    private void ae2lt$readOverloadState(CompoundTag data, CallbackInfo ci) {
         var logic = (appeng.crafting.execution.CraftingCpuLogic) (Object) this;
         OverloadCpuStateManager.INSTANCE.clear(logic);
         var job = ((CraftingCpuLogicAccessor) logic).getJob();
         if (job != null && data.contains("ae2ltOverloadState", CompoundTag.TAG_COMPOUND)) {
-            OverloadCpuStateManager.INSTANCE.readFromTag(logic, data.getCompound("ae2ltOverloadState"), registries);
+            OverloadCpuStateManager.INSTANCE.readFromTag(logic, data.getCompound("ae2ltOverloadState"));
         }
     }
 

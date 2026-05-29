@@ -8,16 +8,17 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.core.HolderLookup;
+import com.google.gson.JsonObject;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.GsonHelper;
 import net.minecraft.core.NonNullList;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
@@ -42,31 +43,11 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
 public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerRecipeInput> {
     public static final int MIN_ENERGY_PER_CYCLE = 1;
 
-    private static final Codec<Integer> POSITIVE_ENERGY_CODEC = Codec.INT.validate(energy -> {
-        if (energy < MIN_ENERGY_PER_CYCLE) {
-            return DataResult.error(() -> "energyPerCycle must be at least " + MIN_ENERGY_PER_CYCLE);
-        }
-        return DataResult.success(energy);
-    });
+    private static final Codec<Integer> POSITIVE_ENERGY_CODEC = Codec.INT;
 
-    private static final Codec<Integer> NON_NEGATIVE_COUNT_CODEC = Codec.INT.validate(count -> {
-        if (count < 0) {
-            return DataResult.error(() -> "count must be non-negative");
-        }
-        return DataResult.success(count);
-    });
+    private static final Codec<Integer> NON_NEGATIVE_COUNT_CODEC = Codec.INT;
 
-    private static final Codec<Integer> POSITIVE_LIGHTNING_COST_CODEC = Codec.INT.validate(cost -> {
-        if (cost < 1) {
-            return DataResult.error(() -> "lightningCost must be at least 1");
-        }
-        return DataResult.success(cost);
-    });
-
-    private static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
-            StreamCodec.of(
-                    (buffer, tier) -> buffer.writeEnum(tier),
-                    buffer -> buffer.readEnum(LightningKey.Tier.class));
+    private static final Codec<Integer> POSITIVE_LIGHTNING_COST_CODEC = Codec.INT;
 
     private final Optional<Ingredient> catalyst;
     private final int catalystCount;
@@ -109,6 +90,17 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         if (lightningCost < 1) {
             throw new IllegalArgumentException("lightningCost must be at least 1");
         }
+    }
+
+    private ResourceLocation id;
+
+    public void setId(ResourceLocation id) {
+        this.id = id;
+    }
+
+    @Override
+    public ResourceLocation getId() {
+        return id;
     }
 
     public Optional<Ingredient> catalyst() {
@@ -159,7 +151,7 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     @Override
-    public ItemStack assemble(CrystalCatalyzerRecipeInput input, HolderLookup.Provider registries) {
+    public ItemStack assemble(CrystalCatalyzerRecipeInput input, RegistryAccess registryAccess) {
         return output.resolve();
     }
 
@@ -169,15 +161,15 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
-        return output.resolve();
-    }
-
-    @Override
     public NonNullList<Ingredient> getIngredients() {
         NonNullList<Ingredient> list = NonNullList.create();
         catalyst.ifPresent(list::add);
         return list;
+    }
+
+    @Override
+    public ItemStack getResultItem(RegistryAccess registryAccess) {
+        return output.resolve();
     }
 
     @Override
@@ -198,40 +190,41 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
     }
 
     public static final class Serializer implements RecipeSerializer<CrystalCatalyzerRecipe> {
-        private static final MapCodec<CrystalCatalyzerRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        Ingredient.CODEC_NONEMPTY.optionalFieldOf("catalyst").forGetter(CrystalCatalyzerRecipe::catalyst),
-                        NON_NEGATIVE_COUNT_CODEC.optionalFieldOf("catalystCount", 0).forGetter(CrystalCatalyzerRecipe::catalystCount),
-                        CrystalCatalyzerOutput.CODEC.fieldOf("output").forGetter(CrystalCatalyzerRecipe::outputSpec),
-                        POSITIVE_ENERGY_CODEC.fieldOf("energyPerCycle").forGetter(CrystalCatalyzerRecipe::energyPerCycle),
-                        POSITIVE_LIGHTNING_COST_CODEC.fieldOf("lightningCost").forGetter(CrystalCatalyzerRecipe::lightningCost),
-                        LightningKey.Tier.CODEC.optionalFieldOf("lightningTier", LightningKey.Tier.HIGH_VOLTAGE).forGetter(CrystalCatalyzerRecipe::lightningTier),
-                        Mode.CODEC.optionalFieldOf("mode", Mode.CRYSTAL).forGetter(CrystalCatalyzerRecipe::mode))
-                .apply(instance, CrystalCatalyzerRecipe::new));
-
-        private static final StreamCodec<RegistryFriendlyByteBuf, Optional<Ingredient>> OPTIONAL_INGREDIENT_STREAM_CODEC =
-                ByteBufCodecs.optional(Ingredient.CONTENTS_STREAM_CODEC);
-
-        private static final StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerRecipe> STREAM_CODEC =
-                StreamCodec.of(Serializer::encode, Serializer::decode);
-
-        private static void encode(RegistryFriendlyByteBuf buf, CrystalCatalyzerRecipe recipe) {
-            OPTIONAL_INGREDIENT_STREAM_CODEC.encode(buf, recipe.catalyst);
-            ByteBufCodecs.VAR_INT.encode(buf, recipe.catalystCount);
-            CrystalCatalyzerOutput.STREAM_CODEC.encode(buf, recipe.output);
-            ByteBufCodecs.VAR_INT.encode(buf, recipe.energyPerCycle);
-            ByteBufCodecs.VAR_INT.encode(buf, recipe.lightningCost);
-            TIER_STREAM_CODEC.encode(buf, recipe.lightningTier);
-            ByteBufCodecs.VAR_INT.encode(buf, recipe.mode.ordinal());
+        @Override
+        public CrystalCatalyzerRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
+            Optional<Ingredient> catalyst = json.has("catalyst")
+                    ? Optional.of(Ingredient.fromJson(json.get("catalyst")))
+                    : Optional.empty();
+            int catalystCount = GsonHelper.getAsInt(json, "catalystCount", 0);
+            CrystalCatalyzerOutput output = CrystalCatalyzerOutput.CODEC
+                    .parse(com.mojang.serialization.JsonOps.INSTANCE, GsonHelper.getAsJsonObject(json, "output"))
+                    .getOrThrow(false, msg -> {});
+            int energyPerCycle = GsonHelper.getAsInt(json, "energyPerCycle");
+            int lightningCost = GsonHelper.getAsInt(json, "lightningCost");
+            LightningKey.Tier lightningTier = json.has("lightningTier")
+                    ? LightningKey.Tier.valueOf(GsonHelper.getAsString(json, "lightningTier"))
+                    : LightningKey.Tier.HIGH_VOLTAGE;
+            Mode mode = json.has("mode")
+                    ? Mode.valueOf(GsonHelper.getAsString(json, "mode"))
+                    : Mode.CRYSTAL;
+            return new CrystalCatalyzerRecipe(catalyst, catalystCount, output, energyPerCycle,
+                    lightningCost, lightningTier, mode);
         }
 
-        private static CrystalCatalyzerRecipe decode(RegistryFriendlyByteBuf buf) {
-            Optional<Ingredient> catalyst = OPTIONAL_INGREDIENT_STREAM_CODEC.decode(buf);
-            int catalystCount = ByteBufCodecs.VAR_INT.decode(buf);
-            CrystalCatalyzerOutput output = CrystalCatalyzerOutput.STREAM_CODEC.decode(buf);
-            int energyPerCycle = ByteBufCodecs.VAR_INT.decode(buf);
-            int lightningCost = ByteBufCodecs.VAR_INT.decode(buf);
-            LightningKey.Tier lightningTier = TIER_STREAM_CODEC.decode(buf);
-            int modeOrdinal = ByteBufCodecs.VAR_INT.decode(buf);
+        @Override
+        public CrystalCatalyzerRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buf) {
+            boolean hasCatalyst = buf.readBoolean();
+            Optional<Ingredient> catalyst = Optional.empty();
+            if (hasCatalyst) {
+                ItemStack stack = buf.readItem();
+                catalyst = Optional.of(Ingredient.of(stack));
+            }
+            int catalystCount = buf.readVarInt();
+            CrystalCatalyzerOutput output = CrystalCatalyzerOutput.readFromBuf(buf);
+            int energyPerCycle = buf.readVarInt();
+            int lightningCost = buf.readVarInt();
+            LightningKey.Tier lightningTier = LightningKey.Tier.fromOrdinal(buf.readVarInt());
+            int modeOrdinal = buf.readVarInt();
             Mode mode = modeOrdinal >= 0 && modeOrdinal < Mode.values().length
                     ? Mode.values()[modeOrdinal]
                     : Mode.CRYSTAL;
@@ -240,13 +233,17 @@ public final class CrystalCatalyzerRecipe implements Recipe<CrystalCatalyzerReci
         }
 
         @Override
-        public MapCodec<CrystalCatalyzerRecipe> codec() {
-            return CODEC;
-        }
-
-        @Override
-        public StreamCodec<RegistryFriendlyByteBuf, CrystalCatalyzerRecipe> streamCodec() {
-            return STREAM_CODEC;
+        public void toNetwork(FriendlyByteBuf buf, CrystalCatalyzerRecipe recipe) {
+            buf.writeBoolean(recipe.catalyst.isPresent());
+            if (recipe.catalyst.isPresent()) {
+                buf.writeItem(recipe.catalyst.get().getItems()[0]);
+            }
+            buf.writeVarInt(recipe.catalystCount);
+            CrystalCatalyzerOutput.writeToBuf(buf, recipe.output);
+            buf.writeVarInt(recipe.energyPerCycle);
+            buf.writeVarInt(recipe.lightningCost);
+            buf.writeVarInt(recipe.lightningTier.ordinal());
+            buf.writeVarInt(recipe.mode.ordinal());
         }
     }
 }

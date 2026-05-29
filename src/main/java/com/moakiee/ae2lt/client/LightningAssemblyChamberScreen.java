@@ -69,7 +69,7 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
         addToLeftToolbar(this.autoExportButton);
 
         this.configureOutputButton = new ActionButton(
-                ActionItems.COG,
+                ActionItems.WRENCH,
                 () -> switchToScreen(new LightningAssemblyOutputConfigScreen(this)));
         this.configureOutputButton.setMessage(
                 Component.translatable("ae2lt.gui.lightning_assembly.configure_output"));
@@ -84,9 +84,7 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
                 LightningStatusLines.extremeHighVoltage(menu.getExtremeHighVoltageAvailable()))));
     }
 
-    @Override
     public void renderSlot(GuiGraphics guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 
@@ -112,4 +110,8 @@ public class LightningAssemblyChamberScreen extends AEBaseScreen<LightningAssemb
         this.configureOutputButton.setVisibility(menu.isAutoExportEnabled());
     }
 
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
+    }
 }

@@ -39,8 +39,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
     public static final MenuType<OverloadPatternEncoderMenu> TYPE = MenuTypeBuilder
             .create(OverloadPatternEncoderMenu::new, OverloadPatternEncoderHost.class)
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID, "overload_pattern_encoder"));
+            .build("overload_pattern_encoder");
 
     public static final int MAX_INPUT_SLOTS = 18;
     public static final int MAX_OUTPUT_SLOTS = 18;
@@ -76,9 +75,13 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
 
         this.sourceInventory = new AppEngInternalInventory(new InternalInventoryHost() {
             @Override
-            public void saveChangedInventory(AppEngInternalInventory inv) {
+            public void saveChanges() {
                 sourceDirty = true;
                 clearEncodedResult();
+            }
+
+            @Override
+            public void onChangeInventory(appeng.api.inventories.InternalInventory inv, int slot) {
             }
 
             @Override
@@ -223,7 +226,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
             }
 
             var resolver = new Ae2PlainPatternResolver(getPlayer().level());
-            return conversionService.resolveEditableSource(sourceStack, resolver, registryAccess()).orElse(null);
+            return conversionService.resolveEditableSource(sourceStack, resolver).orElse(null);
         } catch (RuntimeException ignored) {
             return null;
         }
@@ -234,7 +237,7 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
         if (sourceStack.getItem() instanceof OverloadPatternItem overloadPatternItem) {
             try {
                 var payload = overloadPatternItem.readPayload(sourceStack).orElse(null);
-                return payload != null ? payload.sourcePattern().toItemStack(registryAccess()) : null;
+                return payload != null ? payload.sourcePattern().toItemStack() : null;
             } catch (RuntimeException ignored) {
                 return null;
             }
@@ -383,15 +386,23 @@ public class OverloadPatternEncoderMenu extends AEBaseMenu {
                 return ItemStack.EMPTY;
             }
 
-            super.quickMoveStack(player, idx);
+            // Move result to player inventory
+            if (!moveItemStackTo(before, slots.size() - 36, slots.size(), true)) {
+                return ItemStack.EMPTY;
+            }
             if (resultSlot.getItem().isEmpty()) {
                 consumeSourcePattern();
-                return before;
             }
-            return ItemStack.EMPTY;
+            resultSlot.setChanged();
+            return before;
         }
 
-        return super.quickMoveStack(player, idx);
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return true;
     }
 
     private static final class InventoryContainerAdapter extends SimpleContainer {

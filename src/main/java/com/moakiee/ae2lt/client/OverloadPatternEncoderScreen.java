@@ -25,9 +25,9 @@ import com.moakiee.ae2lt.overload.model.MatchMode;
  */
 public class OverloadPatternEncoderScreen extends AbstractContainerScreen<OverloadPatternEncoderMenu> {
     private static final Component SCREEN_TITLE = Component.translatable("item.ae2lt.overload_pattern_encoder");
-    private static final ResourceLocation TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation TEXTURE = new ResourceLocation(
             AE2LightningTech.MODID, "textures/gui/ae2lt_pattern_encoder.png");
-    private static final ResourceLocation CHECKBOX_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation CHECKBOX_TEXTURE = new ResourceLocation(
             "ae2", "textures/guis/checkbox.png");
 
     private static final int TEXTURE_SIZE = 256;
@@ -97,7 +97,7 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
 
     @Override
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-        renderBackground(graphics, mouseX, mouseY, partialTick);
+        renderBackground(graphics);
         super.render(graphics, mouseX, mouseY, partialTick);
         renderEntryTooltip(graphics, mouseX, mouseY);
     }
@@ -136,12 +136,12 @@ public class OverloadPatternEncoderScreen extends AbstractContainerScreen<Overlo
     }
 
     @Override
-    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollY) {
         if (isWithinPanel(mouseX, mouseY) && maxScrollOffset() > 0) {
             scrollOffset = Mth.clamp(scrollOffset - (int) Math.signum(scrollY), 0, maxScrollOffset());
             return true;
         }
-        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+        return super.mouseScrolled(mouseX, mouseY, scrollY);
     }
 
     private void renderEntries(GuiGraphics graphics, int mouseX, int mouseY) {

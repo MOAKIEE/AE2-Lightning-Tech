@@ -11,7 +11,6 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.resources.ResourceLocation;
@@ -190,8 +189,7 @@ public final class OverloadCpuState {
         pendingByItemId.clear();
     }
 
-    public CompoundTag toTag(HolderLookup.Provider registries) {
-        Objects.requireNonNull(registries, "registries");
+    public CompoundTag toTag() {
         var tag = new CompoundTag();
         tag.putLong(TAG_NEXT_SEQUENCE, nextSequence);
 
@@ -202,7 +200,7 @@ public final class OverloadCpuState {
             pendingTag.put(TAG_SOURCE_PATTERN, pending.patternReference().sourcePattern().toTag());
             pendingTag.putInt(TAG_OUTPUT_SLOT, pending.key().outputSlotIndex());
             pendingTag.putString(TAG_ITEM_ID, pending.itemId().toString());
-            pendingTag.put(TAG_EXACT_TEMPLATE, pending.exactExpectedKey().toTagGeneric(registries));
+            pendingTag.put(TAG_EXACT_TEMPLATE, pending.exactExpectedKey().toTag());
             pendingTag.putLong(TAG_REMAINING, pending.remainingAmount());
             pendingTag.putBoolean(TAG_ROUTES_TO_REQUESTER, pending.routesToRequester());
             pendingTag.putLong(TAG_REGISTERED_ORDER, pending.registeredOrder());
@@ -212,10 +210,9 @@ public final class OverloadCpuState {
         return tag;
     }
 
-    public static OverloadCpuState fromTag(OverloadCpuOwner owner, CompoundTag tag, HolderLookup.Provider registries) {
+    public static OverloadCpuState fromTag(OverloadCpuOwner owner, CompoundTag tag) {
         Objects.requireNonNull(owner, "owner");
         Objects.requireNonNull(tag, "tag");
-        Objects.requireNonNull(registries, "registries");
 
         var state = new OverloadCpuState(owner);
         state.nextSequence = Math.max(1L, tag.getLong(TAG_NEXT_SEQUENCE));
@@ -235,8 +232,8 @@ public final class OverloadCpuState {
                     key,
                     owner,
                     patternReference,
-                    ResourceLocation.parse(pendingTag.getString(TAG_ITEM_ID)),
-                    loadExactExpectedKey(pendingTag, registries),
+                    new ResourceLocation(pendingTag.getString(TAG_ITEM_ID)),
+                    loadExactExpectedKey(pendingTag),
                     pendingTag.getLong(TAG_REMAINING),
                     pendingTag.getBoolean(TAG_ROUTES_TO_REQUESTER),
                     pendingTag.getLong(TAG_REGISTERED_ORDER));
@@ -248,16 +245,16 @@ public final class OverloadCpuState {
         return state;
     }
 
-    private static AEKey loadExactExpectedKey(CompoundTag pendingTag, HolderLookup.Provider registries) {
+    private static AEKey loadExactExpectedKey(CompoundTag pendingTag) {
         if (!pendingTag.contains(TAG_EXACT_TEMPLATE, CompoundTag.TAG_COMPOUND)) {
             throw new IllegalArgumentException("pending overload entry is missing an exact expected key");
         }
 
-        var key = AEKey.fromTagGeneric(registries, pendingTag.getCompound(TAG_EXACT_TEMPLATE).copy());
-        if (key == null) {
+        var stack = GenericStack.readTag(pendingTag.getCompound(TAG_EXACT_TEMPLATE));
+        if (stack == null) {
             throw new IllegalArgumentException("pending overload entry has an invalid exact expected key");
         }
-        return key;
+        return stack.what();
     }
 
     private void removeSatisfied(PendingOverloadOutput pending) {

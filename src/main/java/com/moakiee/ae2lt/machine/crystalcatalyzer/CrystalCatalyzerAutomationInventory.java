@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.machine.crystalcatalyzer;
 import java.util.Objects;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 /**
  * Capability-facing inventory wrapper.

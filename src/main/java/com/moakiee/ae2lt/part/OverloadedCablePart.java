@@ -28,8 +28,7 @@ public class OverloadedCablePart extends CoveredDenseCablePart
 
     @Override
     protected IManagedGridNode createMainNode() {
-        // AE2 1.21.1 uses IManagedGridNode#setTagName here.
-        // If your target AE2/MC version renames this API, adjust this override accordingly.
+        // AE2 15.x for 1.20.1 uses IManagedGridNode#setTagName here.
         return super.createMainNode().setTagName("overloaded_cable");
     }
 
@@ -79,5 +78,10 @@ public class OverloadedCablePart extends CoveredDenseCablePart
         getHost().markForUpdate();
         getHost().markForSave();
         return true;
+    }
+
+    @Override
+    public void clearContent() {
+        // No inventory to clear
     }
 }

@@ -10,12 +10,10 @@ import appeng.api.storage.cells.CellState;
 import appeng.api.storage.cells.ISaveProvider;
 import appeng.api.storage.cells.StorageCell;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -35,7 +33,6 @@ public class InfiniteCellInventory implements StorageCell {
     private static final String TAG_CELL_ID = "ae2lt:cell_id";
 
     private final ItemStack stack;
-    private final @Nullable HolderLookup.Provider explicitRegistries;
     private final @Nullable ISaveProvider saveProvider;
     private final IndexedStorage storage;
     private final ByteTracker byteTracker;
@@ -45,20 +42,19 @@ public class InfiniteCellInventory implements StorageCell {
     private int lastWrittenTypes = -1;
     private long lastWrittenBytes = -1;
 
-    private InfiniteCellInventory(ItemStack stack, @Nullable HolderLookup.Provider registries,
+    private InfiniteCellInventory(ItemStack stack,
                                   @Nullable ISaveProvider saveProvider,
                                   int bytesPerType, int maxTypes,
                                   long capacityLo, long capacityHi,
                                   double idleDrain) {
         this.stack = stack;
-        this.explicitRegistries = registries;
         this.saveProvider = saveProvider;
         this.idleDrain = idleDrain;
         this.cellId = readCellId();
 
         var savedData = InfiniteCellSavedData.getOrNull();
         if (cellId != null && savedData != null) {
-            this.storage = savedData.getOrCreateStorage(cellId, resolveRegistries());
+            this.storage = savedData.getOrCreateStorage(cellId);
         } else {
             this.storage = new IndexedStorage();
         }
@@ -82,26 +78,25 @@ public class InfiniteCellInventory implements StorageCell {
     }
 
     private HolderLookup.Provider resolveRegistries() {
-        if (explicitRegistries != null) return explicitRegistries;
         var server = ServerLifecycleHooks.getCurrentServer();
         if (server != null) return server.registryAccess();
         throw new IllegalStateException("No registries available — server not running");
     }
 
-    public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
+    public static InfiniteCellInventory create(ItemStack stack,
                                                @Nullable ISaveProvider saveProvider,
                                                int bytesPerType, int maxTypes,
                                                long capacityLo, long capacityHi,
                                                double idleDrain) {
-        return new InfiniteCellInventory(stack, registries,
+        return new InfiniteCellInventory(stack,
                 saveProvider,
                 bytesPerType, maxTypes, capacityLo, capacityHi, idleDrain);
     }
 
-    public static InfiniteCellInventory create(ItemStack stack, @Nullable HolderLookup.Provider registries,
+    public static InfiniteCellInventory create(ItemStack stack,
                                                int bytesPerType, int maxTypes,
                                                long capacity, double idleDrain) {
-        return create(stack, registries, null, bytesPerType, maxTypes, capacity, 0, idleDrain);
+        return create(stack, null, bytesPerType, maxTypes, capacity, 0, idleDrain);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -194,7 +189,7 @@ public class InfiniteCellInventory implements StorageCell {
 
         if (storage.getTotalTypes() == 0) {
             if (storage.needsPersist()) {
-                storage.persist(null, resolveRegistries());
+                storage.persist(null);
             }
             if (cellId != null) {
                 savedData.removeCell(cellId);
@@ -212,7 +207,7 @@ public class InfiniteCellInventory implements StorageCell {
             writeCellId(cellId);
         }
 
-        savedData.persistStorage(cellId, storage, resolveRegistries());
+        savedData.persistStorage(cellId, storage);
         ensureSync();
         syncSummary();
     }
@@ -235,19 +230,23 @@ public class InfiniteCellInventory implements StorageCell {
     // ══════════════════════════════════════════════════════════════════════
 
     private @Nullable UUID readCellId() {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.hasUUID(TAG_CELL_ID)) return null;
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        if (tag == null || !tag.hasUUID(TAG_CELL_ID)) return null;
         return tag.getUUID(TAG_CELL_ID);
     }
 
     private void writeCellId(UUID id) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack,
-                tag -> tag.putUUID(TAG_CELL_ID, id));
+        stack.getOrCreateTag().putUUID(TAG_CELL_ID, id);
     }
 
     private void clearCellId() {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack,
-                tag -> tag.remove(TAG_CELL_ID));
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        if (tag != null) {
+            tag.remove(TAG_CELL_ID);
+            if (tag.isEmpty()) {
+                stack.setTag(null);
+            }
+        }
     }
 
     private void markChanged() {
@@ -278,9 +277,7 @@ public class InfiniteCellInventory implements StorageCell {
         if (t == lastWrittenTypes && b == lastWrittenBytes) return;
         lastWrittenTypes = t;
         lastWrittenBytes = b;
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
-            tag.putInt("ae2lt:types", t);
-            tag.putLong("ae2lt:bytes", b);
-        });
+        stack.getOrCreateTag().putInt("ae2lt:types", t);
+        stack.getOrCreateTag().putLong("ae2lt:bytes", b);
     }
 }

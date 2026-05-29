@@ -33,9 +33,8 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
             RecipeType.create(AE2LightningTech.MODID, "lightning_simulation", LightningSimulationRecipe.class);
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/guis/lightning_simulation_room.png");
 
-    // Crop the machine GUI work area without clipping the input slots or reaction chamber border.
     private static final int BACKGROUND_U = 5;
     private static final int BACKGROUND_V = 14;
     private static final int BACKGROUND_WIDTH = 168;
@@ -83,6 +82,11 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
     }
 
     @Override
+    public IDrawable getBackground() {
+        return background;
+    }
+
+    @Override
     public IDrawable getIcon() {
         return icon;
     }
@@ -94,14 +98,14 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
             builder.addSlot(RecipeIngredientRole.INPUT, SLOT_INPUT_X, SLOT_INPUT_Y + index * SLOT_INPUT_SPACING)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStacks(expandIngredient(input.ingredient(), input.count()))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                    .addTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, SLOT_OUTPUT_X, SLOT_OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(recipe.getResultStack())
-                .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                .addTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, recipe.getResultStack().getCount()));
     }
 
@@ -142,7 +146,11 @@ public class LightningSimulationCategory implements IRecipeCategory<LightningSim
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
         return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+                .map(stack -> {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(count);
+                    return copy;
+                })
                 .toList();
     }
 

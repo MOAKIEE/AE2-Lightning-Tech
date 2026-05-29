@@ -16,22 +16,19 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.client.event.RenderLevelStageEvent;
 
 import appeng.client.render.overlay.OverlayRenderType;
 
@@ -395,10 +392,10 @@ public class WirelessConnectorRenderer {
             float x3, float y3, float z3,
             float x4, float y4, float z4,
             float nx, float ny, float nz) {
-        vc.addVertex(mat, x1, y1, z1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x2, y2, z2).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x3, y3, z3).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, x4, y4, z4).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+        vc.vertex(mat, x1, y1, z1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+        vc.vertex(mat, x2, y2, z2).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+        vc.vertex(mat, x3, y3, z3).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+        vc.vertex(mat, x4, y4, z4).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
     }
 
 
@@ -423,40 +420,40 @@ public class WirelessConnectorRenderer {
 
         switch (face) {
             case DOWN -> {
-                vc.addVertex(mat, 0, -offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, -offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, -offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, -offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, -offset, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, -offset, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, -offset, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 0, -offset, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
             case UP -> {
-                vc.addVertex(mat, 0, 1 + offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1 + offset, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1 + offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1 + offset, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, 1 + offset, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, 1 + offset, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, 1 + offset, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 0, 1 + offset, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
             case NORTH -> {
-                vc.addVertex(mat, 0, 0, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 0, -offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 0, 0, -offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 0, 1, -offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, 1, -offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, 0, -offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
             case SOUTH -> {
-                vc.addVertex(mat, 1, 0, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1, 1, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 1, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 0, 0, 1 + offset).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 1, 0, 1 + offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1, 1, 1 + offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 0, 1, 1 + offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 0, 0, 1 + offset).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
             case WEST -> {
-                vc.addVertex(mat, -offset, 0, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 1, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 1, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, -offset, 0, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, -offset, 0, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, -offset, 1, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, -offset, 1, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, -offset, 0, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
             case EAST -> {
-                vc.addVertex(mat, 1 + offset, 0, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 1, 0).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 1, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-                vc.addVertex(mat, 1 + offset, 0, 1).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+                vc.vertex(mat, 1 + offset, 0, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1 + offset, 1, 0).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1 + offset, 1, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+                vc.vertex(mat, 1 + offset, 0, 1).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
             }
         }
 
@@ -488,8 +485,8 @@ public class WirelessConnectorRenderer {
         if (len < 1e-6f) return;
         float nx = dx / len, ny = dy / len, nz = dz / len;
 
-        vc.addVertex(mat, fx, fy, fz).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
-        vc.addVertex(mat, tx, ty, tz).setColor(c[1], c[2], c[3], c[0]).setNormal(nx, ny, nz);
+        vc.vertex(mat, fx, fy, fz).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
+        vc.vertex(mat, tx, ty, tz).color((int)(c[1]*255), (int)(c[2]*255), (int)(c[3]*255), (int)(c[0]*255)).normal(nx, ny, nz);
     }
 
     // -- Item NBT helpers (client-side read-only) --
@@ -548,8 +545,8 @@ public class WirelessConnectorRenderer {
     }
 
     private static SelectedHost getSelectedHost(ItemStack stack) {
-        var tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        if (tag == null || !tag.contains(TAG_SELECTED, CompoundTag.TAG_COMPOUND)) {
             return null;
         }
         var sel = tag.getCompound(TAG_SELECTED);
@@ -559,7 +556,7 @@ public class WirelessConnectorRenderer {
         }
         return new SelectedHost(
                 BlockPos.of(sel.getLong(TAG_POS)),
-                ResourceKey.create(Registries.DIMENSION, ResourceLocation.parse(dimStr)),
+                ResourceKey.create(ResourceKey.createRegistryKey(new ResourceLocation("dimension")), new ResourceLocation(dimStr)),
                 sel.contains(TAG_HOST_TYPE, CompoundTag.TAG_STRING)
                         ? sel.getString(TAG_HOST_TYPE)
                         : OverloadedWirelessConnectorItem.HOST_PROVIDER);

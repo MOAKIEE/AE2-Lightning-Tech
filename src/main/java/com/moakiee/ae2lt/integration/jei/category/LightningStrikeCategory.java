@@ -14,17 +14,19 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
-import mezz.jei.api.gui.widgets.IRecipeExtrasBuilder;
 import mezz.jei.api.helpers.IGuiHelper;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
 import mezz.jei.api.recipe.category.IRecipeCategory;
 import net.minecraft.ChatFormatting;
+import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
@@ -63,8 +65,17 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
 
     private static final int TEXT_COLOR = 0x404040;
 
+    private static final ResourceLocation RECIPE_TEXTURE =
+            new ResourceLocation("jei", "textures/gui/gui.png");
+    private static final int ARROW_U = 82;
+    private static final int ARROW_V = 128;
+    private static final int ARROW_W = 24;
+    private static final int ARROW_H = 16;
+    private static final long ARROW_CYCLE_MS = 250L;
+
     private final IDrawable background;
     private final IDrawable icon;
+    private MultiblockPreviewWidget previewWidget;
 
     public LightningStrikeCategory(IGuiHelper guiHelper) {
         this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
@@ -94,11 +105,9 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
         builder.addSlot(RecipeIngredientRole.INPUT, CENTER_INPUT_X, CENTER_INPUT_Y)
-                .setStandardSlotBackground()
                 .addItemStack(new ItemStack(recipe.centerInput()));
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, CENTER_OUTPUT_X, CENTER_OUTPUT_Y)
-                .setOutputSlotBackground()
                 .addItemStack(new ItemStack(recipe.centerOutput()));
 
         // Aggregate the requirements by block so each unique block is shown once
@@ -125,28 +134,18 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
                                     : RecipeIngredientRole.CATALYST,
                             slotX,
                             slotY)
-                    .setStandardSlotBackground()
                     .addItemStack(new ItemStack(block, count));
             index++;
         }
-    }
 
-    @Override
-    public void createRecipeExtras(IRecipeExtrasBuilder builder, LightningStrikeRecipe recipe, IFocusGroup focuses) {
-        builder.addRecipeArrow().setPosition(ARROW_X, ARROW_Y);
-
+        // Build the multiblock preview widget for use in draw()
         var widgetBuilder = MultiblockPreviewWidget.builder(PREVIEW_X, PREVIEW_Y, PREVIEW_W, PREVIEW_H);
-
-        // y=0 layer requirements at their world offsets.
         for (StructureRequirement req : recipe.requirements()) {
             widgetBuilder.addBlock(req.block(), req.offset());
         }
-        // The consumed center block.
         widgetBuilder.addBlock(recipe.centerInput(), BlockPos.ZERO);
-        // The implicit lightning rod at (0, +1, 0).
         widgetBuilder.addBlock(Blocks.LIGHTNING_ROD, new BlockPos(0, 1, 0));
-
-        builder.addWidget(widgetBuilder.build());
+        this.previewWidget = widgetBuilder.build();
     }
 
     @Override
@@ -172,5 +171,24 @@ public class LightningStrikeCategory implements IRecipeCategory<LightningStrikeR
                 MATERIALS_LABEL_Y,
                 TEXT_COLOR,
                 false);
+
+        // Draw recipe arrow
+        long elapsed = Util.getMillis() % ARROW_CYCLE_MS;
+        double progress = elapsed / (double) ARROW_CYCLE_MS;
+        int fillW = Mth.clamp((int) Math.ceil(progress * ARROW_W), 0, ARROW_W);
+        if (fillW > 0) {
+            guiGraphics.blit(
+                    RECIPE_TEXTURE,
+                    ARROW_X, ARROW_Y,
+                    ARROW_U, ARROW_V,
+                    fillW, ARROW_H,
+                    256, 256);
+        }
+
+        // Draw multiblock preview
+        if (previewWidget != null) {
+            previewWidget.draw(guiGraphics, mouseX, mouseY);
+            previewWidget.tick();
+        }
     }
 }

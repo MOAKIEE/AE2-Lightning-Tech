@@ -3,13 +3,14 @@ package com.moakiee.ae2lt.machine.overloadfactory.recipe;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeInput;
-import net.neoforged.neoforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidStack;
 
 import com.moakiee.ae2lt.machine.overloadfactory.OverloadProcessingFactoryInventory;
 
-public record OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidStack inputFluid) implements RecipeInput {
+public record OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidStack inputFluid) implements Container {
     public static OverloadProcessingRecipeInput fromInventory(
             OverloadProcessingFactoryInventory inventory,
             FluidStack inputFluid) {
@@ -25,18 +26,50 @@ public record OverloadProcessingRecipeInput(List<SlotStack> slotStacks, FluidSta
         return new OverloadProcessingRecipeInput(List.copyOf(slotStacks), inputFluid.copy());
     }
 
-    public boolean isEmpty() {
-        return slotStacks.isEmpty() && inputFluid.isEmpty();
-    }
-
     @Override
     public ItemStack getItem(int index) {
         return slotStacks.get(index).stack();
     }
 
+    public boolean hasInput() {
+        return !slotStacks.isEmpty() || !inputFluid.isEmpty();
+    }
+
     @Override
-    public int size() {
+    public int getContainerSize() {
         return slotStacks.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return slotStacks.isEmpty();
+    }
+
+    @Override
+    public ItemStack removeItem(int index, int count) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int index) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public void setItem(int index, ItemStack stack) {
+    }
+
+    @Override
+    public void setChanged() {
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return false;
+    }
+
+    @Override
+    public void clearContent() {
     }
 
     public record SlotStack(int slot, ItemStack stack) {

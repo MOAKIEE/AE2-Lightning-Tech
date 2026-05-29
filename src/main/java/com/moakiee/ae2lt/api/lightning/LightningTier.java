@@ -2,8 +2,7 @@ package com.moakiee.ae2lt.api.lightning;
 
 import com.mojang.serialization.Codec;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.util.StringRepresentable;
 
 /**
@@ -26,10 +25,13 @@ public enum LightningTier implements StringRepresentable {
 
     public static final Codec<LightningTier> CODEC = StringRepresentable.fromEnum(LightningTier::values);
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, LightningTier> STREAM_CODEC =
-            StreamCodec.of(
-                    (buf, tier) -> buf.writeByte(tier.ordinal()),
-                    buf -> fromOrdinal(buf.readByte()));
+    public void writeToBuf(FriendlyByteBuf buf) {
+        buf.writeByte(this.ordinal());
+    }
+
+    public static LightningTier readFromBuf(FriendlyByteBuf buf) {
+        return fromOrdinal(buf.readByte());
+    }
 
     private final String serializedName;
 

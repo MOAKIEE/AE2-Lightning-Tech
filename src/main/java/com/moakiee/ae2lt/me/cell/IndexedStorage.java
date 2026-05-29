@@ -207,11 +207,11 @@ final class IndexedStorage {
     //  ListTag<CompoundTag> for keys, LongArrayTag for lo/hi.
     // ══════════════════════════════════════════════════════════════════════
 
-    CompoundTag persist(@Nullable CompoundTag lastRoot, HolderLookup.Provider registries) {
-        return persist(lastRoot, (key, reg) -> key.toTagGeneric(reg), registries);
+    CompoundTag persist(@Nullable CompoundTag lastRoot) {
+        return persist(lastRoot, (key, reg) -> key.toTag(), null);
     }
 
-    CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, HolderLookup.Provider registries) {
+    CompoundTag persist(@Nullable CompoundTag lastRoot, KeySerializer keySerializer, @Nullable HolderLookup.Provider registries) {
         if (needsCompact) {
             compact();
             lastRoot = null;
@@ -341,14 +341,14 @@ final class IndexedStorage {
 
     @FunctionalInterface
     interface KeySerializer {
-        CompoundTag toTag(AEKey key, HolderLookup.Provider registries);
+        CompoundTag toTag(AEKey key, @Nullable HolderLookup.Provider registries);
     }
 
     // ══════════════════════════════════════════════════════════════════════
     //  Load
     // ══════════════════════════════════════════════════════════════════════
 
-    void load(CompoundTag root, HolderLookup.Provider registries) {
+    void load(CompoundTag root) {
         keyToId.clear();
         nextId = 0;
         freeCount = 0;
@@ -374,7 +374,7 @@ final class IndexedStorage {
                 addFree(id);
                 continue;
             }
-            AEKey key = AEKey.fromTagGeneric(registries, entry.getCompound("key"));
+            AEKey key = AEKey.fromTagGeneric(entry.getCompound("key"));
             if (key == null) {
                 addFree(id);
                 continue;

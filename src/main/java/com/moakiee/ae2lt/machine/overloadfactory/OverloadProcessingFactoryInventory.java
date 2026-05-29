@@ -152,7 +152,7 @@ public class OverloadProcessingFactoryInventory extends LargeStackItemHandler {
 
         for (int index = 0; index < simulated.length; index++) {
             ItemStack existing = simulated[index];
-            if (existing.isEmpty() || !ItemStack.isSameItemSameComponents(existing, remainder)) {
+            if (existing.isEmpty() || !ItemStack.isSameItemSameTags(existing, remainder)) {
                 continue;
             }
 

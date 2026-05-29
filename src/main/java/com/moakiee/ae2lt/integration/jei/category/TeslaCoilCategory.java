@@ -52,20 +52,22 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     private static final int[] TEXT_LINES = {34, 46, 58, 70};
 
     private static final ResourceLocation ARROW_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
     private static final int ARROW_U = 176;
     private static final int ARROW_V = 18;
     private static final int ARROW_TEX_W = 256;
     private static final int ARROW_TEX_H = 256;
 
     private static final ResourceLocation HV_LIGHTNING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/high_voltage_lightning.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/item/high_voltage_lightning.png");
     private static final ResourceLocation EHV_LIGHTNING_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/item/extreme_high_voltage_lightning.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/item/extreme_high_voltage_lightning.png");
 
+    private final IDrawable background;
     private final IDrawable icon;
 
     public TeslaCoilCategory(IGuiHelper guiHelper) {
+        this.background = guiHelper.createBlankDrawable(WIDTH, HEIGHT);
         this.icon = guiHelper.createDrawableItemStack(new ItemStack(ModBlocks.TESLA_COIL.get()));
     }
 
@@ -90,6 +92,11 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
     }
 
     @Override
+    public IDrawable getBackground() {
+        return background;
+    }
+
+    @Override
     public IDrawable getIcon() {
         return icon;
     }
@@ -102,7 +109,7 @@ public class TeslaCoilCategory implements IRecipeCategory<TeslaCoilCategory.Page
             builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, ROW_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStack(new ItemStack(ModItems.OVERLOAD_CRYSTAL_DUST.get(), dustCount))
-                    .addRichTooltipCallback((slotView, tooltip) ->
+                    .addTooltipCallback((slotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, dustCount));
         }
     }

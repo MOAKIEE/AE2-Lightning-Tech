@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.client;
 
+import net.minecraft.client.gui.GuiGraphics;
+
 import java.util.List;
 
 import net.minecraft.network.chat.Component;
@@ -45,5 +47,9 @@ public class OverloadedPowerSupplyScreen extends AEBaseScreen<OverloadedPowerSup
         super.updateBeforeRender();
         // 索引 0 = NORMAL (overloaded_off), 1 = OVERLOAD (overloaded_on)。
         modeButton.setState(menu.getMode() == OverloadedPowerSupplyBlockEntity.PowerMode.OVERLOAD);
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

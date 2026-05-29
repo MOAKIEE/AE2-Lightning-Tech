@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.logic;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashSet;
 import java.util.Set;
 
 import org.jetbrains.annotations.Nullable;
@@ -22,7 +23,7 @@ import appeng.api.stacks.AEKeyType;
 import appeng.api.stacks.AEKeyTypes;
 import appeng.api.stacks.GenericStack;
 import appeng.api.stacks.KeyCounter;
-import appeng.api.storage.AEKeySlotFilter;
+import appeng.api.storage.AEKeyFilter;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.core.definitions.AEItems;
 import appeng.helpers.InterfaceLogic;
@@ -39,6 +40,12 @@ import java.util.List;
 
 public class OverloadedInterfaceLogic extends InterfaceLogic {
     private static final org.slf4j.Logger LOG = com.mojang.logging.LogUtils.getLogger();
+
+    private static Set<AEKeyType> allKeyTypes() {
+        var set = new HashSet<AEKeyType>();
+        AEKeyTypes.getAll().forEach(set::add);
+        return Set.copyOf(set);
+    }
 
     private static final long OVERLOADED_BYTES = 1024L;
 
@@ -95,19 +102,19 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
 
         var newConfig = new OverloadedConfigInv(
-                AEKeyTypes.getAll(), null,
+                allKeyTypes(), null,
                 GenericStackInv.Mode.CONFIG_STACKS, slots,
                 () -> invokeQuietly(M_ON_CONFIG_CHANGED, this));
         newConfig.owner = host;
         setField(F_CONFIG, newConfig);
         newConfig.useRegisteredCapacities();
-        for (var type : AEKeyTypes.getAll()) {
+        for (var type : allKeyTypes()) {
             newConfig.setCapacity(type, overloadedCap(type));
         }
 
         proxiedStorage = new ProxiedStorageInv(
-                this, AEKeyTypes.getAll(),
-                (slot, key) -> invokeSlotFilter(M_IS_ALLOWED_IN_SLOT, this, slot, key),
+                this, allKeyTypes(),
+                (key) -> true,
                 slots,
                 () -> invokeQuietly(M_ON_STORAGE_CHANGED, this));
         setField(F_STORAGE, proxiedStorage);
@@ -229,12 +236,10 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
     private class ProxyTicker implements IGridTickable {
         // 自定义 1-5 tick 档:有活 URGENT → 1 tick,空转 SLOWER → 最慢 5 tick
         // (AE2 默认 TickRates.Interface 是 5-120,空转太慢、响应滞后;这里覆盖为响应优先)
-        private static final int MIN_TICKS = 1;
-        private static final int MAX_TICKS = 5;
 
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(MIN_TICKS, MAX_TICKS, false);
+            return new TickingRequest(1, 5, false, false);
         }
 
         @Override
@@ -273,10 +278,10 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         boolean suppressUnlimitedCancel;
 
         OverloadedConfigInv(Set<AEKeyType> supportedTypes,
-                            @Nullable AEKeySlotFilter slotFilter,
+                            @Nullable AEKeyFilter slotFilter,
                             GenericStackInv.Mode mode, int size,
                             @Nullable Runnable listener) {
-            super(supportedTypes, slotFilter, mode, size, listener, false);
+            super(slotFilter, mode, size, listener, false);
         }
 
         @Override
@@ -316,7 +321,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         ProxiedStorageInv(OverloadedInterfaceLogic logic,
                           Set<AEKeyType> supportedTypes,
-                          @Nullable AEKeySlotFilter slotFilter,
+                          @Nullable AEKeyFilter slotFilter,
                           int size, @Nullable Runnable listener) {
             super(supportedTypes, slotFilter, GenericStackInv.Mode.STORAGE, size, listener);
             this.logic = logic;
@@ -421,8 +426,8 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         }
 
         @Override
-        public boolean isAllowedIn(int slot, AEKey what) {
-            return what != null && isSupportedType(what);
+        public boolean isAllowed(AEKey what) {
+            return what != null;
         }
 
         @Override
@@ -574,14 +579,12 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
         // ── NBT: no persistent state ────────────────────────────────────
 
         @Override
-        public void writeToChildTag(CompoundTag tag, String name,
-                                    HolderLookup.Provider registries) {
+        public void writeToChildTag(CompoundTag tag, String name) {
             tag.remove(name);
         }
 
         @Override
-        public void readFromChildTag(CompoundTag tag, String name,
-                                     HolderLookup.Provider registries) {
+        public void readFromChildTag(CompoundTag tag, String name) {
         }
     }
 

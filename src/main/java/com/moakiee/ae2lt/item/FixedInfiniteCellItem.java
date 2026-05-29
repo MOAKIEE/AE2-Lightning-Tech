@@ -12,7 +12,6 @@ import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
 import appeng.items.storage.StorageCellTooltipComponent;
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.tooltip.TooltipComponent;
@@ -20,8 +19,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModFumos;
@@ -91,7 +89,7 @@ public final class FixedInfiniteCellItem extends Item {
     // ── Seed (outer cell only) ──
 
     public static void setSeed(ItemStack stack, UUID seed) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putUUID(TAG_SEED, seed));
+        stack.getOrCreateTag().putUUID(TAG_SEED, seed);
     }
 
     public static void initializeOuterCell(ItemStack stack) {
@@ -111,7 +109,7 @@ public final class FixedInfiniteCellItem extends Item {
 
     @Nullable
     public static UUID getSeed(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
+        CompoundTag tag = stack.hasTag() ? stack.getTag() : new CompoundTag();
         return tag.hasUUID(TAG_SEED) ? tag.getUUID(TAG_SEED) : null;
     }
 
@@ -120,17 +118,15 @@ public final class FixedInfiniteCellItem extends Item {
     }
 
     private static void setWorldSeed(ItemStack stack, long worldSeed) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putLong(TAG_WORLD_SEED, worldSeed));
+        stack.getOrCreateTag().putLong(TAG_WORLD_SEED, worldSeed);
     }
 
     private static boolean hasWorldSeed(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.contains(TAG_WORLD_SEED);
+        return stack.hasTag() && stack.getTag().contains(TAG_WORLD_SEED);
     }
 
     private static long getWorldSeed(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getLong(TAG_WORLD_SEED);
+        return stack.hasTag() ? stack.getTag().getLong(TAG_WORLD_SEED) : 0L;
     }
 
     public static boolean isOuterCell(ItemStack stack) {
@@ -141,8 +137,7 @@ public final class FixedInfiniteCellItem extends Item {
         if (!isOuterCell(stack)) {
             return false;
         }
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getBoolean(TAG_RESULT_CONSUMED);
+        return stack.hasTag() && stack.getTag().getBoolean(TAG_RESULT_CONSUMED);
     }
 
     public static void setResultConsumed(ItemStack stack, boolean consumed) {
@@ -150,7 +145,7 @@ public final class FixedInfiniteCellItem extends Item {
             return;
         }
         initializeOuterCell(stack);
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putBoolean(TAG_RESULT_CONSUMED, consumed));
+        stack.getOrCreateTag().putBoolean(TAG_RESULT_CONSUMED, consumed);
     }
 
     /**
@@ -194,17 +189,15 @@ public final class FixedInfiniteCellItem extends Item {
     // ── Type byte (inner cell only) ──
 
     public static void setType(ItemStack stack, byte type) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putByte(TAG_TYPE, type));
+        stack.getOrCreateTag().putByte(TAG_TYPE, type);
     }
 
     public static boolean hasType(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.contains(TAG_TYPE);
+        return stack.hasTag() && stack.getTag().contains(TAG_TYPE);
     }
 
     public static byte getType(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return tag.getByte(TAG_TYPE);
+        return stack.hasTag() ? stack.getTag().getByte(TAG_TYPE) : 0;
     }
 
     // ── Effective key ──
@@ -249,7 +242,7 @@ public final class FixedInfiniteCellItem extends Item {
     private static final String TOOLTIP_KEY = "tooltip.ae2lt.mysterious_cell";
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context,
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
         if (hasType(stack)) {
             // 内核 cell(扭蛋解析完的成品,或创造栏里直接拿的变体)不再画任何

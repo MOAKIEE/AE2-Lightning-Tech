@@ -47,7 +47,7 @@ public final class FrequencyApi {
 
     /**
      * Create a binding access for the given host BE. The host's BE must
-     * extend {@code appeng.blockentity.grid.AENetworkedBlockEntity}.
+     * extend {@code appeng.blockentity.grid.AENetworkInvBlockEntity}.
      */
     public static FrequencyBindingAccess createBinding(FrequencyBindingHost host) {
         var p = provider;

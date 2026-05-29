@@ -224,7 +224,7 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
 
         @Override
         protected Icon getIcon() {
-            return isHoveredOrFocused() ? Icon.COG : Icon.COG_DISABLED;
+            return isHoveredOrFocused() ? Icon.WRENCH : Icon.WRENCH;
         }
     }
 
@@ -240,5 +240,9 @@ public class OverloadedInterfaceScreen extends AEBaseScreen<OverloadedInterfaceM
         protected Icon getIcon() {
             return this.icon;
         }
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

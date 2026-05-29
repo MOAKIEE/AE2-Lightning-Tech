@@ -1,5 +1,9 @@
 package com.moakiee.ae2lt.block;
 
+import net.minecraft.world.level.block.entity.BlockEntity;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
+
 import appeng.block.AEBaseEntityBlock;
 import appeng.menu.locator.MenuLocators;
 
@@ -12,6 +16,7 @@ import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
@@ -40,23 +45,19 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
     }
 
     @Override
-    protected VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
+    public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos,
+    public VoxelShape getCollisionShape(BlockState state, BlockGetter level, BlockPos pos,
             CollisionContext context) {
         return SHAPE;
     }
 
     @Override
-    protected InteractionResult useWithoutItem(
-            BlockState state,
-            Level level,
-            BlockPos pos,
-            Player player,
-            BlockHitResult hitResult) {
+    public InteractionResult use(
+            BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
         var blockEntity = getBlockEntity(level, pos);
         if (blockEntity == null) {
             return InteractionResult.PASS;
@@ -67,5 +68,11 @@ public class LightningCollectorBlock extends AEBaseEntityBlock<LightningCollecto
         }
 
         return InteractionResult.sidedSuccess(level.isClientSide());
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
+        return super.newBlockEntity(pos, state);
     }
 }

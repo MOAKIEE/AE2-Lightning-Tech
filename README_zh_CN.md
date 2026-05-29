@@ -4,7 +4,7 @@
 
 一个 [Applied Energistics 2](https://github.com/AppliedEnergistics/Applied-Energistics-2) 的附属模组，添加了一套闪电能源系统、进阶机器以及过载 ME 网络组件。
 
-> 依赖 AE2 · 适用于 Minecraft 1.21.1 / NeoForge
+> 依赖 AE2 · 适用于 Minecraft 1.20.1 / Forge
 
 ## 关于
 
@@ -41,7 +41,7 @@ AE2 闪电科技 把闪电变成一种可用的资源。收集自然雷电，精
 
 - **`AE2LTCapabilities.LIGHTNING_ENERGY_BLOCK`** —— 方块侧 capability，返回 `ILightningEnergyHandler`。已为 5 个接入闪电网格的方块实体注册：闪电收集器、闪电模拟室、闪电装配室、过载处理工厂、特斯拉线圈。Handler 直接桥接到 AE2 网格闪电存储，不需要任何反射。
 - **`LightningTier`** —— `HIGH_VOLTAGE` / `EXTREME_HIGH_VOLTAGE`。序列化名固化为 `"high_voltage"` / `"extreme_high_voltage"`。
-- **`LightningCollectedEvent`** —— 在 `NeoForge.EVENT_BUS` 上发布的可取消事件，于 `LightningCollectorBlockEntity.captureLightning(boolean)` 内部、roll 出数量之后、写入网格之前触发。订阅者可以取消捕获或改写入库数量。
+- **`LightningCollectedEvent`** —— 在 `MinecraftForge.EVENT_BUS` 上发布的可取消事件，于 `LightningCollectorBlockEntity.captureLightning(boolean)` 内部、roll 出数量之后、写入网格之前触发。订阅者可以取消捕获或改写入库数量。
 - **`AE2LTBlockEntityIds`** / **`AE2LTRecipeIds`** —— 公开方块实体与配方类型的固化 `ResourceLocation` 常量。
 - **`com.moakiee.ae2lt.api.frequency.FrequencyApi`** —— 无线频率系统的静态门面（服务器线程）。提供只读查询：`getBoundFrequencyId(BlockEntity)`、`getFrequencyInfo(server, id)`、`getTransmitter(server, id)`、`isValidFrequency(server, id)`，返回 `FrequencyInfo` / `TransmitterInfo` / `FrequencySecurity` 等不可变快照，不暴露内部可变状态。
 - **`FrequencyBindingHost`** + **`FrequencyBindingAccess`** —— 让第三方方块实体作为接收设备加入无线控制器。BE 必须继承 AE2 的 `AENetworkedBlockEntity`；把 `FrequencyApi.createBinding(this)` 得到的 access 存进一个字段，从 `getFrequencyBindingAccess()` 返回（同时实现另外三个 host 访问器：`getFrequencyBindingBlockEntity` / `saveFrequencyBindingChanges` / `markFrequencyBindingForUpdate`），并把生命周期方法（`onReady` / `setRemoved` / `clearRemoved` / `serverTick` / `save` / `load` / `onMainNodeStateChanged`）转发给句柄。虚拟连接重试、监听订阅、绑定设备列表全部由内部 helper 自动处理。完整可参考实现见 `package-info.java`。
@@ -59,7 +59,7 @@ AE2 闪电科技 把闪电变成一种可用的资源。收集自然雷电，精
 
 ## 问题反馈
 
-发现 bug 或有建议？欢迎在项目 issue 跟踪器中提交，请附上 Minecraft / NeoForge / AE2LT 的版本号，清晰的描述以及必要的日志。
+发现 bug 或有建议？欢迎在项目 issue 跟踪器中提交，请附上 Minecraft / Forge / AE2LT 的版本号，清晰的描述以及必要的日志。
 
 ## 许可证
 

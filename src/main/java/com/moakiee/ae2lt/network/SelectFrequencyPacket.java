@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.network;
 
+import java.util.function.Supplier;
+
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingHost;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
@@ -8,32 +10,36 @@ import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
-public record SelectFrequencyPacket(
-        int token,
-        BlockPos blockPos, int frequencyId, String password
-) implements CustomPacketPayload {
+public class SelectFrequencyPacket {
+    private final int token;
+    private final BlockPos blockPos;
+    private final int frequencyId;
+    private final String password;
 
-    public static final Type<SelectFrequencyPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "select_frequency"));
+    public SelectFrequencyPacket(int token, BlockPos blockPos, int frequencyId, String password) {
+        this.token = token;
+        this.blockPos = blockPos;
+        this.frequencyId = frequencyId;
+        this.password = password;
+    }
 
-    public static final StreamCodec<FriendlyByteBuf, SelectFrequencyPacket> STREAM_CODEC =
-            StreamCodec.of(SelectFrequencyPacket::encode, SelectFrequencyPacket::decode);
+    public int token() { return token; }
+    public BlockPos blockPos() { return blockPos; }
+    public int frequencyId() { return frequencyId; }
+    public String password() { return password; }
 
-    private static void encode(FriendlyByteBuf buf, SelectFrequencyPacket pkt) {
+    public static void encode(SelectFrequencyPacket pkt, FriendlyByteBuf buf) {
         buf.writeVarInt(pkt.token);
         buf.writeBlockPos(pkt.blockPos);
         buf.writeInt(pkt.frequencyId);
         buf.writeUtf(pkt.password, WirelessFrequency.MAX_PASSWORD_LENGTH);
     }
 
-    private static SelectFrequencyPacket decode(FriendlyByteBuf buf) {
+    public static SelectFrequencyPacket decode(FriendlyByteBuf buf) {
         return new SelectFrequencyPacket(
                 buf.readVarInt(),
                 buf.readBlockPos(),
@@ -41,18 +47,15 @@ public record SelectFrequencyPacket(
                 buf.readUtf(WirelessFrequency.MAX_PASSWORD_LENGTH));
     }
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(SelectFrequencyPacket pkt, IPayloadContext ctx) {
+    public static void handle(SelectFrequencyPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            ServerPlayer player = ctx.getSender();
+            if (player == null) return;
 
             FrequencyMenu menu = FrequencyMenu.validateToken(player, pkt.token);
             if (menu == null || !menu.getBlockPos().equals(pkt.blockPos)) {
-                PacketDistributor.sendToPlayer(player, new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
 
@@ -70,8 +73,7 @@ public record SelectFrequencyPacket(
             } else if (be instanceof FrequencyBindingHost bindingHost) {
                 currentFreqId = bindingHost.getFrequencyId();
             } else {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
 
@@ -91,8 +93,7 @@ public record SelectFrequencyPacket(
             if (changingBinding && currentFreqId > 0) {
                 var currentFreq = manager.getFrequency(currentFreqId);
                 if (currentFreq != null && !currentFreq.canPlayerAccess(player, "")) {
-                    PacketDistributor.sendToPlayer(player,
-                            new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
+                    NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                     return;
                 }
             }
@@ -110,8 +111,7 @@ public record SelectFrequencyPacket(
 
             WirelessFrequency freq = manager.getFrequency(pkt.frequencyId);
             if (freq == null) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.INVALID_FREQUENCY));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.INVALID_FREQUENCY));
                 return;
             }
 
@@ -119,15 +119,12 @@ public record SelectFrequencyPacket(
                 if (freq.getSecurity() == FrequencySecurityLevel.ENCRYPTED
                         && !freq.getPlayerAccess(player).canUse()
                         && pkt.password.isBlank()) {
-                    PacketDistributor.sendToPlayer(player,
-                            new FrequencyResponsePacket(FrequencyResponsePacket.REQUIRE_PASSWORD));
+                    NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REQUIRE_PASSWORD));
                 } else if (freq.getSecurity() == FrequencySecurityLevel.ENCRYPTED
                         && !freq.getPlayerAccess(player).canUse()) {
-                    PacketDistributor.sendToPlayer(player,
-                            new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                    NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 } else {
-                    PacketDistributor.sendToPlayer(player,
-                            new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
+                    NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                 }
                 return;
             }
@@ -149,8 +146,7 @@ public record SelectFrequencyPacket(
 
             if (be instanceof WirelessOverloadedControllerBlockEntity
                     && !manager.canRegisterTransmitter(pkt.frequencyId, level.dimension(), pkt.blockPos)) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.FREQUENCY_IN_USE));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.FREQUENCY_IN_USE));
                 return;
             }
 
@@ -161,5 +157,6 @@ public record SelectFrequencyPacket(
             }
             // DataSlot handles freqId sync; members may have been updated above
         });
+        ctx.setPacketHandled(true);
     }
 }

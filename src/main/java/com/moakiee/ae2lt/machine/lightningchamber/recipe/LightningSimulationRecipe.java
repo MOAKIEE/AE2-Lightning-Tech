@@ -11,14 +11,16 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 
-import net.minecraft.core.HolderLookup;
+import com.google.gson.JsonObject;
+import net.minecraft.util.GsonHelper;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.core.NonNullList;
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.item.crafting.Recipe;
+import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraft.world.item.crafting.RecipeType;
 import net.minecraft.world.level.Level;
@@ -31,38 +33,19 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     public static final int DEFAULT_LIGHTNING_COST = 4;
     public static final LightningKey.Tier DEFAULT_LIGHTNING_TIER = LightningKey.Tier.HIGH_VOLTAGE;
 
+    private static final Codec<Ingredient> INGREDIENT_CODEC = Codec.STRING.xmap(
+            s -> Ingredient.fromJson(com.google.gson.JsonParser.parseString(s)),
+            i -> i.toJson().toString()
+    );
+
     private static final Codec<List<LightningSimulationIngredient>> INPUTS_CODEC =
-            LightningSimulationIngredient.CODEC.codec()
-                    .listOf()
-                    .validate(inputs -> {
-                        if (inputs.isEmpty()) {
-                            return DataResult.error(() -> "lightning simulation recipe inputs cannot be empty");
-                        }
-                        if (inputs.size() > 3) {
-                            return DataResult.error(() -> "lightning simulation recipe supports at most 3 inputs");
-                        }
-                        return DataResult.success(List.copyOf(inputs));
-                    });
+            INGREDIENT_CODEC.listOf().xmap(
+                    list -> list.stream().map(i -> new LightningSimulationIngredient(i, 1)).toList(),
+                    list -> list.stream().map(LightningSimulationIngredient::ingredient).toList()
+            );
 
-    private static final Codec<Long> POSITIVE_ENERGY_CODEC = Codec.LONG.validate(totalEnergy -> {
-        if (totalEnergy < MIN_TOTAL_ENERGY) {
-            return DataResult.error(() -> "totalEnergy must be at least " + MIN_TOTAL_ENERGY);
-        }
-        return DataResult.success(totalEnergy);
-    });
-    private static final Codec<Integer> POSITIVE_LIGHTNING_COST_CODEC = Codec.INT.validate(lightningCost -> {
-        if (lightningCost <= 0) {
-            return DataResult.error(() -> "lightningCost must be positive");
-        }
-        return DataResult.success(lightningCost);
-    });
-    private static final StreamCodec<RegistryFriendlyByteBuf, List<LightningSimulationIngredient>> INPUTS_STREAM_CODEC =
-            LightningSimulationIngredient.STREAM_CODEC.apply(ByteBufCodecs.list());
-    private static final StreamCodec<RegistryFriendlyByteBuf, LightningKey.Tier> TIER_STREAM_CODEC =
-            StreamCodec.of(
-                    (buffer, tier) -> buffer.writeEnum(tier),
-                    buffer -> buffer.readEnum(LightningKey.Tier.class));
-
+    private static final Codec<Long> POSITIVE_ENERGY_CODEC = Codec.LONG;
+    private static final Codec<Integer> POSITIVE_LIGHTNING_COST_CODEC = Codec.INT;
     private final int priority;
     private final List<LightningSimulationIngredient> inputs;
     private final ItemStack result;
@@ -194,8 +177,19 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
         return Optional.of(new LightningSimulationRecipeMatch(slotConsumptions));
     }
 
+    private ResourceLocation id;
+
     @Override
-    public ItemStack assemble(LightningSimulationRecipeInput input, HolderLookup.Provider registries) {
+    public ResourceLocation getId() {
+        return id;
+    }
+
+    public void setId(ResourceLocation id) {
+        this.id = id;
+    }
+
+    @Override
+    public ItemStack assemble(LightningSimulationRecipeInput input, RegistryAccess registryAccess) {
         return result.copy();
     }
 
@@ -205,7 +199,7 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     }
 
     @Override
-    public ItemStack getResultItem(HolderLookup.Provider registries) {
+    public ItemStack getResultItem(RegistryAccess registryAccess) {
         return result.copy();
     }
 
@@ -234,7 +228,7 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
                 || result.isEmpty()
                 || totalEnergy < MIN_TOTAL_ENERGY
                 || lightningCost <= 0
-                || inputs.stream().anyMatch(input -> input.ingredient().hasNoItems());
+                || inputs.stream().anyMatch(input -> input.ingredient().isEmpty());
     }
 
     private ItemStack rawResult() {
@@ -340,41 +334,48 @@ public final class LightningSimulationRecipe implements Recipe<LightningSimulati
     }
 
     public static final class Serializer implements RecipeSerializer<LightningSimulationRecipe> {
-        private static final MapCodec<LightningSimulationRecipe> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-                        Codec.INT.optionalFieldOf("priority", 0).forGetter(LightningSimulationRecipe::priority),
-                        INPUTS_CODEC.fieldOf("inputs").forGetter(LightningSimulationRecipe::inputs),
-                        ItemStack.STRICT_CODEC.fieldOf("result").forGetter(LightningSimulationRecipe::rawResult),
-                        POSITIVE_ENERGY_CODEC.fieldOf("totalEnergy").forGetter(LightningSimulationRecipe::totalEnergy),
-                        POSITIVE_LIGHTNING_COST_CODEC.optionalFieldOf("lightningCost", DEFAULT_LIGHTNING_COST)
-                                .forGetter(LightningSimulationRecipe::lightningCost),
-                        LightningKey.Tier.CODEC.optionalFieldOf("lightningTier", DEFAULT_LIGHTNING_TIER)
-                                .forGetter(LightningSimulationRecipe::lightningTier))
-                .apply(instance, LightningSimulationRecipe::new));
-
-        private static final StreamCodec<RegistryFriendlyByteBuf, LightningSimulationRecipe> STREAM_CODEC =
-                StreamCodec.composite(
-                        ByteBufCodecs.VAR_INT,
-                        LightningSimulationRecipe::priority,
-                        INPUTS_STREAM_CODEC,
-                        LightningSimulationRecipe::inputs,
-                        ItemStack.STREAM_CODEC,
-                        LightningSimulationRecipe::rawResult,
-                        ByteBufCodecs.VAR_LONG,
-                        LightningSimulationRecipe::totalEnergy,
-                        ByteBufCodecs.VAR_INT,
-                        LightningSimulationRecipe::lightningCost,
-                        TIER_STREAM_CODEC,
-                        LightningSimulationRecipe::lightningTier,
-                        LightningSimulationRecipe::new);
-
         @Override
-        public MapCodec<LightningSimulationRecipe> codec() {
-            return CODEC;
+        public LightningSimulationRecipe fromJson(ResourceLocation recipeId, JsonObject json) {
+            int priority = GsonHelper.getAsInt(json, "priority", 0);
+            List<LightningSimulationIngredient> inputs = new ArrayList<>();
+            for (var element : GsonHelper.getAsJsonArray(json, "inputs")) {
+                inputs.add(LightningSimulationIngredient.fromJson(element.getAsJsonObject()));
+            }
+            ItemStack result = ShapedRecipe.itemStackFromJson(GsonHelper.getAsJsonObject(json, "result"));
+            long totalEnergy = GsonHelper.getAsLong(json, "totalEnergy");
+            int lightningCost = GsonHelper.getAsInt(json, "lightningCost", DEFAULT_LIGHTNING_COST);
+            LightningKey.Tier lightningTier = json.has("lightningTier")
+                    ? LightningKey.Tier.valueOf(GsonHelper.getAsString(json, "lightningTier"))
+                    : DEFAULT_LIGHTNING_TIER;
+            return new LightningSimulationRecipe(priority, inputs, result, totalEnergy, lightningCost, lightningTier);
         }
 
         @Override
-        public StreamCodec<RegistryFriendlyByteBuf, LightningSimulationRecipe> streamCodec() {
-            return STREAM_CODEC;
+        public LightningSimulationRecipe fromNetwork(ResourceLocation recipeId, FriendlyByteBuf buf) {
+            int priority = buf.readVarInt();
+            int inputCount = buf.readVarInt();
+            List<LightningSimulationIngredient> inputs = new ArrayList<>(inputCount);
+            for (int i = 0; i < inputCount; i++) {
+                inputs.add(LightningSimulationIngredient.readFromBuf(buf));
+            }
+            ItemStack result = buf.readItem();
+            long totalEnergy = buf.readVarLong();
+            int lightningCost = buf.readVarInt();
+            LightningKey.Tier lightningTier = LightningKey.Tier.fromOrdinal(buf.readVarInt());
+            return new LightningSimulationRecipe(priority, inputs, result, totalEnergy, lightningCost, lightningTier);
+        }
+
+        @Override
+        public void toNetwork(FriendlyByteBuf buf, LightningSimulationRecipe recipe) {
+            buf.writeVarInt(recipe.priority);
+            buf.writeVarInt(recipe.inputs.size());
+            for (LightningSimulationIngredient input : recipe.inputs) {
+                input.writeToBuf(buf);
+            }
+            buf.writeItem(recipe.rawResult());
+            buf.writeVarLong(recipe.totalEnergy);
+            buf.writeVarInt(recipe.lightningCost);
+            buf.writeVarInt(recipe.lightningTier.ordinal());
         }
     }
 }

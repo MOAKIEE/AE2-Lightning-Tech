@@ -52,10 +52,10 @@ public final class NoteModulationCatalysts {
         return Optional.empty();
     }
 
-    private record CatalystEntry(net.neoforged.neoforge.registries.DeferredItem<? extends Item> holder) {
+    private record CatalystEntry(net.minecraftforge.registries.RegistryObject<? extends Item> holder) {
         @Nullable
         Item item() {
-            return holder != null && holder.isBound() ? holder.get() : null;
+            return holder != null ? holder.orElse(null) : null;
         }
     }
 }

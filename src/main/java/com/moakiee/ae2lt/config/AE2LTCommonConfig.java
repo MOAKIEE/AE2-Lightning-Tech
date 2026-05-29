@@ -1,16 +1,16 @@
 package com.moakiee.ae2lt.config;
 
-import net.neoforged.neoforge.common.ModConfigSpec;
+import net.minecraftforge.common.ForgeConfigSpec;
 
 public final class AE2LTCommonConfig {
     public static final int CURRENT_CONFIG_VERSION = 2;
 
-    public static final ModConfigSpec SPEC;
+    public static final ForgeConfigSpec SPEC;
 
     private static final Values VALUES;
 
     static {
-        ModConfigSpec.Builder builder = new ModConfigSpec.Builder();
+        ForgeConfigSpec.Builder builder = new ForgeConfigSpec.Builder();
         VALUES = new Values(builder);
         SPEC = builder.build();
     }
@@ -159,44 +159,44 @@ public final class AE2LTCommonConfig {
     }
 
     private static final class Values {
-        private final ModConfigSpec.IntValue configVersion;
-        private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
-        private final ModConfigSpec.IntValue electroChimeMaxCatalysis;
-        private final ModConfigSpec.BooleanValue overloadTntEnableTerrainDamage;
-        private final ModConfigSpec.IntValue overloadTntGlobalBlockBudgetPerTick;
-        private final ModConfigSpec.IntValue overloadTntGlobalLightningBudgetPerTick;
-        private final ModConfigSpec.IntValue overloadedControllerChannelsPerController;
-        private final ModConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
-        private final ModConfigSpec.IntValue wirelessConnectorMaxDistance;
-        private final ModConfigSpec.IntValue overloadFactoryParallelPerMatrix;
-        private final ModConfigSpec.LongValue overloadFactoryEnergyCapacity;
-        private final ModConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
-        private final ModConfigSpec.LongValue overloadFactoryFePerTickOneSpeedCard;
-        private final ModConfigSpec.LongValue overloadFactoryFePerTickTwoSpeedCards;
-        private final ModConfigSpec.LongValue overloadFactoryFePerTickThreeSpeedCards;
-        private final ModConfigSpec.LongValue overloadFactoryFePerTickFourSpeedCards;
-        private final ModConfigSpec.BooleanValue artificialLightningTriggerFromHotbar;
-        private final ModConfigSpec.BooleanValue artificialLightningTriggerFromBackpack;
-        private final ModConfigSpec.IntValue lightningCollectorHvBaseMin;
-        private final ModConfigSpec.IntValue lightningCollectorHvBaseMax;
-        private final ModConfigSpec.IntValue lightningCollectorEhvBaseMin;
-        private final ModConfigSpec.IntValue lightningCollectorEhvBaseMax;
-        private final ModConfigSpec.IntValue lightningCollectorHvCrystalStart;
-        private final ModConfigSpec.IntValue lightningCollectorHvCrystalEnd;
-        private final ModConfigSpec.IntValue lightningCollectorEhvCrystalStart;
-        private final ModConfigSpec.IntValue lightningCollectorEhvCrystalEnd;
-        private final ModConfigSpec.IntValue lightningCollectorPerfectHvOutput;
-        private final ModConfigSpec.IntValue lightningCollectorPerfectEhvOutput;
-        private final ModConfigSpec.IntValue electroChimeCatalysisPerStrikeMin;
-        private final ModConfigSpec.IntValue electroChimeCatalysisPerStrikeMax;
-        private final ModConfigSpec.DoubleValue lightningCollectorSpreadRatio;
-        private final ModConfigSpec.IntValue teslaCoilHighVoltageDustCost;
-        private final ModConfigSpec.IntValue teslaCoilHighVoltageFe;
-        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
-        private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
-        private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
+        private final ForgeConfigSpec.IntValue configVersion;
+        private final ForgeConfigSpec.IntValue lightningCollectorCooldownTicks;
+        private final ForgeConfigSpec.IntValue electroChimeMaxCatalysis;
+        private final ForgeConfigSpec.BooleanValue overloadTntEnableTerrainDamage;
+        private final ForgeConfigSpec.IntValue overloadTntGlobalBlockBudgetPerTick;
+        private final ForgeConfigSpec.IntValue overloadTntGlobalLightningBudgetPerTick;
+        private final ForgeConfigSpec.IntValue overloadedControllerChannelsPerController;
+        private final ForgeConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
+        private final ForgeConfigSpec.IntValue wirelessConnectorMaxDistance;
+        private final ForgeConfigSpec.IntValue overloadFactoryParallelPerMatrix;
+        private final ForgeConfigSpec.LongValue overloadFactoryEnergyCapacity;
+        private final ForgeConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
+        private final ForgeConfigSpec.LongValue overloadFactoryFePerTickOneSpeedCard;
+        private final ForgeConfigSpec.LongValue overloadFactoryFePerTickTwoSpeedCards;
+        private final ForgeConfigSpec.LongValue overloadFactoryFePerTickThreeSpeedCards;
+        private final ForgeConfigSpec.LongValue overloadFactoryFePerTickFourSpeedCards;
+        private final ForgeConfigSpec.BooleanValue artificialLightningTriggerFromHotbar;
+        private final ForgeConfigSpec.BooleanValue artificialLightningTriggerFromBackpack;
+        private final ForgeConfigSpec.IntValue lightningCollectorHvBaseMin;
+        private final ForgeConfigSpec.IntValue lightningCollectorHvBaseMax;
+        private final ForgeConfigSpec.IntValue lightningCollectorEhvBaseMin;
+        private final ForgeConfigSpec.IntValue lightningCollectorEhvBaseMax;
+        private final ForgeConfigSpec.IntValue lightningCollectorHvCrystalStart;
+        private final ForgeConfigSpec.IntValue lightningCollectorHvCrystalEnd;
+        private final ForgeConfigSpec.IntValue lightningCollectorEhvCrystalStart;
+        private final ForgeConfigSpec.IntValue lightningCollectorEhvCrystalEnd;
+        private final ForgeConfigSpec.IntValue lightningCollectorPerfectHvOutput;
+        private final ForgeConfigSpec.IntValue lightningCollectorPerfectEhvOutput;
+        private final ForgeConfigSpec.IntValue electroChimeCatalysisPerStrikeMin;
+        private final ForgeConfigSpec.IntValue electroChimeCatalysisPerStrikeMax;
+        private final ForgeConfigSpec.DoubleValue lightningCollectorSpreadRatio;
+        private final ForgeConfigSpec.IntValue teslaCoilHighVoltageDustCost;
+        private final ForgeConfigSpec.IntValue teslaCoilHighVoltageFe;
+        private final ForgeConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
+        private final ForgeConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
+        private final ForgeConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
 
-        private Values(ModConfigSpec.Builder builder) {
+        private Values(ForgeConfigSpec.Builder builder) {
             configVersion = builder
                     .comment("Internal config schema version. Do not edit; used by the mod for upgrade migrations.")
                     .defineInRange("configVersion", CURRENT_CONFIG_VERSION, 1, Integer.MAX_VALUE);

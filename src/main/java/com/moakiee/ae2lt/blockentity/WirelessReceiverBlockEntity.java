@@ -10,10 +10,9 @@ import appeng.api.networking.IManagedGridNode;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
 import appeng.blockentity.ServerTickingBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -28,8 +27,9 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * by {@link FrequencyBindingHelper} so regular machines can reuse the same
  * receiver-side frequency binding.
  */
-public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
-        implements OverloadedGridNodeOwner, FrequencyBindingHost, ServerTickingBlockEntity {
+public class WirelessReceiverBlockEntity extends AENetworkInvBlockEntity
+        implements OverloadedGridNodeOwner, FrequencyBindingHost, ServerTickingBlockEntity,
+        appeng.util.inv.InternalInventoryHost {
 
     private final FrequencyBindingHelper frequencyBinding = new FrequencyBindingHelper(this);
 
@@ -61,7 +61,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -114,20 +114,40 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
-        super.saveAdditional(tag, registries);
+    public void saveAdditional(CompoundTag tag) {
+        super.saveAdditional(tag);
         frequencyBinding.save(tag);
     }
 
     @Override
-    public void loadTag(CompoundTag tag, HolderLookup.Provider registries) {
-        super.loadTag(tag, registries);
+    public void loadTag(CompoundTag tag) {
+        super.loadTag(tag);
         frequencyBinding.load(tag);
     }
 
     @Override
+    public void saveChanges() {
+        super.saveChanges();
+        setChanged();
+    }
+
+    @Override
+    public void onChangeInventory(appeng.api.inventories.InternalInventory inv, int slot) {
+    }
+
+    @Override
+    public boolean isClientSide() {
+        return level != null && level.isClientSide();
+    }
+
+    @Override
+    public appeng.api.inventories.InternalInventory getInternalInventory() {
+        return new appeng.util.inv.AppEngInternalInventory(this, 0);
+    }
+
+    @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.exportSettings(mode, builder, player);
         FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
@@ -135,7 +155,7 @@ public class WirelessReceiverBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable net.minecraft.world.entity.player.Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);

@@ -7,7 +7,6 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.crystalcatalyzer.CrystalCatalyzerInventory;
@@ -32,8 +31,8 @@ public final class CrystalCatalyzerRecipeService {
         }
 
         CrystalCatalyzerRecipeInput input = CrystalCatalyzerRecipeInput.fromMachine(inventory);
-        for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            CrystalCatalyzerRecipe recipe = holder.value();
+        for (CrystalCatalyzerRecipe holder : getRecipes(level)) {
+            CrystalCatalyzerRecipe recipe = holder;
             if (recipe.mode() != mode) {
                 continue;
             }
@@ -66,8 +65,8 @@ public final class CrystalCatalyzerRecipeService {
         if (level == null || stack.isEmpty()) {
             return false;
         }
-        for (RecipeHolder<CrystalCatalyzerRecipe> holder : getRecipes(level)) {
-            CrystalCatalyzerRecipe recipe = holder.value();
+        for (CrystalCatalyzerRecipe holder : getRecipes(level)) {
+            CrystalCatalyzerRecipe recipe = holder;
             if (recipe.mode() != mode) {
                 continue;
             }
@@ -82,18 +81,16 @@ public final class CrystalCatalyzerRecipeService {
         return false;
     }
 
-    private static List<RecipeHolder<CrystalCatalyzerRecipe>> getRecipes(Level level) {
+    private static List<CrystalCatalyzerRecipe> getRecipes(Level level) {
         return level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get());
     }
 
-    private static Optional<CrystalCatalyzerRecipeCandidate> toCrystalCatalyzerCandidate(RecipeHolder<?> holder) {
-        Recipe<?> recipe = holder.value();
-        if (!(recipe instanceof CrystalCatalyzerRecipe crystalCatalyzerRecipe)
-                || recipe.getType() != ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get()) {
+    private static Optional<CrystalCatalyzerRecipeCandidate> toCrystalCatalyzerCandidate(Recipe<?> holder) {
+        if (!(holder instanceof CrystalCatalyzerRecipe crystalCatalyzerRecipe)
+                || holder.getType() != ModRecipeTypes.CRYSTAL_CATALYZER_TYPE.get()) {
             return Optional.empty();
         }
 
-        return Optional.of(new CrystalCatalyzerRecipeCandidate(
-                new RecipeHolder<>(holder.id(), crystalCatalyzerRecipe)));
+        return Optional.of(new CrystalCatalyzerRecipeCandidate(crystalCatalyzerRecipe));
     }
 }

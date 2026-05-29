@@ -10,6 +10,7 @@ import net.minecraft.world.entity.player.Inventory;
 import appeng.client.gui.implementations.PatternProviderScreen;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.menu.SlotSemantics;
+import net.minecraft.world.inventory.Slot;
 
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
@@ -41,6 +42,20 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
     private final TextureToggleButton wirelessStrategyButton;
     private final TextureToggleButton wirelessSpeedButton;
     private final TextureToggleButton filteredImportButton;
+
+    private static final java.lang.reflect.Field SLOT_X_FIELD;
+    private static final java.lang.reflect.Field SLOT_Y_FIELD;
+
+    static {
+        try {
+            SLOT_X_FIELD = Slot.class.getDeclaredField("x");
+            SLOT_Y_FIELD = Slot.class.getDeclaredField("y");
+            SLOT_X_FIELD.setAccessible(true);
+            SLOT_Y_FIELD.setAccessible(true);
+        } catch (NoSuchFieldException e) {
+            throw new RuntimeException("Failed to access Slot position fields", e);
+        }
+    }
 
     private static final int SLOTS_PER_PAGE = 36;
 
@@ -118,8 +133,13 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
 
         for (int i = SLOTS_PER_PAGE; i < total; i++) {
             int ref = i % SLOTS_PER_PAGE;
-            patternSlots.get(i).x = patternSlots.get(ref).x;
-            patternSlots.get(i).y = patternSlots.get(ref).y;
+            try {
+                SLOT_X_FIELD.setInt(patternSlots.get(i), SLOT_X_FIELD.getInt(patternSlots.get(ref)));
+                SLOT_Y_FIELD.setInt(patternSlots.get(i), SLOT_Y_FIELD.getInt(patternSlots.get(ref)));
+            } catch (IllegalAccessException e) {
+                // Should not happen after setAccessible
+                break;
+            }
         }
     }
 
@@ -175,4 +195,7 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
         button.active = visible;
     }
 
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
+    }
 }

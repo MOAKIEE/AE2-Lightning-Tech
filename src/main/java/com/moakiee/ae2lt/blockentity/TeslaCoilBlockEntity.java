@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
@@ -13,9 +14,9 @@ import appeng.api.networking.ticking.IGridTickable;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.orientation.RelativeSide;
 import appeng.api.util.AECableType;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
@@ -34,17 +35,21 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import com.moakiee.ae2lt.api.AE2LTCapabilities;
+import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 
-public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
+public class TeslaCoilBlockEntity extends AENetworkInvBlockEntity
         implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
     public static final int ENERGY_CAPACITY = 16_000_000;
     private static final String TAG_INVENTORY = "Inventory";
@@ -90,7 +95,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -143,7 +148,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
     public void cycleMode() {
         selectedMode = selectedMode.next();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
     }
 
@@ -163,7 +168,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
             return false;
         }
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
         return true;
     }
@@ -251,7 +256,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
         consumedEnergy = Math.min(getLockedTotalEnergy(), consumedEnergy + amount);
         processingTicksSpent = Math.min(TeslaCoilMode.PROCESS_TICKS, processingTicksSpent + 1);
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public TeslaCoilStatus getStatus() {
@@ -315,13 +320,13 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
         consumedEnergy = 0L;
         processingTicksSpent = 0;
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
         setWorking(false);
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(TeslaCoilMenu.TYPE, player, locator);
     }
 
@@ -338,7 +343,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
                     && state.getValue(TeslaCoilBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(TeslaCoilBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                setChanged();
             }
         }
     }
@@ -363,9 +368,9 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
@@ -381,9 +386,9 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
         selectedMode = TeslaCoilMode.fromName(data.getString(TAG_SELECTED_MODE));
         lockedMode = data.contains(TAG_LOCKED_MODE)
@@ -421,13 +426,13 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void clearContent() {
-        super.clearContent();
+        // clearContent not available in 1.20.1 AE2
         inventory.clear();
     }
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
@@ -438,7 +443,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
@@ -584,13 +589,13 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
     }
 
     private void onEnergyChanged() {
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
     }
 
@@ -629,5 +634,41 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
 
     private long getRequiredHighVoltageForBatch(TeslaCoilMode mode, long batchSize) {
         return Math.multiplyExact(mode.requiredHighVoltage(), batchSize);
+    }
+    @Override
+    public InternalInventory getInternalInventory() {
+        return inventory;
+    }
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
+    }
+
+    // --- Forge Capability overrides (migrated from NeoForge RegisterCapabilitiesEvent) ---
+
+    private final LazyOptional<IItemHandlerModifiable> itemHandlerCap = LazyOptional.of(this::getAutomationInventory);
+    private final LazyOptional<IEnergyStorage> energyStorageCap = LazyOptional.of(this::getEnergyStorage);
+    private final LazyOptional<com.moakiee.ae2lt.api.lightning.ILightningEnergyHandler> lightningEnergyCap =
+            LazyOptional.of(() -> new GridLightningEnergyHandler(this));
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return itemHandlerCap.cast();
+        }
+        if (cap == ForgeCapabilities.ENERGY) {
+            return energyStorageCap.cast();
+        }
+        if (cap == AE2LTCapabilities.LIGHTNING_ENERGY) {
+            return lightningEnergyCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        itemHandlerCap.invalidate();
+        energyStorageCap.invalidate();
+        lightningEnergyCap.invalidate();
     }
 }

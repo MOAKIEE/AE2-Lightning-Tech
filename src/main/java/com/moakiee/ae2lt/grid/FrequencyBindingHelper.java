@@ -11,7 +11,6 @@ import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.me.GridConnection;
 import appeng.util.SettingsFrom;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 
@@ -177,12 +176,12 @@ public final class FrequencyBindingHelper
         return true;
     }
 
-    public static void exportMemorySettings(SettingsFrom mode, DataComponentMap.Builder builder, int frequencyId) {
-        MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> writeMemoryFrequency(tag, frequencyId));
+    public static void exportMemorySettings(SettingsFrom mode, CompoundTag tag, int frequencyId) {
+        MemoryCardConfigSupport.exportMemoryCardSettings(mode, tag, t -> writeMemoryFrequency(t, frequencyId));
     }
 
-    public static void importMemorySettings(SettingsFrom mode, DataComponentMap input, IntConsumer setter) {
-        MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> importMemoryFrequency(tag, setter));
+    public static void importMemorySettings(SettingsFrom mode, CompoundTag input, IntConsumer setter) {
+        MemoryCardConfigSupport.importMemoryCardSettings(mode, input, t -> importMemoryFrequency(t, setter));
     }
 
     public int getGridUsedChannels() {

@@ -1,30 +1,38 @@
 package com.moakiee.ae2lt.network;
 
+import java.util.function.Supplier;
+
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequency;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
-public record CreateFrequencyPacket(
-        int token,
-        String name, int color,
-        FrequencySecurityLevel security, String password
-) implements CustomPacketPayload {
+public class CreateFrequencyPacket {
+    private final int token;
+    private final String name;
+    private final int color;
+    private final FrequencySecurityLevel security;
+    private final String password;
 
-    public static final Type<CreateFrequencyPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "create_frequency"));
+    public CreateFrequencyPacket(int token, String name, int color, FrequencySecurityLevel security, String password) {
+        this.token = token;
+        this.name = name;
+        this.color = color;
+        this.security = security;
+        this.password = password;
+    }
 
-    public static final StreamCodec<FriendlyByteBuf, CreateFrequencyPacket> STREAM_CODEC =
-            StreamCodec.of(CreateFrequencyPacket::encode, CreateFrequencyPacket::decode);
+    public int token() { return token; }
+    public String name() { return name; }
+    public int color() { return color; }
+    public FrequencySecurityLevel security() { return security; }
+    public String password() { return password; }
 
-    private static void encode(FriendlyByteBuf buf, CreateFrequencyPacket pkt) {
+    public static void encode(CreateFrequencyPacket pkt, FriendlyByteBuf buf) {
         buf.writeVarInt(pkt.token);
         buf.writeUtf(pkt.name, WirelessFrequency.MAX_NAME_LENGTH);
         buf.writeInt(pkt.color);
@@ -32,7 +40,7 @@ public record CreateFrequencyPacket(
         buf.writeUtf(pkt.password, WirelessFrequency.MAX_PASSWORD_LENGTH);
     }
 
-    private static CreateFrequencyPacket decode(FriendlyByteBuf buf) {
+    public static CreateFrequencyPacket decode(FriendlyByteBuf buf) {
         return new CreateFrequencyPacket(
                 buf.readVarInt(),
                 buf.readUtf(WirelessFrequency.MAX_NAME_LENGTH),
@@ -41,23 +49,20 @@ public record CreateFrequencyPacket(
                 buf.readUtf(WirelessFrequency.MAX_PASSWORD_LENGTH));
     }
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(CreateFrequencyPacket pkt, IPayloadContext ctx) {
+    public static void handle(CreateFrequencyPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            ServerPlayer player = ctx.getSender();
+            if (player == null) return;
             if (FrequencyMenu.validateToken(player, pkt.token) == null) {
-                PacketDistributor.sendToPlayer(player, new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
             var manager = WirelessFrequencyManager.get();
             if (manager == null) return;
 
             if (pkt.name.isBlank()) {
-                PacketDistributor.sendToPlayer(player, new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
             // UI rule: "ENCRYPTED without a password is PRIVATE" — silently
@@ -88,5 +93,6 @@ public record CreateFrequencyPacket(
                 SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(player, freq.getId());
             }
         });
+        ctx.setPacketHandled(true);
     }
 }

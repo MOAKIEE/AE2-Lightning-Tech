@@ -11,22 +11,19 @@ import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.RitualGoal;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
-import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.network.Filterable;
 import net.minecraft.stats.Stats;
+import net.minecraft.world.item.WrittenBookItem;
+import net.minecraft.network.protocol.game.ClientboundOpenBookPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.WrittenBookItem;
-import net.minecraft.world.item.component.WrittenBookContent;
 import net.minecraft.world.level.Level;
 
 public class ResearchNoteItem extends Item {
@@ -88,7 +85,7 @@ public class ResearchNoteItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltipComponents,
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level, List<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
         ResearchNoteData data = ResearchNoteData.read(stack);
         if (data == null) {
@@ -140,60 +137,5 @@ public class ResearchNoteItem extends Item {
 
     public static void applyGeneratedState(ItemStack stack, ResearchNoteData data) {
         data.writeTo(stack);
-        stack.set(DataComponents.WRITTEN_BOOK_CONTENT, createBookContent(data));
-    }
-
-    private static WrittenBookContent createBookContent(ResearchNoteData data) {
-        List<Filterable<Component>> pages = buildPages(data).stream()
-                .map(Filterable::passThrough)
-                .toList();
-        // WrittenBookContent 的 title/author 是 String,不支持 Component 序列化到网络后
-        // 客户端自动翻译。这里用服务器端 Language.getInstance() 在生成时解析一次 lang 键,
-        // 之后所有玩家看到的都是这份服务端 locale 的版本;至少去掉了代码里的硬编码英文。
-        String title = Component.translatable(BOOK_TITLE_KEY, data.shortCode()).getString();
-        String author = Component.translatable(BOOK_AUTHOR_KEY).getString();
-        return new WrittenBookContent(
-                Filterable.passThrough(title),
-                author,
-                0,
-                pages,
-                true);
-    }
-
-    private static List<Component> buildPages(ResearchNoteData data) {
-        List<Component> pages = new ArrayList<>(5);
-        pages.add(buildCoverPage(data));
-        pages.add(Component.translatable("ae2lt.research_note.page.intro", data.goal().getDisplayName()));
-        pages.add(buildRecipePage(data, 0, 5));
-        pages.add(buildRecipePage(data, 5, 9));
-        MutableComponent warningPage = Component.empty()
-                .append(Component.translatable("ae2lt.research_note.page.warning"));
-        if (data.consumed()) {
-            warningPage = warningPage.append(Component.literal("\n\n"))
-                    .append(Component.translatable("ae2lt.research_note.page.completed")
-                            .withStyle(ChatFormatting.RED, ChatFormatting.BOLD));
-        }
-        pages.add(warningPage);
-        return pages;
-    }
-
-    private static Component buildCoverPage(ResearchNoteData data) {
-        return Component.translatable("ae2lt.research_note.page.cover", data.shortCode())
-                .append(Component.literal("\n"))
-                .append(Component.translatable("ae2lt.research_note.page.author"))
-                .append(Component.literal("\n"))
-                .append(Component.translatable("ae2lt.research_note.page.goal_line", data.goal().getDisplayName()));
-    }
-
-    private static MutableComponent buildRecipePage(ResearchNoteData data, int startInclusive, int endExclusive) {
-        MutableComponent page = Component.empty();
-        for (int i = startInclusive; i < Math.min(endExclusive, data.descriptionKeys().size()); i++) {
-            if (i > startInclusive) {
-                page = page.append(Component.literal("\n"));
-            }
-            page = page.append(Component.literal(ORDER_MARKERS[i] + ". "))
-                    .append(Component.translatable(data.descriptionKeys().get(i)));
-        }
-        return page;
     }
 }

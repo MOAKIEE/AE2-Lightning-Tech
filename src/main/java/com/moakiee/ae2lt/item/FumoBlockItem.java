@@ -19,9 +19,9 @@ public class FumoBlockItem extends BlockItem {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context,
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level,
                                 List<Component> tooltipComponents, TooltipFlag tooltipFlag) {
-        super.appendHoverText(stack, context, tooltipComponents, tooltipFlag);
+        super.appendHoverText(stack, level, tooltipComponents, tooltipFlag);
         tooltipComponents.add(Component.translatable(tooltipKey + ".1").withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.translatable(tooltipKey + ".2").withStyle(ChatFormatting.GRAY));
         tooltipComponents.add(Component.translatable(tooltipKey + ".3").withStyle(ChatFormatting.GRAY));

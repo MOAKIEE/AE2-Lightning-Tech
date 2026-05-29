@@ -10,7 +10,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
@@ -46,15 +46,12 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
     }
 
     public IEnergyStorage getEnergyStorageCapability(Direction side) {
-        return this.getEnergyStorage(side);
+        return null; // Controller uses AE power, not FE; no Forge EnergyStorage to expose
     }
 
     @Override
     protected IManagedGridNode createMainNode() {
-        // AE2 1.21.1 uses IManagedGridNode#setTagName here.
-        // If your target AE2/MC version renames this API, adjust this override accordingly.
-        // The tag/visual representation are AE2LT-specific, but the underlying node
-        // still follows vanilla AE2 controller behavior unless an owner-scoped mixin says otherwise.
+        // AE2 15.x for 1.20.1 uses IManagedGridNode#setTagName here.
         return super.createMainNode()
                 .setTagName("overloaded_controller")
                 .setVisualRepresentation(ModBlocks.OVERLOADED_CONTROLLER.get());
@@ -71,5 +68,14 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
         // which defaults to this representative item in AENetworkedPoweredBlockEntity.
         // If this hook is renamed in another AE2/MC version, adjust accordingly.
         return ModBlocks.OVERLOADED_CONTROLLER.get().asItem();
+    }
+
+    // --- Forge Capability overrides ---
+
+    @Override
+    public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+            net.minecraftforge.common.capabilities.Capability<T> cap,
+            @org.jetbrains.annotations.Nullable Direction side) {
+        return super.getCapability(cap, side);
     }
 }

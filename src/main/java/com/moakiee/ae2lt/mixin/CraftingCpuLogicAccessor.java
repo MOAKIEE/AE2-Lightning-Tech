@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 import appeng.api.stacks.AEKey;
 import appeng.crafting.execution.ExecutingCraftingJob;
 
-@Mixin(targets = "appeng.crafting.execution.CraftingCpuLogic", remap = false)
+@Mixin(value = appeng.crafting.execution.CraftingCpuLogic.class, remap = false)
 public interface CraftingCpuLogicAccessor {
     @Accessor("job")
     @Nullable

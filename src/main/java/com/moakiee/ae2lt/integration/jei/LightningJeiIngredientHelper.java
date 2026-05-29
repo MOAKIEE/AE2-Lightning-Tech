@@ -22,24 +22,8 @@ public class LightningJeiIngredientHelper implements IIngredientHelper<Lightning
     }
 
     @Override
-    public Object getUid(LightningKey ingredient, UidContext context) {
-        return ingredient.getId();
-    }
-
-    @Override
-    @SuppressWarnings("removal")
     public String getUniqueId(LightningKey ingredient, UidContext context) {
         return ingredient.getId().toString();
-    }
-
-    @Override
-    public Object getGroupingUid(LightningKey ingredient) {
-        return ingredient.getId();
-    }
-
-    @Override
-    public long getAmount(LightningKey ingredient) {
-        return 1;
     }
 
     @Override

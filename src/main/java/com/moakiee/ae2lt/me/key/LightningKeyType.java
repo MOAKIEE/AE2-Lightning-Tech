@@ -6,7 +6,8 @@ import com.mojang.serialization.MapCodec;
 
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.AEKeyType;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 
 public final class LightningKeyType extends AEKeyType {
@@ -14,11 +15,6 @@ public final class LightningKeyType extends AEKeyType {
 
     private LightningKeyType() {
         super(LightningKey.TYPE_ID, LightningKey.class, Component.translatable("key_type.ae2lt.lightning"));
-    }
-
-    @Override
-    public MapCodec<? extends AEKey> codec() {
-        return LightningKey.MAP_CODEC;
     }
 
     @Override
@@ -37,7 +33,15 @@ public final class LightningKeyType extends AEKeyType {
     }
 
     @Override
-    public @Nullable AEKey readFromPacket(RegistryFriendlyByteBuf input) {
+    public @Nullable AEKey readFromPacket(FriendlyByteBuf input) {
         return LightningKey.fromOrdinal(input.readByte());
+    }
+
+    @Override
+    public @Nullable AEKey loadKeyFromTag(CompoundTag tag) {
+        if (tag.contains("ordinal")) {
+            return LightningKey.fromOrdinal(tag.getInt("ordinal"));
+        }
+        return null;
     }
 }

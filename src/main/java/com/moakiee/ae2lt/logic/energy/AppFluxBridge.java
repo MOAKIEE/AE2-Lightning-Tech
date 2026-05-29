@@ -6,13 +6,13 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.neoforge.capabilities.Capabilities;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.security.IActionSource;
@@ -31,7 +31,7 @@ import appeng.api.storage.MEStorage;
 public final class AppFluxBridge {
 
     private static final ResourceLocation INDUCTION_CARD_ID =
-            ResourceLocation.fromNamespaceAndPath("appflux", "induction_card");
+            new ResourceLocation("appflux", "induction_card");
 
     private static final boolean LOADED;
 
@@ -64,7 +64,7 @@ public final class AppFluxBridge {
 
     @Nullable
     public static Item getInductionCard() {
-        Item card = BuiltInRegistries.ITEM.get(INDUCTION_CARD_ID);
+        Item card = ForgeRegistries.ITEMS.getValue(INDUCTION_CARD_ID);
         return card != null && card != Items.AIR ? card : null;
     }
 
@@ -124,6 +124,7 @@ public final class AppFluxBridge {
 
     public static boolean hasEnergyCapability(ServerLevel level, BlockPos pos,
                                               Direction face) {
-        return level.getCapability(Capabilities.EnergyStorage.BLOCK, pos, face) != null;
+        var be = level.getBlockEntity(pos);
+        return be != null && be.getCapability(ForgeCapabilities.ENERGY, face).isPresent();
     }
 }

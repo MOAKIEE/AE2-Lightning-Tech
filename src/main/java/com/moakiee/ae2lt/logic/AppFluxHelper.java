@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.logic;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.world.item.Item;
-import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.minecraftforge.energy.IEnergyStorage;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.security.IActionSource;

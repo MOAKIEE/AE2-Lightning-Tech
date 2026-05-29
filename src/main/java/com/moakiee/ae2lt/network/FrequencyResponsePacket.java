@@ -1,40 +1,35 @@
 package com.moakiee.ae2lt.network;
 
+import java.util.function.Supplier;
+
 import com.moakiee.ae2lt.client.gui.FrequencyScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
 
-public record FrequencyResponsePacket(int responseCode) implements CustomPacketPayload {
-
+public class FrequencyResponsePacket {
     public static final int REQUIRE_PASSWORD = 1;
     public static final int NO_PERMISSION = 2;
     public static final int INVALID_FREQUENCY = 3;
     public static final int REJECTED = 4;
     public static final int FREQUENCY_IN_USE = 5;
 
-    public static final Type<FrequencyResponsePacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "frequency_response"));
+    private final int responseCode;
 
-    public static final StreamCodec<FriendlyByteBuf, FrequencyResponsePacket> STREAM_CODEC =
-            StreamCodec.of(FrequencyResponsePacket::encode, FrequencyResponsePacket::decode);
+    public FrequencyResponsePacket(int responseCode) {
+        this.responseCode = responseCode;
+    }
 
-    private static void encode(FriendlyByteBuf buf, FrequencyResponsePacket pkt) {
+    public int responseCode() { return responseCode; }
+
+    public static void encode(FrequencyResponsePacket pkt, FriendlyByteBuf buf) {
         buf.writeInt(pkt.responseCode);
     }
 
-    private static FrequencyResponsePacket decode(FriendlyByteBuf buf) {
+    public static FrequencyResponsePacket decode(FriendlyByteBuf buf) {
         return new FrequencyResponsePacket(buf.readInt());
-    }
-
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
     }
 
     private Component toMessage() {
@@ -47,9 +42,9 @@ public record FrequencyResponsePacket(int responseCode) implements CustomPacketP
         };
     }
 
-    public static void handle(FrequencyResponsePacket pkt, IPayloadContext ctx) {
+    public static void handle(FrequencyResponsePacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof LocalPlayer player)) return;
             Component message = pkt.toMessage();
             // Container screens cover the hotbar / action-bar region, so
             // a stock {@code displayClientMessage(..., true)} is painted
@@ -61,8 +56,12 @@ public record FrequencyResponsePacket(int responseCode) implements CustomPacketP
             if (Minecraft.getInstance().screen instanceof FrequencyScreen fs) {
                 fs.showInlineError(message);
             } else {
-                player.displayClientMessage(message, true);
+                LocalPlayer player = Minecraft.getInstance().player;
+                if (player != null) {
+                    player.displayClientMessage(message, true);
+                }
             }
         });
+        ctx.setPacketHandled(true);
     }
 }

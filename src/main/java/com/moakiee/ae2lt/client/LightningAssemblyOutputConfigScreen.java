@@ -30,9 +30,9 @@ public class LightningAssemblyOutputConfigScreen
         super(parent, "/screens/lightning_assembly_output_config.json");
 
         var label = Component.translatable("block.ae2lt.lightning_assembly_chamber");
-        widgets.add("return", new TabButton(Icon.BACK, label, btn -> returnToParent()));
+        widgets.add("return", new TabButton(Icon.ARROW_LEFT, label, btn -> returnToParent()));
 
-        var clear = new ActionButton(appeng.api.config.ActionItems.S_CLOSE, button -> menu.clientClearOutputSides());
+        var clear = new ActionButton(appeng.api.config.ActionItems.CLOSE, button -> menu.clientClearOutputSides());
         clear.setHalfSize(true);
         clear.setDisableBackground(true);
         clear.setMessage(Component.translatable("ae2lt.gui.lightning_assembly.output_side.clear"));
@@ -46,7 +46,6 @@ public class LightningAssemblyOutputConfigScreen
         this.leftButton = addSideButton("left", RelativeSide.LEFT, "gui.tooltips.ae2.SideLeft");
     }
 
-    @Override
     protected boolean shouldAddToolbar() {
         return false;
     }

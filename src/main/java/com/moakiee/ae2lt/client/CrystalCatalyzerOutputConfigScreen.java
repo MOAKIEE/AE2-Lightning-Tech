@@ -30,9 +30,9 @@ public class CrystalCatalyzerOutputConfigScreen
         super(parent, "/screens/crystal_catalyzer_output_config.json");
 
         var label = Component.translatable("block.ae2lt.crystal_catalyzer");
-        widgets.add("return", new TabButton(Icon.BACK, label, btn -> returnToParent()));
+        widgets.add("return", new TabButton(Icon.ARROW_LEFT, label, btn -> returnToParent()));
 
-        var clear = new ActionButton(appeng.api.config.ActionItems.S_CLOSE, button -> menu.clientClearOutputSides());
+        var clear = new ActionButton(appeng.api.config.ActionItems.CLOSE, button -> menu.clientClearOutputSides());
         clear.setHalfSize(true);
         clear.setDisableBackground(true);
         clear.setMessage(Component.translatable("ae2lt.gui.crystal_catalyzer.output_side.clear"));
@@ -46,7 +46,6 @@ public class CrystalCatalyzerOutputConfigScreen
         this.leftButton = addSideButton("left", RelativeSide.LEFT, "gui.tooltips.ae2.SideLeft");
     }
 
-    @Override
     protected boolean shouldAddToolbar() {
         return false;
     }

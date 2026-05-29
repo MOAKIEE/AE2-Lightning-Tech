@@ -50,9 +50,7 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
         }
     }
 
-    @Override
     public void renderSlot(GuiGraphics guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 
@@ -61,5 +59,9 @@ public class TeslaCoilScreen extends AEBaseScreen<TeslaCoilMenu> {
         var lines = super.getTooltipFromContainerItem(stack);
         LargeStackCountRenderer.appendCountTooltip(lines, hoveredSlot);
         return lines;
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

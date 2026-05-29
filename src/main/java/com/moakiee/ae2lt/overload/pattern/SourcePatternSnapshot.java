@@ -4,14 +4,11 @@ import java.util.Objects;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 
 /**
  * Snapshot of the original plain pattern item that was converted into an
@@ -39,18 +36,15 @@ public final class SourcePatternSnapshot {
         this.customDataTag = customDataTag == null ? null : customDataTag.copy();
     }
 
-    public static SourcePatternSnapshot fromItemStack(ItemStack stack, HolderLookup.Provider registries) {
+    public static SourcePatternSnapshot fromItemStack(ItemStack stack) {
         Objects.requireNonNull(stack, "stack");
-        Objects.requireNonNull(registries, "registries");
         if (stack.isEmpty()) {
             throw new IllegalArgumentException("source pattern stack must not be empty");
         }
 
-        var itemId = BuiltInRegistries.ITEM.getKey(stack.getItem());
-        var serializedStack = stack.saveOptional(registries);
-        if (!(serializedStack instanceof CompoundTag stackTag)) {
-            throw new IllegalStateException("serialized source pattern stack was not a compound tag");
-        }
+        var itemId = ForgeRegistries.ITEMS.getKey(stack.getItem());
+        var serializedStack = stack.save(new CompoundTag());
+        CompoundTag stackTag = serializedStack;
         return new SourcePatternSnapshot(itemId, stackTag, null);
     }
 
@@ -66,19 +60,17 @@ public final class SourcePatternSnapshot {
     /**
      * Recreates an equivalent plain-pattern stack for future reparsing.
      */
-    public ItemStack toItemStack(HolderLookup.Provider registries) {
-        Objects.requireNonNull(registries, "registries");
-
+    public ItemStack toItemStack() {
         if (serializedStackTag != null && !serializedStackTag.isEmpty()) {
-            return ItemStack.parseOptional(registries, serializedStackTag.copy());
+            return ItemStack.of(serializedStackTag.copy());
         }
 
         // Backward compatibility for older overload patterns that only stored
         // item id + custom data.
-        var item = BuiltInRegistries.ITEM.get(itemId);
+        var item = ForgeRegistries.ITEMS.getValue(itemId);
         var stack = new ItemStack(item);
         if (customDataTag != null && !customDataTag.isEmpty()) {
-            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(customDataTag.copy()));
+            stack.getOrCreateTag().put("CustomData", customDataTag.copy());
         }
         return stack;
     }
@@ -97,9 +89,9 @@ public final class SourcePatternSnapshot {
     public static SourcePatternSnapshot fromTag(CompoundTag tag) {
         ResourceLocation itemId;
         if (tag.contains(TAG_ITEM, Tag.TAG_STRING)) {
-            itemId = ResourceLocation.parse(tag.getString(TAG_ITEM));
+            itemId = new ResourceLocation(tag.getString(TAG_ITEM));
         } else if (tag.contains(TAG_STACK, Tag.TAG_COMPOUND)) {
-            itemId = ResourceLocation.parse(tag.getCompound(TAG_STACK).getString("id"));
+            itemId = new ResourceLocation(tag.getCompound(TAG_STACK).getString("id"));
         } else {
             throw new IllegalArgumentException("source pattern snapshot is missing an item id");
         }

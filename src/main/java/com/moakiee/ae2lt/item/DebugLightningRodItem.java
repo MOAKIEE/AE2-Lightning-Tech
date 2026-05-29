@@ -61,7 +61,7 @@ public class DebugLightningRodItem extends Item {
                 bolt.setCause(serverPlayer);
             }
             bolt.getPersistentData().putBoolean(
-                    NaturalLightningTransformationHandler.NATURAL_WEATHER_LIGHTNING_TAG,
+                    NaturalLightningTransformationHandler.NATURAL_LIGHTNING_CHECKED_TAG,
                     true);
             serverLevel.addFreshEntity(bolt);
         }
@@ -75,9 +75,9 @@ public class DebugLightningRodItem extends Item {
     }
 
     @Override
-    public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag tooltipFlag) {
+    public void appendHoverText(ItemStack stack, @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level, List<Component> tooltip, TooltipFlag tooltipFlag) {
         tooltip.add(Component.translatable("item.ae2lt.debug_lightning_rod.tooltip")
                 .withStyle(ChatFormatting.GRAY));
-        super.appendHoverText(stack, context, tooltip, tooltipFlag);
+        super.appendHoverText(stack, level, tooltip, tooltipFlag);
     }
 }

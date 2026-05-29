@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +15,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.neoforged.neoforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidStack;
 
 import appeng.api.orientation.RelativeSide;
 import appeng.menu.AEBaseMenu;
@@ -33,9 +33,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
     public static final MenuType<CrystalCatalyzerMenu> TYPE = MenuTypeBuilder
             .create(CrystalCatalyzerMenu::new, CrystalCatalyzerBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.crystal_catalyzer"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID,
-                    "crystal_catalyzer"));
+            .build("crystal_catalyzer");
 
     @GuiSync(20)
     public long storedEnergy;
@@ -103,7 +101,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
             working = host.isWorking();
 
             var fluid = host.getFluid();
-            fluidId = fluid.isEmpty() ? -1 : BuiltInRegistries.FLUID.getId(fluid.getFluid());
+            fluidId = fluid.isEmpty() ? -1 : net.minecraft.core.registries.BuiltInRegistries.FLUID.getId(fluid.getFluid());
             fluidAmount = fluid.getAmount();
 
             autoExport = host.isAutoExportEnabled();
@@ -220,7 +218,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
             return FluidStack.EMPTY;
         }
 
-        Fluid fluid = BuiltInRegistries.FLUID.byId(fluidId);
+        Fluid fluid = fluidId < 0 ? null : net.minecraft.core.registries.BuiltInRegistries.FLUID.byId(fluidId);
         if (fluid == null || fluid == Fluids.EMPTY) {
             return FluidStack.EMPTY;
         }
@@ -432,7 +430,7 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {
@@ -455,5 +453,9 @@ public class CrystalCatalyzerMenu extends AEBaseMenu implements FrequencyBinding
         slot.set(carried);
         setCarried(slotStack);
         return true;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

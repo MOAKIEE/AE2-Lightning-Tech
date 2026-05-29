@@ -32,7 +32,7 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
             RecipeType.create(AE2LightningTech.MODID, "lightning_assembly", LightningAssemblyRecipe.class);
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/guis/lightning_assembly_chamber.png");
 
     // Crop the machine GUI work area for JEI without clipping the bottom input row or output slot.
     private static final int BACKGROUND_U = 19;
@@ -83,6 +83,11 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
     }
 
     @Override
+    public IDrawable getBackground() {
+        return background;
+    }
+
+    @Override
     public IDrawable getIcon() {
         return icon;
     }
@@ -99,14 +104,14 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
                             INPUT_START_Y + row * INPUT_SPACING)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStacks(expandIngredient(input.ingredient(), input.count()))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                    .addTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(recipe.getResultStack())
-                .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                .addTooltipCallback((recipeSlotView, tooltip) ->
                         LargeStackCountRenderer.appendCountTooltip(tooltip, recipe.getResultStack().getCount()));
     }
 
@@ -139,7 +144,11 @@ public class LightningAssemblyCategory implements IRecipeCategory<LightningAssem
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
         return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+                .map(stack -> {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(count);
+                    return copy;
+                })
                 .toList();
     }
 

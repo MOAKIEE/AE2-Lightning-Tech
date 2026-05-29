@@ -118,7 +118,7 @@ public class OverloadedPowerSupplyLogic implements IGridTickable {
 
     @Override
     public TickingRequest getTickingRequest(IGridNode node) {
-        return new TickingRequest(TICK_MIN, TICK_MAX, false);
+        return new TickingRequest(TICK_MIN, TICK_MAX, false, false);
     }
 
     @Override

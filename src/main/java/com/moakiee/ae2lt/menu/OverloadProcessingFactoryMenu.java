@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
@@ -15,7 +15,7 @@ import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.Fluids;
-import net.neoforged.neoforge.fluids.FluidStack;
+import net.minecraftforge.fluids.FluidStack;
 
 import appeng.api.orientation.RelativeSide;
 import appeng.api.upgrades.Upgrades;
@@ -39,9 +39,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
     public static final MenuType<OverloadProcessingFactoryMenu> TYPE = MenuTypeBuilder
             .create(OverloadProcessingFactoryMenu::new, OverloadProcessingFactoryBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.overload_processing_factory"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID,
-                    "overload_processing_factory"));
+            .build("overload_processing_factory");
 
     private static final List<SlotSemantic> INPUT_SEMANTICS = List.of(
             Ae2ltSlotSemantics.OVERLOAD_FACTORY_INPUT_0,
@@ -78,11 +76,11 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
     @GuiSync(89)
     public long lightningCost;
     @GuiSync(90)
-    public int inputFluidId = -1;
+    public ResourceLocation inputFluidId = null;
     @GuiSync(91)
     public int inputFluidAmount;
     @GuiSync(92)
-    public int outputFluidId = -1;
+    public ResourceLocation outputFluidId = null;
     @GuiSync(93)
     public int outputFluidAmount;
     @GuiSync(94)
@@ -153,11 +151,11 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
             outputSideMask = toOutputSideMask(host.getAllowedOutputs());
 
             var inputFluid = host.getInputFluid();
-            inputFluidId = inputFluid.isEmpty() ? -1 : BuiltInRegistries.FLUID.getId(inputFluid.getFluid());
+            inputFluidId = inputFluid.isEmpty() ? null : ForgeRegistries.FLUIDS.getKey(inputFluid.getFluid());
             inputFluidAmount = inputFluid.getAmount();
 
             var outputFluid = host.getOutputFluid();
-            outputFluidId = outputFluid.isEmpty() ? -1 : BuiltInRegistries.FLUID.getId(outputFluid.getFluid());
+            outputFluidId = outputFluid.isEmpty() ? null : ForgeRegistries.FLUIDS.getKey(outputFluid.getFluid());
             outputFluidAmount = outputFluid.getAmount();
 
             var lockedRecipe = host.getLockedRecipe().orElse(null);
@@ -181,7 +179,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
                 lightningCost = lockedRecipe.totalLightningCost();
             } else if (processable != null) {
                 currentParallel = processable.parallel();
-                lightningTierOrdinal = processable.recipe().value().lightningTier().ordinal();
+                lightningTierOrdinal = processable.recipe().lightningTier().ordinal();
                 lightningCost = processable.totalLightningCost();
                 totalEnergy = processable.totalEnergy();
             } else {
@@ -483,12 +481,12 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
         return remainder;
     }
 
-    private FluidStack getFluid(int fluidId, int amount) {
-        if (fluidId < 0 || amount <= 0) {
+    private FluidStack getFluid(ResourceLocation fluidId, int amount) {
+        if (fluidId == null || amount <= 0) {
             return FluidStack.EMPTY;
         }
 
-        Fluid fluid = BuiltInRegistries.FLUID.byId(fluidId);
+        Fluid fluid = ForgeRegistries.FLUIDS.getValue(fluidId);
         if (fluid == null || fluid == Fluids.EMPTY) {
             return FluidStack.EMPTY;
         }
@@ -554,7 +552,7 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {
@@ -577,5 +575,9 @@ public class OverloadProcessingFactoryMenu extends AEBaseMenu implements Frequen
         slot.set(carried);
         setCarried(slotStack);
         return true;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

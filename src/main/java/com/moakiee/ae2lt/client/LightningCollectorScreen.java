@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.client;
 
+import net.minecraft.client.gui.GuiGraphics;
+
 import java.util.List;
 
 import appeng.client.gui.AEBaseScreen;
@@ -47,5 +49,9 @@ public class LightningCollectorScreen extends AEBaseScreen<LightningCollectorMen
 
     private static String formatRange(int min, int max) {
         return min == max ? Integer.toString(min) : min + "~" + max;
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

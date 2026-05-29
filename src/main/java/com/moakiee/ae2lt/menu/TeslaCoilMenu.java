@@ -26,9 +26,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
     public static final MenuType<TeslaCoilMenu> TYPE = MenuTypeBuilder
             .create(TeslaCoilMenu::new, TeslaCoilBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.tesla_coil"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID,
-                    "tesla_coil"));
+            .build("tesla_coil");
 
     @GuiSync(40)
     public long storedEnergy;
@@ -337,7 +335,7 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {
@@ -360,5 +358,9 @@ public class TeslaCoilMenu extends AEBaseMenu implements FrequencyBindingMenu {
         slot.set(carried);
         setCarried(slotStack);
         return true;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

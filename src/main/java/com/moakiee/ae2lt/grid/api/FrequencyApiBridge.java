@@ -6,7 +6,8 @@ import java.util.OptionalInt;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.moakiee.ae2lt.network.NetworkInit;
+import com.moakiee.ae2lt.network.OpenFrequencyMenuPacket;
 
 import com.moakiee.ae2lt.api.frequency.FrequencyApiProvider;
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingAccess;
@@ -78,7 +79,7 @@ public final class FrequencyApiBridge implements FrequencyApiProvider {
     public void openBindingScreen(AbstractContainerMenu menu) {
         // Cast is safe: FrequencyApi.openBindingScreen verifies the marker before delegating.
         FrequencyBindingMenuHost host = (FrequencyBindingMenuHost) menu;
-        PacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
+        NetworkInit.CHANNEL.sendToServer(new OpenFrequencyMenuPacket(
                 host.getFrequencyBindingToken(),
                 host.getFrequencyBindingBlockPos()));
     }

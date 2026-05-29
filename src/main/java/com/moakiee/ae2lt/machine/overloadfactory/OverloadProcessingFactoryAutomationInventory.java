@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.machine.overloadfactory;
 import java.util.Objects;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 public class OverloadProcessingFactoryAutomationInventory implements IItemHandlerModifiable {
     private final OverloadProcessingFactoryInventory inventory;

@@ -13,7 +13,6 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.capabilities.ICapabilityInvalidationListener;
 
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IManagedGridNode;
@@ -30,7 +29,7 @@ import appeng.api.storage.MEStorage;
  * <ul>
  * <li>32-slot power-of-two adaptive scheduling wheel ({@code 1..20} ticks
  *     per-target delay, halved on success / incremented on starvation)</li>
- * <li>Per-target {@link BlockEnergyTargetCache} that registers a NeoForge
+ * <li>Per-target {@link BlockEnergyTargetCache} that registers a Forge
  *     {@link ICapabilityInvalidationListener} on the target dimension, so
  *     cap-changes invalidate the cache instantly without per-tick polling</li>
  * <li>Single-shot {@link BufferedMEStorage#beginMemoryBatch} per tick:
@@ -573,13 +572,11 @@ public final class WirelessEnergyDistributor {
     // ---- target cache pool ----------------------------------------------
 
     /**
-     * Per-target lazy cache of the resolved AppFlux energy handle plus a
-     * {@link ICapabilityInvalidationListener} hook. The listener is
-     * registered once with each {@link ServerLevel} this target lives in
-     * (NeoForge holds it weakly), so when this cache is dropped from
-     * {@link #targetCachePool} it gets GC'd and silently unregisters.
+     * Per-target lazy cache of the resolved AppFlux energy handle.
+     * In Forge 1.20.1, capability invalidation listeners are not available,
+     * so the cache re-resolves on each tick when the cached BE is stale.
      */
-    public final class BlockEnergyTargetCache implements ICapabilityInvalidationListener {
+    public final class BlockEnergyTargetCache {
         private final WirelessEnergyAPI.Target target;
         /** Per-target NORMAL-mode adaptive schedule delay (1..20 ticks). */
         int scheduleDelay = ENERGY_DELAY_MEAN;
@@ -587,24 +584,9 @@ public final class WirelessEnergyDistributor {
         private BlockEntity blockEntity;
         @Nullable
         private TargetAccess energyTarget;
-        @Nullable
-        private ServerLevel registeredLevel;
 
         private BlockEnergyTargetCache(WirelessEnergyAPI.Target target) {
             this.target = target;
-        }
-
-        @Override
-        public boolean onInvalidate() {
-            if (host.isHostRemoved()) {
-                blockEntity = null;
-                energyTarget = null;
-                registeredLevel = null;
-                return false;
-            }
-            blockEntity = null;
-            energyTarget = null;
-            return true;
         }
 
         @Nullable
@@ -622,13 +604,11 @@ public final class WirelessEnergyDistributor {
 
             BlockEntity currentBlockEntity = targetLevel.getBlockEntity(target.pos());
             if (currentBlockEntity == null) {
-                ensureRegistered(targetLevel);
                 blockEntity = null;
                 energyTarget = null;
                 return null;
             }
 
-            ensureRegistered(targetLevel);
             blockEntity = currentBlockEntity;
 
             Supplier<IGrid> gridSupplier = () -> host.getMainNode().getGrid();
@@ -641,14 +621,6 @@ public final class WirelessEnergyDistributor {
             TargetAccess resolved = WirelessEnergyAPI.resolveEnergyTarget(capCache, target.face());
             energyTarget = resolved;
             return resolved;
-        }
-
-        private void ensureRegistered(ServerLevel targetLevel) {
-            if (registeredLevel == targetLevel) {
-                return;
-            }
-            targetLevel.registerCapabilityListener(target.pos(), this);
-            registeredLevel = targetLevel;
         }
     }
 

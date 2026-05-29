@@ -7,7 +7,6 @@ import java.util.Set;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -18,13 +17,19 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.energy.IEnergyStorage;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import com.moakiee.ae2lt.api.AE2LTCapabilities;
+import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 
 import appeng.api.config.Actionable;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.IStackWatcher;
@@ -38,9 +43,9 @@ import appeng.api.upgrades.IUpgradeInventory;
 import appeng.api.upgrades.IUpgradeableObject;
 import appeng.api.upgrades.UpgradeInventories;
 import appeng.api.util.AECableType;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.OverloadProcessingFactoryBlock;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
@@ -64,7 +69,7 @@ import com.moakiee.ae2lt.menu.OverloadProcessingFactoryMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
-public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
+public class OverloadProcessingFactoryBlockEntity extends AENetworkInvBlockEntity
     implements IUpgradeableObject, FrequencyBindingHost, OverloadedGridNodeOwner,
         GridRecipeMachineHost<OverloadProcessingLockedRecipe, OverloadProcessingRecipeCandidate> {
     private static final String TAG_INVENTORY = "Inventory";
@@ -140,7 +145,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -430,7 +435,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (candidate.parallel() != lockedRecipe.parallel()) {
             return false;
         }
-        if (!inventory.canAcceptRecipeOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()))) {
+        if (!inventory.canAcceptRecipeOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()))) {
             return false;
         }
 
@@ -446,7 +451,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
 
-        FluidStack requiredInputFluid = candidate.recipe().value().fluidInput();
+        FluidStack requiredInputFluid = candidate.recipe().fluidInput();
         int inputFluidCost = 0;
         if (!requiredInputFluid.isEmpty()) {
             long scaledInputFluidCost = (long) requiredInputFluid.getAmount() * candidate.parallel();
@@ -458,13 +463,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (inputFluidCost > 0) {
             FluidStack currentInput = inputTank.getFluid();
             if (currentInput.isEmpty()
-                    || !FluidStack.isSameFluidSameComponents(requiredInputFluid, currentInput)
+                    || !requiredInputFluid.isFluidEqual(currentInput)
                     || currentInput.getAmount() < inputFluidCost) {
                 return false;
             }
         }
 
-        FluidStack scaledOutputFluid = candidate.recipe().value().getScaledFluidResult(candidate.parallel());
+        FluidStack scaledOutputFluid = candidate.recipe().getScaledFluidResult(candidate.parallel());
         if (!canAcceptFluidOutput(scaledOutputFluid)) {
             return false;
         }
@@ -543,7 +548,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
 
-        if (!inventory.insertRecipeOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()))) {
+        if (!inventory.insertRecipeOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()))) {
             insertLightning(plan.primaryKey(), extractedPrimary);
             if (extractedSecondary > 0L) {
                 insertLightning(plan.secondaryKey(), extractedSecondary);
@@ -567,7 +572,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             if (!drainedInput.isEmpty()) {
                 inputTank.fill(drainedInput, FluidAction.EXECUTE);
             }
-            rollbackItemOutputs(candidate.recipe().value().getScaledItemResults(candidate.parallel()));
+            rollbackItemOutputs(candidate.recipe().getScaledItemResults(candidate.parallel()));
             rollbackInputs(extractedInputs);
             return false;
         }
@@ -579,7 +584,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(OverloadProcessingFactoryMenu.TYPE, player, locator);
     }
 
@@ -621,13 +626,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
-        upgrades.writeToNBT(data, TAG_UPGRADES, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
+        upgrades.writeToNBT(data, TAG_UPGRADES);
         data.putLong(TAG_ENERGY, energyStorage.getStoredEnergyLong());
-        data.put(TAG_INPUT_TANK, inputTank.writeToNBT(registries, new CompoundTag()));
-        data.put(TAG_OUTPUT_TANK, outputTank.writeToNBT(registries, new CompoundTag()));
+        data.put(TAG_INPUT_TANK, inputTank.writeToNBT(new CompoundTag()));
+        data.put(TAG_OUTPUT_TANK, outputTank.writeToNBT(new CompoundTag()));
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         data.putBoolean(TAG_AUTO_EXPORT, autoExport);
@@ -637,7 +642,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         }
         data.put(TAG_ALLOWED_OUTPUTS, outputTags);
         if (lockedRecipe != null) {
-            data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag(registries));
+            data.put(TAG_LOCKED_RECIPE, lockedRecipe.toTag());
         } else {
             data.remove(TAG_LOCKED_RECIPE);
         }
@@ -645,13 +650,13 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
-        upgrades.readFromNBT(data, TAG_UPGRADES, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
+        upgrades.readFromNBT(data, TAG_UPGRADES);
         energyStorage.loadStoredEnergy(data.getLong(TAG_ENERGY));
-        inputTank.readFromNBT(registries, data.getCompound(TAG_INPUT_TANK));
-        outputTank.readFromNBT(registries, data.getCompound(TAG_OUTPUT_TANK));
+        inputTank.readFromNBT(data.getCompound(TAG_INPUT_TANK));
+        outputTank.readFromNBT(data.getCompound(TAG_OUTPUT_TANK));
         consumedEnergy = Math.max(0L, data.getLong(TAG_CONSUMED_ENERGY));
         processingTicksSpent = Math.max(0, data.getInt(TAG_PROCESSING_TICKS));
         frequencyBinding.load(data);
@@ -665,7 +670,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
             }
         }
         if (data.contains(TAG_LOCKED_RECIPE, Tag.TAG_COMPOUND)) {
-            lockedRecipe = OverloadProcessingLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE), registries);
+            lockedRecipe = OverloadProcessingLockedRecipe.fromTag(data.getCompound(TAG_LOCKED_RECIPE));
         } else {
             lockedRecipe = null;
         }
@@ -698,7 +703,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void clearContent() {
-        super.clearContent();
+        // clearContent not available in 1.20.1 AE2
         inventory.clear();
         upgrades.clear();
         inputTank.setFluid(FluidStack.EMPTY);
@@ -707,7 +712,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
         MemoryCardConfigSupport.exportAutoExportSettings(mode, builder, autoExport, allowedOutputs,
@@ -716,7 +721,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         MemoryCardConfigSupport.importAutoExportSettings(mode, input,
@@ -793,7 +798,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         if (current.isEmpty()) {
             return stack.getAmount() <= OUTPUT_TANK_CAPACITY;
         }
-        return FluidStack.isSameFluidSameComponents(current, stack)
+        return current.isFluidEqual(stack)
                 && current.getAmount() + stack.getAmount() <= OUTPUT_TANK_CAPACITY;
     }
 
@@ -816,7 +821,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
                          + OverloadProcessingFactoryInventory.OUTPUT_SLOT_COUNT && remaining > 0;
                  slot++) {
                 ItemStack current = inventory.getStackInSlot(slot);
-                if (current.isEmpty() || !ItemStack.isSameItemSameComponents(current, output)) {
+                if (current.isEmpty() || !ItemStack.isSameItemSameTags(current, output)) {
                     continue;
                 }
 
@@ -899,7 +904,7 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
 
     private void requestClientUpdate() {
         if (level == null) {
-            markForClientUpdate();
+            setChanged();
             return;
         }
 
@@ -909,8 +914,49 @@ public class OverloadProcessingFactoryBlockEntity extends AENetworkedBlockEntity
         }
 
         lastClientUpdateTick = gameTime;
-        markForClientUpdate();
+        setChanged();
+    }
+
+    @Override
+    public InternalInventory getInternalInventory() {
+        return inventory;
+    }
+
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
+    }
+
+    // --- Forge Capability overrides (migrated from NeoForge RegisterCapabilitiesEvent) ---
+
+    private final LazyOptional<IItemHandlerModifiable> itemHandlerCap = LazyOptional.of(this::getAutomationInventory);
+    private final LazyOptional<IFluidHandler> fluidHandlerCap = LazyOptional.of(() -> getFluidHandlerCapability(null));
+    private final LazyOptional<IEnergyStorage> energyStorageCap = LazyOptional.of(this::getEnergyStorage);
+    private final LazyOptional<com.moakiee.ae2lt.api.lightning.ILightningEnergyHandler> lightningEnergyCap =
+            LazyOptional.of(() -> new GridLightningEnergyHandler(this));
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return itemHandlerCap.cast();
+        }
+        if (cap == ForgeCapabilities.FLUID_HANDLER) {
+            return fluidHandlerCap.cast();
+        }
+        if (cap == ForgeCapabilities.ENERGY) {
+            return energyStorageCap.cast();
+        }
+        if (cap == AE2LTCapabilities.LIGHTNING_ENERGY) {
+            return lightningEnergyCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        itemHandlerCap.invalidate();
+        fluidHandlerCap.invalidate();
+        energyStorageCap.invalidate();
+        lightningEnergyCap.invalidate();
     }
 }
-
-

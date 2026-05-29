@@ -13,8 +13,10 @@ import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.common.extensions.IForgeMenuType;
+import net.minecraftforge.network.IContainerFactory;
+import com.moakiee.ae2lt.network.NetworkInit;
+import net.minecraftforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingHost;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -28,7 +30,7 @@ import com.moakiee.ae2lt.network.SyncFrequencyListPacket;
  */
 public class FrequencyMenu extends AbstractContainerMenu {
 
-    public static final MenuType<FrequencyMenu> TYPE = IMenuTypeExtension.create(FrequencyMenu::clientCreate);
+    public static final MenuType<FrequencyMenu> TYPE = IForgeMenuType.create(FrequencyMenu::clientCreate);
 
     private final BlockPos blockPos;
     private final boolean isController;
@@ -88,7 +90,7 @@ public class FrequencyMenu extends AbstractContainerMenu {
 
         // initial sync to the player who just opened this menu
         if (playerInv.player instanceof ServerPlayer sp) {
-            PacketDistributor.sendToPlayer(sp, SyncFrequencyListPacket.fromServer());
+            NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> sp), SyncFrequencyListPacket.fromServer());
             SyncFrequencyDetailPacket.sendInitialMembersIfNeeded(sp, freqIdSlot.get());
             SyncFrequencyDetailPacket.sendInitialConnectionsIfNeeded(sp, freqIdSlot.get());
         }

@@ -14,12 +14,12 @@ import org.jetbrains.annotations.Nullable;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -106,7 +106,7 @@ public final class WirelessFrequencyManager extends SavedData {
 
     private WirelessFrequencyManager() {}
 
-    private WirelessFrequencyManager(CompoundTag tag, HolderLookup.Provider registries) {
+    private WirelessFrequencyManager(CompoundTag tag) {
         read(tag);
     }
 
@@ -115,9 +115,8 @@ public final class WirelessFrequencyManager extends SavedData {
     public static void onServerStart(MinecraftServer server) {
         ServerLevel overworld = server.overworld();
         instance = overworld.getDataStorage().computeIfAbsent(
-                new SavedData.Factory<>(
-                        WirelessFrequencyManager::new,
-                        WirelessFrequencyManager::new),
+                WirelessFrequencyManager::new,
+                WirelessFrequencyManager::new,
                 DATA_NAME);
         // Broadcasts are flushed from the server tick, outside chunk post-load callbacks.
         instance.addDeviceListener(freqId ->
@@ -389,7 +388,7 @@ public final class WirelessFrequencyManager extends SavedData {
             CompoundTag entry = txList.getCompound(i);
             int freqId = entry.getInt("freqId");
             var dimKey = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(entry.getString("dim")));
+                    new ResourceLocation(entry.getString("dim")));
             BlockPos pos = BlockPos.of(entry.getLong("pos"));
             boolean adv = entry.getBoolean("advanced");
             transmitters.put(freqId, new TransmitterEntry(dimKey, pos, null, adv));
@@ -400,7 +399,7 @@ public final class WirelessFrequencyManager extends SavedData {
             CompoundTag entry = devList.getCompound(i);
             int freqId = entry.getInt("freqId");
             var dimKey = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(entry.getString("dim")));
+                    new ResourceLocation(entry.getString("dim")));
             BlockPos pos = BlockPos.of(entry.getLong("pos"));
             boolean ctrl = entry.getBoolean("controller");
             boolean adv = entry.getBoolean("advanced");
@@ -413,7 +412,7 @@ public final class WirelessFrequencyManager extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag root, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag root) {
         root.putInt("uniqueId", uniqueId);
 
         ListTag freqList = new ListTag();

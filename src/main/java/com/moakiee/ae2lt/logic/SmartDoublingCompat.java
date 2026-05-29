@@ -10,7 +10,7 @@ import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 import appeng.api.config.Setting;
 import appeng.api.config.YesNo;

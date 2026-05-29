@@ -3,7 +3,7 @@ package com.moakiee.ae2lt.machine.teslacoil;
 import java.util.Objects;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
 public class TeslaCoilAutomationInventory implements IItemHandlerModifiable {
     private final TeslaCoilInventory inventory;

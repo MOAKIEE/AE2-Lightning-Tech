@@ -7,14 +7,12 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 
 public record ResearchNoteData(
         UUID ritualSeed,
@@ -32,20 +30,20 @@ public record ResearchNoteData(
     public static final String TAG_FORCED_GOAL = "ForcedGoal";
 
     public static boolean isBlank(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        return !tag.contains(TAG_GOAL, Tag.TAG_STRING);
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        return tag == null || !tag.contains(TAG_GOAL, Tag.TAG_STRING);
     }
 
     public static @Nullable RitualGoal readForcedGoal(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_FORCED_GOAL, Tag.TAG_STRING)) {
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        if (tag == null || !tag.contains(TAG_FORCED_GOAL, Tag.TAG_STRING)) {
             return null;
         }
         return RitualGoal.fromName(tag.getString(TAG_FORCED_GOAL));
     }
 
     public static void writeForcedGoal(ItemStack stack, RitualGoal goal) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putString(TAG_FORCED_GOAL, goal.name()));
+        stack.getOrCreateTag().putString(TAG_FORCED_GOAL, goal.name());
     }
 
     public static boolean isConsumed(ItemStack stack) {
@@ -54,8 +52,8 @@ public record ResearchNoteData(
     }
 
     public static @Nullable ResearchNoteData read(ItemStack stack) {
-        CompoundTag tag = stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-        if (!tag.contains(TAG_GOAL, Tag.TAG_STRING)) {
+        var tag = stack.hasTag() ? stack.getTag() : null;
+        if (tag == null || !tag.contains(TAG_GOAL, Tag.TAG_STRING)) {
             return null;
         }
 
@@ -82,13 +80,12 @@ public record ResearchNoteData(
     }
 
     public void writeTo(ItemStack stack) {
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> {
-            tag.putString(TAG_RITUAL_SEED, ritualSeed.toString());
-            tag.putString(TAG_GOAL, goal.name());
-            tag.put(TAG_RECIPE_ITEMS, writeResourceLocationList(recipeItems));
-            tag.put(TAG_DESCRIPTIONS, writeStringList(descriptionKeys));
-            tag.putBoolean(TAG_CONSUMED, consumed);
-        });
+        var tag = stack.getOrCreateTag();
+        tag.putString(TAG_RITUAL_SEED, ritualSeed.toString());
+        tag.putString(TAG_GOAL, goal.name());
+        tag.put(TAG_RECIPE_ITEMS, writeResourceLocationList(recipeItems));
+        tag.put(TAG_DESCRIPTIONS, writeStringList(descriptionKeys));
+        tag.putBoolean(TAG_CONSUMED, consumed);
     }
 
     public ResearchNoteData withConsumed(boolean consumed) {

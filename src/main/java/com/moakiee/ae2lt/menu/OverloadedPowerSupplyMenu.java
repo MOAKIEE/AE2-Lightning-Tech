@@ -27,8 +27,7 @@ public class OverloadedPowerSupplyMenu extends AEBaseMenu implements FrequencyBi
     public static final MenuType<OverloadedPowerSupplyMenu> TYPE = MenuTypeBuilder
             .create(OverloadedPowerSupplyMenu::new, OverloadedPowerSupplyBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.overloaded_power_supply"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID, "overloaded_power_supply"));
+            .build("overloaded_power_supply");
 
     @GuiSync(0)
     public long bufferCapacity;
@@ -232,5 +231,9 @@ public class OverloadedPowerSupplyMenu extends AEBaseMenu implements FrequencyBi
             }
         }
         return remainder;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

@@ -8,6 +8,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
 
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -22,8 +23,8 @@ import com.moakiee.ae2lt.menu.FrequencyMenu;
 public class WirelessOverloadedControllerBlock extends OverloadedControllerBlock {
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+                                               InteractionHand hand, BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof WirelessOverloadedControllerBlockEntity be) {
             if (!level.isClientSide && player instanceof ServerPlayer sp) {
                 // Same membership gate as the receiver: a bound
@@ -49,11 +50,11 @@ public class WirelessOverloadedControllerBlock extends OverloadedControllerBlock
                 sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
                         (id, inv, p) -> new FrequencyMenu(id, inv, be),
                         be.getBlockState().getBlock().getName()
-                ), buf -> FrequencyMenu.writeExtraData(buf, be));
+                ));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
 
-        return super.useWithoutItem(state, level, pos, player, hitResult);
+        return super.use(state, level, pos, player, hand, hitResult);
     }
 }

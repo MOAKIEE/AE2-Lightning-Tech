@@ -10,9 +10,12 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.level.block.entity.BlockEntity;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
 import appeng.block.AEBaseEntityBlock;
 import appeng.block.networking.ControllerBlock;
@@ -87,19 +90,22 @@ public class OverloadedControllerBlock extends AEBaseEntityBlock<OverloadedContr
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-            BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+            InteractionHand hand, BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof OverloadedControllerBlockEntity be) {
             if (!level.isClientSide) {
-                // AE2 1.21.1 uses NetworkStatusMenu.CONTROLLER_TYPE for controller right-click.
-                // If menu/locator names differ in another version, verify this hook first.
-                // This only adds the same network-status entry point to AE2LT's controller
-                // and does not modify vanilla controller interaction.
+                // AE2 15.x for 1.20.1 uses NetworkStatusMenu.CONTROLLER_TYPE for controller right-click.
                 MenuOpener.open(NetworkStatusMenu.CONTROLLER_TYPE, player, MenuLocators.forBlockEntity(be));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
 
-        return super.useWithoutItem(state, level, pos, player, hitResult);
+        return super.use(state, level, pos, player, hand, hitResult);
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(@NotNull BlockPos pos, @NotNull BlockState state) {
+        return super.newBlockEntity(pos, state);
     }
 }

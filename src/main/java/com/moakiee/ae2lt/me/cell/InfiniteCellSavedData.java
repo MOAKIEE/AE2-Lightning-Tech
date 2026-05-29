@@ -6,11 +6,10 @@ import java.util.UUID;
 
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 /**
  * World-level persistent storage for all infinite cell inventories.
@@ -31,12 +30,11 @@ public final class InfiniteCellSavedData extends SavedData {
 
     public InfiniteCellSavedData() {}
 
-    public static Factory<InfiniteCellSavedData> factory() {
-        return new Factory<>(InfiniteCellSavedData::new, InfiniteCellSavedData::load);
-    }
-
     public static InfiniteCellSavedData get(MinecraftServer server) {
-        return server.overworld().getDataStorage().computeIfAbsent(factory(), DATA_NAME);
+        return server.overworld().getDataStorage().computeIfAbsent(
+                InfiniteCellSavedData::load,
+                InfiniteCellSavedData::new,
+                DATA_NAME);
     }
 
     public static @Nullable InfiniteCellSavedData getOrNull() {
@@ -51,7 +49,7 @@ public final class InfiniteCellSavedData extends SavedData {
      * loading from NBT on first access. Multiple callers with the same UUID
      * receive the same instance — this is the primary anti-duplication guard.
      */
-    public IndexedStorage getOrCreateStorage(UUID id, HolderLookup.Provider registries) {
+    public IndexedStorage getOrCreateStorage(UUID id) {
         IndexedStorage cached = storageCache.get(id);
         if (cached != null) return cached;
 
@@ -61,7 +59,7 @@ public final class InfiniteCellSavedData extends SavedData {
         if (data != null) {
             // IndexedStorage persists a split root (keys/lo/hi/totalTypes), not an "entries" list.
             // Loading unconditionally keeps the deserializer aligned with the current on-disk format.
-            storage.load(data, registries);
+            storage.load(data);
         }
 
         storageCache.put(id, storage);
@@ -74,11 +72,11 @@ public final class InfiniteCellSavedData extends SavedData {
      * (e.g. by {@link #removeCell(UUID)}) — the caller's wrapper may still hold
      * a live reference that must continue to persist.
      */
-    public void persistStorage(UUID id, IndexedStorage storage, HolderLookup.Provider registries) {
+    public void persistStorage(UUID id, IndexedStorage storage) {
         if (storage == null) return;
         storageCache.put(id, storage);
         CompoundTag lastRoot = cells.get(id);
-        CompoundTag data = storage.persist(lastRoot, registries);
+        CompoundTag data = storage.persist(lastRoot);
         cells.put(id, data);
         setDirty();
     }
@@ -106,7 +104,7 @@ public final class InfiniteCellSavedData extends SavedData {
 
     // ── SavedData serialization ─────────────────────────────────────────
 
-    private static InfiniteCellSavedData load(CompoundTag tag, HolderLookup.Provider registries) {
+    private static InfiniteCellSavedData load(CompoundTag tag) {
         var data = new InfiniteCellSavedData();
         CompoundTag cellsTag = tag.getCompound("cells");
         for (String key : cellsTag.getAllKeys()) {
@@ -118,11 +116,11 @@ public final class InfiniteCellSavedData extends SavedData {
     }
 
     @Override
-    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+    public CompoundTag save(CompoundTag tag) {
         for (var entry : storageCache.entrySet()) {
             if (entry.getValue().needsPersist()) {
                 CompoundTag lastRoot = cells.get(entry.getKey());
-                CompoundTag data = entry.getValue().persist(lastRoot, registries);
+                CompoundTag data = entry.getValue().persist(lastRoot);
                 cells.put(entry.getKey(), data);
             }
         }

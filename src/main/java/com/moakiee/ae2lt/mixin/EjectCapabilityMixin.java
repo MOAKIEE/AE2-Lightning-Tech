@@ -12,17 +12,17 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
-import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.capabilities.BlockCapability;
-import net.neoforged.neoforge.capabilities.Capabilities;
-import net.neoforged.neoforge.fluids.FluidStack;
-import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.fluids.FluidStack;
+import net.minecraftforge.fluids.capability.IFluidHandler;
+import net.minecraftforge.items.IItemHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 
 /**
- * Intercepts {@link BlockCapability#getCapability} to proxy capability queries
+ * Intercepts {@link BlockEntity#getCapability} to proxy capability queries
  * at eject-mode adjacent positions back to the pattern provider's own position.
  * <p>
  * When the provider's chunk is loaded, queries are proxied to the provider
@@ -32,10 +32,10 @@ import com.moakiee.ae2lt.logic.EjectModeRegistry;
  * returns a rejecting handler that refuses all inserts, preventing the machine
  * from pushing products to the wrong target.
  */
-@Mixin(BlockCapability.class)
-public abstract class EjectCapabilityMixin<T, C> {
+@Mixin(BlockEntity.class)
+public abstract class EjectCapabilityMixin {
 
-    private static boolean proxying = false;
+    private static boolean ae2lt$proxying = false;
 
     @Unique
     private static final IItemHandler REJECTING_ITEM_HANDLER = new IItemHandler() {
@@ -53,21 +53,23 @@ public abstract class EjectCapabilityMixin<T, C> {
         @Override public FluidStack getFluidInTank(int tank) { return FluidStack.EMPTY; }
         @Override public int getTankCapacity(int tank) { return 0; }
         @Override public boolean isFluidValid(int tank, FluidStack stack) { return false; }
-        @Override public int fill(FluidStack resource, FluidAction action) { return 0; }
-        @Override public FluidStack drain(FluidStack resource, FluidAction action) { return FluidStack.EMPTY; }
-        @Override public FluidStack drain(int maxDrain, FluidAction action) { return FluidStack.EMPTY; }
+        @Override public int fill(FluidStack resource, IFluidHandler.FluidAction action) { return 0; }
+        @Override public FluidStack drain(FluidStack resource, IFluidHandler.FluidAction action) { return FluidStack.EMPTY; }
+        @Override public FluidStack drain(int maxDrain, IFluidHandler.FluidAction action) { return FluidStack.EMPTY; }
     };
 
     @SuppressWarnings("unchecked")
-    @Inject(method = "getCapability", at = @At("HEAD"), cancellable = true)
-    private void ae2lt$interceptEjectCapability(Level level, BlockPos pos,
-            BlockState state, BlockEntity blockEntity, C context,
-            CallbackInfoReturnable<T> cir) {
-        if (proxying) return;
+    @Inject(method = "getCapability", at = @At("HEAD"), cancellable = true, remap = false)
+    private <T> void ae2lt$interceptEjectCapability(Capability<T> cap, Direction face,
+            CallbackInfoReturnable<LazyOptional<T>> cir) {
+        if (ae2lt$proxying) return;
         if (EjectModeRegistry.isBypassed()) return;
-        if (!(level instanceof ServerLevel)) return;
-        if (!(context instanceof Direction face)) return;
 
+        BlockEntity self = (BlockEntity) (Object) this;
+        Level level = self.getLevel();
+        if (!(level instanceof ServerLevel)) return;
+
+        BlockPos pos = self.getBlockPos();
         var entry = EjectModeRegistry.lookupByFace(level.dimension(), pos.asLong(), face);
         if (entry == null) return;
 
@@ -77,25 +79,21 @@ public abstract class EjectCapabilityMixin<T, C> {
             Level hostLevel = host.getLevel();
             if (hostLevel == null) return;
             BlockPos hostPos = host.getBlockPos();
-            BlockState hostState = hostLevel.getBlockState(hostPos);
 
-            proxying = true;
+            ae2lt$proxying = true;
             try {
-                BlockCapability<T, C> cap = (BlockCapability<T, C>) (Object) this;
-                T result = cap.getCapability(hostLevel, hostPos,
-                        hostState, host, context);
-                if (result != null) {
+                LazyOptional<T> result = host.getCapability(cap, face);
+                if (result.isPresent()) {
                     cir.setReturnValue(result);
                 }
             } finally {
-                proxying = false;
+                ae2lt$proxying = false;
             }
         } else {
-            BlockCapability<T, C> cap = (BlockCapability<T, C>) (Object) this;
-            if (cap == Capabilities.ItemHandler.BLOCK) {
-                cir.setReturnValue((T) REJECTING_ITEM_HANDLER);
-            } else if (cap == Capabilities.FluidHandler.BLOCK) {
-                cir.setReturnValue((T) REJECTING_FLUID_HANDLER);
+            if (cap == ForgeCapabilities.ITEM_HANDLER) {
+                cir.setReturnValue(LazyOptional.of(() -> (T) REJECTING_ITEM_HANDLER));
+            } else if (cap == ForgeCapabilities.FLUID_HANDLER) {
+                cir.setReturnValue(LazyOptional.of(() -> (T) REJECTING_FLUID_HANDLER));
             }
         }
     }

@@ -9,10 +9,8 @@ import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -27,11 +25,11 @@ import appeng.api.networking.IGridNodeListener;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.util.AECableType;
 import appeng.blockentity.crafting.PatternProviderBlockEntity;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.menu.ISubMenu;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
@@ -118,9 +116,10 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             return tag;
         }
 
+        @SuppressWarnings("unchecked")
         public static WirelessConnection fromTag(CompoundTag tag) {
-            var dim = ResourceKey.create(Registries.DIMENSION,
-                    ResourceLocation.parse(tag.getString(TAG_DIM)));
+            var dim = (ResourceKey<Level>) (ResourceKey<?>) ResourceKey.create(ResourceKey.createRegistryKey(new ResourceLocation("dimension")),
+                    new ResourceLocation(tag.getString(TAG_DIM)));
             var pos = BlockPos.of(tag.getLong(TAG_POS));
             var face = Direction.from3DDataValue(tag.getInt(TAG_FACE));
             return new WirelessConnection(dim, pos, face);
@@ -153,8 +152,9 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
-        return this;
+    @SuppressWarnings("unchecked")
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
+        return (AENetworkInvBlockEntity) (Object) this;
     }
 
     @Override
@@ -268,7 +268,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public ReturnMode getReturnMode() {
@@ -282,7 +282,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.returnMode = mode;
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public boolean isAutoReturn() {
@@ -300,7 +300,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.wirelessDispatchMode = wirelessDispatchMode;
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public WirelessSpeedMode getWirelessSpeedMode() {
@@ -314,7 +314,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         this.wirelessSpeedMode = wirelessSpeedMode;
         recomputeIdlePower();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public boolean isFilteredImport() {
@@ -327,7 +327,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         }
         this.filteredImport = filteredImport;
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     /**
@@ -358,7 +358,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             invalidConnectionScanCursor = 0;
             notifyLogicStateChanged();
             saveChanges();
-            markForClientUpdate();
+            setChanged();
             return true;
         }
         if (connections.size() >= MAX_WIRELESS_CONNECTIONS) {
@@ -369,7 +369,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         return true;
     }
 
@@ -388,7 +388,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         recomputeIdlePower();
         notifyLogicStateChanged();
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         return true;
     }
 
@@ -421,7 +421,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
             recomputeIdlePower();
             notifyLogicStateChanged();
             saveChanges();
-            markForClientUpdate();
+            setChanged();
         }
         return result.removed();
     }
@@ -446,7 +446,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     // -- Client sync (writeToStream / readFromStream) --
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
         data.writeByte(providerMode.ordinal());
         data.writeByte(returnMode.ordinal());
@@ -462,7 +462,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         var modeOrd = data.readByte();
         var newMode = modeOrd >= 0 && modeOrd < ProviderMode.values().length
@@ -480,7 +480,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
         int count = data.readVarInt();
         var newConns = new ArrayList<WirelessConnection>(Math.min(count, MAX_WIRELESS_CONNECTIONS));
         for (int i = 0; i < count; i++) {
-            var dim = ResourceKey.create(Registries.DIMENSION, data.readResourceLocation());
+            @SuppressWarnings("unchecked")
+            var dim = (ResourceKey<Level>) (ResourceKey<?>) ResourceKey.create(ResourceKey.createRegistryKey(new ResourceLocation("dimension")), data.readResourceLocation());
             var pos = data.readBlockPos();
             var face = Direction.from3DDataValue(data.readByte());
             WirelessConnectionLists.addOrReplace(
@@ -517,8 +518,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     private static final String TAG_CONNECTIONS = "WirelessConnections";
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
         data.putString(TAG_PROVIDER_MODE, providerMode.name());
         data.putString(TAG_RETURN_MODE, returnMode.name());
         data.putString(TAG_WIRELESS_DISPATCH_MODE, wirelessDispatchMode.name());
@@ -530,8 +531,8 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
         if (data.contains(TAG_PROVIDER_MODE)) {
             try {
                 providerMode = ProviderMode.valueOf(data.getString(TAG_PROVIDER_MODE));
@@ -575,7 +576,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @Nullable Player player) {
         super.exportSettings(mode, builder, player);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.exportMemoryCardSettings(mode, builder, tag -> {
@@ -590,7 +591,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @Nullable Player player) {
         super.importSettings(mode, input, player);
         com.moakiee.ae2lt.logic.MemoryCardConfigSupport.importMemoryCardSettings(mode, input, tag -> {
@@ -635,9 +636,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
                 var server = sl.getServer();
                 for (var dp : removed) {
                     var targetLevel = server.getLevel(dp.dimension());
-                    if (targetLevel != null) {
-                        targetLevel.invalidateCapabilities(dp.pos());
-                    }
+                    // invalidateCapabilities not available in 1.20.1
                 }
             }
         }
@@ -657,7 +656,7 @@ public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEn
     // -- Menu binding --
 
     @Override
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         if (level instanceof ServerLevel) {
             clearInvalidConnections();
         }

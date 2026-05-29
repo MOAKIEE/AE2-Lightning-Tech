@@ -8,7 +8,11 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.phys.BlockHitResult;
+
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 import appeng.block.AEBaseEntityBlock;
 
@@ -27,8 +31,13 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
     }
 
     @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player,
-                                               BlockHitResult hitResult) {
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new WirelessReceiverBlockEntity(pos, state);
+    }
+
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+                                               InteractionHand hand, BlockHitResult hitResult) {
         if (level.getBlockEntity(pos) instanceof WirelessReceiverBlockEntity be) {
             if (!level.isClientSide && player instanceof ServerPlayer sp) {
                 // Gate menu-open on frequency membership. Non-members
@@ -56,10 +65,10 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
                 sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
                         (id, inv, p) -> new FrequencyMenu(id, inv, be),
                         be.getBlockState().getBlock().getName()
-                ), buf -> FrequencyMenu.writeExtraData(buf, be));
+                ));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
-        return super.useWithoutItem(state, level, pos, player, hitResult);
+        return super.use(state, level, pos, player, hand, hitResult);
     }
 }

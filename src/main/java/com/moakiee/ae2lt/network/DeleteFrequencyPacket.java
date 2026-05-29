@@ -1,43 +1,43 @@
 package com.moakiee.ae2lt.network;
 
+import java.util.function.Supplier;
+
 import com.moakiee.ae2lt.grid.WirelessFrequency;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.PacketDistributor;
 
-public record DeleteFrequencyPacket(int token, int frequencyId) implements CustomPacketPayload {
+public class DeleteFrequencyPacket {
+    private final int token;
+    private final int frequencyId;
 
-    public static final Type<DeleteFrequencyPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "delete_frequency"));
+    public DeleteFrequencyPacket(int token, int frequencyId) {
+        this.token = token;
+        this.frequencyId = frequencyId;
+    }
 
-    public static final StreamCodec<FriendlyByteBuf, DeleteFrequencyPacket> STREAM_CODEC =
-            StreamCodec.of(DeleteFrequencyPacket::encode, DeleteFrequencyPacket::decode);
+    public int token() { return token; }
+    public int frequencyId() { return frequencyId; }
 
-    private static void encode(FriendlyByteBuf buf, DeleteFrequencyPacket pkt) {
+    public static void encode(DeleteFrequencyPacket pkt, FriendlyByteBuf buf) {
         buf.writeVarInt(pkt.token);
         buf.writeInt(pkt.frequencyId);
     }
 
-    private static DeleteFrequencyPacket decode(FriendlyByteBuf buf) {
+    public static DeleteFrequencyPacket decode(FriendlyByteBuf buf) {
         return new DeleteFrequencyPacket(buf.readVarInt(), buf.readInt());
     }
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(DeleteFrequencyPacket pkt, IPayloadContext ctx) {
+    public static void handle(DeleteFrequencyPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            ServerPlayer player = ctx.getSender();
+            if (player == null) return;
             if (FrequencyMenu.validateToken(player, pkt.token) == null) {
-                PacketDistributor.sendToPlayer(player, new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.REJECTED));
                 return;
             }
             var manager = WirelessFrequencyManager.get();
@@ -45,8 +45,7 @@ public record DeleteFrequencyPacket(int token, int frequencyId) implements Custo
 
             WirelessFrequency freq = manager.getFrequency(pkt.frequencyId);
             if (freq == null) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.INVALID_FREQUENCY));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.INVALID_FREQUENCY));
                 return;
             }
 
@@ -55,8 +54,7 @@ public record DeleteFrequencyPacket(int token, int frequencyId) implements Custo
             // ownerUUID equality, which would have gated deletion to
             // only the original creator.
             if (!freq.getPlayerAccess(player).isOwner()) {
-                PacketDistributor.sendToPlayer(player,
-                        new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
+                NetworkInit.CHANNEL.send(PacketDistributor.PLAYER.with(() -> player), new FrequencyResponsePacket(FrequencyResponsePacket.NO_PERMISSION));
                 return;
             }
 
@@ -64,5 +62,6 @@ public record DeleteFrequencyPacket(int token, int frequencyId) implements Custo
             UpdateFrequencyBasicPacket.broadcastToOpenMenus(
                     player.getServer(), UpdateFrequencyBasicPacket.forDeletion(pkt.frequencyId));
         });
+        ctx.setPacketHandled(true);
     }
 }

@@ -3,11 +3,11 @@ package com.moakiee.ae2lt.client;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FastColor;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 
 import appeng.api.client.AEKeyRendering;
 import appeng.items.storage.BasicStorageCell;
@@ -31,12 +31,12 @@ public final class LightningKeyClientInit {
 
             ItemProperties.register(
                     ModItems.ELECTRO_CHIME_CRYSTAL.get(),
-                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "catalysis_stage"),
+                    new ResourceLocation(AE2LightningTech.MODID, "catalysis_stage"),
                     (stack, level, entity, seed) -> ElectroChimeCrystalItem.getCatalysisStage(stack) * 0.25F);
 
             ItemProperties.register(
                     ModItems.MYSTERIOUS_CELL.get(),
-                    ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "cell_type"),
+                    new ResourceLocation(AE2LightningTech.MODID, "cell_type"),
                     (stack, level, entity, seed) -> {
                         if (!FixedInfiniteCellItem.hasType(stack)) {
                             return 0.0F;
@@ -53,7 +53,7 @@ public final class LightningKeyClientInit {
     @SubscribeEvent
     public static void registerItemColors(RegisterColorHandlersEvent.Item event) {
         event.register(
-                (stack, tintIndex) -> FastColor.ARGB32.opaque(BasicStorageCell.getColor(stack, tintIndex)),
+                (stack, tintIndex) -> (0xFF000000 | BasicStorageCell.getColor(stack, tintIndex)),
                 ModItems.LIGHTNING_STORAGE_COMPONENT_I.get(),
                 ModItems.LIGHTNING_STORAGE_COMPONENT_II.get(),
                 ModItems.LIGHTNING_STORAGE_COMPONENT_III.get(),

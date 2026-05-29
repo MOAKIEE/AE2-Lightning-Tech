@@ -57,12 +57,9 @@ public class OverloadProcessingFactoryOutputButton extends IconButton {
         }
 
         var yOffset = isHovered() ? 1 : 0;
-        Icon bgIcon = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER
-                : on ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS : Icon.TOOLBAR_BUTTON_BACKGROUND;
-        bgIcon.getBlitter()
-                .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
-                .blit(guiGraphics);
+        // Draw a simple background rectangle instead of using Icon.TOOLBAR_BUTTON_BACKGROUND_*
+        guiGraphics.fill(getX() - 1, getY() + yOffset, getX() + 17, getY() + 19 + yOffset,
+                isHovered() ? 0x80FFFFFF : (on ? 0x8080FF80 : 0x80A0A0A0));
 
         if (!display.isEmpty()) {
             guiGraphics.renderItem(display, getX(), getY() + 1 + yOffset, 0, 3);

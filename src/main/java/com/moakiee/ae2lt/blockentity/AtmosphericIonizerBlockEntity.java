@@ -8,15 +8,16 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 
 import appeng.api.config.Actionable;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.config.PowerMultiplier;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
@@ -34,7 +35,6 @@ import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.EntityType;
@@ -46,9 +46,12 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.DoubleBlockHalf;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.items.IItemHandlerModifiable;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
 
-public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
+public class AtmosphericIonizerBlockEntity extends AENetworkInvBlockEntity
         implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
     private static final Logger LOG = LogUtils.getLogger();
     public static final int PROCESS_TICKS = 100;
@@ -91,7 +94,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -191,7 +194,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
 
         lockedType = selectedType;
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
         return true;
     }
@@ -204,7 +207,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         consumedEnergy = Math.min(lockedType.totalEnergy(), consumedEnergy + amount);
         processingTicksSpent = Math.min(PROCESS_TICKS, processingTicksSpent + 1);
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     public AtmosphericIonizerStatus getStatus() {
@@ -274,12 +277,12 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         processingTicksSpent = 0;
         setWorking(false);
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(AtmosphericIonizerMenu.TYPE, player, locator);
     }
 
@@ -308,7 +311,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
                     && state.getValue(AtmosphericIonizerBlock.WORKING) != working) {
                 level.setBlock(worldPosition, state.setValue(AtmosphericIonizerBlock.WORKING, working), Block.UPDATE_ALL);
             } else if (changed) {
-                markForClientUpdate();
+                setChanged();
             }
         }
     }
@@ -360,9 +363,9 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putLong(TAG_CONSUMED_ENERGY, consumedEnergy);
         data.putInt(TAG_PROCESSING_TICKS, processingTicksSpent);
         if (lockedType != null) {
@@ -374,9 +377,9 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         lockedType = data.contains(TAG_LOCKED_TYPE)
                 ? WeatherCondensateItem.Type.fromName(data.getString(TAG_LOCKED_TYPE))
                 : null;
@@ -405,13 +408,13 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void clearContent() {
-        super.clearContent();
+        // clearContent not available in 1.20.1 AE2
         inventory.clear();
     }
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
         FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
@@ -419,7 +422,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
@@ -461,7 +464,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         logic.onStateChanged();
     }
 
@@ -478,6 +481,31 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         double extracted = grid.getEnergyService().extractAEPower(amount, mode, PowerMultiplier.CONFIG);
         return extracted >= amount - POWER_EPSILON;
     }
+
+    @Override
+    public InternalInventory getInternalInventory() {
+        return inventory;
+    }
+
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
+    }
+
+    // --- Forge Capability overrides (migrated from NeoForge RegisterCapabilitiesEvent) ---
+
+    private final LazyOptional<IItemHandlerModifiable> itemHandlerCap = LazyOptional.of(this::getAutomationInventory);
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return itemHandlerCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        itemHandlerCap.invalidate();
+    }
 }
-
-

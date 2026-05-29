@@ -28,9 +28,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
     public static final MenuType<LightningAssemblyChamberMenu> TYPE = MenuTypeBuilder
             .create(LightningAssemblyChamberMenu::new, LightningAssemblyChamberBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_assembly_chamber"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID,
-                    "lightning_assembly_chamber"));
+            .build("lightning_assembly_chamber");
 
     private static final RelativeSide[] OUTPUT_SIDES = RelativeSide.values();
 
@@ -405,7 +403,7 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
             return true;
         }
 
-        if (ItemStack.isSameItemSameComponents(slotStack, carried)) {
+        if (ItemStack.isSameItemSameTags(slotStack, carried)) {
             int room = slot.getMaxStackSize(carried) - slotStack.getCount();
             int toMove = Math.min(rightClick ? 1 : carried.getCount(), room);
             if (toMove <= 0) {
@@ -428,5 +426,9 @@ public class LightningAssemblyChamberMenu extends AEBaseMenu implements Frequenc
         slot.set(carried);
         setCarried(slotStack);
         return true;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

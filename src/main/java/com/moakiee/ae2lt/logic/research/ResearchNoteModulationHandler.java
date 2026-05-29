@@ -3,8 +3,8 @@ package com.moakiee.ae2lt.logic.research;
 import com.moakiee.ae2lt.registry.ModItems;
 
 import net.minecraft.world.item.ItemStack;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.neoforge.event.AnvilUpdateEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.event.AnvilUpdateEvent;
 
 /**
  * 铁砧调制:空白研究笔记(左槽) + 催化物(右槽) -> 同数量空白笔记但 NBT 里写入

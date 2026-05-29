@@ -21,11 +21,11 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.forge.ForgeTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
@@ -36,7 +36,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
             RecipeType.create(AE2LightningTech.MODID, "overload_processing", OverloadProcessingRecipe.class);
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/overload_processing_factory.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/guis/overload_processing_factory.png");
 
     private static final int BACKGROUND_U = 4;
     private static final int BACKGROUND_V = 14;
@@ -103,6 +103,11 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
     }
 
     @Override
+    public IDrawable getBackground() {
+        return background;
+    }
+
+    @Override
     public IDrawable getIcon() {
         return icon;
     }
@@ -119,7 +124,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                             INPUT_START_Y + row * SLOT_SPACING)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStacks(expandIngredient(input.ingredient(), input.count()))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                    .addTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, input.count()));
         }
 
@@ -132,15 +137,15 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                             false,
                             FLUID_WIDTH,
                             FLUID_HEIGHT)
-                    .addIngredient(NeoForgeTypes.FLUID_STACK, fluidInput);
+                    .addIngredient(ForgeTypes.FLUID_STACK, fluidInput);
         }
 
         if (!recipe.itemResults().isEmpty()) {
-            var result = recipe.itemResults().getFirst();
+            var result = recipe.itemResults().get(0);
             builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStack(result)
-                    .addRichTooltipCallback((recipeSlotView, tooltip) ->
+                    .addTooltipCallback((recipeSlotView, tooltip) ->
                             LargeStackCountRenderer.appendCountTooltip(tooltip, result.getCount()));
         }
 
@@ -153,7 +158,7 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
                             false,
                             FLUID_WIDTH,
                             FLUID_HEIGHT)
-                    .addIngredient(NeoForgeTypes.FLUID_STACK, fluidResult);
+                    .addIngredient(ForgeTypes.FLUID_STACK, fluidResult);
         }
     }
 
@@ -205,7 +210,11 @@ public class OverloadProcessingCategory implements IRecipeCategory<OverloadProce
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
         return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+                .map(stack -> {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(count);
+                    return copy;
+                })
                 .toList();
     }
 

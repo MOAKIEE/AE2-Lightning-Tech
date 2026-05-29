@@ -8,10 +8,8 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 
-import mezz.jei.api.gui.widgets.IRecipeWidget;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.navigation.ScreenPosition;
 import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.texture.OverlayTexture;
@@ -21,19 +19,17 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.state.BlockState;
 
 /**
- * Renders a small isometric 3D multiblock preview inside a JEI recipe layout.
- *
- * <p>Each block is placed at its world-space {@link BlockPos} offset; the widget
- * auto-fits the structure to its rectangle, gently rotates around the Y axis, and
- * uses vanilla {@code BlockRenderDispatcher#renderSingleBlock} so the visual
- * matches what the player sees in-world.</p>
+ * 3D multiblock preview renderer for JEI categories.
+ * In 1.20.1 (JEI 15.x) there is no IRecipeWidget, so this is a helper
+ * that categories call from their draw() method.
  */
-public final class MultiblockPreviewWidget implements IRecipeWidget {
+public final class MultiblockPreviewWidget {
     private static final float X_ROTATION_DEG = 30.0F;
     private static final float SCALE_MARGIN = 0.92F;
     private static final float ROTATION_PER_FRAME = 0.4F;
 
-    private final ScreenPosition position;
+    private final int x;
+    private final int y;
     private final int width;
     private final int height;
     private final List<Entry> blocks;
@@ -46,7 +42,8 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
     private float rotation;
 
     private MultiblockPreviewWidget(int x, int y, int width, int height, List<Entry> blocks) {
-        this.position = new ScreenPosition(x, y);
+        this.x = x;
+        this.y = y;
         this.width = width;
         this.height = height;
         this.blocks = blocks;
@@ -101,13 +98,7 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
         this.scale = Math.min(widthScale, heightScale) * SCALE_MARGIN;
     }
 
-    @Override
-    public ScreenPosition getPosition() {
-        return position;
-    }
-
-    @Override
-    public void drawWidget(GuiGraphics guiGraphics, double mouseX, double mouseY) {
+    public void draw(GuiGraphics guiGraphics, double mouseX, double mouseY) {
         if (blocks.isEmpty() || scale <= 0F) {
             return;
         }
@@ -117,8 +108,8 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
         var blockRenderer = client.getBlockRenderer();
         PoseStack pose = guiGraphics.pose();
 
-        float cx = width / 2F;
-        float cy = height / 2F;
+        float cx = x + width / 2F;
+        float cy = y + height / 2F;
 
         for (Entry entry : blocks) {
             pose.pushPose();
@@ -144,15 +135,12 @@ public final class MultiblockPreviewWidget implements IRecipeWidget {
             pose.popPose();
         }
 
-        // Flush the per-block batches before re-enabling GUI lighting so the
-        // remainder of the recipe layout renders normally.
-        if (bufferSource instanceof MultiBufferSource.BufferSource bs) {
-            bs.endBatch();
+        if (bufferSource instanceof MultiBufferSource.BufferSource) {
+            ((MultiBufferSource.BufferSource) bufferSource).endBatch();
         }
         Lighting.setupFor3DItems();
     }
 
-    @Override
     public void tick() {
         rotation += ROTATION_PER_FRAME;
         if (rotation >= 360F) {

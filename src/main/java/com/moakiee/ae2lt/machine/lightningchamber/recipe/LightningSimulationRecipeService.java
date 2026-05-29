@@ -7,7 +7,6 @@ import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.level.Level;
 
 import com.moakiee.ae2lt.machine.lightningchamber.LightningSimulationChamberInventory;
@@ -17,14 +16,14 @@ import com.moakiee.ae2lt.registry.ModRecipeTypes;
 public final class LightningSimulationRecipeService {
     public static final int EXTREME_TO_HIGH_RATIO = 4;
 
-    private static final Comparator<RecipeHolder<LightningSimulationRecipe>> RECIPE_ORDER = Comparator
-            .<RecipeHolder<LightningSimulationRecipe>>comparingInt(holder -> holder.value().priority())
+    private static final Comparator<LightningSimulationRecipe> RECIPE_ORDER = Comparator
+            .<LightningSimulationRecipe>comparingInt(holder -> holder.priority())
             .reversed()
             .thenComparing(Comparator.comparingInt(
-                    (RecipeHolder<LightningSimulationRecipe> holder) -> holder.value().inputs().size()).reversed())
+                    (LightningSimulationRecipe holder) -> holder.inputs().size()).reversed())
             .thenComparing(Comparator.comparingInt(
-                    (RecipeHolder<LightningSimulationRecipe> holder) -> holder.value().totalInputCount()).reversed())
-            .thenComparing(holder -> holder.id().toString());
+                    (LightningSimulationRecipe holder) -> holder.totalInputCount()).reversed())
+            .thenComparing(holder -> holder.getId().toString());
 
     private LightningSimulationRecipeService() {
     }
@@ -43,25 +42,25 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        List<RecipeHolder<LightningSimulationRecipe>> recipes =
+        List<LightningSimulationRecipe> recipes =
                 new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get()));
         recipes.sort(RECIPE_ORDER);
 
-        for (RecipeHolder<LightningSimulationRecipe> recipe : recipes) {
-            Optional<LightningSimulationRecipeMatch> match = recipe.value().planMatch(input);
+        for (LightningSimulationRecipe recipe : recipes) {
+            Optional<LightningSimulationRecipeMatch> match = recipe.planMatch(input);
             if (match.isEmpty()) {
                 continue;
             }
             if (resolveLightningConsumption(
                     inventory,
-                    recipe.value().lightningTier(),
-                    recipe.value().lightningCost(),
+                    recipe.lightningTier(),
+                    recipe.lightningCost(),
                     availableHighVoltage,
                     availableExtremeHighVoltage).isEmpty()) {
                 continue;
             }
 
-            if (!canAcceptOutput(inventory, recipe.value().getResultStack())) {
+            if (!canAcceptOutput(inventory, recipe.getResultStack())) {
                 continue;
             }
 
@@ -71,14 +70,14 @@ public final class LightningSimulationRecipeService {
         return Optional.empty();
     }
 
-    public static Optional<RecipeHolder<LightningSimulationRecipe>> findRecipeById(Level level, ResourceLocation recipeId) {
+    public static Optional<LightningSimulationRecipe> findRecipeById(Level level, ResourceLocation recipeId) {
         if (level == null || recipeId == null) {
             return Optional.empty();
         }
 
-        for (RecipeHolder<LightningSimulationRecipe> recipe
+        for (LightningSimulationRecipe recipe
                 : level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_SIMULATION_TYPE.get())) {
-            if (recipe.id().equals(recipeId)) {
+            if (recipe.getId().equals(recipeId)) {
                 return Optional.of(recipe);
             }
         }
@@ -96,7 +95,7 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        Optional<RecipeHolder<LightningSimulationRecipe>> recipe = findRecipeById(level, lockedRecipe.recipeId());
+        Optional<LightningSimulationRecipe> recipe = findRecipeById(level, lockedRecipe.recipeId());
         if (recipe.isEmpty()) {
             return Optional.empty();
         }
@@ -106,7 +105,7 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        Optional<LightningSimulationRecipeMatch> match = recipe.get().value().planMatch(input);
+        Optional<LightningSimulationRecipeMatch> match = recipe.get().planMatch(input);
         if (match.isEmpty()) {
             return Optional.empty();
         }
@@ -130,7 +129,7 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        Optional<RecipeHolder<LightningSimulationRecipe>> recipe = findRecipeById(level, lockedRecipe.recipeId());
+        Optional<LightningSimulationRecipe> recipe = findRecipeById(level, lockedRecipe.recipeId());
         if (recipe.isEmpty()) {
             return Optional.empty();
         }
@@ -140,7 +139,7 @@ public final class LightningSimulationRecipeService {
             return Optional.empty();
         }
 
-        Optional<LightningSimulationRecipeMatch> match = recipe.get().value().planMatch(input);
+        Optional<LightningSimulationRecipeMatch> match = recipe.get().planMatch(input);
         if (match.isEmpty()) {
             return Optional.empty();
         }

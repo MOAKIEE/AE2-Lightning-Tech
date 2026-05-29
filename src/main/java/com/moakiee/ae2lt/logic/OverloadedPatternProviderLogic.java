@@ -2,6 +2,8 @@ package com.moakiee.ae2lt.logic;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
+
+import net.minecraft.util.Mth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -48,7 +50,7 @@ import appeng.helpers.patternprovider.PatternProviderLogic;
 import appeng.helpers.patternprovider.PatternProviderReturnInventory;
 import appeng.helpers.patternprovider.PatternProviderTarget;
 import appeng.me.helpers.MachineSource;
-import appeng.api.storage.AEKeySlotFilter;
+import appeng.api.storage.AEKeyFilter;
 import appeng.util.inv.filter.IAEItemFilter;
 
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
@@ -234,7 +236,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 cooldownStableSuccessStreak = 0;
                 searchHi = cooldownN;
                 cooldownN = Math.max(searchLo, (searchLo + searchHi) / 2);
-                cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                cooldownN = Mth.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
             }
             cooldownUntil = -1;
         }
@@ -261,7 +263,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     cooldownN = COOLDOWN_MAX;
                 } else {
                     cooldownN = (searchLo + searchHi) / 2;
-                    cooldownN = Math.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
+                    cooldownN = Mth.clamp(cooldownN, COOLDOWN_MIN, COOLDOWN_MAX);
                 }
             }
             cooldownUntil = gameTick + cooldownN;
@@ -457,7 +459,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     grid.getTickManager().alertDevice(node));
             overloadedHost.saveChanges();
         };
-        AEKeySlotFilter returnFilter = (slot, key) -> {
+        AEKeyFilter returnFilter = (key) -> {
             if (!overloadedHost.isFilteredImport()) return true;
             var filter = getOrBuildOutputFilter();
             return !filter.isEmpty() && filter.matches(key);
@@ -523,7 +525,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     @Override
-    public void onChangeInventory(appeng.util.inv.AppEngInternalInventory inv, int slot) {
+    public void onChangeInventory(appeng.api.inventories.InternalInventory inv, int slot) {
         super.onChangeInventory(inv, slot);
     }
 
@@ -1494,9 +1496,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (pattern instanceof OverloadedProviderOnlyPatternDetails overloadDetails) {
                 var ae2Outputs = pattern.getOutputs();
                 var overloadOutputs = overloadDetails.overloadPatternDetailsView().outputs();
-                int count = Math.min(ae2Outputs.size(), overloadOutputs.size());
+                int count = Math.min(ae2Outputs.length, overloadOutputs.size());
                 for (int i = 0; i < count; i++) {
-                    var aeKey = ae2Outputs.get(i).what();
+                    var aeKey = ae2Outputs[i].what();
                     if (overloadOutputs.get(i).matchMode() == MatchMode.ID_ONLY) {
                         filter.allowIdOnly(aeKey);
                     } else {
@@ -1718,14 +1720,14 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static int resolveUnlockOutputIndex(IPatternDetails pattern, OverloadPatternDetails overloadDetails) {
         var actualOutputs = pattern.getOutputs();
         var overloadOutputs = overloadDetails.outputs();
-        int count = Math.min(actualOutputs.size(), overloadOutputs.size());
+        int count = Math.min(actualOutputs.length, overloadOutputs.size());
         if (count <= 0) {
             return -1;
         }
 
         var primaryOutput = pattern.getPrimaryOutput();
         for (int i = 0; i < count; i++) {
-            var candidate = actualOutputs.get(i);
+            var candidate = actualOutputs[i];
             if (candidate.what().equals(primaryOutput.what()) && candidate.amount() == primaryOutput.amount()) {
                 return i;
             }
@@ -1771,6 +1773,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var queryFace = conn.boundFace().getOpposite();
             var ghostBE = new GhostOutputBlockEntity(adjacentPos);
             ghostBE.setLevel(targetLevel);
+            ghostBE.setHostLogic(this);
 
             var entry = new EjectModeRegistry.EjectEntry(
                     new java.lang.ref.WeakReference<>(overloadedHost),
@@ -1790,16 +1793,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var server = sl.getServer();
         for (var dp : positions) {
             var targetLevel = server.getLevel(dp.dimension());
-            if (targetLevel != null) {
-                targetLevel.invalidateCapabilities(dp.pos());
-            }
+            // invalidateCapabilities not available in 1.20.1
         }
     }
 
     private static void invalidateCapabilitiesAt(@Nullable ServerLevel level, BlockPos pos) {
-        if (level != null) {
-            level.invalidateCapabilities(pos);
-        }
+        // No-op in 1.20.1 - invalidateCapabilities doesn't exist
     }
 
     protected void tickWirelessInductionEnergy() {
@@ -2002,6 +2001,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             remaining -= inserted;
         }
         return remaining;
+    }
+
+    /**
+     * Public wrapper for {@link #insertStackToNetwork} used by
+     * {@link com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity}
+     * to proxy eject-mode item inserts into the ME network.
+     *
+     * @return remaining items that could not be inserted
+     */
+    public long ejectInsertToNetwork(AEKey what, long amount) {
+        return insertStackToNetwork(what, amount);
     }
 
     public void onPersistentStateChanged() {
@@ -2230,7 +2240,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(GRID_TICK_MIN, GRID_TICK_MAX, !hasCombinedGridTickWork());
+            return new TickingRequest(GRID_TICK_MIN, GRID_TICK_MAX, !hasCombinedGridTickWork(), false);
         }
 
         @Override
@@ -2331,33 +2341,33 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final String TAG_UNLOCK_TEMPLATE = "Ae2ltUnlockTemplate";
 
     @Override
-    public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    public void writeToNBT(CompoundTag tag) {
         if (totalCapacity > 36) {
             var accessor = (PatternProviderLogicAccessor) this;
             var realInv = accessor.getPatternInventory();
             accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
             try {
-                super.writeToNBT(tag, registries);
+                super.writeToNBT(tag);
             } finally {
                 accessor.setPatternInventory(realInv);
             }
             saveToSavedData();
         } else {
-            super.writeToNBT(tag, registries);
+            super.writeToNBT(tag);
         }
         tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
         if (pendingUnlockMatchMode != null) {
             tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
         }
         if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
-            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
+            tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.save(new CompoundTag()));
         }
-        writeWirelessOverflowToNBT(tag, registries);
+        writeWirelessOverflowToNBT(tag);
     }
 
     @Override
-    public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
-        super.readFromNBT(tag, registries);
+    public void readFromNBT(CompoundTag tag) {
+        super.readFromNBT(tag);
         if (totalCapacity > 36) {
             needsSavedDataLoad = true;
         }
@@ -2372,12 +2382,12 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
         }
         if (tag.contains(TAG_UNLOCK_TEMPLATE, Tag.TAG_COMPOUND)) {
-            pendingUnlockTemplate = ItemStack.parseOptional(registries, tag.getCompound(TAG_UNLOCK_TEMPLATE));
+            pendingUnlockTemplate = ItemStack.of(tag.getCompound(TAG_UNLOCK_TEMPLATE));
             if (pendingUnlockTemplate.isEmpty()) {
                 pendingUnlockTemplate = null;
             }
         }
-        readWirelessOverflowFromNBT(tag, registries);
+        readWirelessOverflowFromNBT(tag);
         cachedOutputFilter = null;
         outputFilterDirty = true;
         invalidateValidConnectionsCache();
@@ -2412,7 +2422,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    private void writeWirelessOverflowToNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    private void writeWirelessOverflowToNBT(CompoundTag tag) {
         if (pendingOverflowByConn.isEmpty()) return;
 
         var overflowTag = new CompoundTag();
@@ -2432,7 +2442,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var patternTag = new CompoundTag();
             patternTag.putShort(TAG_OVERFLOW_PATTERN_ID, writeId);
             patternTag.put(TAG_OVERFLOW_PATTERN,
-                    pattern.getDefinition().toStack().saveOptional(registries));
+                    pattern.getDefinition().toStack().save(new CompoundTag()));
             patternList.add(patternTag);
         }
         overflowTag.put(TAG_OVERFLOW_PATTERNS, patternList);
@@ -2454,7 +2464,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             } else {
                 var fallback = new ListTag();
                 for (var stack : bucket.fallbackList) {
-                    fallback.add(GenericStack.writeTag(registries, stack));
+                    fallback.add(GenericStack.writeTag(stack));
                 }
                 bucketTag.put(TAG_OVERFLOW_FALLBACK, fallback);
             }
@@ -2464,7 +2474,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         tag.put(TAG_WIRELESS_OVERFLOW, overflowTag);
     }
 
-    private void readWirelessOverflowFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    private void readWirelessOverflowFromNBT(CompoundTag tag) {
         clearWirelessOverflowState();
 
         if (tag.contains(TAG_WIRELESS_OVERFLOW, Tag.TAG_COMPOUND)) {
@@ -2473,7 +2483,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             for (int i = 0; i < patterns.size(); i++) {
                 var patternTag = patterns.getCompound(i);
                 int id = Short.toUnsignedInt(patternTag.getShort(TAG_OVERFLOW_PATTERN_ID));
-                var stack = ItemStack.parseOptional(registries,
+                var stack = ItemStack.of(
                         patternTag.getCompound(TAG_OVERFLOW_PATTERN));
                 if (!stack.isEmpty()) {
                     pendingOverflowPatternDefinitions.put(id, stack);
@@ -2495,7 +2505,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                             List.of(),
                             true));
                 } else {
-                    var fallback = readGenericStackList(registries,
+                    var fallback = readGenericStackList(
                             bucketTag.getList(TAG_OVERFLOW_FALLBACK, Tag.TAG_COMPOUND));
                     if (!fallback.isEmpty()) {
                         pendingOverflowBuckets.add(new PendingBucketLoad(
@@ -2504,18 +2514,18 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 }
             }
         } else {
-            readLegacyWirelessOverflowFromNBT(tag, registries);
+            readLegacyWirelessOverflowFromNBT(tag);
         }
 
         finishPendingWirelessOverflowLoad();
     }
 
-    private void readLegacyWirelessOverflowFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
+    private void readLegacyWirelessOverflowFromNBT(CompoundTag tag) {
         if (!tag.contains(TAG_W_SEND_LIST, Tag.TAG_LIST)
                 || !tag.contains(TAG_W_SEND_CONN, Tag.TAG_COMPOUND)) {
             return;
         }
-        var fallback = readGenericStackList(registries, tag.getList(TAG_W_SEND_LIST, Tag.TAG_COMPOUND));
+        var fallback = readGenericStackList(tag.getList(TAG_W_SEND_LIST, Tag.TAG_COMPOUND));
         if (!fallback.isEmpty()) {
             pendingOverflowBuckets.add(new PendingBucketLoad(
                     WirelessConnection.fromTag(tag.getCompound(TAG_W_SEND_CONN)),
@@ -2523,10 +2533,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
-    private static List<GenericStack> readGenericStackList(HolderLookup.Provider registries, ListTag list) {
+    private static List<GenericStack> readGenericStackList(ListTag list) {
         var stacks = new ArrayList<GenericStack>(list.size());
         for (int i = 0; i < list.size(); i++) {
-            var stack = GenericStack.readTag(registries, list.getCompound(i));
+            var stack = GenericStack.readTag(list.getCompound(i));
             if (stack != null && stack.amount() > 0) {
                 stacks.add(stack);
             }

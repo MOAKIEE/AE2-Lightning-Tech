@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.client;
 
+import net.minecraft.client.gui.GuiGraphics;
+
 import java.util.List;
 
 import appeng.client.gui.AEBaseScreen;
@@ -33,5 +35,9 @@ public class AtmosphericIonizerScreen extends AEBaseScreen<AtmosphericIonizerMen
                 LightningStatusLines.progress(menu.getProgress()),
                 menu.getTargetWeatherMessage(),
                 menu.getEnergyDemandMessage())));
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

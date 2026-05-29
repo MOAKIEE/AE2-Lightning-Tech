@@ -1,32 +1,29 @@
 package com.moakiee.ae2lt.network;
 
-import net.minecraft.network.RegistryFriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import java.util.function.Supplier;
 
-public record EasterEggPacket() implements CustomPacketPayload {
-    public static final Type<EasterEggPacket> TYPE =
-            new Type<>(NetworkInit.id("easter_egg"));
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraftforge.network.NetworkEvent;
 
-    public static final StreamCodec<RegistryFriendlyByteBuf, EasterEggPacket> STREAM_CODEC =
-            StreamCodec.ofMember(EasterEggPacket::write, EasterEggPacket::decode);
+public class EasterEggPacket {
 
-    @Override
-    public Type<EasterEggPacket> type() {
-        return TYPE;
+    public EasterEggPacket() {
     }
 
-    public static EasterEggPacket decode(RegistryFriendlyByteBuf buf) {
+    public static void encode(EasterEggPacket pkt, FriendlyByteBuf buf) {
+        // no fields
+    }
+
+    public static EasterEggPacket decode(FriendlyByteBuf buf) {
         return new EasterEggPacket();
     }
 
-    public void write(RegistryFriendlyByteBuf buf) {
-    }
-
-    public static void handle(EasterEggPacket payload, IPayloadContext context) {
-        context.enqueueWork(() -> {
+    public static void handle(EasterEggPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
+        ctx.enqueueWork(() -> {
             com.moakiee.ae2lt.client.EasterEggOverlay.trigger();
         });
+        ctx.setPacketHandled(true);
     }
 }

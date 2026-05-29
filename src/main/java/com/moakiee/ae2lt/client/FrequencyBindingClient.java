@@ -7,7 +7,8 @@ import com.moakiee.ae2lt.network.OpenFrequencyMenuPacket;
 import net.minecraft.core.BlockPos;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.neoforged.neoforge.network.PacketDistributor;
+import com.moakiee.ae2lt.network.NetworkInit;
+import com.moakiee.ae2lt.network.OpenFrequencyMenuPacket;
 import org.lwjgl.glfw.GLFW;
 
 public final class FrequencyBindingClient {
@@ -28,7 +29,7 @@ public final class FrequencyBindingClient {
                 TextureToggleButton.ButtonType.FREQUENCY_BIND,
                 ignored -> {
                     rememberCursorPosition(menu.getFrequencyBindingBlockPos());
-                    PacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
+                    NetworkInit.CHANNEL.sendToServer(new OpenFrequencyMenuPacket(
                             menu.getFrequencyBindingToken(),
                             menu.getFrequencyBindingBlockPos()));
                 });

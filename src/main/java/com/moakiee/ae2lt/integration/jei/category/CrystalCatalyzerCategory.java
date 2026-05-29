@@ -23,11 +23,11 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
 import mezz.jei.api.constants.VanillaTypes;
+import mezz.jei.api.forge.ForgeTypes;
 import mezz.jei.api.gui.builder.IRecipeLayoutBuilder;
 import mezz.jei.api.gui.drawable.IDrawable;
 import mezz.jei.api.gui.ingredient.IRecipeSlotsView;
 import mezz.jei.api.helpers.IGuiHelper;
-import mezz.jei.api.neoforge.NeoForgeTypes;
 import mezz.jei.api.recipe.IFocusGroup;
 import mezz.jei.api.recipe.RecipeIngredientRole;
 import mezz.jei.api.recipe.RecipeType;
@@ -38,11 +38,8 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
             RecipeType.create(AE2LightningTech.MODID, "crystal_catalyzer", CrystalCatalyzerRecipe.class);
 
     private static final ResourceLocation BACKGROUND_TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/guis/crystal_catalyzer.png");
 
-    // 机器 GUI 坐标:流体腔 (26,18)+16×53,催化剂槽 (56,30),矩阵槽 (84,54),
-    // 进度条 (74,33)+22×16,产物槽 (117,30),能量条 (140,30)+6×18。
-    // 从 (22,14) 起裁剪 128×62,保留水箱/电池外框的 1~2px 装饰边。
     private static final int BACKGROUND_U = 22;
     private static final int BACKGROUND_V = 14;
     private static final int BACKGROUND_WIDTH = 128;
@@ -52,7 +49,6 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     private static final int TEXTURE_WIDTH = 256;
     private static final int TEXTURE_HEIGHT = 256;
 
-    // category 坐标 = GUI 坐标 − 背景偏移
     private static final int FLUID_X = 26 - BACKGROUND_U;   // 4
     private static final int FLUID_Y = 18 - BACKGROUND_V;   // 4
     private static final int FLUID_WIDTH = 16;
@@ -109,19 +105,23 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
     }
 
     @Override
+    public IDrawable getBackground() {
+        return background;
+    }
+
+    @Override
     public IDrawable getIcon() {
         return icon;
     }
 
     @Override
     public void setRecipe(IRecipeLayoutBuilder builder, CrystalCatalyzerRecipe recipe, IFocusGroup focuses) {
-        // 水现在是机器级固定开销,所有配方共用一份 1000 mB 的 water。
         var fluid = CrystalCatalyzerBlockEntity.getFixedFluidPerCycle();
         int fluidDisplayCapacity = Math.max(1, fluid.getAmount());
         builder.addSlot(RecipeIngredientRole.INPUT, FLUID_X, FLUID_Y)
                 .setFluidRenderer(fluidDisplayCapacity, false, FLUID_WIDTH, FLUID_HEIGHT)
-                .addIngredient(NeoForgeTypes.FLUID_STACK, fluid)
-                .addRichTooltipCallback((slotView, tooltip) -> tooltip.add(
+                .addIngredient(ForgeTypes.FLUID_STACK, fluid)
+                .addTooltipCallback((slotView, tooltip) -> tooltip.add(
                         Component.translatable(
                                 "jei.ae2lt.crystal_catalyzer.fluid_fixed",
                                 fluid.getAmount())));
@@ -131,7 +131,7 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
             builder.addSlot(RecipeIngredientRole.INPUT, CATALYST_X, CATALYST_Y)
                     .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                     .addItemStacks(expandIngredient(catalyst, perInstance))
-                    .addRichTooltipCallback((recipeSlotView, tooltip) -> {
+                    .addTooltipCallback((recipeSlotView, tooltip) -> {
                         LargeStackCountRenderer.appendCountTooltip(tooltip, perInstance);
                         tooltip.add(Component.translatable(
                                 "jei.ae2lt.crystal_catalyzer.catalyst_parallel",
@@ -147,7 +147,7 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setCustomRenderer(VanillaTypes.ITEM_STACK, LargeStackJeiItemRenderer.INSTANCE)
                 .addItemStack(baseOutput)
-                .addRichTooltipCallback((recipeSlotView, tooltip) -> {
+                .addTooltipCallback((recipeSlotView, tooltip) -> {
                     LargeStackCountRenderer.appendCountTooltip(tooltip, baseCount);
                     tooltip.add(Component.translatable(
                             "jei.ae2lt.crystal_catalyzer.output_base", baseCount, matrixMultiplier));
@@ -222,7 +222,11 @@ public class CrystalCatalyzerCategory implements IRecipeCategory<CrystalCatalyze
 
     private static List<ItemStack> expandIngredient(Ingredient ingredient, int count) {
         return Arrays.stream(ingredient.getItems())
-                .map(stack -> stack.copyWithCount(count))
+                .map(stack -> {
+                    ItemStack copy = stack.copy();
+                    copy.setCount(count);
+                    return copy;
+                })
                 .toList();
     }
 

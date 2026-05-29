@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.network;
 
+import java.util.function.Supplier;
+
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingHost;
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingMenuHost;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
@@ -9,38 +11,37 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraftforge.network.NetworkEvent;
 
-public record OpenFrequencyMenuPacket(int token, BlockPos blockPos) implements CustomPacketPayload {
-    public static final Type<OpenFrequencyMenuPacket> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath("ae2lt", "open_frequency_menu"));
+public class OpenFrequencyMenuPacket {
+    private final int token;
+    private final BlockPos blockPos;
 
-    public static final StreamCodec<FriendlyByteBuf, OpenFrequencyMenuPacket> STREAM_CODEC =
-            StreamCodec.of(OpenFrequencyMenuPacket::encode, OpenFrequencyMenuPacket::decode);
+    public OpenFrequencyMenuPacket(int token, BlockPos blockPos) {
+        this.token = token;
+        this.blockPos = blockPos;
+    }
 
-    private static void encode(FriendlyByteBuf buf, OpenFrequencyMenuPacket pkt) {
+    public int token() { return token; }
+    public BlockPos blockPos() { return blockPos; }
+
+    public static void encode(OpenFrequencyMenuPacket pkt, FriendlyByteBuf buf) {
         buf.writeVarInt(pkt.token);
         buf.writeBlockPos(pkt.blockPos);
     }
 
-    private static OpenFrequencyMenuPacket decode(FriendlyByteBuf buf) {
+    public static OpenFrequencyMenuPacket decode(FriendlyByteBuf buf) {
         return new OpenFrequencyMenuPacket(buf.readVarInt(), buf.readBlockPos());
     }
 
-    @Override
-    public Type<? extends CustomPacketPayload> type() {
-        return TYPE;
-    }
-
-    public static void handle(OpenFrequencyMenuPacket pkt, IPayloadContext ctx) {
+    public static void handle(OpenFrequencyMenuPacket pkt, Supplier<NetworkEvent.Context> ctxSupplier) {
+        NetworkEvent.Context ctx = ctxSupplier.get();
         ctx.enqueueWork(() -> {
-            if (!(ctx.player() instanceof ServerPlayer player)) return;
+            ServerPlayer player = ctx.getSender();
+            if (player == null) return;
 
             if (!(player.containerMenu instanceof FrequencyBindingMenuHost menu)
                     || menu.getFrequencyBindingToken() != pkt.token
@@ -77,7 +78,8 @@ public record OpenFrequencyMenuPacket(int token, BlockPos blockPos) implements C
             player.openMenu(new SimpleMenuProvider(
                     (id, inv, p) -> new FrequencyMenu(id, inv, be),
                     be.getBlockState().getBlock().getName()
-            ), buf -> FrequencyMenu.writeExtraData(buf, be));
+            ));
         });
+        ctx.setPacketHandled(true);
     }
 }

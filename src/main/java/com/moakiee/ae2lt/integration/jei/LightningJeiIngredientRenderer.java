@@ -7,7 +7,6 @@ import com.moakiee.ae2lt.me.key.LightningKey;
 
 import appeng.api.client.AEKeyRendering;
 import appeng.util.Platform;
-import mezz.jei.api.gui.builder.ITooltipBuilder;
 import mezz.jei.api.ingredients.IIngredientRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -21,34 +20,19 @@ public class LightningJeiIngredientRenderer implements IIngredientRenderer<Light
         public List<Component> getTooltip(LightningKey ingredient, TooltipFlag tooltipFlag) {
             return List.of();
         }
-
-        @Override
-        public void getTooltip(ITooltipBuilder tooltip, LightningKey ingredient, TooltipFlag tooltipFlag) {
-        }
     };
 
     @Override
     public void render(GuiGraphics guiGraphics, LightningKey ingredient) {
-        render(guiGraphics, ingredient, 0, 0);
-    }
-
-    @Override
-    public void render(GuiGraphics guiGraphics, LightningKey ingredient, int posX, int posY) {
         if (ingredient == null) {
             return;
         }
-
-        AEKeyRendering.drawInGui(Minecraft.getInstance(), guiGraphics, posX, posY, ingredient);
+        AEKeyRendering.drawInGui(Minecraft.getInstance(), guiGraphics, 0, 0, ingredient);
     }
 
     @Override
     public List<Component> getTooltip(LightningKey ingredient, TooltipFlag tooltipFlag) {
-        return AEKeyRendering.getTooltip(ingredient);
-    }
-
-    @Override
-    public void getTooltip(ITooltipBuilder tooltip, LightningKey ingredient, TooltipFlag tooltipFlag) {
-        tooltip.addAll(getJeiTooltip(ingredient));
+        return getJeiTooltip(ingredient);
     }
 
     @Override
@@ -61,13 +45,11 @@ public class LightningJeiIngredientRenderer implements IIngredientRenderer<Light
         if (tooltip.isEmpty()) {
             return tooltip;
         }
-
         var modName = Platform.formatModName(ingredient.getModId());
         var lastLine = tooltip.get(tooltip.size() - 1).getString();
         if (lastLine.equals(modName)) {
             tooltip.remove(tooltip.size() - 1);
         }
-
         return tooltip;
     }
 }

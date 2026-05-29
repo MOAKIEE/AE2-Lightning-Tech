@@ -3,12 +3,13 @@ package com.moakiee.ae2lt.machine.lightningassembly.recipe;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeInput;
 
 import com.moakiee.ae2lt.machine.lightningassembly.LightningAssemblyChamberInventory;
 
-public final class LightningAssemblyRecipeInput implements RecipeInput {
+public final class LightningAssemblyRecipeInput implements Container {
     private final List<SlotStack> slotStacks;
     private final List<ItemStack> displayStacks;
 
@@ -36,18 +37,46 @@ public final class LightningAssemblyRecipeInput implements RecipeInput {
         return slotStacks;
     }
 
-    public boolean isEmpty() {
-        return slotStacks.isEmpty();
-    }
-
     @Override
     public ItemStack getItem(int index) {
         return displayStacks.get(index);
     }
 
     @Override
-    public int size() {
+    public int getContainerSize() {
         return displayStacks.size();
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return displayStacks.isEmpty();
+    }
+
+    @Override
+    public ItemStack removeItem(int index, int count) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public ItemStack removeItemNoUpdate(int index) {
+        return ItemStack.EMPTY;
+    }
+
+    @Override
+    public void setItem(int index, ItemStack stack) {
+    }
+
+    @Override
+    public void setChanged() {
+    }
+
+    @Override
+    public boolean stillValid(Player player) {
+        return false;
+    }
+
+    @Override
+    public void clearContent() {
     }
 
     public record SlotStack(int slot, ItemStack stack) {

@@ -10,48 +10,25 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
 
 public final class LightningTransformService {
-    /**
-     * Hard cap on transform rounds per single lightning bolt. Existing recipes peak at a
-     * couple of rounds per strike; this cap exists purely to bound the worst case when an
-     * exotic recipe set or a huge ItemEntity pile would otherwise let the loop spin
-     * pathologically. Bumping this only matters if a legitimate single-strike pipeline
-     * ever needs more than this many sequential transforms, which has not been observed.
-     */
     private static final int MAX_ROUNDS_PER_STRIKE = 32;
-
-    private static final Comparator<RecipeHolder<LightningTransformRecipe>> RECIPE_ORDER = Comparator
-            .<RecipeHolder<LightningTransformRecipe>>comparingInt(holder -> holder.value().priority())
-            .reversed()
-            .thenComparing(Comparator.comparingInt(
-                            (RecipeHolder<LightningTransformRecipe> holder) -> holder.value().ingredientCount())
-                    .reversed())
-            .thenComparing(Comparator.comparingInt(
-                            (RecipeHolder<LightningTransformRecipe> holder) -> holder.value().totalInputCount())
-                    .reversed())
-            .thenComparing(holder -> holder.id().toString());
 
     private LightningTransformService() {
     }
 
     public static void handleLightning(ServerLevel level, LightningBolt lightningBolt) {
         long gameTime = level.getGameTime();
-        // Snapshot the candidate pool exactly once. Newly spawned outputs receive
-        // PROTECT_UNTIL_TAG via applyOutputProtection and would be filtered by
-        // canParticipateInTransform anyway, so re-running the AABB scan every round only
-        // burns CPU on a fixed set of candidates whose state we already have references to.
         List<ItemEntity> candidatePool = collectCandidates(level, lightningBolt.position(), gameTime);
         if (candidatePool.isEmpty()) {
             return;
         }
 
-        List<RecipeHolder<LightningTransformRecipe>> sortedRecipes = getSortedRecipes(level);
+        List<LightningTransformRecipe> sortedRecipes = getSortedRecipes(level);
         if (sortedRecipes.isEmpty()) {
             return;
         }
@@ -66,7 +43,7 @@ public final class LightningTransformService {
             }
 
             LightningTransformRecipeInput input = LightningTransformRecipeInput.fromEntities(candidates);
-            if (input.size() == 0) {
+            if (input.getContainerSize() == 0) {
                 break;
             }
 
@@ -81,7 +58,7 @@ public final class LightningTransformService {
             }
 
             pendingOutputs.add(new PendingOutput(
-                    matchedRecipe.get().recipe().value().getResultItem(level.registryAccess()),
+                    matchedRecipe.get().recipe().getResultItem(level.registryAccess()),
                     plan.spawnPosition()));
             executedPlans.add(plan);
         }
@@ -104,12 +81,6 @@ public final class LightningTransformService {
                 itemEntity -> ProtectedItemEntityHelper.canParticipateInTransform(itemEntity, gameTime));
     }
 
-    /**
-     * Filter the snapshotted pool to entities still eligible after prior rounds shrank or
-     * discarded their stacks. This preserves the "one bolt may run multiple recipes against
-     * partially-consumed stacks" behavior — locks are only applied once after the loop
-     * completes, exactly as before.
-     */
     private static List<ItemEntity> filterStillEligible(List<ItemEntity> pool, long gameTime) {
         List<ItemEntity> result = new ArrayList<>(pool.size());
         for (ItemEntity itemEntity : pool) {
@@ -120,19 +91,22 @@ public final class LightningTransformService {
         return result;
     }
 
-    private static List<RecipeHolder<LightningTransformRecipe>> getSortedRecipes(ServerLevel level) {
-        List<RecipeHolder<LightningTransformRecipe>> recipes =
+    private static List<LightningTransformRecipe> getSortedRecipes(ServerLevel level) {
+        List<LightningTransformRecipe> recipes =
                 new ArrayList<>(level.getRecipeManager().getAllRecipesFor(ModRecipeTypes.LIGHTNING_TRANSFORM_TYPE.get()));
-        recipes.sort(RECIPE_ORDER);
+        recipes.sort(Comparator
+                .comparingInt(LightningTransformRecipe::priority).reversed()
+                .thenComparing(Comparator.comparingInt(LightningTransformRecipe::ingredientCount).reversed())
+                .thenComparing(Comparator.comparingInt(LightningTransformRecipe::totalInputCount).reversed()));
         return recipes;
     }
 
     private static Optional<MatchedRecipe> selectRecipe(
-            List<RecipeHolder<LightningTransformRecipe>> sortedRecipes, LightningTransformRecipeInput input) {
-        for (RecipeHolder<LightningTransformRecipe> recipeHolder : sortedRecipes) {
-            Optional<LightningTransformPlan> plan = recipeHolder.value().planMatch(input);
+            List<LightningTransformRecipe> sortedRecipes, LightningTransformRecipeInput input) {
+        for (LightningTransformRecipe recipe : sortedRecipes) {
+            Optional<LightningTransformPlan> plan = recipe.planMatch(input);
             if (plan.isPresent()) {
-                return Optional.of(new MatchedRecipe(recipeHolder, plan.get()));
+                return Optional.of(new MatchedRecipe(recipe, plan.get()));
             }
         }
 
@@ -174,7 +148,7 @@ public final class LightningTransformService {
     private record PendingOutput(ItemStack result, Vec3 position) {
     }
 
-    private record MatchedRecipe(RecipeHolder<LightningTransformRecipe> recipe, LightningTransformPlan plan) {
+    private record MatchedRecipe(LightningTransformRecipe recipe, LightningTransformPlan plan) {
     }
 
     private static final class ItemStackKey {
@@ -183,14 +157,14 @@ public final class LightningTransformService {
 
         private ItemStackKey(ItemStack stack) {
             this.stack = stack.copyWithCount(1);
-            this.hash = ItemStack.hashItemAndComponents(this.stack);
+            this.hash = java.util.Objects.hash(this.stack.getItem(), this.stack.getTag());
         }
 
         @Override
         public boolean equals(Object other) {
             if (this == other) return true;
             if (!(other instanceof ItemStackKey key)) return false;
-            return ItemStack.isSameItemSameComponents(this.stack, key.stack);
+            return ItemStack.isSameItemSameTags(this.stack, key.stack);
         }
 
         @Override

@@ -6,12 +6,10 @@ import java.util.function.Consumer;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponentMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
-import net.minecraft.world.item.component.CustomData;
 
 import appeng.api.orientation.RelativeSide;
 import appeng.util.SettingsFrom;
@@ -20,11 +18,11 @@ import com.moakiee.ae2lt.registry.ModDataComponents;
 
 /**
  * Shared helpers for packing/unpacking custom machine configuration into
- * {@link ModDataComponents#EXPORTED_MACHINE_CONFIG}. AE2's generic memory card
- * export only walks {@code IUpgradeableObject / IConfigurableObject /
- * IPriorityHost / IConfigInvHost}; fields living directly on our BEs (auto
- * export flags, per-face output enables, interface mode, etc.) stay invisible
- * unless we export them ourselves.
+ * NBT tags on memory cards. AE2's generic memory card export only walks
+ * {@code IUpgradeableObject / IConfigurableObject / IPriorityHost /
+ * IConfigInvHost}; fields living directly on our BEs (auto export flags,
+ * per-face output enables, interface mode, etc.) stay invisible unless we
+ * export them ourselves.
  *
  * Same-block copy/paste is the only supported case: on paste we rely on
  * AE2's {@code this.getName().equals(savedName)} check to route back to the
@@ -38,28 +36,26 @@ public final class MemoryCardConfigSupport {
     private MemoryCardConfigSupport() {}
 
     /**
-     * Store {@code tag} on the memory card. No-op when the tag is empty to
-     * avoid polluting the card with trivia and so vanilla "was anything
-     * actually saved?" heuristics stay correct for empty configs.
+     * Store {@code tag} into the output CompoundTag under our custom key.
+     * No-op when the tag is empty to avoid polluting the card with trivia.
      */
-    public static void writeCustomTag(DataComponentMap.Builder builder, CompoundTag tag) {
+    public static void writeCustomTag(CompoundTag output, CompoundTag tag) {
         if (tag.isEmpty()) {
             return;
         }
-        builder.set(ModDataComponents.EXPORTED_MACHINE_CONFIG.get(), CustomData.of(tag));
+        output.put(ModDataComponents.EXPORTED_MACHINE_CONFIG, tag);
     }
 
     /**
      * Retrieve the machine-config tag previously stored via {@link #writeCustomTag}.
-     * Returns {@code null} if no such component exists on the card.
+     * Returns {@code null} if no such tag exists.
      */
     @Nullable
-    public static CompoundTag readCustomTag(DataComponentMap input) {
-        var data = input.get(ModDataComponents.EXPORTED_MACHINE_CONFIG.get());
-        if (data == null) {
-            return null;
+    public static CompoundTag readCustomTag(CompoundTag input) {
+        if (input.contains(ModDataComponents.EXPORTED_MACHINE_CONFIG, Tag.TAG_COMPOUND)) {
+            return input.getCompound(ModDataComponents.EXPORTED_MACHINE_CONFIG);
         }
-        return data.copyTag();
+        return null;
     }
 
     /**
@@ -67,7 +63,7 @@ public final class MemoryCardConfigSupport {
      * our custom machine-data export scoped to memory cards and centralizes the
      * empty-tag behavior.
      */
-    public static void exportMemoryCardSettings(SettingsFrom mode, DataComponentMap.Builder builder,
+    public static void exportMemoryCardSettings(SettingsFrom mode, CompoundTag output,
                                                 Consumer<CompoundTag> writer) {
         if (mode != SettingsFrom.MEMORY_CARD) {
             return;
@@ -75,14 +71,14 @@ public final class MemoryCardConfigSupport {
 
         var tag = new CompoundTag();
         writer.accept(tag);
-        writeCustomTag(builder, tag);
+        writeCustomTag(output, tag);
     }
 
     /**
      * Reads our custom memory-card tag if present. The reader is only invoked
-     * for memory-card imports with an exported AE2LT machine config component.
+     * for memory-card imports with an exported AE2LT machine config tag.
      */
-    public static void importMemoryCardSettings(SettingsFrom mode, DataComponentMap input,
+    public static void importMemoryCardSettings(SettingsFrom mode, CompoundTag input,
                                                 Consumer<CompoundTag> reader) {
         if (mode != SettingsFrom.MEMORY_CARD) {
             return;
@@ -94,17 +90,17 @@ public final class MemoryCardConfigSupport {
         }
     }
 
-    public static void exportAutoExportSettings(SettingsFrom mode, DataComponentMap.Builder builder,
+    public static void exportAutoExportSettings(SettingsFrom mode, CompoundTag output,
                                                 boolean autoExport, EnumSet<RelativeSide> allowedOutputs,
                                                 Consumer<CompoundTag> extraWriter) {
-        exportMemoryCardSettings(mode, builder, tag -> {
+        exportMemoryCardSettings(mode, output, tag -> {
             tag.putBoolean(TAG_AUTO_EXPORT, autoExport);
             writeRelativeSideSet(tag, TAG_ALLOWED_OUTPUTS, allowedOutputs);
             extraWriter.accept(tag);
         });
     }
 
-    public static void importAutoExportSettings(SettingsFrom mode, DataComponentMap input,
+    public static void importAutoExportSettings(SettingsFrom mode, CompoundTag input,
                                                 Consumer<Boolean> autoExportSetter,
                                                 Consumer<EnumSet<RelativeSide>> allowedOutputsSetter,
                                                 Consumer<CompoundTag> extraReader,

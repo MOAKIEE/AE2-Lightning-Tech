@@ -15,9 +15,9 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilMode;
 
 public class TeslaCoilModeButton extends IconButton {
-    private static final ResourceLocation HV_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation HV_TEXTURE = new ResourceLocation(
             AE2LightningTech.MODID, "textures/gui/buttons/lightning.png");
-    private static final ResourceLocation EHV_TEXTURE = ResourceLocation.fromNamespaceAndPath(
+    private static final ResourceLocation EHV_TEXTURE = new ResourceLocation(
             AE2LightningTech.MODID, "textures/gui/buttons/lightning_high_voltage.png");
 
     private TeslaCoilMode mode = TeslaCoilMode.HIGH_VOLTAGE;
@@ -58,20 +58,14 @@ public class TeslaCoilModeButton extends IconButton {
         }
 
         int yOffset = isHovered() ? 1 : 0;
-        Icon bgIcon = isHovered() ? Icon.TOOLBAR_BUTTON_BACKGROUND_HOVER
-                : mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE
-                        ? Icon.TOOLBAR_BUTTON_BACKGROUND_FOCUS
-                        : Icon.TOOLBAR_BUTTON_BACKGROUND;
-        bgIcon.getBlitter()
-                .dest(getX() - 1, getY() + yOffset, 18, 20)
-                .zOffset(2)
-                .blit(guiGraphics);
+        // Draw a simple background rectangle instead of using Icon.TOOLBAR_BUTTON_BACKGROUND_*
+        guiGraphics.fill(getX() - 1, getY() + yOffset, getX() + 17, getY() + 19 + yOffset,
+                isHovered() ? 0x80FFFFFF : 0x80A0A0A0);
 
         var texture = mode == TeslaCoilMode.EXTREME_HIGH_VOLTAGE ? EHV_TEXTURE : HV_TEXTURE;
         Blitter.texture(texture, 16, 16)
                 .src(0, 0, 16, 16)
                 .dest(getX(), getY() + 1 + yOffset, 16, 16)
-                .zOffset(3)
                 .blit(guiGraphics);
     }
 }

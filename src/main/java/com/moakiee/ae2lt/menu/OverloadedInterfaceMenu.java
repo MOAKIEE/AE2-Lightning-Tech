@@ -45,8 +45,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
     public static final MenuType<OverloadedInterfaceMenu> TYPE = MenuTypeBuilder
             .create(FACTORY, InterfaceLogicHost.class)
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(
-                    AE2LightningTech.MODID, "overloaded_interface"));
+            .build("overloaded_interface");
 
     private static final int SLOTS_PER_PAGE = 18;
 
@@ -480,7 +479,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
         if (storageSlotSet.contains(slot)) return ItemStack.EMPTY;
 
         if (containerSlotSet.contains(slot)) {
-            return super.quickMoveStack(player, idx);
+            return quickMoveStack(player, idx);
         }
 
         if (slot.hasItem()) {
@@ -488,7 +487,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
             if (stack.getItem() instanceof OverloadedFilterComponentItem) {
                 int beforeCount = stack.getCount();
-                var superResult = super.quickMoveStack(player, idx);
+                var superResult = quickMoveStack(player, idx);
                 int afterCount = slot.hasItem() ? slot.getItem().getCount() : 0;
                 if (afterCount < beforeCount) {
                     return superResult;
@@ -497,7 +496,7 @@ public class OverloadedInterfaceMenu extends InterfaceMenu implements FrequencyB
 
             if (Upgrades.isUpgradeCardItem(stack)) {
                 int beforeCount = stack.getCount();
-                var superResult = super.quickMoveStack(player, idx);
+                var superResult = quickMoveStack(player, idx);
                 int afterCount = slot.hasItem() ? slot.getItem().getCount() : 0;
                 if (afterCount < beforeCount) {
                     return superResult;

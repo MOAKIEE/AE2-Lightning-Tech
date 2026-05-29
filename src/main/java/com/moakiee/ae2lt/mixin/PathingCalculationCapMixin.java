@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.mixin;
 
+import java.lang.reflect.Field;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +65,47 @@ public abstract class PathingCalculationCapMixin {
     @Unique private BorrowedCapacityCalculator.Result ae2lt$flowResult;
     // -1 = not applicable, fall through to vanilla channelsInUse
     @Unique private int ae2lt$maxFlowChannelsInUse = -1;
+
+
+    @Unique
+    private static final java.util.concurrent.atomic.AtomicReference<Field> ae2lt$gcUsedChannels = new java.util.concurrent.atomic.AtomicReference<>();
+
+    @Unique
+    private static final java.util.concurrent.atomic.AtomicReference<Field> ae2lt$gnUsedChannels = new java.util.concurrent.atomic.AtomicReference<>();
+
+    @Unique
+    private static void ae2lt$setUsedChannels(Object obj, int value) {
+        try {
+            boolean isGridConnection = obj instanceof appeng.me.GridConnection;
+            var ref = isGridConnection ? ae2lt$gcUsedChannels : ae2lt$gnUsedChannels;
+            Field f = ref.get();
+            if (f == null) {
+                f = obj.getClass().getDeclaredField("usedChannels");
+                f.setAccessible(true);
+                ref.set(f);
+            }
+            f.setInt(obj, value);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to set usedChannels on " + obj.getClass().getName(), e);
+        }
+    }
+
+    @Unique
+    private static int ae2lt$getUsedChannels(Object obj) {
+        try {
+            boolean isGridConnection = obj instanceof appeng.me.GridConnection;
+            var ref = isGridConnection ? ae2lt$gcUsedChannels : ae2lt$gnUsedChannels;
+            Field f = ref.get();
+            if (f == null) {
+                f = obj.getClass().getDeclaredField("usedChannels");
+                f.setAccessible(true);
+                ref.set(f);
+            }
+            return f.getInt(obj);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to get usedChannels on " + obj.getClass().getName(), e);
+        }
+    }
 
     // ── Phase 1: constructor – identify & unify overloaded controllers ──
 
@@ -198,7 +241,7 @@ public abstract class PathingCalculationCapMixin {
             for (var node : networkNodes) {
                 for (var conn : node.getConnections()) {
                     if (conn instanceof GridConnection gc && resetSeen.add(gc)) {
-                        gc.setAdHocChannels(0);
+                        ae2lt$setUsedChannels(gc, 0);
                     }
                 }
                 if (node instanceof OverloadedSubtreeNode osn) {
@@ -224,13 +267,13 @@ public abstract class PathingCalculationCapMixin {
             // reservation succeeded.
             for (var sibling : multiblocksWithChannel) {
                 if (networkNodes.contains(sibling)) {
-                    sibling.incrementChannelCount(1);
+                    ae2lt$setUsedChannels(sibling, ae2lt$getUsedChannels(sibling) + 1);
                 }
             }
 
             var connFlow = ae2lt$flowResult.connectionFlow();
             for (var entry : connFlow.reference2IntEntrySet()) {
-                entry.getKey().setAdHocChannels(entry.getIntValue());
+                ae2lt$setUsedChannels(entry.getKey(), entry.getIntValue());
             }
 
             // Persist used-channel count for getChannelsInUse() override.

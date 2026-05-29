@@ -3,51 +3,36 @@ package com.moakiee.ae2lt.logic;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.Direction;
-import net.neoforged.fml.ModList;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEKey;
-
-import net.pedroksl.advanced_ae.common.patterns.IAdvPatternDetails;
+import net.minecraftforge.fml.ModList;
 
 /**
- * Runtime compatibility layer for AdvancedAE directional processing patterns.
- * All references to AdvancedAE classes are confined to this file so that the
- * rest of the codebase never triggers {@link ClassNotFoundException} when
- * AdvancedAE is absent.
+ * Compatibility layer for AdvancedAE directional pattern support.
  */
 public final class AdvancedAECompat {
+    private static final String MOD_ID = "advanced_ae";
+    private static final boolean LOADED = ModList.get().isLoaded(MOD_ID);
 
-    private static Boolean loaded;
+    private AdvancedAECompat() {}
 
     public static boolean isLoaded() {
-        if (loaded == null) {
-            loaded = ModList.get().isLoaded("advanced_ae");
-        }
-        return loaded;
+        return LOADED;
     }
 
-    /**
-     * @return {@code true} if AdvancedAE is present and the pattern carries
-     *         a non-empty direction map.
-     */
     public static boolean isDirectional(IPatternDetails pattern) {
-        return isLoaded()
-                && pattern instanceof IAdvPatternDetails adv
+        if (!LOADED) return false;
+        return pattern instanceof net.pedroksl.advanced_ae.common.patterns.AdvPatternDetails adv
                 && adv.directionalInputsSet();
     }
 
-    /**
-     * @return the target-machine face this key should be inserted into,
-     *         or {@code null} for "use the default face".
-     */
     @Nullable
     public static Direction getDirectionForKey(IPatternDetails pattern, AEKey key) {
-        if (pattern instanceof IAdvPatternDetails adv) {
+        if (!LOADED) return null;
+        if (pattern instanceof net.pedroksl.advanced_ae.common.patterns.AdvPatternDetails adv) {
             return adv.getDirectionSideForInputKey(key);
         }
         return null;
     }
-
-    private AdvancedAECompat() {}
 }

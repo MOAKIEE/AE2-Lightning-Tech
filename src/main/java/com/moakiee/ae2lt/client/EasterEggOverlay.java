@@ -1,17 +1,15 @@
 package com.moakiee.ae2lt.client;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import net.minecraft.client.DeltaTracker;
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.LayeredDraw;
+import net.minecraftforge.client.gui.overlay.IGuiOverlay;
 import net.minecraft.resources.ResourceLocation;
 
-public final class EasterEggOverlay implements LayeredDraw.Layer {
+public final class EasterEggOverlay implements IGuiOverlay {
     public static final EasterEggOverlay INSTANCE = new EasterEggOverlay();
 
     private static final ResourceLocation TEXTURE =
-            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "textures/gui/easter_egg.png");
+            new ResourceLocation(AE2LightningTech.MODID, "textures/gui/easter_egg.png");
 
     private static final int DISPLAY_TICKS = 40;
 
@@ -44,7 +42,7 @@ public final class EasterEggOverlay implements LayeredDraw.Layer {
     }
 
     @Override
-    public void render(GuiGraphics guiGraphics, DeltaTracker deltaTracker) {
+    public void render(net.minecraftforge.client.gui.overlay.ForgeGui forgeGui, GuiGraphics guiGraphics, float partialTick, int screenWidth, int screenHeight) {
         if (ticksRemaining <= 0) {
             return;
         }
@@ -56,10 +54,6 @@ public final class EasterEggOverlay implements LayeredDraw.Layer {
         } else {
             alpha = 1.0f;
         }
-
-        var mc = Minecraft.getInstance();
-        int screenWidth = mc.getWindow().getGuiScaledWidth();
-        int screenHeight = mc.getWindow().getGuiScaledHeight();
 
         int imgWidth = 512;
         int imgHeight = 436;

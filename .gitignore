@@ -49,3 +49,11 @@ DevLog/
 .codex-tmp/
 .eclipse/
 CLAUDE.local.md
+# Build logs and temp fix scripts
+build_log*.txt
+build_fix.txt
+build_full.txt
+build_retry.txt
+build_info.txt
+final_build.txt
+fix_newblockentity.py

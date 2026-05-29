@@ -28,7 +28,7 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
     public static final MenuType<LightningCollectorMenu> TYPE = MenuTypeBuilder
             .create(LightningCollectorMenu::new, LightningCollectorBlockEntity.class)
             .withMenuTitle(host -> Component.translatable("block.ae2lt.lightning_collector"))
-            .buildUnregistered(ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "lightning_collector"));
+            .build("lightning_collector");
 
     @GuiSync(30)
     public int catalysisValue;
@@ -166,5 +166,9 @@ public class LightningCollectorMenu extends AEBaseMenu implements IProgressProvi
         }
 
         return remainder;
+    }
+
+    private boolean isPlayerSideSlot(Slot slot) {
+        return slot.container == getPlayerInventory();
     }
 }

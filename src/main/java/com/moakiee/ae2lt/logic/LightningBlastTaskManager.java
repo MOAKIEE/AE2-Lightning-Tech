@@ -5,10 +5,10 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.server.ServerStoppedEvent;
-import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.event.server.ServerStoppedEvent;
+import net.minecraftforge.event.TickEvent;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class LightningBlastTaskManager {
@@ -30,7 +30,7 @@ public final class LightningBlastTaskManager {
     }
 
     @SubscribeEvent
-    public static void onServerTick(ServerTickEvent.Post event) {
+    public static void onServerTick(TickEvent.ServerTickEvent event) {
         if (ACTIVE_TASKS.isEmpty()) {
             return;
         }

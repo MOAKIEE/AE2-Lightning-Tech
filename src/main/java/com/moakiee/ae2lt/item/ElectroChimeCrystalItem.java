@@ -5,14 +5,13 @@ import java.util.List;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.core.component.DataComponents;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.component.CustomData;
 
 public class ElectroChimeCrystalItem extends Item {
     private static final String TAG_CATALYSIS = "ae2lt.catalysis_value";
@@ -30,14 +29,14 @@ public class ElectroChimeCrystalItem extends Item {
 
     public static int getCatalysisValue(ItemStack stack) {
         return Mth.clamp(
-                stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag().getInt(TAG_CATALYSIS),
+                stack.getOrCreateTag().getInt(TAG_CATALYSIS),
                 0,
                 getMaxCatalysis());
     }
 
     public static void setCatalysisValue(ItemStack stack, int catalysisValue) {
         int clamped = Mth.clamp(catalysisValue, 0, getMaxCatalysis());
-        CustomData.update(DataComponents.CUSTOM_DATA, stack, tag -> tag.putInt(TAG_CATALYSIS, clamped));
+        stack.getOrCreateTag().putInt(TAG_CATALYSIS, clamped);
     }
 
     public static int addCatalysis(ItemStack stack, int amount) {
@@ -78,7 +77,7 @@ public class ElectroChimeCrystalItem extends Item {
     @Override
     public void appendHoverText(
             ItemStack stack,
-            TooltipContext context,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level,
             List<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(

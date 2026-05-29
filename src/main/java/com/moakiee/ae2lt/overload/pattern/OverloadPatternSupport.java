@@ -2,7 +2,6 @@ package com.moakiee.ae2lt.overload.pattern;
 
 import java.util.Objects;
 
-import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 import appeng.api.crafting.IPatternDetails;
@@ -18,13 +17,11 @@ public final class OverloadPatternSupport {
     }
 
     public static ParsedPatternDefinition toParsedDefinition(ItemStack sourcePatternStack,
-                                                             IPatternDetails sourceDetails,
-                                                             HolderLookup.Provider registries) {
+                                                             IPatternDetails sourceDetails) {
         Objects.requireNonNull(sourcePatternStack, "sourcePatternStack");
         Objects.requireNonNull(sourceDetails, "sourceDetails");
-        Objects.requireNonNull(registries, "registries");
 
-        var builder = ParsedPatternDefinition.builder(sourcePatternStack, registries);
+        var builder = ParsedPatternDefinition.builder(sourcePatternStack);
 
         var inputs = sourceDetails.getInputs();
         for (int slot = 0; slot < inputs.length; slot++) {
@@ -36,8 +33,8 @@ public final class OverloadPatternSupport {
 
         var outputs = sourceDetails.getOutputs();
         boolean primaryOutputAssigned = false;
-        for (int slot = 0; slot < outputs.size(); slot++) {
-            var outputStack = toItemStack(outputs.get(slot));
+        for (int slot = 0; slot < outputs.length; slot++) {
+            var outputStack = toItemStack(outputs[slot]);
             if (outputStack.isEmpty()) {
                 continue;
             }

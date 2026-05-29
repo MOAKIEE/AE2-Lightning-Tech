@@ -7,15 +7,16 @@ import java.util.Set;
 import org.slf4j.Logger;
 
 import appeng.api.config.Actionable;
+import appeng.api.inventories.InternalInventory;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.orientation.BlockOrientation;
 import appeng.api.util.AECableType;
-import appeng.blockentity.grid.AENetworkedBlockEntity;
+import appeng.blockentity.grid.AENetworkInvBlockEntity;
 import appeng.menu.MenuOpener;
-import appeng.menu.locator.MenuHostLocator;
+import appeng.menu.locator.MenuLocator;
 
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.api.event.LightningCollectedEvent;
@@ -34,9 +35,8 @@ import com.moakiee.ae2lt.registry.ModItems;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -45,10 +45,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.items.IItemHandlerModifiable;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.common.capabilities.Capability;
+import net.minecraftforge.common.capabilities.ForgeCapabilities;
+import net.minecraftforge.common.util.LazyOptional;
+import net.minecraftforge.items.IItemHandlerModifiable;
 
-public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
+import com.moakiee.ae2lt.api.AE2LTCapabilities;
+import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
+
+public class LightningCollectorBlockEntity extends AENetworkInvBlockEntity
         implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
     private static final Logger LOG = com.mojang.logging.LogUtils.getLogger();
     private static final String TAG_INVENTORY = "Inventory";
@@ -84,7 +90,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
             blockEntity.cooldownTicks--;
             if (blockEntity.cooldownTicks == 0) {
                 blockEntity.saveChanges();
-                blockEntity.markForClientUpdate();
+                blockEntity.setChanged();
             }
         }
 
@@ -103,7 +109,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
     }
 
     @Override
-    public AENetworkedBlockEntity getFrequencyBindingBlockEntity() {
+    public AENetworkInvBlockEntity getFrequencyBindingBlockEntity() {
         return this;
     }
 
@@ -215,7 +221,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
                 LightningKey.toApiTier(tier),
                 rolledOutput,
                 naturalWeatherLightning);
-        NeoForge.EVENT_BUS.post(collectedEvent);
+        MinecraftForge.EVENT_BUS.post(collectedEvent);
         if (collectedEvent.isCanceled()) {
             return false;
         }
@@ -245,44 +251,44 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
         this.workingTicks = WORKING_DURATION_TICKS;
         updateWorkingBlockState(true);
         saveChanges();
-        markForClientUpdate();
+        setChanged();
         return true;
     }
 
-    public void openMenu(Player player, MenuHostLocator locator) {
+    public void openMenu(Player player, MenuLocator locator) {
         MenuOpener.open(LightningCollectorMenu.TYPE, player, locator);
     }
 
     @Override
-    public void saveAdditional(CompoundTag data, HolderLookup.Provider registries) {
-        super.saveAdditional(data, registries);
-        inventory.saveToTag(data, TAG_INVENTORY, registries);
+    public void saveAdditional(CompoundTag data) {
+        super.saveAdditional(data);
+        inventory.saveToTag(data, TAG_INVENTORY);
         data.putInt(TAG_COOLDOWN, cooldownTicks);
         data.putInt(TAG_WORKING_TICKS, workingTicks);
         frequencyBinding.save(data);
     }
 
     @Override
-    public void loadTag(CompoundTag data, HolderLookup.Provider registries) {
-        super.loadTag(data, registries);
-        inventory.loadFromTag(data, TAG_INVENTORY, registries);
+    public void loadTag(CompoundTag data) {
+        super.loadTag(data);
+        inventory.loadFromTag(data, TAG_INVENTORY);
         cooldownTicks = Math.max(0, data.getInt(TAG_COOLDOWN));
         workingTicks = Math.max(0, data.getInt(TAG_WORKING_TICKS));
         frequencyBinding.load(data);
     }
 
     @Override
-    protected void writeToStream(RegistryFriendlyByteBuf data) {
+    protected void writeToStream(FriendlyByteBuf data) {
         super.writeToStream(data);
-        ItemStack.OPTIONAL_STREAM_CODEC.encode(data, getInstalledCrystal());
+        data.writeItem(getInstalledCrystal());
         data.writeVarInt(cooldownTicks);
     }
 
     @Override
-    protected boolean readFromStream(RegistryFriendlyByteBuf data) {
+    protected boolean readFromStream(FriendlyByteBuf data) {
         boolean changed = super.readFromStream(data);
         ItemStack oldCrystal = getInstalledCrystal();
-        ItemStack newCrystal = ItemStack.OPTIONAL_STREAM_CODEC.decode(data);
+        ItemStack newCrystal = data.readItem();
         if (!ItemStack.matches(oldCrystal, newCrystal)) {
             inventory.setClientRenderStack(newCrystal);
             changed = true;
@@ -307,13 +313,13 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void clearContent() {
-        super.clearContent();
+        // clearContent not available in 1.20.1 AE2
         inventory.clear();
     }
 
     @Override
     public void exportSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap.Builder builder,
+                               net.minecraft.nbt.CompoundTag builder,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.exportSettings(mode, builder, player);
         FrequencyBindingHelper.exportMemorySettings(mode, builder, getFrequencyId());
@@ -321,7 +327,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
 
     @Override
     public void importSettings(appeng.util.SettingsFrom mode,
-                               net.minecraft.core.component.DataComponentMap input,
+                               net.minecraft.nbt.CompoundTag input,
                                @org.jetbrains.annotations.Nullable Player player) {
         super.importSettings(mode, input, player);
         FrequencyBindingHelper.importMemorySettings(mode, input, this::setFrequency);
@@ -398,7 +404,7 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
 
     private void onInventoryChanged() {
         saveChanges();
-        markForClientUpdate();
+        setChanged();
     }
 
     private void updateWorkingBlockState(boolean working) {
@@ -410,6 +416,27 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
                 && state.getValue(LightningCollectorBlock.WORKING) != working) {
             level.setBlock(worldPosition, state.setValue(LightningCollectorBlock.WORKING, working), Block.UPDATE_ALL);
         }
+    }
+
+    private final LazyOptional<IItemHandlerModifiable> itemHandlerCap = LazyOptional.of(this::getAutomationInventory);
+    private final LazyOptional<com.moakiee.ae2lt.api.lightning.ILightningEnergyHandler> lightningEnergyCap = LazyOptional.of(() -> new GridLightningEnergyHandler(this));
+
+    @Override
+    public <T> LazyOptional<T> getCapability(Capability<T> cap, @org.jetbrains.annotations.Nullable Direction side) {
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return itemHandlerCap.cast();
+        }
+        if (cap == AE2LTCapabilities.LIGHTNING_ENERGY) {
+            return lightningEnergyCap.cast();
+        }
+        return super.getCapability(cap, side);
+    }
+
+    @Override
+    public void invalidateCaps() {
+        super.invalidateCaps();
+        itemHandlerCap.invalidate();
+        lightningEnergyCap.invalidate();
     }
 
     @Override
@@ -438,5 +465,12 @@ public class LightningCollectorBlockEntity extends AENetworkedBlockEntity
             }
             return random.nextInt(max - min + 1) + min;
         }
+    }
+    @Override
+    public InternalInventory getInternalInventory() {
+        return inventory;
+    }
+    @Override
+    public void onChangeInventory(InternalInventory inv, int slot) {
     }
 }

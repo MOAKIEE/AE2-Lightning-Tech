@@ -38,7 +38,7 @@ public class WeatherCondensateItem extends Item {
     @Override
     public void appendHoverText(
             ItemStack stack,
-            TooltipContext context,
+            @org.jetbrains.annotations.Nullable net.minecraft.world.level.Level level,
             List<Component> tooltipComponents,
             TooltipFlag tooltipFlag) {
         tooltipComponents.add(Component.translatable(

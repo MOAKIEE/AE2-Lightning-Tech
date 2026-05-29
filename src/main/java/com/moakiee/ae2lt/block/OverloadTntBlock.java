@@ -7,7 +7,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
-import net.minecraft.world.ItemInteractionResult;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -25,16 +25,11 @@ public class OverloadTntBlock extends TntBlock {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(
-            ItemStack stack,
-            BlockState state,
-            Level level,
-            BlockPos pos,
-            Player player,
-            InteractionHand hand,
-            BlockHitResult hitResult) {
+    public InteractionResult use(BlockState state, Level level, BlockPos pos,
+                                 Player player, InteractionHand hand, BlockHitResult hitResult) {
+        ItemStack stack = player.getItemInHand(hand);
         if (!stack.is(Items.FLINT_AND_STEEL) && !stack.is(Items.FIRE_CHARGE)) {
-            return super.useItemOn(stack, state, level, pos, player, hand, hitResult);
+            return super.use(state, level, pos, player, hand, hitResult);
         }
 
         prime(level, pos, player);
@@ -42,14 +37,14 @@ public class OverloadTntBlock extends TntBlock {
 
         if (!player.getAbilities().instabuild) {
             if (stack.is(Items.FLINT_AND_STEEL)) {
-                stack.hurtAndBreak(1, player, LivingEntity.getSlotForHand(hand));
+                stack.hurtAndBreak(1, player, p -> p.broadcastBreakEvent(hand));
             } else {
                 stack.shrink(1);
             }
         }
 
         player.awardStat(net.minecraft.stats.Stats.ITEM_USED.get(stack.getItem()));
-        return ItemInteractionResult.sidedSuccess(level.isClientSide);
+        return InteractionResult.sidedSuccess(level.isClientSide);
     }
 
     @Override
@@ -79,12 +74,12 @@ public class OverloadTntBlock extends TntBlock {
     }
 
     @Override
-    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
         if (!level.isClientSide() && !player.isCreative() && state.getValue(UNSTABLE)) {
             prime(level, pos, player);
         }
 
-        return super.playerWillDestroy(level, pos, state, player);
+        super.playerWillDestroy(level, pos, state, player);
     }
 
     @Override
@@ -99,7 +94,7 @@ public class OverloadTntBlock extends TntBlock {
             return;
         }
 
-        LivingEntity owner = explosion.getIndirectSourceEntity() instanceof LivingEntity livingEntity ? livingEntity : null;
+        LivingEntity owner = (explosion.getIndirectSourceEntity() instanceof LivingEntity) ? (LivingEntity) explosion.getIndirectSourceEntity() : null;
         OverloadTntEntity tnt = new OverloadTntEntity(level, pos.getX() + 0.5D, pos.getY(), pos.getZ() + 0.5D, owner);
         int fuse = tnt.getFuse();
         // Keep vanilla-style shortened chain-explosion timing. The current fuse values are small,

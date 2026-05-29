@@ -12,7 +12,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.inventory.Slot;
 
 import com.moakiee.ae2lt.menu.LargeStackAppEngSlot;
-import mezz.jei.api.gui.builder.ITooltipBuilder;
 
 /**
  * Shared rendering for slots whose stack count may exceed 64.
@@ -82,16 +81,6 @@ public final class LargeStackCountRenderer {
     public static void appendCountTooltip(List<Component> lines, long count) {
         if (count > 1) {
             lines.add(Component.translatable("ae2lt.gui.slot_count", String.format("%,d", count))
-                    .withStyle(ChatFormatting.GRAY));
-        }
-    }
-
-    /**
-     * Appends a tooltip line showing the exact count for JEI rich tooltips.
-     */
-    public static void appendCountTooltip(ITooltipBuilder tooltip, long count) {
-        if (count > 1) {
-            tooltip.add(Component.translatable("ae2lt.gui.slot_count", String.format("%,d", count))
                     .withStyle(ChatFormatting.GRAY));
         }
     }

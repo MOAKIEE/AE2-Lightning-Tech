@@ -56,7 +56,7 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         addToLeftToolbar(this.autoExportButton);
 
         this.configureOutputButton = new ActionButton(
-                ActionItems.COG,
+                ActionItems.WRENCH,
                 () -> switchToScreen(new CrystalCatalyzerOutputConfigScreen(this)));
         this.configureOutputButton.setMessage(
                 Component.translatable("ae2lt.gui.crystal_catalyzer.configure_output"));
@@ -103,9 +103,7 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
     public void renderSlot(GuiGraphics guiGraphics, Slot slot) {
-        super.renderSlot(guiGraphics, slot);
         LargeStackCountRenderer.renderSlotCount(guiGraphics, font, slot);
     }
 
@@ -114,5 +112,9 @@ public class CrystalCatalyzerScreen extends AEBaseScreen<CrystalCatalyzerMenu> {
         var lines = super.getTooltipFromContainerItem(stack);
         LargeStackCountRenderer.appendCountTooltip(lines, hoveredSlot);
         return lines;
+    }
+
+    @Override
+    public void drawBG(GuiGraphics guiGraphics, int offsetX, int offsetY, int mouseX, int mouseY, float partialTick) {
     }
 }

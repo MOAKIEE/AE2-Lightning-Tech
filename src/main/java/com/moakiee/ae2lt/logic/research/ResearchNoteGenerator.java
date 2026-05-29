@@ -11,7 +11,7 @@ import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
 
-import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.Mth;
@@ -214,7 +214,8 @@ public final class ResearchNoteGenerator {
     }
 
     private static boolean isItemAvailable(ResourceLocation id) {
-        return BuiltInRegistries.ITEM.getOptional(id).filter(item -> item != Items.AIR).isPresent();
+        var item = ForgeRegistries.ITEMS.getValue(id);
+        return item != null && item != Items.AIR;
     }
 
     private static int effectiveWeight(Candidate candidate) {
@@ -236,7 +237,7 @@ public final class ResearchNoteGenerator {
     }
 
     private static ResourceLocation id(String namespace, String path) {
-        return ResourceLocation.fromNamespaceAndPath(namespace, path);
+        return new ResourceLocation(namespace, path);
     }
 
     private record Candidate(ResourceLocation id, Tier tier, int baseWeight, int descriptionVariants) {

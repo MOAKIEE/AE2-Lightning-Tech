@@ -2,10 +2,11 @@ package com.moakiee.ae2lt.client;
 
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
+import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 import appeng.client.gui.style.StyleManager;
 
@@ -32,21 +33,23 @@ import com.moakiee.ae2lt.registry.ModBlocks;
 public class ModScreens {
 
     @SubscribeEvent
-    public static void registerScreens(RegisterMenuScreensEvent event) {
-        event.register(OverloadedPatternProviderMenu.TYPE, ModScreens::createOverloadedPatternProviderScreen);
-        event.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
-        event.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
-        if (ModBlocks.hasOverloadedPowerSupply()) {
-            event.register(OverloadedPowerSupplyMenu.TYPE, ModScreens::createOverloadedPowerSupplyScreen);
-        }
-        event.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
-        event.register(LightningAssemblyChamberMenu.TYPE, ModScreens::createLightningAssemblyChamberScreen);
-        event.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
-        event.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
-        event.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
-        event.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
-        event.register(FrequencyMenu.TYPE, FrequencyScreen::new);
-        event.register(CrystalCatalyzerMenu.TYPE, ModScreens::createCrystalCatalyzerScreen);
+    public static void registerScreens(FMLClientSetupEvent event) {
+        event.enqueueWork(() -> {
+            MenuScreens.register(OverloadedPatternProviderMenu.TYPE, ModScreens::createOverloadedPatternProviderScreen);
+            MenuScreens.register(OverloadPatternEncoderMenu.TYPE, OverloadPatternEncoderScreen::new);
+            MenuScreens.register(OverloadedInterfaceMenu.TYPE, ModScreens::createOverloadedInterfaceScreen);
+            if (ModBlocks.hasOverloadedPowerSupply()) {
+                MenuScreens.register(OverloadedPowerSupplyMenu.TYPE, ModScreens::createOverloadedPowerSupplyScreen);
+            }
+            MenuScreens.register(LightningSimulationChamberMenu.TYPE, ModScreens::createLightningSimulationChamberScreen);
+            MenuScreens.register(LightningAssemblyChamberMenu.TYPE, ModScreens::createLightningAssemblyChamberScreen);
+            MenuScreens.register(LightningCollectorMenu.TYPE, ModScreens::createLightningCollectorScreen);
+            MenuScreens.register(OverloadProcessingFactoryMenu.TYPE, ModScreens::createOverloadProcessingFactoryScreen);
+            MenuScreens.register(TeslaCoilMenu.TYPE, ModScreens::createTeslaCoilScreen);
+            MenuScreens.register(AtmosphericIonizerMenu.TYPE, ModScreens::createAtmosphericIonizerScreen);
+            MenuScreens.register(FrequencyMenu.TYPE, FrequencyScreen::new);
+            MenuScreens.register(CrystalCatalyzerMenu.TYPE, ModScreens::createCrystalCatalyzerScreen);
+        });
     }
 
     private static OverloadedPatternProviderScreen<OverloadedPatternProviderMenu> createOverloadedPatternProviderScreen(
