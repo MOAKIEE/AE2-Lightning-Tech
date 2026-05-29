@@ -44,11 +44,6 @@ public final class NightVisionSubmodule extends AbstractOverloadArmorSubmodule {
     }
 
     @Override
-    public int getIdleOverloaded(@Nullable Player player, Dist dist, ItemStack armor) {
-        return 0;
-    }
-
-    @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
         if (player != null && dist == Dist.DEDICATED_SERVER) {
             applyEffect(player);

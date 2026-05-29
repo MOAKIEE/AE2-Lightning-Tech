@@ -26,8 +26,6 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     private static final int BG_LIGHT = 0xFF313131;
     private static final int HIGHLIGHT_GOLD = 0xFFF6D365;
     private static final int ENERGY_GREEN = 0xFF36B65C;
-    private static final int LOAD_GOLD = 0xFFF6D365;
-    private static final int LOCK_RED = 0xFFC24848;
     private static final int FLUX_ONLINE = 0xFF36B65C;
     private static final int FLUX_MISSING = 0xFFFFAA00;
     private static final int TAB_CURRENT = 0xFFF6D365;
@@ -45,10 +43,8 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
 
     private static final int STATUS_Y = 24;
     private static final int ENERGY_BAR_Y = 64;
-    private static final int LOAD_BAR_Y = 84;
-    private static final int STATE_LINE_Y = 100;
-    private static final int DIAGNOSTICS_Y = 112;
-    private static final int MODULES_Y = 132;
+    private static final int STATE_LINE_Y = 84;
+    private static final int MODULES_Y = 108;
     private static final int MODULE_ROW_H = 14;
     private static final int BAR_WIDTH = 180;
     private static final int BAR_HEIGHT = 8;
@@ -102,8 +98,8 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         int selectedTab = menu.getSelectedTab();
         int tabMask = menu.getTabAvailability();
         boolean railgunTab = selectedTab == DeviceHubMenu.TAB_RAILGUN;
-        int statusLineY = railgunTab ? LOAD_BAR_Y : STATE_LINE_Y;
-        int modulesY = railgunTab ? STATE_LINE_Y : MODULES_Y;
+        int statusLineY = STATE_LINE_Y;
+        int modulesY = railgunTab ? STATE_LINE_Y + 24 : MODULES_Y;
 
         // ── Tab bar ──
         renderTabBar(gfx, leftPos + 8, topPos + TAB_Y, selectedTab, tabMask);
@@ -160,40 +156,16 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         String energyText = formatEnergy(stored) + " / " + formatEnergy(capacity) + " FE";
         gfx.drawString(font, Component.literal(energyText), barX + BAR_WIDTH + 4, topPos + ENERGY_BAR_Y, TEXT_SECONDARY, false);
 
-        // ── Load bar ──
-        if (!railgunTab) {
-            int load = menu.getDynamicLoad();
-            int cap = menu.getOverloadCap();
-            gfx.drawString(font, Component.translatable("ae2lt.device_hub.load"), x, topPos + LOAD_BAR_Y - 1, TEXT_PRIMARY, false);
-            int loadColor = load > cap ? LOCK_RED : LOAD_GOLD;
-            drawBar(gfx, barX, topPos + LOAD_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
-                    cap > 0 ? Math.min(1.0, (double) load / cap) : 0, loadColor);
-            String loadText = load + " / " + cap;
-            gfx.drawString(font, Component.literal(loadText), barX + BAR_WIDTH + 4, topPos + LOAD_BAR_Y, TEXT_SECONDARY, false);
-        }
-
         // ── Status line ──
-        int lockState = menu.getLockState();
-        int lockValue = menu.getLockValue();
         boolean powered = menu.isPowered();
         Component statusText;
         int statusColor;
         if (!railgunTab) {
             String statusKey = DeviceHubDisplayRules.armorStatusKey(
                     menu.hasCore(),
-                    lockState == 2,
-                    lockState == 1,
                     powered);
-            if ("ae2lt.device_hub.status.locked".equals(statusKey)) {
-                statusText = Component.translatable(statusKey, lockValue / 20);
-                statusColor = LOCK_RED;
-            } else if ("ae2lt.device_hub.status.overloaded".equals(statusKey)) {
-                statusText = Component.translatable(statusKey, lockValue);
-                statusColor = FLUX_MISSING;
-            } else {
-                statusText = Component.translatable(statusKey);
-                statusColor = statusColor(statusKey);
-            }
+            statusText = Component.translatable(statusKey);
+            statusColor = statusColor(statusKey);
         } else if (!powered) {
             statusText = Component.translatable("ae2lt.device_hub.status.unpowered");
             statusColor = FLUX_MISSING;
@@ -203,18 +175,12 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         }
         gfx.drawString(font, Component.translatable("ae2lt.device_hub.status.line", statusText), x, topPos + statusLineY, statusColor, false);
 
-        if (!railgunTab) {
-            gfx.drawString(font, debtReasonLine(lockState, menu.getDebtReason()), x, topPos + DIAGNOSTICS_Y, TEXT_SECONDARY, false);
-            gfx.drawString(font, recentLoadLine(), x, topPos + DIAGNOSTICS_Y + 10, TEXT_SECONDARY, false);
-        }
-
         // ── Separator ──
         gfx.fill(leftPos + 6, topPos + modulesY - 4, leftPos + imageWidth - 6, topPos + modulesY - 3, BG_DEEP);
 
         // ── Module list ──
         List<String> moduleNameKeys = menu.getModuleNameKeys();
         List<Integer> moduleCounts = menu.getModuleCounts();
-        List<Integer> moduleLoads = menu.getModuleLoads();
         List<Integer> moduleCooldowns = menu.getModuleCooldowns();
         List<Boolean> moduleEnabled = menu.getModuleEnabled();
         List<Boolean> moduleActive = menu.getModuleActive();
@@ -239,7 +205,6 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             boolean enabled = idx < moduleEnabled.size() && moduleEnabled.get(idx);
             boolean active = idx < moduleActive.size() && moduleActive.get(idx);
             int count = idx < moduleCounts.size() ? moduleCounts.get(idx) : 1;
-            int moduleLoad = idx < moduleLoads.size() ? moduleLoads.get(idx) : 0;
 
             // Module name
             gfx.drawString(font, moduleName(moduleNameKeys.get(idx), count), x, rowY, TEXT_PRIMARY, false);
@@ -248,15 +213,14 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             if (!railgunTab) {
                 Component stateLabel = Component.translatable(DeviceHubDisplayRules.moduleStateKey(enabled, active));
                 int cooldown = idx < moduleCooldowns.size() ? moduleCooldowns.get(idx) : 0;
-                Component loadLabel = cooldown > 0
+                Component stateLine = cooldown > 0
                         ? Component.translatable(
-                                "ae2lt.device_hub.module.state_load_cooldown",
+                                "ae2lt.device_hub.module.state_cooldown",
                                 stateLabel,
-                                moduleLoad,
                                 (cooldown + 19) / 20)
-                        : Component.translatable("ae2lt.device_hub.module.state_load", stateLabel, moduleLoad);
-                int loadTextX = leftPos + imageWidth - 56 - font.width(loadLabel);
-                gfx.drawString(font, loadLabel, loadTextX, rowY, moduleLoad > 0 ? LOAD_GOLD : TEXT_SECONDARY, false);
+                        : stateLabel;
+                int stateTextX = leftPos + imageWidth - 56 - font.width(stateLine);
+                gfx.drawString(font, stateLine, stateTextX, rowY, TEXT_SECONDARY, false);
                 int toggleX = leftPos + imageWidth - 48;
                 drawToggleButton(gfx, toggleX, rowY - 1, enabled);
             }
@@ -596,62 +560,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         }
     }
 
-    private Component debtReasonLine(int lockState, String reason) {
-        String normalized = reason == null || reason.isBlank()
-                ? (lockState == 1 ? "overloaded" : "none")
-                : reason;
-        String key = switch (normalized) {
-            case "energy" -> "ae2lt.device_hub.debt_reason.energy";
-            case "phase_escape" -> "ae2lt.device_hub.debt_reason.phase_escape";
-            case "locked" -> "ae2lt.device_hub.debt_reason.locked";
-            case "overloaded" -> "ae2lt.device_hub.debt_reason.overloaded";
-            default -> "ae2lt.device_hub.debt_reason.none";
-        };
-        return Component.translatable("ae2lt.device_hub.debt_reason", Component.translatable(key));
-    }
-
-    private Component recentLoadLine() {
-        List<String> ids = menu.getRecentLoadIds();
-        List<Integer> amounts = menu.getRecentLoadAmounts();
-        int count = Math.min(ids.size(), amounts.size());
-        if (count <= 0) {
-            return Component.translatable("ae2lt.device_hub.recent_load.none");
-        }
-        var events = Component.empty();
-        for (int i = 0; i < count; i++) {
-            if (i > 0) {
-                events.append(Component.literal(", "));
-            }
-            events.append(loadEventName(ids.get(i)))
-                    .append(Component.literal(" +"))
-                    .append(Component.literal(String.valueOf(amounts.get(i))));
-        }
-        return Component.translatable("ae2lt.device_hub.recent_load", events);
-    }
-
-    private static Component loadEventName(String id) {
-        String key = switch (id) {
-            case "matrix_shield" -> "ae2lt.overload_armor.feature.matrix_shield.name";
-            case "phase_shield" -> "ae2lt.overload_armor.feature.phase_shield.name";
-            case "undying" -> "ae2lt.overload_armor.feature.undying.name";
-            case "reflect" -> "ae2lt.overload_armor.feature.reflect.name";
-            case "dash" -> "ae2lt.overload_armor.feature.dash.name";
-            case "flight" -> "ae2lt.overload_armor.feature.flight.name";
-            case "cleanse" -> "ae2lt.overload_armor.feature.cleanse.name";
-            case "auto_feed" -> "ae2lt.overload_armor.feature.auto_feed.name";
-            case "dig_affinity" -> "ae2lt.overload_armor.feature.dig_affinity.name";
-            case "phase_flight" -> "ae2lt.overload_armor.feature.phase_flight.name";
-            default -> "";
-        };
-        return key.isEmpty() ? Component.literal(id == null ? "" : id) : Component.translatable(key);
-    }
-
     private static int statusColor(String statusKey) {
         return switch (statusKey) {
             case "ae2lt.device_hub.status.missing_core",
                     "ae2lt.device_hub.status.unpowered" -> FLUX_MISSING;
-            case "ae2lt.device_hub.status.locked" -> LOCK_RED;
-            case "ae2lt.device_hub.status.overloaded" -> FLUX_MISSING;
             default -> FLUX_ONLINE;
         };
     }

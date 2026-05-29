@@ -23,16 +23,6 @@ public final class RailgunModuleStorage implements DeviceModuleStorage {
     }
 
     @Override
-    public int baseOverloadBudget(ItemStack device) {
-        return 0;
-    }
-
-    @Override
-    public int currentIdleOverload(ItemStack device) {
-        return 0;
-    }
-
-    @Override
     public List<ItemStack> listEntries(ItemStack device) {
         return entryData(device).entries().stream()
                 .map(ItemStack::copy)

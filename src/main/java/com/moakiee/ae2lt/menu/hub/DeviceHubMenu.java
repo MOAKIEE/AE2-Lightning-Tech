@@ -55,11 +55,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     private String boundDim = "";
     private long energyStored;
     private long energyCapacity;
-    private int dynamicLoad;
-    private int overloadCap;
-    private int lockState;
-    private int lockValue;
-    private String debtReason = "";
     private boolean hasCore;
     private boolean powered;
     private boolean gridReachable;
@@ -68,14 +63,11 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     private boolean terrainDestruction;
     private boolean pvpLock;
     private boolean terrainDestructionAllowed;
-    private List<String> recentLoadIds = List.of();
-    private List<Integer> recentLoadAmounts = List.of();
     private List<String> moduleIds = List.of();
     private List<String> moduleNameKeys = List.of();
     private List<Integer> moduleCounts = List.of();
     private List<Boolean> moduleEnabled = List.of();
     private List<Boolean> moduleActive = List.of();
-    private List<Integer> moduleLoads = List.of();
     private List<Integer> moduleCooldowns = List.of();
     private int selectedModuleIndex = -1;
     private List<String> moduleConfigKeys = List.of();
@@ -176,10 +168,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         List<Integer> counts = status.modules().stream().map(DeviceStatusModel.ModuleInfo::count).toList();
         List<Boolean> enabled = status.modules().stream().map(DeviceStatusModel.ModuleInfo::enabled).toList();
         List<Boolean> active = status.modules().stream().map(DeviceStatusModel.ModuleInfo::active).toList();
-        List<Integer> loads = status.modules().stream().map(DeviceStatusModel.ModuleInfo::load).toList();
         List<Integer> cooldowns = status.modules().stream().map(DeviceStatusModel.ModuleInfo::cooldownTicks).toList();
-        List<String> recentIds = status.recentLoadEvents().stream().map(DeviceStatusModel.LoadEventInfo::id).toList();
-        List<Integer> recentLoads = status.recentLoadEvents().stream().map(DeviceStatusModel.LoadEventInfo::load).toList();
         List<String> moduleConfigKeys = status.moduleConfigs().stream().map(DeviceStatusModel.ModuleConfigInfo::key).toList();
         List<String> moduleConfigLabels = status.moduleConfigs().stream().map(DeviceStatusModel.ModuleConfigInfo::label).toList();
         List<String> moduleConfigValues = status.moduleConfigs().stream().map(DeviceStatusModel.ModuleConfigInfo::value).toList();
@@ -191,11 +180,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
                 status.boundDim(),
                 status.storedFe(),
                 status.capacityFe(),
-                status.dynamicLoad(),
-                status.overloadCap(),
-                status.lockState(),
-                status.lockValue(),
-                status.debtReason(),
                 status.hasCore(),
                 status.powered(),
                 status.gridReachable(),
@@ -204,14 +188,11 @@ public class DeviceHubMenu extends AbstractContainerMenu {
                 status.terrainDestruction(),
                 status.pvpLock(),
                 status.terrainDestructionAllowed(),
-                recentIds,
-                recentLoads,
                 ids,
                 nameKeys,
                 counts,
                 enabled,
                 active,
-                loads,
                 cooldowns,
                 status.selectedModuleIndex(),
                 moduleConfigKeys,
@@ -247,11 +228,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
             String dim,
             long storedFe,
             long capacityFe,
-            int dynamicLoad,
-            int overloadCap,
-            int lockState,
-            int lockValue,
-            String debtReason,
             boolean hasCore,
             boolean powered,
             boolean gridReachable,
@@ -260,14 +236,11 @@ public class DeviceHubMenu extends AbstractContainerMenu {
             boolean terrainDestruction,
             boolean pvpLock,
             boolean terrainDestructionAllowed,
-            List<String> recentLoadIds,
-            List<Integer> recentLoadAmounts,
             List<String> ids,
             List<String> nameKeys,
             List<Integer> counts,
             List<Boolean> enabled,
             List<Boolean> active,
-            List<Integer> loads,
             List<Integer> cooldowns,
             int selectedModuleIndex,
             List<String> moduleConfigKeys,
@@ -279,11 +252,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         this.boundDim = dim;
         this.energyStored = storedFe;
         this.energyCapacity = capacityFe;
-        this.dynamicLoad = dynamicLoad;
-        this.overloadCap = overloadCap;
-        this.lockState = lockState;
-        this.lockValue = lockValue;
-        this.debtReason = debtReason == null ? "" : debtReason;
         this.hasCore = hasCore;
         this.powered = powered;
         this.gridReachable = gridReachable;
@@ -292,14 +260,11 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         this.terrainDestruction = terrainDestruction;
         this.pvpLock = pvpLock;
         this.terrainDestructionAllowed = terrainDestructionAllowed;
-        this.recentLoadIds = List.copyOf(recentLoadIds);
-        this.recentLoadAmounts = List.copyOf(recentLoadAmounts);
         this.moduleIds = List.copyOf(ids);
         this.moduleNameKeys = List.copyOf(nameKeys);
         this.moduleCounts = List.copyOf(counts);
         this.moduleEnabled = List.copyOf(enabled);
         this.moduleActive = List.copyOf(active);
-        this.moduleLoads = List.copyOf(loads);
         this.moduleCooldowns = List.copyOf(cooldowns);
         this.selectedModuleIndex = selectedModuleIndex;
         this.moduleConfigKeys = List.copyOf(moduleConfigKeys);
@@ -356,38 +321,6 @@ public class DeviceHubMenu extends AbstractContainerMenu {
 
     public List<Boolean> getModuleActive() {
         return moduleActive;
-    }
-
-    public List<Integer> getModuleLoads() {
-        return moduleLoads;
-    }
-
-    public int getDynamicLoad() {
-        return dynamicLoad;
-    }
-
-    public int getOverloadCap() {
-        return overloadCap;
-    }
-
-    public int getLockState() {
-        return lockState;
-    }
-
-    public int getLockValue() {
-        return lockValue;
-    }
-
-    public String getDebtReason() {
-        return debtReason;
-    }
-
-    public List<String> getRecentLoadIds() {
-        return recentLoadIds;
-    }
-
-    public List<Integer> getRecentLoadAmounts() {
-        return recentLoadAmounts;
     }
 
     public boolean hasCore() {

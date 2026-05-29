@@ -96,7 +96,6 @@ public class OverloadDeviceWorkbenchScreen extends AbstractContainerScreen<Overl
         renderInstallProgress(gfx);
         renderModuleList(gfx, mouseX, mouseY);
         renderEnergyBar(gfx);
-        renderArmorBudgetInfo(gfx);
     }
 
     private void renderStatusArea(GuiGraphics gfx) {
@@ -125,8 +124,7 @@ public class OverloadDeviceWorkbenchScreen extends AbstractContainerScreen<Overl
                     : Component.translatable(
                             "ae2lt.overload_device_workbench.screen.armor_summary",
                             menu.moduleUnitCount,
-                            menu.moduleSlotCount,
-                            menu.baseOverload);
+                            menu.moduleSlotCount);
             gfx.drawString(font, coreInfo, x, y + 24, TEXT_SECONDARY, false);
         } else {
             gfx.drawString(font, Component.translatable("ae2lt.overload_armor.status.missing_core"),
@@ -236,24 +234,6 @@ public class OverloadDeviceWorkbenchScreen extends AbstractContainerScreen<Overl
         }
         String text = formatEnergy(menu.energyStored) + "/" + formatEnergy(menu.energyCapacity) + " FE";
         gfx.drawString(font, Component.literal(text), bx + bw + 4, barY - 1, TEXT_SECONDARY, false);
-    }
-
-    private void renderArmorBudgetInfo(GuiGraphics gfx) {
-        if (menu.isRailgunDevice()) return;
-        if (menu.baseOverload <= 0) return;
-        int x = leftPos + MODULE_LIST_X;
-        int y = topPos + MODULE_LIST_Y + ROW_HEIGHT * VISIBLE_ROWS + 18;
-        gfx.drawString(
-                font,
-                Component.translatable(
-                        "ae2lt.overload_device_workbench.screen.runtime_budget",
-                        menu.baseOverload,
-                        menu.moduleUnitCount,
-                        menu.moduleSlotCount),
-                x,
-                y,
-                TEXT_SECONDARY,
-                false);
     }
 
     private static String truncate(Font font, String text, int maxWidth) {

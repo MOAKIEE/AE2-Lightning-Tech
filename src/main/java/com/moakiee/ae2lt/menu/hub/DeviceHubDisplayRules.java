@@ -12,19 +12,9 @@ public final class DeviceHubDisplayRules {
         return storedFe > 0L || (gridReachable && appFluxOnline);
     }
 
-    public static String armorStatusKey(
-            boolean hasCore,
-            boolean locked,
-            boolean overloaded,
-            boolean powerAvailable) {
+    public static String armorStatusKey(boolean hasCore, boolean powerAvailable) {
         if (!hasCore) {
             return "ae2lt.device_hub.status.missing_core";
-        }
-        if (locked) {
-            return "ae2lt.device_hub.status.locked";
-        }
-        if (overloaded) {
-            return "ae2lt.device_hub.status.overloaded";
         }
         if (!powerAvailable) {
             return "ae2lt.device_hub.status.unpowered";

@@ -38,11 +38,6 @@ public final class ReflectSubmodule extends AbstractOverloadArmorSubmodule {
     }
 
     @Override
-    public int getIdleOverloaded(@Nullable Player player, Dist dist, ItemStack armor) {
-        return 0;
-    }
-
-    @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
         // Reflect is handled by OverloadArmorDamageHandler reading ReflectTuning.
     }

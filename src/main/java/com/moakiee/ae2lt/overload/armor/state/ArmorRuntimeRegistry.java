@@ -10,7 +10,7 @@ public final class ArmorRuntimeRegistry {
             new ConcurrentHashMap<>();
     private static final java.util.Map<String, Boolean> CLIENT_SUBMODULE_ACTIVE =
             new ConcurrentHashMap<>();
-    private static final java.util.Map<String, SubmoduleRuntimeState> SUBMODULE_RUNTIME =
+    private static final java.util.Map<String, Boolean> SUBMODULE_RUNTIME_ACTIVE =
             new ConcurrentHashMap<>();
 
     private ArmorRuntimeRegistry() {
@@ -53,27 +53,11 @@ public final class ArmorRuntimeRegistry {
         if (armorId == null) {
             return;
         }
-        String key = cacheKey(armorId, submoduleId);
-        SubmoduleRuntimeState previous = SUBMODULE_RUNTIME.get(key);
-        int load = active && previous != null ? previous.dynamicLoad() : 0;
-        SUBMODULE_RUNTIME.put(key, new SubmoduleRuntimeState(active, load));
+        SUBMODULE_RUNTIME_ACTIVE.put(cacheKey(armorId, submoduleId), active);
     }
 
-    public static void setSubmoduleRuntimeDynamicLoad(UUID armorId, String submoduleId, int dynamicLoad) {
-        if (armorId == null) {
-            return;
-        }
-        String key = cacheKey(armorId, submoduleId);
-        SubmoduleRuntimeState previous = SUBMODULE_RUNTIME.get(key);
-        boolean active = previous != null && previous.active();
-        SUBMODULE_RUNTIME.put(key, new SubmoduleRuntimeState(active, Math.max(0, dynamicLoad)));
-    }
-
-    public static SubmoduleRuntimeState getSubmoduleRuntime(UUID armorId, String submoduleId) {
-        if (armorId == null) {
-            return new SubmoduleRuntimeState(false, 0);
-        }
-        return SUBMODULE_RUNTIME.getOrDefault(cacheKey(armorId, submoduleId), new SubmoduleRuntimeState(false, 0));
+    public static boolean isSubmoduleRuntimeActive(UUID armorId, String submoduleId) {
+        return armorId != null && SUBMODULE_RUNTIME_ACTIVE.getOrDefault(cacheKey(armorId, submoduleId), false);
     }
 
     public static Set<String> submoduleIds(UUID armorId) {
@@ -82,7 +66,7 @@ public final class ArmorRuntimeRegistry {
             return ids;
         }
         String prefix = armorId + "#";
-        for (String key : SUBMODULE_RUNTIME.keySet()) {
+        for (String key : SUBMODULE_RUNTIME_ACTIVE.keySet()) {
             if (key.startsWith(prefix)) {
                 ids.add(key.substring(prefix.length()));
             }
@@ -95,7 +79,7 @@ public final class ArmorRuntimeRegistry {
             return;
         }
         String key = cacheKey(armorId, submoduleId);
-        SUBMODULE_RUNTIME.remove(key);
+        SUBMODULE_RUNTIME_ACTIVE.remove(key);
         SERVER_SUBMODULE_ACTIVE.remove(key);
         CLIENT_SUBMODULE_ACTIVE.remove(key);
     }
@@ -107,13 +91,10 @@ public final class ArmorRuntimeRegistry {
         String prefix = armorId + "#";
         SERVER_SUBMODULE_ACTIVE.keySet().removeIf(key -> key.startsWith(prefix));
         CLIENT_SUBMODULE_ACTIVE.keySet().removeIf(key -> key.startsWith(prefix));
-        SUBMODULE_RUNTIME.keySet().removeIf(key -> key.startsWith(prefix));
+        SUBMODULE_RUNTIME_ACTIVE.keySet().removeIf(key -> key.startsWith(prefix));
     }
 
     private static String cacheKey(UUID armorId, String submoduleId) {
         return armorId + "#" + submoduleId;
-    }
-
-    public record SubmoduleRuntimeState(boolean active, int dynamicLoad) {
     }
 }

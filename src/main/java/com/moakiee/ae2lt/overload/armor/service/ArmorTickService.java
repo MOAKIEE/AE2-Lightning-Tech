@@ -6,8 +6,6 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
-import com.moakiee.ae2lt.overload.armor.ArmorDynamicLoadRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class ArmorTickService {
@@ -37,14 +35,6 @@ public final class ArmorTickService {
         }
 
         OverloadArmorState.tickActiveSubmodules(player, armor, registries, dist);
-        var snapshot = OverloadArmorState.tickEquipped(player, armor, registries);
-        if (player instanceof ServerPlayer serverPlayer) {
-            long demand = ArmorDynamicLoadRules.overloadDemand(
-                    snapshot.currentLoad(),
-                    snapshot.baseOverload(),
-                    AE2LTCommonConfig.overloadArmorCurveExponent(),
-                    AE2LTCommonConfig.overloadArmorPowerDemandScale());
-            ArmorEnergyService.consumeActiveCost(serverPlayer, armor, demand, "energy");
-        }
+        OverloadArmorState.tickEquipped(player, armor, registries);
     }
 }

@@ -71,19 +71,6 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements DeviceI
         long current = ArmorEnergyBuffer.read(stack, level == null ? null : level.registryAccess());
         long capacity = ArmorEnergyBuffer.capacity(stack, level == null ? null : level.registryAccess());
         tooltip.add(EnergyText.storedFe(current, capacity));
-
-        if (level != null) {
-            var snapshot = OverloadArmorState.snapshot(stack, level.registryAccess(), false);
-            tooltip.add(Component.translatable(
-                    "ae2lt.overload_armor.tooltip.overload",
-                    snapshot.currentLoad(),
-                    snapshot.baseOverload()));
-            if (snapshot.locked()) {
-                tooltip.add(Component.translatable(
-                        "ae2lt.overload_armor.tooltip.locked",
-                        snapshot.lockedTicks() / 20));
-            }
-        }
         tooltip.add(Component.translatable("ae2lt.overload_armor.tooltip.workbench"));
     }
 

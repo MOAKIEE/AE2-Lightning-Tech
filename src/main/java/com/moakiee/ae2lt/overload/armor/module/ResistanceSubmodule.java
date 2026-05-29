@@ -60,11 +60,6 @@ public final class ResistanceSubmodule extends AbstractOverloadArmorSubmodule {
     }
 
     @Override
-    public int getIdleOverloaded(@Nullable Player player, Dist dist, ItemStack armor) {
-        return 0;
-    }
-
-    @Override
     public void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
         // Resistance is applied via StagedMitigation in OverloadArmorDamageHandler.
     }

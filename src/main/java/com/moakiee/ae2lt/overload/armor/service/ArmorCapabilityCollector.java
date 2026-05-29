@@ -40,7 +40,7 @@ public final class ArmorCapabilityCollector {
             }
 
             var snapshot = OverloadArmorState.snapshot(player, armor, player.level().registryAccess(), true);
-            if (!snapshot.hasCore() || snapshot.locked()) {
+            if (!snapshot.hasCore()) {
                 continue;
             }
 

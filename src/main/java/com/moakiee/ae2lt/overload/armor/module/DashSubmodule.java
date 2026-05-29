@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
 import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
+import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
 
@@ -51,11 +52,6 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
     }
 
     @Override
-    public int getIdleOverloaded(@Nullable Player player, Dist dist, ItemStack armor) {
-        return 0;
-    }
-
-    @Override
     public void onDeactivated(@Nullable Player player, Dist dist, ItemStack armor) {
         if (player != null && dist == Dist.DEDICATED_SERVER) {
             setCooldown(armor, 0);
@@ -84,8 +80,16 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
                 player,
                 Math.max(0L, feCost - ArmorEnergyBuffer.read(armor, player.registryAccess())));
         if (!ArmorEnergyBuffer.tryConsume(armor, player, feCost)) {
-            OverloadArmorState.markEnergyUnpaid(armor, "energy");
             player.displayClientMessage(Component.translatable("ae2lt.overload_armor.fail.no_fe"), true);
+            return;
+        }
+        if (!ArmorLightningService.consume(
+                player,
+                armor,
+                com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
+                AE2LTCommonConfig.overloadArmorDashHvCost())) {
+            ArmorEnergyBuffer.write(armor, player.registryAccess(), ArmorEnergyBuffer.read(armor, player.registryAccess()) + feCost);
+            player.displayClientMessage(Component.translatable("ae2lt.overload_armor.fail.no_lightning"), true);
             return;
         }
 
@@ -96,7 +100,6 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
                 player.getDeltaMovement().z + look.z * IMPULSE);
         player.hurtMarked = true;
         player.resetFallDistance();
-        OverloadArmorState.addPulseLoad(armor, sub.id(), AE2LTCommonConfig.overloadArmorDashPulseLoad());
         setCooldown(armor, COOLDOWN_TICKS);
     }
 

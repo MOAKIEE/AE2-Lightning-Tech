@@ -10,10 +10,6 @@ import com.moakiee.ae2lt.device.DeviceKind;
 public interface DeviceModuleStorage {
     DeviceKind deviceKind();
 
-    int baseOverloadBudget(ItemStack device);
-
-    int currentIdleOverload(ItemStack device);
-
     List<ItemStack> listEntries(ItemStack device);
 
     int getCount(ItemStack device, String typeId);

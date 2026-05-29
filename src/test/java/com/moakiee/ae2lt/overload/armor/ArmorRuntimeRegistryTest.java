@@ -1,6 +1,5 @@
 package com.moakiee.ae2lt.overload.armor;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,14 +25,11 @@ final class ArmorRuntimeRegistryTest {
         assertTrue(ArmorRuntimeRegistry.isAnyClientSubmoduleActive("flight"));
 
         ArmorRuntimeRegistry.setSubmoduleRuntimeActive(armorId, "flight", true);
-        ArmorRuntimeRegistry.setSubmoduleRuntimeDynamicLoad(armorId, "flight", 12);
-        assertTrue(ArmorRuntimeRegistry.getSubmoduleRuntime(armorId, "flight").active());
-        assertEquals(12, ArmorRuntimeRegistry.getSubmoduleRuntime(armorId, "flight").dynamicLoad());
+        assertTrue(ArmorRuntimeRegistry.isSubmoduleRuntimeActive(armorId, "flight"));
 
         ArmorRuntimeRegistry.clear(armorId);
         assertFalse(ArmorRuntimeRegistry.isServerSubmoduleActive(armorId, "flight"));
         assertFalse(ArmorRuntimeRegistry.isClientSubmoduleActive(armorId, "flight"));
-        assertFalse(ArmorRuntimeRegistry.getSubmoduleRuntime(armorId, "flight").active());
-        assertEquals(0, ArmorRuntimeRegistry.getSubmoduleRuntime(armorId, "flight").dynamicLoad());
+        assertFalse(ArmorRuntimeRegistry.isSubmoduleRuntimeActive(armorId, "flight"));
     }
 }

@@ -63,7 +63,7 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
 
     /**
      * Fired when the submodule transitions into the "active" state, which the framework computes
-     * from: {@code installed && enabled && equipped && core+buffer installed && !locked}.
+     * from: {@code installed && enabled && equipped && core installed}.
      */
     default void onActivated(@Nullable Player player, Dist dist, ItemStack armor) {
     }
@@ -75,22 +75,13 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
     }
 
     /**
-     * Returns the passive overload load contributed while the submodule is enabled. The framework
-     * does not invoke this during active-only paths, but does sum it into the current-load total
-     * whenever the submodule is enabled.
-     */
-    default int getIdleOverloaded(@Nullable Player player, Dist dist, ItemStack armor) {
-        return 0;
-    }
-
-    /**
      * Optional per-type install cap. When {@code > 0}, the workbench refuses to install a new
-     * instance of this submodule once the installed count reaches this value — independently of
-     * the global idle-overload budget. {@code 0} (default) means unlimited within the budget.
+     * instance of this submodule once the installed count reaches this value. {@code 0} (default)
+     * means unlimited within the available module slots.
      *
      * <p>This lets modules express semantics that the idle budget alone can't: e.g. "only one
      * "at most three dash modules", etc., without forcing the module to consume
-     * an artificially large idle slice. Zero-idle modules can use this to stay gated.
+     * an artificially large slot footprint.
      */
     default int getMaxInstallAmount() {
         return 0;
@@ -106,9 +97,7 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
 
     /**
      * Called once per armor tick while {@link #onActivated} has been fired but {@link #onDeactivated}
-     * has not. Returns the dynamic overload load the submodule is contributing this tick. The
-     * framework persists the returned value and aggregates it with {@link #getIdleOverloaded} when
-     * computing the total overload.
+     * has not.
      */
     default int tickActive(@Nullable Player player, Dist dist, ItemStack armor) {
         return 0;
@@ -152,14 +141,6 @@ public interface OverloadArmorSubmodule extends OverloadDeviceSubmodule {
      */
     default boolean isActive(ItemStack armor) {
         return OverloadArmorState.isSubmoduleRuntimeActive(armor, id());
-    }
-
-    /**
-     * Current dynamic overload contribution of this submodule as last reported via
-     * {@link #tickActive}. Zero when inactive.
-     */
-    default int getDynamicLoad(ItemStack armor) {
-        return OverloadArmorState.getSubmoduleDynamicLoadFor(armor, id());
     }
 
     List<OverloadArmorSubmoduleConfig> getConfigs(ItemStack armor);

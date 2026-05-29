@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector.ActiveCapability;
+import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
 
 /**
@@ -42,8 +43,10 @@ public final class OverloadArmorDamageHandler {
                     staged.stage(),
                     classifyDamage(event.getSource()),
                     incoming);
+            if (!payMitigationLightning(player, mitigation, staged, incoming - afterMitigation)) {
+                return;
+            }
             event.setNewDamage(afterMitigation);
-            applyMitigationLoad(mitigation, incoming - afterMitigation);
         }
     }
 
@@ -123,17 +126,28 @@ public final class OverloadArmorDamageHandler {
                 || source.is(DamageTypes.STALAGMITE);
     }
 
-    private static void applyMitigationLoad(ActiveCapability mitigation, float preventedDamage) {
-        int totalLoad = ArmorDynamicLoadRules.pulseFromAmount(
-                preventedDamage,
-                AE2LTCommonConfig.overloadArmorMitigationLoadPerDamage());
-        if (totalLoad <= 0) {
-            return;
+    private static boolean payMitigationLightning(
+            Player player,
+            ActiveCapability mitigation,
+            DeviceCapability.StagedMitigation staged,
+            float preventedDamage) {
+        if (!(player instanceof ServerPlayer serverPlayer) || preventedDamage <= 0.0F) {
+            return true;
         }
-        OverloadArmorState.addPulseLoad(
-                mitigation.armor(),
-                mitigation.submoduleId(),
-                totalLoad);
+        long amount = (long) Math.ceil(preventedDamage * mitigationLightningPerDamage(staged.stage()));
+        if (amount <= 0L) {
+            return true;
+        }
+        var key = "phase_shield".equals(staged.stage())
+                ? com.moakiee.ae2lt.me.key.LightningKey.EXTREME_HIGH_VOLTAGE
+                : com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE;
+        return ArmorLightningService.consume(serverPlayer, mitigation.armor(), key, amount);
+    }
+
+    private static long mitigationLightningPerDamage(String stage) {
+        return "phase_shield".equals(stage)
+                ? AE2LTCommonConfig.overloadArmorPhaseShieldEhvPerDamage()
+                : AE2LTCommonConfig.overloadArmorMitigationHvPerDamage();
     }
 
     private static float collectReflectedDamage(Player player, float damage) {
@@ -161,15 +175,22 @@ public final class OverloadArmorDamageHandler {
                         serverPlayer,
                         Math.max(0L, cost - ArmorEnergyBuffer.read(active.armor(), serverPlayer.registryAccess())));
                 if (!ArmorEnergyBuffer.tryConsume(active.armor(), serverPlayer, cost)) {
-                    OverloadArmorState.markEnergyUnpaid(active.armor(), "energy");
                     continue;
                 }
             }
+            long lightningCost = (long) Math.ceil(amount * AE2LTCommonConfig.overloadArmorReflectHvPerDamage());
+            if (!ArmorLightningService.consume(
+                    serverPlayer,
+                    active.armor(),
+                    com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
+                    lightningCost)) {
+                ArmorEnergyBuffer.write(
+                        active.armor(),
+                        serverPlayer.registryAccess(),
+                        ArmorEnergyBuffer.read(active.armor(), serverPlayer.registryAccess()) + cost);
+                continue;
+            }
             reflected += amount;
-            int load = ArmorDynamicLoadRules.pulseFromAmount(
-                    amount,
-                    Math.max(reflect.loadPerDamage(), AE2LTCommonConfig.overloadArmorReflectLoadPerDamage()));
-            OverloadArmorState.addPulseLoad(active.armor(), "reflect", load);
             if (reflected >= damage) {
                 break;
             }

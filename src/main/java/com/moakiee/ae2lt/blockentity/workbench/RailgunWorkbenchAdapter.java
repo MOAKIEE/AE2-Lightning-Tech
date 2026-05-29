@@ -104,16 +104,6 @@ public final class RailgunWorkbenchAdapter implements DeviceWorkbenchAdapter {
     }
 
     @Override
-    public int baseOverloadBudget(ItemStack device, HolderLookup.Provider registries) {
-        return RailgunModuleStorage.INSTANCE.baseOverloadBudget(device);
-    }
-
-    @Override
-    public int currentIdleOverload(ItemStack device, HolderLookup.Provider registries) {
-        return RailgunModuleStorage.INSTANCE.currentIdleOverload(device);
-    }
-
-    @Override
     public ItemStack getStructuralSlot(ItemStack device, HolderLookup.Provider registries, StructuralSlotSpec spec) {
         return switch (spec.slotType()) {
             case CORE -> RailgunStructuralCore.getCore(device);

@@ -18,11 +18,6 @@ public record DeviceHubSyncPacket(
         String boundDim,
         long storedFe,
         long capacityFe,
-        int dynamicLoad,
-        int overloadCap,
-        int lockState,
-        int lockValue,
-        String debtReason,
         boolean hasCore,
         boolean powered,
         boolean gridReachable,
@@ -31,14 +26,11 @@ public record DeviceHubSyncPacket(
         boolean terrainDestruction,
         boolean pvpLock,
         boolean terrainDestructionAllowed,
-        List<String> recentLoadIds,
-        List<Integer> recentLoadAmounts,
         List<String> moduleIds,
         List<String> moduleNameKeys,
         List<Integer> moduleCounts,
         List<Boolean> moduleEnabled,
         List<Boolean> moduleActive,
-        List<Integer> moduleLoads,
         List<Integer> moduleCooldowns,
         int selectedModuleIndex,
         List<String> moduleConfigKeys,
@@ -65,11 +57,6 @@ public record DeviceHubSyncPacket(
         String boundDim = buf.readUtf(256);
         long storedFe = buf.readLong();
         long capacityFe = buf.readLong();
-        int dynamicLoad = buf.readVarInt();
-        int overloadCap = buf.readVarInt();
-        int lockState = buf.readVarInt();
-        int lockValue = buf.readVarInt();
-        String debtReason = buf.readUtf(64);
         boolean hasCore = buf.readBoolean();
         boolean powered = buf.readBoolean();
         boolean gridReachable = buf.readBoolean();
@@ -78,20 +65,12 @@ public record DeviceHubSyncPacket(
         boolean terrainDestruction = buf.readBoolean();
         boolean pvpLock = buf.readBoolean();
         boolean terrainDestructionAllowed = buf.readBoolean();
-        int recentCount = buf.readVarInt();
-        List<String> recentLoadIds = new ArrayList<>(recentCount);
-        List<Integer> recentLoadAmounts = new ArrayList<>(recentCount);
-        for (int i = 0; i < recentCount; i++) {
-            recentLoadIds.add(buf.readUtf(256));
-            recentLoadAmounts.add(buf.readVarInt());
-        }
         int count = buf.readVarInt();
         List<String> ids = new ArrayList<>(count);
         List<String> nameKeys = new ArrayList<>(count);
         List<Integer> counts = new ArrayList<>(count);
         List<Boolean> enabled = new ArrayList<>(count);
         List<Boolean> active = new ArrayList<>(count);
-        List<Integer> loads = new ArrayList<>(count);
         List<Integer> cooldowns = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
             ids.add(buf.readUtf(256));
@@ -99,7 +78,6 @@ public record DeviceHubSyncPacket(
             counts.add(buf.readVarInt());
             enabled.add(buf.readBoolean());
             active.add(buf.readBoolean());
-            loads.add(buf.readVarInt());
             cooldowns.add(buf.readVarInt());
         }
         int selectedModuleIndex = buf.readVarInt();
@@ -122,11 +100,6 @@ public record DeviceHubSyncPacket(
                 boundDim,
                 storedFe,
                 capacityFe,
-                dynamicLoad,
-                overloadCap,
-                lockState,
-                lockValue,
-                debtReason,
                 hasCore,
                 powered,
                 gridReachable,
@@ -135,14 +108,11 @@ public record DeviceHubSyncPacket(
                 terrainDestruction,
                 pvpLock,
                 terrainDestructionAllowed,
-                recentLoadIds,
-                recentLoadAmounts,
                 ids,
                 nameKeys,
                 counts,
                 enabled,
                 active,
-                loads,
                 cooldowns,
                 selectedModuleIndex,
                 moduleConfigKeys,
@@ -158,11 +128,6 @@ public record DeviceHubSyncPacket(
         buf.writeUtf(boundDim, 256);
         buf.writeLong(storedFe);
         buf.writeLong(capacityFe);
-        buf.writeVarInt(dynamicLoad);
-        buf.writeVarInt(overloadCap);
-        buf.writeVarInt(lockState);
-        buf.writeVarInt(lockValue);
-        buf.writeUtf(debtReason, 64);
         buf.writeBoolean(hasCore);
         buf.writeBoolean(powered);
         buf.writeBoolean(gridReachable);
@@ -171,15 +136,9 @@ public record DeviceHubSyncPacket(
         buf.writeBoolean(terrainDestruction);
         buf.writeBoolean(pvpLock);
         buf.writeBoolean(terrainDestructionAllowed);
-        int recentCount = Math.min(recentLoadIds.size(), recentLoadAmounts.size());
-        buf.writeVarInt(recentCount);
-        for (int i = 0; i < recentCount; i++) {
-            buf.writeUtf(recentLoadIds.get(i), 256);
-            buf.writeVarInt(recentLoadAmounts.get(i));
-        }
         int count = Math.min(
                 Math.min(Math.min(moduleIds.size(), moduleNameKeys.size()), moduleCounts.size()),
-                Math.min(Math.min(Math.min(moduleEnabled.size(), moduleActive.size()), moduleLoads.size()), moduleCooldowns.size()));
+                Math.min(moduleEnabled.size(), Math.min(moduleActive.size(), moduleCooldowns.size())));
         buf.writeVarInt(count);
         for (int i = 0; i < count; i++) {
             buf.writeUtf(moduleIds.get(i), 256);
@@ -187,7 +146,6 @@ public record DeviceHubSyncPacket(
             buf.writeVarInt(moduleCounts.get(i));
             buf.writeBoolean(moduleEnabled.get(i));
             buf.writeBoolean(moduleActive.get(i));
-            buf.writeVarInt(moduleLoads.get(i));
             buf.writeVarInt(moduleCooldowns.get(i));
         }
         buf.writeVarInt(selectedModuleIndex);
@@ -213,11 +171,6 @@ public record DeviceHubSyncPacket(
                         pkt.boundDim(),
                         pkt.storedFe(),
                         pkt.capacityFe(),
-                        pkt.dynamicLoad(),
-                        pkt.overloadCap(),
-                        pkt.lockState(),
-                        pkt.lockValue(),
-                        pkt.debtReason(),
                         pkt.hasCore(),
                         pkt.powered(),
                         pkt.gridReachable(),
@@ -226,14 +179,11 @@ public record DeviceHubSyncPacket(
                         pkt.terrainDestruction(),
                         pkt.pvpLock(),
                         pkt.terrainDestructionAllowed(),
-                        pkt.recentLoadIds(),
-                        pkt.recentLoadAmounts(),
                         pkt.moduleIds(),
                         pkt.moduleNameKeys(),
                         pkt.moduleCounts(),
                         pkt.moduleEnabled(),
                         pkt.moduleActive(),
-                        pkt.moduleLoads(),
                         pkt.moduleCooldowns(),
                         pkt.selectedModuleIndex(),
                         pkt.moduleConfigKeys(),

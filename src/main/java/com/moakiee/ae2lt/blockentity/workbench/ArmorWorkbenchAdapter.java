@@ -109,16 +109,6 @@ public final class ArmorWorkbenchAdapter implements DeviceWorkbenchAdapter {
     }
 
     @Override
-    public int baseOverloadBudget(ItemStack device, HolderLookup.Provider registries) {
-        return OverloadArmorState.getBaseOverload(device, registries);
-    }
-
-    @Override
-    public int currentIdleOverload(ItemStack device, HolderLookup.Provider registries) {
-        return OverloadArmorState.computeTotalIdleOverload(device, registries);
-    }
-
-    @Override
     public ItemStack getStructuralSlot(ItemStack device, HolderLookup.Provider registries, StructuralSlotSpec spec) {
         return OverloadArmorState.getSlot(device, registries, toArmorSlot(spec));
     }

@@ -58,22 +58,20 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
     @GuiSync(1)
     public int moduleTypeCount;
     @GuiSync(2)
-    public int baseOverload;
-    @GuiSync(3)
     public long energyCapacity;
-    @GuiSync(4)
+    @GuiSync(3)
     public int coreInstalled;
-    @GuiSync(5)
+    @GuiSync(4)
     public long energyStored;
-    @GuiSync(6)
+    @GuiSync(5)
     public int installProgress;
-    @GuiSync(7)
+    @GuiSync(6)
     public int gridConnected;
-    @GuiSync(8)
+    @GuiSync(7)
     public int railgunDevice;
-    @GuiSync(9)
+    @GuiSync(8)
     public int moduleUnitCount;
-    @GuiSync(10)
+    @GuiSync(9)
     public int moduleSlotCount;
 
     public static final int INSTALL_TICKS = 20;
@@ -297,7 +295,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         devicePresent = adapter == null ? 0 : 1;
         if (adapter == null || device.isEmpty()) {
             moduleTypeCount = 0;
-            baseOverload = 0;
             energyCapacity = 0L;
             coreInstalled = 0;
             energyStored = 0L;
@@ -315,7 +312,6 @@ public class OverloadDeviceWorkbenchMenu extends AEBaseMenu {
         moduleSlotCount = adapter.deviceKind() == DeviceKind.RAILGUN
                 ? 0
                 : armorModuleSlotCount(device);
-        baseOverload = host.baseOverloadBudget(registryAccess());
         energyCapacity = adapter.energyBuffer().capacity(device);
         energyStored = adapter.energyBuffer().stored(device);
 

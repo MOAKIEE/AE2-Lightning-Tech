@@ -44,7 +44,7 @@ public sealed interface DeviceCapability {
     record StagedMitigation(String stage) implements DeviceCapability {}
 
     /** Reflects a fraction of post-armor damage back to attackers. */
-    record ReflectTuning(double reflectPct, long fePerDamage, int loadPerDamage) implements DeviceCapability {}
+    record ReflectTuning(double reflectPct, long fePerDamage) implements DeviceCapability {}
 
     /** Last-stand fatal damage interception. */
     record LastStandTuning(long feCost, int cooldownTicks, int comboWindowTicks) implements DeviceCapability {}
@@ -78,9 +78,6 @@ public sealed interface DeviceCapability {
 
     /** Passive energy consumption multiplier. */
     record EnergyEfficiency(double drainMul) implements DeviceCapability {}
-
-    /** Lock recovery acceleration. */
-    record OverloadRecovery(int lockReductionTicks) implements DeviceCapability {}
 
     /** Declares which armor part an armor module belongs to. */
     record ArmorPartTag(ArmorPart part) implements DeviceCapability {}

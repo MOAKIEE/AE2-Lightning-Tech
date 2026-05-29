@@ -8,7 +8,6 @@ import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.overload.armor.ArmorPart;
-import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
 public final class ArmorModuleStorage implements DeviceModuleStorage {
     public static final ArmorModuleStorage HEAD = new ArmorModuleStorage(ArmorPart.HEAD);
@@ -25,16 +24,6 @@ public final class ArmorModuleStorage implements DeviceModuleStorage {
     @Override
     public DeviceKind deviceKind() {
         return part.deviceKind();
-    }
-
-    @Override
-    public int baseOverloadBudget(ItemStack device) {
-        return OverloadArmorState.getBaseOverload(device, null);
-    }
-
-    @Override
-    public int currentIdleOverload(ItemStack device) {
-        return OverloadArmorState.computeTotalIdleOverload(device, null);
     }
 
     @Override

@@ -40,10 +40,6 @@ public interface DeviceWorkbenchAdapter {
 
     int maxInstallAmount(ItemStack stack);
 
-    int baseOverloadBudget(ItemStack device, HolderLookup.Provider registries);
-
-    int currentIdleOverload(ItemStack device, HolderLookup.Provider registries);
-
     ItemStack getStructuralSlot(ItemStack device, HolderLookup.Provider registries, StructuralSlotSpec spec);
 
     void setStructuralSlot(ItemStack device, HolderLookup.Provider registries, StructuralSlotSpec spec, ItemStack stack);

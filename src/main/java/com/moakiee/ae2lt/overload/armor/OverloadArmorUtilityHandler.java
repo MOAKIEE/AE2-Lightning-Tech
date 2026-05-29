@@ -22,11 +22,10 @@ import com.moakiee.ae2lt.overload.armor.module.AutoFeedSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.PhaseFlightSubmodule;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector.ActiveCapability;
+import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class OverloadArmorUtilityHandler {
-    private static final String DIG_PULSE_TICK_TAG = "ae2lt.dig_affinity_pulse_tick";
-
     private OverloadArmorUtilityHandler() {
     }
 
@@ -86,7 +85,7 @@ public final class OverloadArmorUtilityHandler {
 
         boolean underwater = player.isEyeInFluid(FluidTags.WATER) || player.isUnderWater();
         boolean airborne = !player.onGround();
-        double multiplier = ArmorDynamicLoadRules.digSpeedMultiplier(
+        double multiplier = digSpeedMultiplier(
                 underwater,
                 airborne,
                 underwaterMultiplier,
@@ -95,8 +94,14 @@ public final class OverloadArmorUtilityHandler {
             return;
         }
 
+        if (!ArmorLightningService.consume(
+                serverPlayer,
+                pulseSource.armor(),
+                com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
+                AE2LTCommonConfig.overloadArmorDigAffinityHvPerUse())) {
+            return;
+        }
         event.setNewSpeed((float) (event.getNewSpeed() * multiplier));
-        pulseDigLoadOncePerTick(serverPlayer, pulseSource.armor());
     }
 
     private static void tickCleanse(ServerPlayer player, List<ActiveCapability> capabilities) {
@@ -108,12 +113,30 @@ public final class OverloadArmorUtilityHandler {
             if (player.tickCount % period != 0) {
                 continue;
             }
-            int removed = cleanseHarmfulEffects(player, Math.max(1, cleanse.strength()));
-            int load = ArmorDynamicLoadRules.cleansePulseLoad(
-                    removed,
-                    AE2LTCommonConfig.overloadArmorCleanseLoadPerEffect());
-            OverloadArmorState.addPulseLoad(active.armor(), active.submoduleId(), load);
+            int limit = Math.max(1, cleanse.strength());
+            int removable = countHarmfulEffects(player, limit);
+            if (removable > 0 && !ArmorLightningService.consume(
+                    player,
+                    active.armor(),
+                    com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
+                    AE2LTCommonConfig.overloadArmorCleanseHvPerEffect() * removable)) {
+                return;
+            }
+            cleanseHarmfulEffects(player, limit);
         }
+    }
+
+    private static int countHarmfulEffects(ServerPlayer player, int maxEffects) {
+        int count = 0;
+        for (var effect : List.copyOf(player.getActiveEffects())) {
+            if (count >= maxEffects) {
+                break;
+            }
+            if (effect.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
+                count++;
+            }
+        }
+        return count;
     }
 
     private static int cleanseHarmfulEffects(ServerPlayer player, int maxEffects) {
@@ -144,14 +167,17 @@ public final class OverloadArmorUtilityHandler {
             if (player.getFoodData().getFoodLevel() > threshold || !player.canEat(false)) {
                 continue;
             }
+            if (!ArmorLightningService.consume(
+                    player,
+                    active.armor(),
+                    com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
+                    AE2LTCommonConfig.overloadArmorAutoFeedHvCost())) {
+                return;
+            }
             if (consumeFoodFromInventory(player)) {
                 AutoFeedSubmodule.setCooldown(
                         active.armor(),
                         AE2LTCommonConfig.overloadArmorAutoFeedCooldownTicks());
-                OverloadArmorState.addPulseLoad(
-                        active.armor(),
-                        active.submoduleId(),
-                        AE2LTCommonConfig.overloadArmorAutoFeedPulseLoad());
                 return;
             }
         }
@@ -174,19 +200,6 @@ public final class OverloadArmorUtilityHandler {
             return true;
         }
         return false;
-    }
-
-    private static void pulseDigLoadOncePerTick(ServerPlayer player, ItemStack armor) {
-        long now = player.level().getGameTime();
-        var data = player.getPersistentData();
-        if (data.getLong(DIG_PULSE_TICK_TAG) == now) {
-            return;
-        }
-        data.putLong(DIG_PULSE_TICK_TAG, now);
-        OverloadArmorState.addPulseLoad(
-                armor,
-                "dig_affinity",
-                AE2LTCommonConfig.overloadArmorDigPulseLoad());
     }
 
     private static boolean hasActivePhaseFlight(List<ActiveCapability> capabilities) {
@@ -228,6 +241,21 @@ public final class OverloadArmorUtilityHandler {
                 OverloadArmorState.clearTransientRuntimeAndCaches(armor);
             }
         }
+    }
+
+    private static double digSpeedMultiplier(
+            boolean underwater,
+            boolean airborne,
+            double underwaterMultiplier,
+            double airborneMultiplier) {
+        double multiplier = 1.0D;
+        if (underwater) {
+            multiplier = Math.max(multiplier, underwaterMultiplier);
+        }
+        if (airborne) {
+            multiplier = Math.max(multiplier, airborneMultiplier);
+        }
+        return multiplier;
     }
 
 }

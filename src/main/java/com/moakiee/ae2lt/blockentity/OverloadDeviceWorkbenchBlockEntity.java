@@ -191,16 +191,6 @@ public class OverloadDeviceWorkbenchBlockEntity extends AENetworkedBlockEntity
         return adapter == null ? 0 : adapter.maxInstallAmount(stack);
     }
 
-    public int baseOverloadBudget(HolderLookup.Provider registries) {
-        var adapter = currentAdapter();
-        return adapter == null ? 0 : adapter.baseOverloadBudget(getInstalledDevice(), registries);
-    }
-
-    public int currentIdleOverload(HolderLookup.Provider registries) {
-        var adapter = currentAdapter();
-        return adapter == null ? 0 : adapter.currentIdleOverload(getInstalledDevice(), registries);
-    }
-
     public void openMenu(Player player, MenuHostLocator locator) {
         MenuOpener.open(OverloadDeviceWorkbenchMenu.TYPE, player, locator);
     }

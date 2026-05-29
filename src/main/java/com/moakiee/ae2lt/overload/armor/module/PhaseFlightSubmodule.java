@@ -15,7 +15,6 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
-import com.moakiee.ae2lt.overload.armor.ArmorDynamicLoadRules;
 import com.moakiee.ae2lt.overload.armor.ArmorFlightSpeedRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 
@@ -91,11 +90,7 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
 
         grantPhaseFlight(player, armor);
         applyTransientPhaseState(player);
-        return ArmorDynamicLoadRules.phaseFlightStateLoad(
-                true,
-                player.isInWall(),
-                AE2LTCommonConfig.overloadArmorPhaseFlightBaseLoad(),
-                AE2LTCommonConfig.overloadArmorPhaseFlightInsideBlockLoad());
+        return 0;
     }
 
     @Override
@@ -304,9 +299,6 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
             return false;
         }
         applyTransientPhaseState(player);
-        if (armor != null && !armor.isEmpty()) {
-            OverloadArmorState.markEnergyUnpaid(armor, "phase_escape");
-        }
         player.getPersistentData().putInt(PLAYER_ESCAPE_TICKS_TAG, ticks - 1);
         if (ticks <= 1) {
             clearTransientPhaseState(player);
@@ -318,7 +310,6 @@ public final class PhaseFlightSubmodule extends AbstractOverloadArmorSubmodule {
     private static void beginEscapePhase(Player player, ItemStack armor) {
         applyTransientPhaseState(player);
         player.getPersistentData().putInt(PLAYER_ESCAPE_TICKS_TAG, ESCAPE_PHASE_TICKS);
-        OverloadArmorState.markEnergyUnpaid(armor, "phase_escape");
     }
 
     private static void clearEscapePhase(Player player) {

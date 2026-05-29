@@ -16,7 +16,7 @@ public final class ReflectSubmoduleItem extends AbstractSingleArmorSubmoduleItem
                 ReflectSubmodule.INSTANCE,
                 "item.ae2lt.module_reflect.tooltip",
                 stack -> List.of(
-                        new DeviceCapability.ReflectTuning(0.30D, 30_000L, 2),
+                        new DeviceCapability.ReflectTuning(0.30D, 30_000L),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.REFLECT_PASSIVE_DRAIN_FE)));
     }
 }

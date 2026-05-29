@@ -17,9 +17,11 @@ import net.neoforged.neoforge.event.entity.living.LivingDeathEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.overload.armor.module.UndyingSubmodule;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
+import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class OverloadArmorUndyingHandler {
@@ -97,7 +99,18 @@ public final class OverloadArmorUndyingHandler {
             int comboIndex = UndyingSubmodule.nextComboIndex(active.armor(), now);
             long cost = scaledCost(active.tuning().feCost(), comboIndex);
             if (!payCost(player, active.armor(), cost)) {
-                OverloadArmorState.markEnergyUnpaid(active.armor(), "energy");
+                continue;
+            }
+            long lightningCost = scaledCost(AE2LTCommonConfig.overloadArmorUndyingEhvCost(), comboIndex);
+            if (!ArmorLightningService.consume(
+                    player,
+                    active.armor(),
+                    com.moakiee.ae2lt.me.key.LightningKey.EXTREME_HIGH_VOLTAGE,
+                    lightningCost)) {
+                ArmorEnergyBuffer.write(
+                        active.armor(),
+                        player.registryAccess(),
+                        ArmorEnergyBuffer.read(active.armor(), player.registryAccess()) + cost);
                 continue;
             }
             UndyingSubmodule.setCooldown(active.armor(), Math.max(1, active.tuning().cooldownTicks()), now);
@@ -106,10 +119,6 @@ public final class OverloadArmorUndyingHandler {
                     now,
                     Math.max(1, active.tuning().comboWindowTicks()),
                     comboIndex);
-            OverloadArmorState.addPulseLoad(
-                    active.armor(),
-                    active.submoduleId(),
-                    scaledLoad(ArmorOverloadRules.UNDYING_PULSE_LOAD, comboIndex));
             player.getPersistentData().putLong(TAG_PROTECTED_TICK, now);
             restoreSurvivalState(player);
             cleanseHarmfulEffects(player, CLEANSING_LIMIT);
@@ -182,11 +191,6 @@ public final class OverloadArmorUndyingHandler {
             return Long.MAX_VALUE;
         }
         return baseCost * safeCombo;
-    }
-
-    private static int scaledLoad(int baseLoad, int comboIndex) {
-        long scaled = (long) Math.max(0, baseLoad) * Math.max(1, comboIndex);
-        return (int) Math.min(Integer.MAX_VALUE, scaled);
     }
 
     private record ActiveLastStand(
