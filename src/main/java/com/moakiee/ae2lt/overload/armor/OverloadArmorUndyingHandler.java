@@ -93,9 +93,6 @@ public final class OverloadArmorUndyingHandler {
         }
         long now = player.level().getGameTime();
         for (var active : collectActiveLastStand(player)) {
-            if (UndyingSubmodule.getCooldown(active.armor()) > 0) {
-                continue;
-            }
             int comboIndex = UndyingSubmodule.nextComboIndex(active.armor(), now);
             long cost = scaledCost(active.tuning().feCost(), comboIndex);
             if (!payCost(player, active.armor(), cost)) {
@@ -113,7 +110,6 @@ public final class OverloadArmorUndyingHandler {
                         ArmorEnergyBuffer.read(active.armor(), player.registryAccess()) + cost);
                 continue;
             }
-            UndyingSubmodule.setCooldown(active.armor(), Math.max(1, active.tuning().cooldownTicks()), now);
             UndyingSubmodule.recordTrigger(
                     active.armor(),
                     now,

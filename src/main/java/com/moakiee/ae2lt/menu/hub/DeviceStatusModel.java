@@ -25,7 +25,6 @@ import com.moakiee.ae2lt.overload.armor.module.AutoFeedSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.DashSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleOptionUi;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
-import com.moakiee.ae2lt.overload.armor.module.UndyingSubmodule;
 import com.moakiee.ae2lt.device.network.ArmorNetworkBinding;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
@@ -214,9 +213,6 @@ public record DeviceStatusModel(
         }
         if (AutoFeedSubmodule.INSTANCE.id().equals(submoduleId)) {
             return AutoFeedSubmodule.getCooldown(armor);
-        }
-        if (UndyingSubmodule.INSTANCE.id().equals(submoduleId)) {
-            return UndyingSubmodule.getCooldown(armor);
         }
         return 0;
     }
