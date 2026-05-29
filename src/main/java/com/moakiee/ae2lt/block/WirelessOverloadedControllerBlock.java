@@ -15,6 +15,7 @@ import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
+import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Block for the Wireless Overloaded Controller (normal version).
@@ -47,10 +48,10 @@ public class WirelessOverloadedControllerBlock extends OverloadedControllerBlock
                         return InteractionResult.sidedSuccess(false);
                     }
                 }
-                sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
+                NetworkHooks.openScreen(sp, new net.minecraft.world.SimpleMenuProvider(
                         (id, inv, p) -> new FrequencyMenu(id, inv, be),
                         be.getBlockState().getBlock().getName()
-                ));
+                ), buf -> FrequencyMenu.writeExtraData(buf, be));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }

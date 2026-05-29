@@ -15,6 +15,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkHooks;
 
 public class OpenFrequencyMenuPacket {
     private final int token;
@@ -75,10 +76,10 @@ public class OpenFrequencyMenuPacket {
                 }
             }
 
-            player.openMenu(new SimpleMenuProvider(
+            NetworkHooks.openScreen(player, new SimpleMenuProvider(
                     (id, inv, p) -> new FrequencyMenu(id, inv, be),
                     be.getBlockState().getBlock().getName()
-            ));
+            ), buf -> FrequencyMenu.writeExtraData(buf, be));
         });
         ctx.setPacketHandled(true);
     }

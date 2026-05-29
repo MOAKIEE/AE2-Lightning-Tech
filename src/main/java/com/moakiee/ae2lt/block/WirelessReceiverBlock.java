@@ -20,6 +20,7 @@ import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
 import com.moakiee.ae2lt.grid.FrequencySecurityLevel;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.menu.FrequencyMenu;
+import net.minecraftforge.network.NetworkHooks;
 
 /**
  * Wireless receiver block. Right-click to open the frequency selection GUI.
@@ -62,10 +63,10 @@ public class WirelessReceiverBlock extends AEBaseEntityBlock<WirelessReceiverBlo
                         return InteractionResult.sidedSuccess(false);
                     }
                 }
-                sp.openMenu(new net.minecraft.world.SimpleMenuProvider(
+                NetworkHooks.openScreen(sp, new net.minecraft.world.SimpleMenuProvider(
                         (id, inv, p) -> new FrequencyMenu(id, inv, be),
                         be.getBlockState().getBlock().getName()
-                ));
+                ), buf -> FrequencyMenu.writeExtraData(buf, be));
             }
             return InteractionResult.sidedSuccess(level.isClientSide);
         }
