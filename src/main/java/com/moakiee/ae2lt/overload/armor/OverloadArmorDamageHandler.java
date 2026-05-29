@@ -22,7 +22,7 @@ import com.moakiee.ae2lt.registry.ModDamageTypes;
 /**
  * Applies staged mitigation and reflect tuning from active armor modules.
  *
- * <p>The strongest mitigation stage is applied after vanilla armor in Pre.
+ * <p>The active mitigation stage is applied after vanilla armor in Pre.
  * {@code reflectPct} bounces pre-overload-shield damage back to LivingEntity attackers.
  * Environmental damage (fire/fall/drown) is never reflected.
  */
@@ -54,26 +54,12 @@ public final class OverloadArmorDamageHandler {
     }
 
     private static ActiveCapability collectMitigation(java.util.List<ActiveCapability> capabilities) {
-        ActiveCapability best = null;
-        int bestRank = 0;
         for (var active : capabilities) {
-            if (active.capability() instanceof DeviceCapability.StagedMitigation mitigation) {
-                int rank = mitigationRank(mitigation.stage());
-                if (rank > bestRank) {
-                    bestRank = rank;
-                    best = active;
-                }
+            if (active.capability() instanceof DeviceCapability.StagedMitigation) {
+                return active;
             }
         }
-        return best;
-    }
-
-    private static int mitigationRank(String stage) {
-        return switch (stage) {
-            case "phase_shield" -> 2;
-            case "matrix_shield" -> 1;
-            default -> 0;
-        };
+        return null;
     }
 
     private static ArmorMitigationRules.DamageClass classifyDamage(DamageSource source) {
