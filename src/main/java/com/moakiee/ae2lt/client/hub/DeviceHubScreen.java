@@ -99,7 +99,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         int tabMask = menu.getTabAvailability();
         boolean railgunTab = selectedTab == DeviceHubMenu.TAB_RAILGUN;
         int statusLineY = STATE_LINE_Y;
-        int modulesY = railgunTab ? STATE_LINE_Y + 24 : MODULES_Y;
+        int modulesY = modulesY(railgunTab);
 
         // ── Tab bar ──
         renderTabBar(gfx, leftPos + 8, topPos + TAB_Y, selectedTab, tabMask);
@@ -190,7 +190,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         gfx.drawString(font, Component.translatable("ae2lt.device_hub.modules", moduleCount, moduleSlotCount),
                 x, topPos + modulesY, TEXT_PRIMARY, false);
 
-        int moduleListY = topPos + modulesY + 14;
+        int moduleListY = moduleListY(railgunTab);
         int maxVisible = visibleModuleRows(railgunTab, moduleListY);
         scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNameKeys.size(), maxVisible);
         int selectedModuleIndex = menu.getSelectedModuleIndex();
@@ -293,7 +293,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // Check module toggle clicks (armor only)
         if (selectedTab != DeviceHubMenu.TAB_RAILGUN) {
             List<String> moduleNames = menu.getModuleNameKeys();
-            int moduleListY = topPos + MODULES_Y + 14;
+            int moduleListY = moduleListY(false);
             int maxVisible = visibleModuleRows(false, moduleListY);
             scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNames.size(), maxVisible);
             int configY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8;
@@ -325,7 +325,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         // Check railgun setting toggles
         if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
             List<String> moduleNames = menu.getModuleNameKeys();
-            int moduleListY = topPos + STATE_LINE_Y + 14;
+            int moduleListY = moduleListY(true);
             int maxVisible = visibleModuleRows(true, moduleListY);
             scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNames.size(), maxVisible);
             int toggleY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8 + 14;
@@ -373,7 +373,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
         List<String> moduleNames = menu.getModuleNameKeys();
         boolean railgunTab = menu.getSelectedTab() == DeviceHubMenu.TAB_RAILGUN;
-        int moduleListY = topPos + (railgunTab ? STATE_LINE_Y : MODULES_Y) + 14;
+        int moduleListY = moduleListY(railgunTab);
         int maxVisible = visibleModuleRows(railgunTab, moduleListY);
         if (scrollY > 0 && scrollOffset > 0) {
             scrollOffset--;
@@ -516,6 +516,14 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     private int visibleModuleRows(boolean railgunTab, int moduleListY) {
         int reserved = railgunTab ? 30 : 30 + MODULE_CONFIG_RESERVED_H;
         return Math.max(1, (topPos + imageHeight - reserved - moduleListY) / MODULE_ROW_H);
+    }
+
+    private static int modulesY(boolean railgunTab) {
+        return railgunTab ? STATE_LINE_Y + 24 : MODULES_Y;
+    }
+
+    private int moduleListY(boolean railgunTab) {
+        return topPos + modulesY(railgunTab) + 14;
     }
 
     private static Component moduleName(String nameKey, int count) {
