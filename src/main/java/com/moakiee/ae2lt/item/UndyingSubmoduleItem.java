@@ -18,7 +18,6 @@ public final class UndyingSubmoduleItem extends AbstractSingleArmorSubmoduleItem
                 stack -> List.of(
                         new DeviceCapability.LastStandTuning(
                                 ArmorOverloadRules.UNDYING_TRIGGER_COST_FE,
-                                ArmorOverloadRules.UNDYING_COOLDOWN_TICKS,
                                 ArmorOverloadRules.UNDYING_COMBO_WINDOW_TICKS),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.UNDYING_PASSIVE_DRAIN_FE)));
     }

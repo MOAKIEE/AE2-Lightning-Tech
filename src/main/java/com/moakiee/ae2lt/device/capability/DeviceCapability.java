@@ -47,7 +47,7 @@ public sealed interface DeviceCapability {
     record ReflectTuning(double reflectPct, long fePerDamage) implements DeviceCapability {}
 
     /** Last-stand fatal damage interception. */
-    record LastStandTuning(long feCost, int cooldownTicks, int comboWindowTicks) implements DeviceCapability {}
+    record LastStandTuning(long feCost, int comboWindowTicks) implements DeviceCapability {}
 
     /** Periodic negative-effect cleansing. */
     record CleanseTuning(int periodTicks, int strength) implements DeviceCapability {}
