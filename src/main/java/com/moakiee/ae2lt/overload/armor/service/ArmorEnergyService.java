@@ -1,6 +1,8 @@
 package com.moakiee.ae2lt.overload.armor.service;
 
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.server.level.ServerPlayer;
@@ -12,20 +14,26 @@ import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
+import com.moakiee.ae2lt.overload.armor.ArmorNetworkRechargePolicy;
 import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
 import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService.LightningCost;
 
 public final class ArmorEnergyService {
+    private static final ConcurrentHashMap<UUID, Long> NEXT_NETWORK_RETRY_TICK = new ConcurrentHashMap<>();
+
     private ArmorEnergyService() {
     }
 
-    public static long refillFromBoundNetwork(Player player, ItemStack armor, HolderLookup.Provider registries) {
+    public static long refillFromBoundNetworkIfLow(Player player, ItemStack armor, HolderLookup.Provider registries) {
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return 0L;
         }
-        return ArmorEnergyBuffer.refillFromNetwork(armor, serverPlayer, Long.MAX_VALUE);
+        long stored = ArmorEnergyBuffer.read(armor, registries);
+        long capacity = ArmorEnergyBuffer.capacity(armor, registries);
+        long request = ArmorNetworkRechargePolicy.passiveRechargeRequest(stored, capacity);
+        return rechargeFromNetwork(serverPlayer, armor, request, false);
     }
 
     public static boolean consumePassiveDrain(Player player, ItemStack armor, HolderLookup.Provider registries) {
@@ -36,7 +44,7 @@ public final class ArmorEnergyService {
         if (!ArmorLightningService.hasCost(serverPlayer, armor, cost.lightning())) {
             return false;
         }
-        if (!consumeCost(serverPlayer, armor, cost.fe(), "energy")) {
+        if (!consumeBufferedCost(serverPlayer, armor, cost.fe())) {
             return false;
         }
         if (ArmorLightningService.consume(serverPlayer, armor, cost.lightning())) {
@@ -46,30 +54,57 @@ public final class ArmorEnergyService {
         return false;
     }
 
-    public static boolean consumePassiveDrain(Player player, ItemStack armor, long amount, String reason) {
-        return consumeCost(player, armor, amount, reason);
+    public static boolean consumeActiveCost(Player player, ItemStack armor, long amount) {
+        return consumeCostWithActiveRecharge(player, armor, amount);
     }
 
-    public static boolean consumeActiveCost(Player player, ItemStack armor, long amount, String reason) {
-        return consumeCost(player, armor, amount, reason);
-    }
-
-    private static boolean consumeCost(Player player, ItemStack armor, long amount, String reason) {
+    private static boolean consumeBufferedCost(Player player, ItemStack armor, long amount) {
         if (amount <= 0L) {
             return true;
         }
         if (!(player instanceof ServerPlayer serverPlayer)) {
             return false;
         }
-        ArmorEnergyBuffer.refillFromNetwork(
-                armor,
-                serverPlayer,
-                Math.max(0L, amount - ArmorEnergyBuffer.read(armor, serverPlayer.registryAccess())));
-        boolean paid = ArmorEnergyBuffer.tryConsume(armor, serverPlayer, amount);
-        return paid;
+        return ArmorEnergyBuffer.tryConsume(armor, serverPlayer, amount);
     }
 
-    private static void refundCost(ServerPlayer player, ItemStack armor, long amount) {
+    private static boolean consumeCostWithActiveRecharge(Player player, ItemStack armor, long amount) {
+        if (amount <= 0L) {
+            return true;
+        }
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return false;
+        }
+        long stored = ArmorEnergyBuffer.read(armor, serverPlayer.registryAccess());
+        long capacity = ArmorEnergyBuffer.capacity(armor, serverPlayer.registryAccess());
+        long request = ArmorNetworkRechargePolicy.activeRechargeRequest(stored, capacity, amount);
+        rechargeFromNetwork(serverPlayer, armor, request, true);
+        return ArmorEnergyBuffer.tryConsume(armor, serverPlayer, amount);
+    }
+
+    private static long rechargeFromNetwork(ServerPlayer player, ItemStack armor, long request, boolean ignoreCooldown) {
+        if (request <= 0L) {
+            return 0L;
+        }
+        UUID armorId = OverloadArmorState.ensureArmorId(armor);
+        long now = player.level().getGameTime();
+        if (!ignoreCooldown) {
+            long nextRetry = NEXT_NETWORK_RETRY_TICK.getOrDefault(armorId, 0L);
+            if (ArmorNetworkRechargePolicy.isCoolingDown(nextRetry, now)) {
+                return 0L;
+            }
+        }
+
+        long received = ArmorEnergyBuffer.refillFromNetwork(armor, player, request);
+        if (received >= request) {
+            NEXT_NETWORK_RETRY_TICK.remove(armorId);
+        } else {
+            NEXT_NETWORK_RETRY_TICK.put(armorId, ArmorNetworkRechargePolicy.nextRetryTick(now));
+        }
+        return received;
+    }
+
+    public static void refundCost(ServerPlayer player, ItemStack armor, long amount) {
         if (amount <= 0L) {
             return;
         }

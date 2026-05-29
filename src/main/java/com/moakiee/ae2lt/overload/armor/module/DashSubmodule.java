@@ -11,9 +11,9 @@ import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
-import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
 import com.moakiee.ae2lt.overload.armor.ArmorOverloadRules;
 import com.moakiee.ae2lt.overload.armor.OverloadArmorState;
+import com.moakiee.ae2lt.overload.armor.service.ArmorEnergyService;
 import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
@@ -75,11 +75,7 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
             return;
         }
         long feCost = ArmorOverloadRules.DASH_ACTIVE_COST_FE;
-        ArmorEnergyBuffer.refillFromNetwork(
-                armor,
-                player,
-                Math.max(0L, feCost - ArmorEnergyBuffer.read(armor, player.registryAccess())));
-        if (!ArmorEnergyBuffer.tryConsume(armor, player, feCost)) {
+        if (!ArmorEnergyService.consumeActiveCost(player, armor, feCost)) {
             player.displayClientMessage(Component.translatable("ae2lt.overload_armor.fail.no_fe"), true);
             return;
         }
@@ -88,7 +84,7 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
                 armor,
                 com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
                 AE2LTCommonConfig.overloadArmorDashHvCost())) {
-            ArmorEnergyBuffer.write(armor, player.registryAccess(), ArmorEnergyBuffer.read(armor, player.registryAccess()) + feCost);
+            ArmorEnergyService.refundCost(player, armor, feCost);
             player.displayClientMessage(Component.translatable("ae2lt.overload_armor.fail.no_lightning"), true);
             return;
         }

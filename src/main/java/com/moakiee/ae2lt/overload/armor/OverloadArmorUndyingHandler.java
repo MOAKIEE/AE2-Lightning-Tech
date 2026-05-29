@@ -2,10 +2,7 @@ package com.moakiee.ae2lt.overload.armor;
 
 import java.util.List;
 
-import org.jetbrains.annotations.Nullable;
-
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
@@ -21,6 +18,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.overload.armor.module.UndyingSubmodule;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
+import com.moakiee.ae2lt.overload.armor.service.ArmorEnergyService;
 import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
@@ -41,7 +39,7 @@ public final class OverloadArmorUndyingHandler {
         if (damage <= 0.0F || damage < player.getHealth() + player.getAbsorptionAmount()) {
             return;
         }
-        if (tryTrigger(player, event.getSource(), "fatal_damage")) {
+        if (tryTrigger(player)) {
             event.setNewDamage(0.0F);
         }
     }
@@ -51,7 +49,7 @@ public final class OverloadArmorUndyingHandler {
         if (!(event.getEntity() instanceof ServerPlayer player) || player.level().isClientSide()) {
             return;
         }
-        if (tryProtectForcedDeath(player, event.getSource(), "death_event")) {
+        if (tryProtectForcedDeath(player)) {
             event.setCanceled(true);
         }
     }
@@ -62,14 +60,11 @@ public final class OverloadArmorUndyingHandler {
             return;
         }
         if (player.dead || player.isDeadOrDying() || player.getHealth() <= 0.0F) {
-            tryProtectForcedDeath(player, player.damageSources().genericKill(), "death_tick");
+            tryProtectForcedDeath(player);
         }
     }
 
-    public static boolean tryProtectForcedDeath(
-            ServerPlayer player,
-            @Nullable DamageSource source,
-            String reason) {
+    public static boolean tryProtectForcedDeath(ServerPlayer player) {
         if (player == null || player.level().isClientSide()) {
             return false;
         }
@@ -77,7 +72,7 @@ public final class OverloadArmorUndyingHandler {
             restoreSurvivalState(player);
             return true;
         }
-        return tryTrigger(player, source != null ? source : player.damageSources().genericKill(), reason);
+        return tryTrigger(player);
     }
 
     public static boolean wasProtectedThisTick(LivingEntity entity) {
@@ -87,7 +82,7 @@ public final class OverloadArmorUndyingHandler {
         return player.getPersistentData().getLong(TAG_PROTECTED_TICK) == player.level().getGameTime();
     }
 
-    private static boolean tryTrigger(ServerPlayer player, DamageSource source, String reason) {
+    private static boolean tryTrigger(ServerPlayer player) {
         if (player.isSpectator()) {
             return false;
         }
@@ -104,10 +99,7 @@ public final class OverloadArmorUndyingHandler {
                     active.armor(),
                     com.moakiee.ae2lt.me.key.LightningKey.EXTREME_HIGH_VOLTAGE,
                     lightningCost)) {
-                ArmorEnergyBuffer.write(
-                        active.armor(),
-                        player.registryAccess(),
-                        ArmorEnergyBuffer.read(active.armor(), player.registryAccess()) + cost);
+                ArmorEnergyService.refundCost(player, active.armor(), cost);
                 continue;
             }
             UndyingSubmodule.recordTrigger(
@@ -127,11 +119,7 @@ public final class OverloadArmorUndyingHandler {
         if (cost <= 0L) {
             return true;
         }
-        ArmorEnergyBuffer.refillFromNetwork(
-                armor,
-                player,
-                Math.max(0L, cost - ArmorEnergyBuffer.read(armor, player.registryAccess())));
-        return ArmorEnergyBuffer.tryConsume(armor, player, cost);
+        return ArmorEnergyService.consumeActiveCost(player, armor, cost);
     }
 
     private static void restoreSurvivalState(ServerPlayer player) {

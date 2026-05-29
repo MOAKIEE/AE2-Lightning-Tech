@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector.ActiveCapability;
+import com.moakiee.ae2lt.overload.armor.service.ArmorEnergyService;
 import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
 
@@ -171,11 +172,7 @@ public final class OverloadArmorDamageHandler {
             }
             long cost = (long) Math.ceil(amount * Math.max(0L, reflect.fePerDamage()));
             if (cost > 0L) {
-                ArmorEnergyBuffer.refillFromNetwork(
-                        active.armor(),
-                        serverPlayer,
-                        Math.max(0L, cost - ArmorEnergyBuffer.read(active.armor(), serverPlayer.registryAccess())));
-                if (!ArmorEnergyBuffer.tryConsume(active.armor(), serverPlayer, cost)) {
+                if (!ArmorEnergyService.consumeActiveCost(serverPlayer, active.armor(), cost)) {
                     continue;
                 }
             }
@@ -185,10 +182,7 @@ public final class OverloadArmorDamageHandler {
                     active.armor(),
                     com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
                     lightningCost)) {
-                ArmorEnergyBuffer.write(
-                        active.armor(),
-                        serverPlayer.registryAccess(),
-                        ArmorEnergyBuffer.read(active.armor(), serverPlayer.registryAccess()) + cost);
+                ArmorEnergyService.refundCost(serverPlayer, active.armor(), cost);
                 continue;
             }
             reflected += amount;

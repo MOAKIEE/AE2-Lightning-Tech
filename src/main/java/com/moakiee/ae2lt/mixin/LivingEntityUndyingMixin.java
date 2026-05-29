@@ -16,10 +16,7 @@ public abstract class LivingEntityUndyingMixin {
     private void ae2lt$protectOverloadArmorFromKill(CallbackInfo ci) {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (entity instanceof ServerPlayer player
-                && OverloadArmorUndyingHandler.tryProtectForcedDeath(
-                        player,
-                        player.damageSources().genericKill(),
-                        "kill")) {
+                && OverloadArmorUndyingHandler.tryProtectForcedDeath(player)) {
             ci.cancel();
         }
     }
@@ -29,10 +26,7 @@ public abstract class LivingEntityUndyingMixin {
         LivingEntity entity = (LivingEntity) (Object) this;
         if (health <= 0.0F
                 && entity instanceof ServerPlayer player
-                && OverloadArmorUndyingHandler.tryProtectForcedDeath(
-                        player,
-                        player.damageSources().genericKill(),
-                        "set_health_zero")) {
+                && OverloadArmorUndyingHandler.tryProtectForcedDeath(player)) {
             ci.cancel();
         }
     }

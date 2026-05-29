@@ -26,7 +26,7 @@ public final class ArmorTickService {
         }
 
         if (player instanceof ServerPlayer serverPlayer) {
-            ArmorEnergyService.refillFromBoundNetwork(serverPlayer, armor, registries);
+            ArmorEnergyService.refillFromBoundNetworkIfLow(serverPlayer, armor, registries);
             if (!ArmorEnergyService.consumePassiveDrain(serverPlayer, armor, registries)) {
                 OverloadArmorState.syncSubmoduleActiveState(player, armor, registries, false, dist);
                 OverloadArmorState.tickEquipped(player, armor, registries);
