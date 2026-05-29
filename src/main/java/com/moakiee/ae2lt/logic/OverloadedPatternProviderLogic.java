@@ -2240,7 +2240,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(GRID_TICK_MIN, GRID_TICK_MAX, !hasCombinedGridTickWork(), false);
+            return new TickingRequest(GRID_TICK_MIN, GRID_TICK_MAX, !hasCombinedGridTickWork(), true);
         }
 
         @Override

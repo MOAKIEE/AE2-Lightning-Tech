@@ -29,7 +29,7 @@ public abstract class AbstractGridRecipeMachineLogic<
         // 当前状态(尤其是依赖 grid 的查找)推断 sleeping 容易错判,导致机器
         // 即便有材料也卡在 sleeping。始终以 awake 入队,首次 tick 自行评估,
         // 无工作时通过 SLEEP 自动转 sleeping。
-        return new TickingRequest(1, 16, false, false);
+        return new TickingRequest(1, 20, false, true);
     }
 
     @Override

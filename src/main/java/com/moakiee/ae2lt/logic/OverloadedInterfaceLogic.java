@@ -239,7 +239,7 @@ public class OverloadedInterfaceLogic extends InterfaceLogic {
 
         @Override
         public TickingRequest getTickingRequest(IGridNode node) {
-            return new TickingRequest(1, 5, false, false);
+            return new TickingRequest(1, 5, false, true);
         }
 
         @Override
