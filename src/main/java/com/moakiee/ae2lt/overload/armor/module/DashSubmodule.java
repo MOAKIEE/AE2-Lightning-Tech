@@ -21,7 +21,7 @@ public final class DashSubmodule extends AbstractOverloadArmorSubmodule {
     public static final DashSubmodule INSTANCE = new DashSubmodule();
 
     private static final double IMPULSE = 1.8D;
-    private static final int COOLDOWN_TICKS = 60;
+    private static final int COOLDOWN_TICKS = 40;
     private static final String TAG_COOLDOWN = "DashCooldown";
 
     private DashSubmodule() {}

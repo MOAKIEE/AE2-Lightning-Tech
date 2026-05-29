@@ -16,7 +16,7 @@ public final class DashSubmoduleItem extends AbstractSingleArmorSubmoduleItem {
                 DashSubmodule.INSTANCE,
                 "item.ae2lt.module_dash.tooltip",
                 stack -> List.of(
-                        new DeviceCapability.DashEffect(1.8D, 60),
+                        new DeviceCapability.DashEffect(1.8D, 40),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.DASH_PASSIVE_DRAIN_FE),
                         new DeviceCapability.ActiveCost("dash", ArmorOverloadRules.DASH_ACTIVE_COST_FE)));
     }
