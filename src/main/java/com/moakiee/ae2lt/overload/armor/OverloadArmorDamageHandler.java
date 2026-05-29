@@ -23,40 +23,33 @@ import com.moakiee.ae2lt.registry.ModDamageTypes;
  * Applies staged mitigation and reflect tuning from active armor modules.
  *
  * <p>The strongest mitigation stage is applied after vanilla armor in Pre.
- * {@code reflectPct} bounces post-resist damage back to LivingEntity attackers in Post.
+ * {@code reflectPct} bounces pre-overload-shield damage back to LivingEntity attackers.
  * Environmental damage (fire/fall/drown) is never reflected.
  */
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class OverloadArmorDamageHandler {
+    private static final ThreadLocal<Boolean> REFLECTING_DAMAGE = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
     private OverloadArmorDamageHandler() {}
 
     @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPre(LivingDamageEvent.Pre event) {
         if (!(event.getEntity() instanceof Player player) || player.level().isClientSide()) return;
+        float incoming = event.getNewDamage();
         var capabilities = ArmorCapabilityCollector.collectPerInstalledUnit(player);
         ActiveCapability mitigation = collectMitigation(capabilities);
         if (mitigation != null
                 && mitigation.capability() instanceof DeviceCapability.StagedMitigation staged) {
-            float incoming = event.getNewDamage();
             float afterMitigation = ArmorMitigationRules.apply(
                     staged.stage(),
                     classifyDamage(event.getSource()),
                     incoming);
-            if (!payMitigationLightning(player, mitigation, staged, incoming - afterMitigation)) {
-                return;
+            if (payMitigationLightning(player, mitigation, staged, incoming - afterMitigation)) {
+                event.setNewDamage(afterMitigation);
             }
-            event.setNewDamage(afterMitigation);
         }
-    }
-
-    @SubscribeEvent(priority = EventPriority.LOW)
-    public static void onPost(LivingDamageEvent.Post event) {
-        if (!(event.getEntity() instanceof Player player) || player.level().isClientSide()) return;
-        if (!(event.getSource().getEntity() instanceof LivingEntity attacker)) return;
-        float reflected = collectReflectedDamage(player, event.getNewDamage());
-        if (reflected > 0.0F) {
-            attacker.hurt(event.getSource(), reflected);
+        if (!isReflectingDamage()) {
+            reflectIncomingDamage(player, event.getSource(), incoming);
         }
     }
 
@@ -148,6 +141,28 @@ public final class OverloadArmorDamageHandler {
         return "phase_shield".equals(stage)
                 ? AE2LTCommonConfig.overloadArmorPhaseShieldEhvPerDamage()
                 : AE2LTCommonConfig.overloadArmorMitigationHvPerDamage();
+    }
+
+    private static void reflectIncomingDamage(Player player, DamageSource source, float incomingDamage) {
+        if (!(source.getEntity() instanceof LivingEntity attacker)) return;
+        float reflected = collectReflectedDamage(player, incomingDamage);
+        if (reflected > 0.0F) {
+            hurtWithReflectGuard(attacker, source, reflected);
+        }
+    }
+
+    private static boolean isReflectingDamage() {
+        return Boolean.TRUE.equals(REFLECTING_DAMAGE.get());
+    }
+
+    private static void hurtWithReflectGuard(LivingEntity target, DamageSource source, float damage) {
+        boolean wasReflecting = isReflectingDamage();
+        REFLECTING_DAMAGE.set(Boolean.TRUE);
+        try {
+            target.hurt(source, damage);
+        } finally {
+            REFLECTING_DAMAGE.set(wasReflecting);
+        }
     }
 
     private static float collectReflectedDamage(Player player, float damage) {
