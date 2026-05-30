@@ -31,7 +31,7 @@ public final class OverloadArmorUndyingHandler {
     private static final String TAG_PROTECTED_TICK = "ae2lt.undying_protected_tick";
     private static final String TAG_PROTECTED_UNTIL = "ae2lt.undying_protected_until";
     // Short post-trigger window: dedup same/adjacent-tick fatal paths without re-charging.
-    private static final int PROTECTION_WINDOW_TICKS = 5;
+    private static final int PROTECTION_WINDOW_TICKS = 10;
 
     private OverloadArmorUndyingHandler() {
     }
