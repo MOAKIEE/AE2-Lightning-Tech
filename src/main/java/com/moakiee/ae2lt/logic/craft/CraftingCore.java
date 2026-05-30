@@ -185,6 +185,11 @@ public final class CraftingCore implements Sweepable {
         return threadsInFlight;
     }
 
+    public int availableCapacity() {
+        sweepNonLive(host.getGameTime());
+        return Math.max(0, host.maxThreads() - threadsInFlight);
+    }
+
     private void sweepNonLive(long now) {
         if (threadsInFlight == 0) {
             lastSweptTick = now;

@@ -14,6 +14,12 @@ import appeng.api.stacks.KeyCounter;
  * {@link #pushPattern} calls had succeeded.
  */
 public interface IBatchCraftingProvider extends ICraftingProvider {
+    /**
+     * Maximum copies this provider can accept for this pattern right now.
+     */
+    default int getBatchCapacity(IPatternDetails details) {
+        return isBusy() ? 0 : 1;
+    }
 
     /**
      * Try to consume up to {@code maxCraft} copies of {@code details}.

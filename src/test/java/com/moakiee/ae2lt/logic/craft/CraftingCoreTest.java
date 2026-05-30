@@ -69,6 +69,42 @@ class CraftingCoreTest {
     }
 
     @Test
+    void availableCapacitySweepsCompletedWorkBeforeTheRegistryTickRuns() {
+        var host = new FakeHost(0, 2, 1_000);
+        var core = new CraftingCore(
+                host,
+                new CoreParams(2, 20.0D),
+                new FakeAssembler(key("diamond"), 1),
+                new CraftingCoreRegistry());
+
+        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
+        assertEquals(0, core.availableCapacity());
+
+        host.time = 2;
+
+        assertEquals(2, core.availableCapacity());
+        assertEquals(2, host.network.getLong(key("diamond")));
+        assertEquals(0, core.threadsInFlight());
+    }
+
+    @Test
+    void oneTickDelayLetsCapacityRefillEveryTick() {
+        var host = new FakeHost(0, 2, 1_000);
+        var core = new CraftingCore(
+                host,
+                new CoreParams(1, 20.0D),
+                new FakeAssembler(key("diamond"), 1),
+                new CraftingCoreRegistry());
+
+        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
+        host.time = 1;
+
+        assertEquals(2, core.availableCapacity());
+        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
+        assertEquals(0, core.availableCapacity());
+    }
+
+    @Test
     void energyShortageScalesCopiesDownAndRefundsUnusedEnergy() {
         var host = new FakeHost(0, 10, 55.0D);
         var core = new CraftingCore(

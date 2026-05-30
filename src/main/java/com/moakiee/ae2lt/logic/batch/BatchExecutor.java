@@ -51,10 +51,26 @@ public final class BatchExecutor {
                 continue;
             }
 
-            int budget = (int) Math.min((long) (remainingOps - totalPushed), taskValue);
-            if (budget <= 0) continue;
-
             var perTaskBatched = batchedByTask.computeIfAbsent(details, key -> new IdentityHashMap<>());
+
+            var eligible = new java.util.ArrayList<IBatchCraftingProvider>();
+            long availableBatchCapacity = 0;
+            for (var provider : cs.getProviders(details)) {
+                if (!(provider instanceof IBatchCraftingProvider batch)) continue;
+                if (perTaskBatched.containsKey(provider)) continue;
+                int capacity = batch.getBatchCapacity(details);
+                if (capacity <= 0) continue;
+                eligible.add(batch);
+                availableBatchCapacity += capacity;
+                if (availableBatchCapacity >= Integer.MAX_VALUE) {
+                    availableBatchCapacity = Integer.MAX_VALUE;
+                    break;
+                }
+            }
+            if (eligible.isEmpty() || availableBatchCapacity <= 0) continue;
+
+            int budget = (int) Math.min(Math.min(taskValue, availableBatchCapacity), Integer.MAX_VALUE);
+            if (budget <= 0) continue;
 
             var result = ParallelBatchCpuHelper.bulkExtract(details, inv, budget);
             if (result == null) {
@@ -81,13 +97,6 @@ public final class BatchExecutor {
 
             int initialRealCraft = realCraft;
             int leftover = realCraft;
-            var eligible = new java.util.ArrayList<IBatchCraftingProvider>();
-            for (var provider : cs.getProviders(details)) {
-                if (!(provider instanceof IBatchCraftingProvider batch)) continue;
-                if (perTaskBatched.containsKey(provider)) continue;
-                if (provider.isBusy()) continue;
-                eligible.add(batch);
-            }
 
             for (int i = 0; i < eligible.size() && leftover > 0; i++) {
                 var batch = eligible.get(i);

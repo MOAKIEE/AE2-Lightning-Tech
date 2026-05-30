@@ -74,12 +74,13 @@ public abstract class CraftingCpuLogicBatchMixin {
                 ae2lt$batchedByTask,
                 cluster::markDirty);
 
-        if (batchPushed >= remainingOps) {
-            return batchPushed;
+        if (batchPushed > 0) {
+            // Batch providers account for their own parallel capacity; don't feed their copies into AE2's
+            // rolling usedOps window, otherwise a 1000-thread core is throttled like ordinary co-processors.
+            return 0;
         }
 
-        int normalPushed = original.call(self, remainingOps - batchPushed, craftingService, energyService, level);
-        return batchPushed + normalPushed;
+        return original.call(self, remainingOps, craftingService, energyService, level);
     }
 
     @WrapOperation(

@@ -30,6 +30,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements IBatchCraftingProvider {
     private static final String TAG_CORE = "BatchCraftingCore";
     private static final int TEST_MAX_THREADS = 1000;
+    private static final int TEST_DELAY_TICKS = 1;
 
     private final IManagedGridNode gridNode;
     private final TestBatchCraftingCoreBlockEntity host;
@@ -45,7 +46,7 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         this.actionSource = new MachineSource(mainNode::getNode);
         this.core = new CraftingCore(
                 new CoreHost(),
-                new CoreParams(AE2LTCommonConfig.craftingCoreDelayTicks(), AE2LTCommonConfig.craftingCoreAePerCopy()),
+                new CoreParams(TEST_DELAY_TICKS, AE2LTCommonConfig.craftingCoreAePerCopy()),
                 new MolecularCopyAssembler(host::getLevel),
                 AE2LightningTech.craftingCoreRegistry());
         this.dispatcher = new CraftingCorePatternDispatcher(
@@ -64,6 +65,14 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
     @Override
     public int pushBatch(IPatternDetails details, KeyCounter[] scaledInputs, int maxCraft) {
         return dispatcher.pushBatch(details, scaledInputs, maxCraft);
+    }
+
+    @Override
+    public int getBatchCapacity(IPatternDetails details) {
+        if (!canAcceptBatch() || !hasLoadedPattern(details)) {
+            return 0;
+        }
+        return core.availableCapacity();
     }
 
     @Override
