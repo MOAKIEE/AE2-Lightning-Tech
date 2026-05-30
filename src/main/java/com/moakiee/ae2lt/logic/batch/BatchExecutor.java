@@ -1,0 +1,161 @@
+package com.moakiee.ae2lt.logic.batch;
+
+import java.util.IdentityHashMap;
+import java.util.Map;
+
+import net.minecraft.world.level.Level;
+
+import appeng.api.config.Actionable;
+import appeng.api.config.PowerMultiplier;
+import appeng.api.crafting.IPatternDetails;
+import appeng.api.networking.crafting.ICraftingProvider;
+import appeng.api.networking.energy.IEnergyService;
+import appeng.api.stacks.KeyCounter;
+import appeng.crafting.execution.CraftingCpuHelper;
+import appeng.crafting.inv.ListCraftingInventory;
+import appeng.me.service.CraftingService;
+
+import com.moakiee.ae2lt.api.crafting.IBatchCraftingProvider;
+import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
+
+public final class BatchExecutor {
+    private BatchExecutor() {
+    }
+
+    public static int runBatchOnly(int remainingOps,
+                                   CraftingService cs,
+                                   IEnergyService es,
+                                   Level level,
+                                   BatchJobView job,
+                                   ListCraftingInventory inv,
+                                   Map<IPatternDetails, IdentityHashMap<ICraftingProvider, Boolean>> batchedByTask,
+                                   Runnable markDirty) {
+        if (job == null) return 0;
+
+        var taskIter = job.taskIterator();
+        if (!taskIter.hasNext()) return 0;
+
+        int totalPushed = 0;
+        boolean dirty = false;
+
+        while (taskIter.hasNext()) {
+            var task = taskIter.next();
+            long taskValue = task.getValue();
+            if (taskValue <= 0) {
+                taskIter.remove();
+                continue;
+            }
+
+            var details = task.details();
+            if (details instanceof OverloadedProviderOnlyPatternDetails) {
+                continue;
+            }
+
+            int budget = (int) Math.min((long) (remainingOps - totalPushed), taskValue);
+            if (budget <= 0) continue;
+
+            var perTaskBatched = batchedByTask.computeIfAbsent(details, key -> new IdentityHashMap<>());
+
+            var result = ParallelBatchCpuHelper.bulkExtract(details, inv, budget);
+            if (result == null) {
+                continue;
+            }
+
+            int realCraft = result.actualCopies;
+            double powerForReal = CraftingCpuHelper.calculatePatternPower(result.scaledInputs);
+            double powerOne = realCraft > 0 ? powerForReal / realCraft : 0.0D;
+            double availablePower = es.extractAEPower(powerForReal, Actionable.SIMULATE, PowerMultiplier.CONFIG);
+            if (availablePower < powerForReal - 0.01D) {
+                int affordable = powerOne > 0.0D ? (int) Math.floor(availablePower / powerOne) : 0;
+                if (affordable <= 0) {
+                    ParallelBatchCpuHelper.reinject(result, realCraft, inv);
+                    if (dirty) markDirty.run();
+                    return totalPushed;
+                }
+                int scaleDown = realCraft - affordable;
+                if (scaleDown > 0) {
+                    ParallelBatchCpuHelper.reinject(result, scaleDown, inv);
+                    realCraft = affordable;
+                }
+            }
+
+            int initialRealCraft = realCraft;
+            int leftover = realCraft;
+            var eligible = new java.util.ArrayList<IBatchCraftingProvider>();
+            for (var provider : cs.getProviders(details)) {
+                if (!(provider instanceof IBatchCraftingProvider batch)) continue;
+                if (perTaskBatched.containsKey(provider)) continue;
+                if (provider.isBusy()) continue;
+                eligible.add(batch);
+            }
+
+            for (int i = 0; i < eligible.size() && leftover > 0; i++) {
+                var batch = eligible.get(i);
+                int remainingProviders = eligible.size() - i;
+                int slice = Math.max(1, leftover / remainingProviders);
+                slice = Math.min(slice, leftover);
+                KeyCounter[] subInputs = ParallelBatchCpuHelper.copySlice(result, slice);
+
+                int subLeftover;
+                try {
+                    subLeftover = batch.pushBatch(details, subInputs, slice);
+                } catch (Throwable t) {
+                    appeng.core.AELog.warn("[ae2lt] IBatchCraftingProvider %s threw during pushBatch; treating as full leftover. %s",
+                            batch, t);
+                    subLeftover = slice;
+                }
+                if (subLeftover < 0 || subLeftover > slice) {
+                    appeng.core.AELog.warn("[ae2lt] IBatchCraftingProvider %s returned out-of-range leftover %d for slice=%d; treating as full leftover.",
+                            batch, subLeftover, slice);
+                    subLeftover = slice;
+                }
+
+                int dispatched = slice - subLeftover;
+                if (dispatched <= 0) continue;
+
+                ParallelBatchCpuHelper.markDispatched(result, dispatched);
+                es.extractAEPower(powerOne * dispatched, Actionable.MODULATE, PowerMultiplier.CONFIG);
+                ParallelBatchCpuHelper.registerExpectedOutputs(job, details, dispatched);
+                dirty = true;
+
+                long newValue = task.getValue() - dispatched;
+                task.setValue(newValue);
+                totalPushed += dispatched;
+                leftover -= dispatched;
+
+                if (initialRealCraft > 1) {
+                    perTaskBatched.put((ICraftingProvider) batch, Boolean.TRUE);
+                }
+
+                if (newValue <= 0) {
+                    taskIter.remove();
+                    if (leftover > 0) {
+                        ParallelBatchCpuHelper.reinject(result, leftover, inv);
+                        leftover = 0;
+                    }
+                    if (totalPushed >= remainingOps) {
+                        if (dirty) markDirty.run();
+                        return totalPushed;
+                    }
+                    break;
+                }
+
+                if (totalPushed >= remainingOps) {
+                    if (leftover > 0) {
+                        ParallelBatchCpuHelper.reinject(result, leftover, inv);
+                        leftover = 0;
+                    }
+                    if (dirty) markDirty.run();
+                    return totalPushed;
+                }
+            }
+
+            if (leftover > 0) {
+                ParallelBatchCpuHelper.reinject(result, leftover, inv);
+            }
+        }
+
+        if (dirty) markDirty.run();
+        return totalPushed;
+    }
+}

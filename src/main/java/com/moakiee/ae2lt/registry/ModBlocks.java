@@ -15,6 +15,7 @@ import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
+import com.moakiee.ae2lt.block.TestBatchCraftingCoreBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessReceiverBlock;
@@ -159,6 +160,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<AdvancedWirelessOverloadedControllerBlock> ADVANCED_WIRELESS_OVERLOADED_CONTROLLER =
             registerBlock("advanced_wireless_overloaded_controller", AdvancedWirelessOverloadedControllerBlock::new);
+
+    public static final DeferredBlock<TestBatchCraftingCoreBlock> TEST_BATCH_CRAFTING_CORE =
+            registerBlock("test_batch_crafting_core", TestBatchCraftingCoreBlock::new);
 
     private ModBlocks() {
     }

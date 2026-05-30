@@ -158,6 +158,18 @@ public final class AE2LTCommonConfig {
         return VALUES.pigmeeFumoGiftOnFirstJoin.get();
     }
 
+    public static int craftingCoreMaxThreads() {
+        return VALUES.craftingCoreMaxThreads.get();
+    }
+
+    public static int craftingCoreDelayTicks() {
+        return VALUES.craftingCoreDelayTicks.get();
+    }
+
+    public static double craftingCoreAePerCopy() {
+        return VALUES.craftingCoreAePerCopy.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue configVersion;
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
@@ -195,6 +207,9 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
         private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
+        private final ModConfigSpec.IntValue craftingCoreMaxThreads;
+        private final ModConfigSpec.IntValue craftingCoreDelayTicks;
+        private final ModConfigSpec.DoubleValue craftingCoreAePerCopy;
 
         private Values(ModConfigSpec.Builder builder) {
             configVersion = builder
@@ -338,6 +353,18 @@ public final class AE2LTCommonConfig {
             pigmeeFumoGiftOnFirstJoin = builder
                     .comment("Controls whether players receive a Pigmee Fumo as a gift on their first login.")
                     .define("giftOnFirstJoin", true);
+            builder.pop();
+
+            builder.push("batchCraftingCore");
+            craftingCoreMaxThreads = builder
+                    .comment("Maximum in-flight crafting copies for one future Batch Crafting Core structure.")
+                    .defineInRange("maxThreads", 1000, 1, 100_000);
+            craftingCoreDelayTicks = builder
+                    .comment("Delay in ticks before assembled batch outputs are inserted into the ME network. Range: 1..15.")
+                    .defineInRange("delayTicks", 2, 1, 15);
+            craftingCoreAePerCopy = builder
+                    .comment("AE charged by the Batch Crafting Core per crafted copy.")
+                    .defineInRange("aePerCopy", 20.0D, 0.0D, Double.MAX_VALUE);
             builder.pop();
         }
     }

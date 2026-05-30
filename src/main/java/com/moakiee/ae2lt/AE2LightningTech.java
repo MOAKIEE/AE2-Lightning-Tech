@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -64,6 +65,7 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.logic.craft.CraftingCoreRegistry;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
@@ -76,9 +78,14 @@ import net.neoforged.neoforge.event.tick.ServerTickEvent;
 @Mod(AE2LightningTech.MODID)
 public class AE2LightningTech {
     public static final String MODID = "ae2lt";
+    private static final CraftingCoreRegistry CRAFTING_CORE_REGISTRY = new CraftingCoreRegistry();
 
     public static final DeferredRegister<CreativeModeTab> CREATIVE_MODE_TABS =
             DeferredRegister.create(Registries.CREATIVE_MODE_TAB, MODID);
+
+    public static CraftingCoreRegistry craftingCoreRegistry() {
+        return CRAFTING_CORE_REGISTRY;
+    }
 
     public static final DeferredHolder<CreativeModeTab, CreativeModeTab> MAIN_TAB =
             CREATIVE_MODE_TABS.register("main", () -> CreativeModeTab.builder()
@@ -103,6 +110,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
+                        output.accept(ModBlocks.TEST_BATCH_CRAFTING_CORE);
                         if (ModBlocks.hasOverloadedPowerSupply()) {
                             output.accept(ModBlocks.OVERLOADED_POWER_SUPPLY);
                         }
@@ -540,6 +548,14 @@ public class AE2LightningTech {
                     OverloadedPatternProviderBlockEntity::serverTick
             );
 
+            var testBatchCraftingCoreBlock = ModBlocks.TEST_BATCH_CRAFTING_CORE.get();
+            var testBatchCraftingCoreBeType = ModBlockEntities.TEST_BATCH_CRAFTING_CORE.get();
+            testBatchCraftingCoreBlock.setBlockEntity(
+                    TestBatchCraftingCoreBlockEntity.class,
+                    testBatchCraftingCoreBeType,
+                    null,
+                    null);
+
             var interfaceBlock = ModBlocks.OVERLOADED_INTERFACE.get();
             var interfaceBeType = ModBlockEntities.OVERLOADED_INTERFACE.get();
             interfaceBlock.setBlockEntity(
@@ -567,6 +583,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                     ModBlocks.OVERLOADED_PATTERN_PROVIDER.get().asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    testBatchCraftingCoreBeType,
+                    testBatchCraftingCoreBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
@@ -700,10 +719,12 @@ public class AE2LightningTech {
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
+        CRAFTING_CORE_REGISTRY.clear();
         ResearchNoteGenerator.onServerStopped();
     }
 
     private void onServerTickPost(ServerTickEvent.Post event) {
+        CRAFTING_CORE_REGISTRY.tickAll();
         WirelessFrequencyManager.flushPendingDeviceNotifications();
     }
 

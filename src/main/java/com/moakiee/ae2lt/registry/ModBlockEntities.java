@@ -14,6 +14,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
+import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
@@ -139,6 +140,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             AdvancedWirelessOverloadedControllerBlockEntity::new,
                             ModBlocks.ADVANCED_WIRELESS_OVERLOADED_CONTROLLER.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestBatchCraftingCoreBlockEntity>>
+            TEST_BATCH_CRAFTING_CORE = BLOCK_ENTITY_TYPES.register(
+                    "test_batch_crafting_core",
+                    () -> BlockEntityType.Builder.of(
+                            TestBatchCraftingCoreBlockEntity::new,
+                            ModBlocks.TEST_BATCH_CRAFTING_CORE.get())
                             .build(null));
 
     @SuppressWarnings("DataFlowIssue")
