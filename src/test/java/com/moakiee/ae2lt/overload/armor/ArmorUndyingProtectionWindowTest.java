@@ -16,8 +16,8 @@ final class ArmorUndyingProtectionWindowTest {
         String compactHandler = handlerSource.replaceAll("\\s+", "");
 
         assertTrue(
-                handlerSource.contains("PROTECTION_WINDOW_TICKS = 20"),
-                "Undying should keep a one-second protection window after paying the trigger cost.");
+                handlerSource.contains("PROTECTION_WINDOW_TICKS = 5"),
+                "Undying should keep a short protection window after paying the trigger cost so repeated fatal hits are not re-charged.");
         assertTrue(
                 handlerSource.contains("TAG_PROTECTED_UNTIL"),
                 "Undying should persist the tick until which forced-death paths are already covered.");
