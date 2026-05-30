@@ -29,7 +29,7 @@ import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 
 public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements IBatchCraftingProvider {
     private static final String TAG_CORE = "BatchCraftingCore";
-    private static final int TEST_MAX_THREADS = 1000;
+    private static final int TEST_MAX_THREADS = 100_000;
     private static final int TEST_DELAY_TICKS = 1;
 
     private final IManagedGridNode gridNode;

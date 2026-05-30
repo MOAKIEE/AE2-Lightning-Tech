@@ -76,7 +76,7 @@ public abstract class CraftingCpuLogicBatchMixin {
 
         if (batchPushed > 0) {
             // Batch providers account for their own parallel capacity; don't feed their copies into AE2's
-            // rolling usedOps window, otherwise a 1000-thread core is throttled like ordinary co-processors.
+            // rolling usedOps window, otherwise a 100,000-thread core is throttled like ordinary co-processors.
             return 0;
         }
 
