@@ -182,6 +182,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.ENERGY_MODULE_T3);
                         output.accept(ModItems.ARMOR_SUBMODULE_NIGHT_VISION);
                         output.accept(ModItems.ARMOR_SUBMODULE_WATER_BREATHING);
+                        output.accept(ModItems.ARMOR_SUBMODULE_REACH_EXTENSION);
                         output.accept(ModItems.ARMOR_SUBMODULE_MATRIX_SHIELD);
                         output.accept(ModItems.ARMOR_SUBMODULE_PHASE_SHIELD);
                         output.accept(ModItems.ARMOR_SUBMODULE_REFLECT);

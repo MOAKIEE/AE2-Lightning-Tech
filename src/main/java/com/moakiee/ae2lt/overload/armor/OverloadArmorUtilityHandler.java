@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.overload.armor.module.AutoFeedSubmodule;
 import com.moakiee.ae2lt.overload.armor.module.PhaseFlightSubmodule;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.overload.armor.service.ArmorCapabilityCollector.ActiveCapability;
+import com.moakiee.ae2lt.overload.armor.service.ArmorInteractionRangeService;
 import com.moakiee.ae2lt.overload.armor.service.ArmorLightningService;
 
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
@@ -35,6 +36,7 @@ public final class OverloadArmorUtilityHandler {
             return;
         }
         var capabilities = ArmorCapabilityCollector.collectPerInstalledStack(player);
+        ArmorInteractionRangeService.tick(player, capabilities);
         tickCleanse(player, capabilities);
         tickAutoFeed(player, capabilities);
         if (hasActivePhaseFlight(capabilities)) {

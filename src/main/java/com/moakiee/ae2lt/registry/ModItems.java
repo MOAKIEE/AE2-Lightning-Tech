@@ -25,6 +25,7 @@ import com.moakiee.ae2lt.item.FlightSubmoduleItem;
 import com.moakiee.ae2lt.item.CleanseSubmoduleItem;
 import com.moakiee.ae2lt.item.AutoFeedSubmoduleItem;
 import com.moakiee.ae2lt.item.DigAffinitySubmoduleItem;
+import com.moakiee.ae2lt.item.ReachSubmoduleItem;
 import com.moakiee.ae2lt.item.PhaseFlightSubmoduleItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
@@ -208,6 +209,11 @@ public final class ModItems {
             "module_water_breathing",
             WaterBreathingSubmoduleItem::new,
             new Item.Properties());
+
+    public static final DeferredItem<ReachSubmoduleItem> ARMOR_SUBMODULE_REACH_EXTENSION = ITEMS.registerItem(
+            "module_reach_extension",
+            ReachSubmoduleItem::new,
+            new Item.Properties().stacksTo(1));
 
     public static final DeferredItem<ResistanceSubmoduleItem> ARMOR_SUBMODULE_MATRIX_SHIELD = ITEMS.registerItem(
             "module_matrix_shield",

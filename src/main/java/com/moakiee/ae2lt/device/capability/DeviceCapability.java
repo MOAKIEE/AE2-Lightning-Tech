@@ -67,6 +67,9 @@ public sealed interface DeviceCapability {
     /** Digging speed compensation in difficult environments. */
     record DigAffinity(String env, double speedMul) implements DeviceCapability {}
 
+    /** Configurable block and entity interaction reach. */
+    record InteractionRange() implements DeviceCapability {}
+
     /** Fall damage reduction. */
     record FallProtection(double damageReduction) implements DeviceCapability {}
 
