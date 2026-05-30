@@ -4,9 +4,9 @@ import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
 
 public enum ReachDistanceOption {
-    ONE("1x", 8.0D, 5.0D),
-    TWO("2x", 24.0D, 10.0D),
-    FOUR("4x", 48.0D, 16.0D);
+    ONE("1x", 2.0D, 1.0D),
+    TWO("2x", 4.0D, 2.0D),
+    FOUR("4x", 8.0D, 4.0D);
 
     public static final String CONFIG_KEY = "reach_range";
 
