@@ -2012,6 +2012,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
                 d, TAG_CONNECTIONS, connections, MAX_WIRELESS_CONNECTIONS, WirelessConnection::fromTag);
         invalidConnectionScanCursor = 0;
         filterInv.readFromNBT(d, TAG_FILTER_INV, r);
+        rebuildFilter();
         importBuffer.clear();
         if (d.contains(TAG_IMPORT_BUFFER, Tag.TAG_LIST)) {
             var buffered = d.getList(TAG_IMPORT_BUFFER, Tag.TAG_COMPOUND);
