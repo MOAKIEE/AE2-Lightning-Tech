@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
+import com.moakiee.ae2lt.logic.ConnectionEndpoints;
 import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.WirelessConnectorTargetHelper;
 import java.util.ArrayList;
@@ -312,24 +313,18 @@ public record WirelessConnectorUsePacket(
         int skippedOutOfRange = 0;
 
         for (var targetPos : targets) {
-            var existing = iface.getConnections().stream()
-                    .filter(c -> c.sameTarget(targetDim, targetPos))
-                    .findFirst().orElse(null);
+            int existing = ConnectionEndpoints.indexOfEndpoint(
+                    iface.getConnections(),
+                    targetDim,
+                    targetPos,
+                    face,
+                    OverloadedInterfaceBlockEntity.WirelessConnection::dimension,
+                    OverloadedInterfaceBlockEntity.WirelessConnection::pos,
+                    OverloadedInterfaceBlockEntity.WirelessConnection::boundFace);
 
-            if (existing != null) {
-                if (existing.boundFace() == face) {
-                    iface.removeConnection(targetDim, targetPos);
+            if (existing >= 0) {
+                if (iface.removeConnection(targetDim, targetPos, face)) {
                     disconnected.add(targetPos.immutable());
-                } else {
-                    if (!WirelessConnectionRange.isConnectorLinkInRange(
-                            level, iface.getBlockPos(), targetPos)) {
-                        skippedOutOfRange++;
-                        continue;
-                    }
-                    if (iface.addOrUpdateConnection(
-                            new OverloadedInterfaceBlockEntity.WirelessConnection(targetDim, targetPos, face))) {
-                        updated.add(targetPos.immutable());
-                    }
                 }
             } else {
                 if (!WirelessConnectionRange.isConnectorLinkInRange(
