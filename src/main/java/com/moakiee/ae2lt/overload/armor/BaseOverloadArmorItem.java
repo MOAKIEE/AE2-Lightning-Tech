@@ -11,7 +11,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ArmorItem;
-import net.minecraft.world.item.ArmorMaterials;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -20,7 +19,6 @@ import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
-import com.moakiee.ae2lt.overload.armor.module.OverloadArmorSubmoduleItem;
 import com.moakiee.ae2lt.overload.armor.service.ArmorTickService;
 import com.moakiee.ae2lt.util.EnergyText;
 
@@ -28,7 +26,10 @@ public abstract class BaseOverloadArmorItem extends ArmorItem implements DeviceI
     private final ArmorPart armorPart;
 
     protected BaseOverloadArmorItem(ArmorPart armorPart, Properties properties) {
-        super(ArmorMaterials.NETHERITE, armorType(armorPart), properties.stacksTo(1).fireResistant());
+        super(
+                CelestweaveArmorMaterials.CELESTWEAVE,
+                armorType(armorPart),
+                properties.stacksTo(1).fireResistant().setNoRepair());
         this.armorPart = armorPart;
     }
 
