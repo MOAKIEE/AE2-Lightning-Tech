@@ -67,7 +67,7 @@ public abstract class AdvCraftingCpuLogicBatchMixin {
             return original.call(self, remainingOps, craftingService, energyService, level);
         }
 
-        int batchPushed = BatchExecutor.runBatchOnly(
+        var batchResult = BatchExecutor.runBatchOnly(
                 remainingOps,
                 craftingService,
                 energyService,
@@ -77,10 +77,10 @@ public abstract class AdvCraftingCpuLogicBatchMixin {
                 ae2lt$batchedByTask,
                 cpu::markDirty);
 
-        if (batchPushed > 0) {
-            // Batch providers account for their own parallel capacity; don't feed their copies into AE2's
-            // rolling usedOps window, otherwise a 100,000-thread core is throttled like ordinary co-processors.
-            return 0;
+        if (batchResult.dispatchedCopies() > 0) {
+            // Batch providers supply the internal parallel capacity, while the CPU pays dispatch pressure:
+            // n dispatched copies consume ceil(sqrt(n)) AE2 operations in the rolling usedOps window.
+            return batchResult.consumedCpuOps();
         }
 
         return original.call(self, remainingOps, craftingService, energyService, level);

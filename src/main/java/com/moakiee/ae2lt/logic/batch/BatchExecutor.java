@@ -22,20 +22,22 @@ public final class BatchExecutor {
     private BatchExecutor() {
     }
 
-    public static int runBatchOnly(int remainingOps,
-                                   CraftingService cs,
-                                   IEnergyService es,
-                                   Level level,
-                                   BatchJobView job,
-                                   ListCraftingInventory inv,
-                                   Map<IPatternDetails, IdentityHashMap<ICraftingProvider, Boolean>> batchedByTask,
-                                   Runnable markDirty) {
-        if (job == null) return 0;
+    public static BatchRunResult runBatchOnly(int remainingOps,
+                                              CraftingService cs,
+                                              IEnergyService es,
+                                              Level level,
+                                              BatchJobView job,
+                                              ListCraftingInventory inv,
+                                              Map<IPatternDetails, IdentityHashMap<ICraftingProvider, Boolean>> batchedByTask,
+                                              Runnable markDirty) {
+        if (job == null) return BatchRunResult.EMPTY;
 
         var taskIter = job.taskIterator();
-        if (!taskIter.hasNext()) return 0;
+        if (!taskIter.hasNext()) return BatchRunResult.EMPTY;
 
         int totalPushed = 0;
+        int cpuCopyBudget = BatchCpuAccounting.maxCopiesForCpuOps(remainingOps);
+        if (cpuCopyBudget <= 0) return BatchRunResult.EMPTY;
         boolean dirty = false;
 
         while (taskIter.hasNext()) {
@@ -69,7 +71,13 @@ public final class BatchExecutor {
             }
             if (eligible.isEmpty() || availableBatchCapacity <= 0) continue;
 
-            int budget = (int) Math.min(Math.min(taskValue, availableBatchCapacity), Integer.MAX_VALUE);
+            int remainingCpuCopyBudget = cpuCopyBudget - totalPushed;
+            if (remainingCpuCopyBudget <= 0) {
+                if (dirty) markDirty.run();
+                return BatchRunResult.fromDispatchedCopies(totalPushed);
+            }
+
+            int budget = (int) Math.min(Math.min(taskValue, availableBatchCapacity), remainingCpuCopyBudget);
             if (budget <= 0) continue;
 
             var result = ParallelBatchCpuHelper.bulkExtract(details, inv, budget);
@@ -86,7 +94,7 @@ public final class BatchExecutor {
                 if (affordable <= 0) {
                     ParallelBatchCpuHelper.reinject(result, realCraft, inv);
                     if (dirty) markDirty.run();
-                    return totalPushed;
+                    return BatchRunResult.fromDispatchedCopies(totalPushed);
                 }
                 int scaleDown = realCraft - affordable;
                 if (scaleDown > 0) {
@@ -142,20 +150,20 @@ public final class BatchExecutor {
                         ParallelBatchCpuHelper.reinject(result, leftover, inv);
                         leftover = 0;
                     }
-                    if (totalPushed >= remainingOps) {
+                    if (totalPushed >= cpuCopyBudget) {
                         if (dirty) markDirty.run();
-                        return totalPushed;
+                        return BatchRunResult.fromDispatchedCopies(totalPushed);
                     }
                     break;
                 }
 
-                if (totalPushed >= remainingOps) {
+                if (totalPushed >= cpuCopyBudget) {
                     if (leftover > 0) {
                         ParallelBatchCpuHelper.reinject(result, leftover, inv);
                         leftover = 0;
                     }
                     if (dirty) markDirty.run();
-                    return totalPushed;
+                    return BatchRunResult.fromDispatchedCopies(totalPushed);
                 }
             }
 
@@ -165,6 +173,15 @@ public final class BatchExecutor {
         }
 
         if (dirty) markDirty.run();
-        return totalPushed;
+        return BatchRunResult.fromDispatchedCopies(totalPushed);
+    }
+
+    public record BatchRunResult(int dispatchedCopies, int consumedCpuOps) {
+        public static final BatchRunResult EMPTY = new BatchRunResult(0, 0);
+
+        static BatchRunResult fromDispatchedCopies(int dispatchedCopies) {
+            if (dispatchedCopies <= 0) return EMPTY;
+            return new BatchRunResult(dispatchedCopies, BatchCpuAccounting.cpuOpsForCopies(dispatchedCopies));
+        }
     }
 }
