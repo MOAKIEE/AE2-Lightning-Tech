@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadDeviceWorkbenchBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
@@ -158,6 +159,14 @@ public final class ModBlockEntities {
                             ModFumos.MOAKIEE_FUMO.get(),
                             ModFumos.CYSTRYSU_FUMO.get(),
                             ModFumos.PIGMEE_FUMO.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadDeviceWorkbenchBlockEntity>>
+            OVERLOAD_DEVICE_WORKBENCH = BLOCK_ENTITY_TYPES.register(
+                    "overload_device_workbench",
+                    () -> BlockEntityType.Builder.of(
+                            OverloadDeviceWorkbenchBlockEntity::new,
+                            ModBlocks.OVERLOAD_DEVICE_WORKBENCH.get())
                             .build(null));
 
     private ModBlockEntities() {

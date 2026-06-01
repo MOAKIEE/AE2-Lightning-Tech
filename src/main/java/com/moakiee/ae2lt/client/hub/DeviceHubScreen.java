@@ -1,0 +1,593 @@
+package com.moakiee.ae2lt.client.hub;
+
+import java.util.List;
+import java.util.Locale;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.world.entity.player.Inventory;
+import net.neoforged.neoforge.network.PacketDistributor;
+
+import com.moakiee.ae2lt.menu.hub.DeviceHubMenu;
+import com.moakiee.ae2lt.menu.hub.DeviceHubDisplayRules;
+import com.moakiee.ae2lt.network.hub.DeviceHubActionPacket;
+
+/**
+ * Unified device hub screen — tabs for 4 armor pieces + railgun.
+ * Pure code-drawn UI (no texture files).
+ */
+public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
+
+    // ── Colors (spec Appendix C) ──
+    private static final int BG_DEEP = 0xFF1E1E1E;
+    private static final int BG_LIGHT = 0xFF313131;
+    private static final int HIGHLIGHT_GOLD = 0xFFF6D365;
+    private static final int ENERGY_GREEN = 0xFF36B65C;
+    private static final int FLUX_ONLINE = 0xFF36B65C;
+    private static final int FLUX_MISSING = 0xFFFFAA00;
+    private static final int TAB_CURRENT = 0xFFF6D365;
+    private static final int TAB_DISABLED = 0xFF555555;
+    private static final int TEXT_PRIMARY = 0xFFE0E0E0;
+    private static final int TEXT_SECONDARY = 0xFF8B8B8B;
+    private static final int WARNING_RED = 0xFFFF6060;
+
+    // ── Layout constants ──
+    private static final int TAB_COUNT = 5;
+    private static final int TAB_WIDTH = 44;
+    private static final int TAB_HEIGHT = 16;
+    private static final int TAB_GAP = 2;
+    private static final int TAB_Y = 4;
+
+    private static final int STATUS_Y = 24;
+    private static final int ENERGY_BAR_Y = 64;
+    private static final int STATE_LINE_Y = 84;
+    private static final int MODULES_Y = 108;
+    private static final int MODULE_ROW_H = 14;
+    private static final int BAR_WIDTH = 180;
+    private static final int BAR_HEIGHT = 8;
+    private static final int TOGGLE_W = 30;
+    private static final int TOGGLE_H = 12;
+    private static final int MODULE_CONFIG_RESERVED_H = 48;
+    private static final int CONFIG_BUTTON_W = 56;
+    private static final int CONFIG_BUTTON_H = 12;
+
+    private static final String[] TAB_LABEL_KEYS = {
+            "ae2lt.device_hub.tab.helmet",
+            "ae2lt.device_hub.tab.chestplate",
+            "ae2lt.device_hub.tab.leggings",
+            "ae2lt.device_hub.tab.boots",
+            "ae2lt.device_hub.tab.railgun"
+    };
+    private static final String[] TAB_REQUIRED_KEYS = {
+            "ae2lt.device_hub.tab.required.helmet",
+            "ae2lt.device_hub.tab.required.chestplate",
+            "ae2lt.device_hub.tab.required.leggings",
+            "ae2lt.device_hub.tab.required.boots",
+            "ae2lt.device_hub.tab.required.railgun"
+    };
+
+    private int scrollOffset = 0;
+
+    public DeviceHubScreen(DeviceHubMenu menu, Inventory inv, Component title) {
+        super(menu, inv, title);
+        this.imageWidth = 240;
+        this.imageHeight = 220;
+        this.inventoryLabelY = this.imageHeight + 100; // hide it
+    }
+
+    @Override
+    protected void renderBg(GuiGraphics gfx, float partialTick, int mouseX, int mouseY) {
+        int x = leftPos;
+        int y = topPos;
+        // Outer dark border
+        gfx.fill(x, y, x + imageWidth, y + imageHeight, BG_DEEP);
+        // Inner panel
+        gfx.fill(x + 2, y + 2, x + imageWidth - 2, y + imageHeight - 2, BG_LIGHT);
+    }
+
+    @Override
+    public void render(GuiGraphics gfx, int mouseX, int mouseY, float partialTick) {
+        super.render(gfx, mouseX, mouseY, partialTick);
+
+        int x = leftPos + 8;
+        int y = topPos;
+
+        int selectedTab = menu.getSelectedTab();
+        int tabMask = menu.getTabAvailability();
+        boolean railgunTab = selectedTab == DeviceHubMenu.TAB_RAILGUN;
+        int statusLineY = STATE_LINE_Y;
+        int modulesY = modulesY(railgunTab);
+
+        // ── Tab bar ──
+        renderTabBar(gfx, leftPos + 8, topPos + TAB_Y, selectedTab, tabMask);
+
+        // ── Separator ──
+        gfx.fill(leftPos + 6, topPos + TAB_Y + TAB_HEIGHT + 2, leftPos + imageWidth - 6, topPos + TAB_Y + TAB_HEIGHT + 3, BG_DEEP);
+
+        // ── Check if device available for current tab ──
+        boolean hasDevice = (tabMask & (1 << selectedTab)) != 0;
+        if (!hasDevice) {
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.no_device"), x, topPos + STATUS_Y, TEXT_SECONDARY, false);
+            renderTooltip(gfx, mouseX, mouseY);
+            return;
+        }
+
+        // ── Device name ──
+        String deviceName = menu.getDeviceName();
+        if (!deviceName.isEmpty()) {
+            gfx.drawString(font, Component.literal(deviceName), x, topPos + STATUS_Y, TEXT_PRIMARY, false);
+        }
+
+        // ── Binding ──
+        String boundDim = menu.getBoundDim();
+        boolean gridReachable = menu.isGridReachable();
+        if (!boundDim.isEmpty()) {
+            int bindColor = gridReachable ? FLUX_ONLINE : WARNING_RED;
+            gfx.drawString(font, Component.translatable(
+                            gridReachable
+                                    ? "ae2lt.device_hub.ap.bound.reachable"
+                                    : "ae2lt.device_hub.ap.bound.unreachable",
+                            boundDim),
+                    x, topPos + STATUS_Y + 12, bindColor, false);
+        } else {
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.ap.unbound"), x, topPos + STATUS_Y + 12, TEXT_SECONDARY, false);
+        }
+
+        // ── AppFlux ──
+        boolean appFlux = menu.isAppFluxOnline();
+        int fluxColor = appFlux ? FLUX_ONLINE : FLUX_MISSING;
+        gfx.drawString(font, Component.translatable(
+                        appFlux ? "ae2lt.device_hub.appflux.online" : "ae2lt.device_hub.appflux.missing"),
+                x, topPos + STATUS_Y + 24, fluxColor, false);
+
+        // ── Separator ──
+        gfx.fill(leftPos + 6, topPos + ENERGY_BAR_Y - 4, leftPos + imageWidth - 6, topPos + ENERGY_BAR_Y - 3, BG_DEEP);
+
+        // ── Energy bar ──
+        long stored = menu.getEnergyStored();
+        long capacity = menu.getEnergyCapacity();
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.energy"), x, topPos + ENERGY_BAR_Y - 1, TEXT_PRIMARY, false);
+        int barX = x + 30;
+        drawBar(gfx, barX, topPos + ENERGY_BAR_Y, BAR_WIDTH, BAR_HEIGHT,
+                capacity > 0 ? (double) stored / capacity : 0, ENERGY_GREEN);
+        String energyText = formatEnergy(stored) + " / " + formatEnergy(capacity) + " FE";
+        gfx.drawString(font, Component.literal(energyText), barX + BAR_WIDTH + 4, topPos + ENERGY_BAR_Y, TEXT_SECONDARY, false);
+
+        // ── Status line ──
+        boolean powered = menu.isPowered();
+        Component statusText;
+        int statusColor;
+        if (!railgunTab) {
+            String statusKey = DeviceHubDisplayRules.armorStatusKey(
+                    menu.hasCore(),
+                    powered);
+            statusText = Component.translatable(statusKey);
+            statusColor = statusColor(statusKey);
+        } else if (!powered) {
+            statusText = Component.translatable("ae2lt.device_hub.status.unpowered");
+            statusColor = FLUX_MISSING;
+        } else {
+            statusText = Component.translatable("ae2lt.device_hub.status.normal");
+            statusColor = FLUX_ONLINE;
+        }
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.status.line", statusText), x, topPos + statusLineY, statusColor, false);
+
+        // ── Separator ──
+        gfx.fill(leftPos + 6, topPos + modulesY - 4, leftPos + imageWidth - 6, topPos + modulesY - 3, BG_DEEP);
+
+        // ── Module list ──
+        List<String> moduleNameKeys = menu.getModuleNameKeys();
+        List<Integer> moduleCounts = menu.getModuleCounts();
+        List<Integer> moduleCooldowns = menu.getModuleCooldowns();
+        List<Boolean> moduleEnabled = menu.getModuleEnabled();
+        List<Boolean> moduleActive = menu.getModuleActive();
+        int moduleCount = DeviceHubDisplayRules.countModuleUnits(moduleCounts);
+        int moduleSlotCount = menu.getModuleSlotCount();
+
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.modules", moduleCount, moduleSlotCount),
+                x, topPos + modulesY, TEXT_PRIMARY, false);
+
+        int moduleListY = moduleListY(railgunTab);
+        int maxVisible = visibleModuleRows(railgunTab, moduleListY);
+        scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNameKeys.size(), maxVisible);
+        int selectedModuleIndex = menu.getSelectedModuleIndex();
+        for (int i = 0; i < Math.min(moduleNameKeys.size(), maxVisible); i++) {
+            int idx = i + scrollOffset;
+            if (idx >= moduleNameKeys.size()) break;
+
+            int rowY = moduleListY + i * MODULE_ROW_H;
+            if (!railgunTab && idx == selectedModuleIndex) {
+                gfx.fill(x - 2, rowY - 2, leftPos + imageWidth - 6, rowY + MODULE_ROW_H - 2, BG_DEEP);
+            }
+            boolean enabled = idx < moduleEnabled.size() && moduleEnabled.get(idx);
+            boolean active = idx < moduleActive.size() && moduleActive.get(idx);
+            int count = idx < moduleCounts.size() ? moduleCounts.get(idx) : 1;
+
+            // Module name
+            gfx.drawString(font, moduleName(moduleNameKeys.get(idx), count), x, rowY, TEXT_PRIMARY, false);
+
+            // Toggle button (only for armor modules, not railgun)
+            if (!railgunTab) {
+                Component stateLabel = Component.translatable(DeviceHubDisplayRules.moduleStateKey(enabled, active));
+                int cooldown = idx < moduleCooldowns.size() ? moduleCooldowns.get(idx) : 0;
+                Component stateLine = cooldown > 0
+                        ? Component.translatable(
+                                "ae2lt.device_hub.module.state_cooldown",
+                                stateLabel,
+                                (cooldown + 19) / 20)
+                        : stateLabel;
+                int stateTextX = leftPos + imageWidth - 56 - font.width(stateLine);
+                gfx.drawString(font, stateLine, stateTextX, rowY, TEXT_SECONDARY, false);
+                int toggleX = leftPos + imageWidth - 48;
+                drawToggleButton(gfx, toggleX, rowY - 1, enabled);
+            }
+        }
+
+        if (!railgunTab) {
+            int configY = moduleListY + Math.min(moduleNameKeys.size(), maxVisible) * MODULE_ROW_H + 8;
+            renderModuleConfig(gfx, x, configY);
+        }
+
+        // ── Railgun settings toggles ──
+        if (railgunTab) {
+            int toggleY = moduleListY + Math.min(moduleNameKeys.size(), maxVisible) * MODULE_ROW_H + 8;
+            boolean terrain = menu.isTerrainDestruction();
+            boolean terrainAllowed = menu.isTerrainDestructionAllowed();
+            boolean pvp = menu.isPvpLock();
+
+            gfx.fill(leftPos + 6, toggleY - 4, leftPos + imageWidth - 6, toggleY - 3, BG_DEEP);
+            gfx.drawString(font, Component.translatable("ae2lt.device_hub.settings"), x, toggleY, TEXT_PRIMARY, false);
+            toggleY += 14;
+
+            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.terrain"), terrain, terrainAllowed ? 0xFFCC4444 : TAB_DISABLED);
+            toggleY += MODULE_ROW_H + 2;
+            drawSettingRow(gfx, x, toggleY, Component.translatable("ae2lt.device_hub.setting.pvp_lock"), pvp, 0xFF4488CC);
+        }
+
+        // ── Bottom hint ──
+        gfx.drawString(font, Component.translatable("ae2lt.device_hub.workbench_hint"),
+                x, topPos + imageHeight - 14, TEXT_SECONDARY, false);
+
+        // ── Tooltips ──
+        renderTabTooltips(gfx, mouseX, mouseY, leftPos + 8, topPos + TAB_Y, tabMask);
+        renderTooltip(gfx, mouseX, mouseY);
+    }
+
+    @Override
+    protected void renderLabels(GuiGraphics gfx, int mouseX, int mouseY) {
+        gfx.drawString(this.font, Component.translatable("ae2lt.device_hub.title"), this.titleLabelX, this.titleLabelY, TEXT_PRIMARY, false);
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        this.titleLabelX = 8;
+        this.titleLabelY = -10; // hidden; we draw our own
+    }
+
+    // ── Mouse interaction ──
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (button != 0) return super.mouseClicked(mouseX, mouseY, button);
+
+        int tabMask = menu.getTabAvailability();
+        int selectedTab = menu.getSelectedTab();
+
+        // Check tab clicks
+        for (int i = 0; i < TAB_COUNT; i++) {
+            int tx = leftPos + 8 + i * (TAB_WIDTH + TAB_GAP);
+            int ty = topPos + TAB_Y;
+            if (mouseX >= tx && mouseX <= tx + TAB_WIDTH && mouseY >= ty && mouseY <= ty + TAB_HEIGHT) {
+                if ((tabMask & (1 << i)) != 0 && i != selectedTab) {
+                    PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                            DeviceHubActionPacket.ACTION_SELECT_TAB, i));
+                    playClick();
+                }
+                return true;
+            }
+        }
+
+        // Check module toggle clicks (armor only)
+        if (selectedTab != DeviceHubMenu.TAB_RAILGUN) {
+            List<String> moduleNames = menu.getModuleNameKeys();
+            int moduleListY = moduleListY(false);
+            int maxVisible = visibleModuleRows(false, moduleListY);
+            scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNames.size(), maxVisible);
+            int configY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8;
+            if (mouseClickedModuleConfig(mouseX, mouseY, configY)) {
+                playClick();
+                return true;
+            }
+            for (int i = 0; i < Math.min(moduleNames.size(), maxVisible); i++) {
+                int idx = i + scrollOffset;
+                if (idx >= moduleNames.size()) break;
+                int rowY = moduleListY + i * MODULE_ROW_H - 1;
+                int toggleX = leftPos + imageWidth - 48;
+                if (mouseX >= toggleX && mouseX <= toggleX + TOGGLE_W && mouseY >= rowY && mouseY <= rowY + TOGGLE_H) {
+                    PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                            DeviceHubActionPacket.ACTION_TOGGLE_MODULE, idx));
+                    playClick();
+                    return true;
+                }
+                if (mouseX >= leftPos + 8 && mouseX <= leftPos + imageWidth - 8
+                        && mouseY >= rowY && mouseY <= rowY + MODULE_ROW_H) {
+                    PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                            DeviceHubActionPacket.ACTION_SELECT_MODULE, idx));
+                    playClick();
+                    return true;
+                }
+            }
+        }
+
+        // Check railgun setting toggles
+        if (selectedTab == DeviceHubMenu.TAB_RAILGUN) {
+            List<String> moduleNames = menu.getModuleNameKeys();
+            int moduleListY = moduleListY(true);
+            int maxVisible = visibleModuleRows(true, moduleListY);
+            scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNames.size(), maxVisible);
+            int toggleY = moduleListY + Math.min(moduleNames.size(), maxVisible) * MODULE_ROW_H + 8 + 14;
+            int toggleX = leftPos + imageWidth - 48;
+
+            if (mouseX >= toggleX && mouseX <= toggleX + TOGGLE_W) {
+                if (mouseY >= toggleY && mouseY <= toggleY + TOGGLE_H) {
+                    PacketDistributor.sendToServer(new DeviceHubActionPacket(DeviceHubActionPacket.ACTION_TOGGLE_TERRAIN, 0));
+                    playClick();
+                    return true;
+                }
+                toggleY += MODULE_ROW_H + 2;
+                if (mouseY >= toggleY && mouseY <= toggleY + TOGGLE_H) {
+                    PacketDistributor.sendToServer(new DeviceHubActionPacket(DeviceHubActionPacket.ACTION_TOGGLE_PVP, 0));
+                    playClick();
+                    return true;
+                }
+            }
+        }
+
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        // Tab / Shift+Tab to switch tabs
+        if (keyCode == 258) { // GLFW_KEY_TAB
+            int dir = (modifiers & 1) != 0 ? -1 : 1; // shift = backward
+            cycleTab(dir);
+            return true;
+        }
+        // Left/Right arrow keys
+        if (keyCode == 263) { // LEFT
+            cycleTab(-1);
+            return true;
+        }
+        if (keyCode == 262) { // RIGHT
+            cycleTab(1);
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        List<String> moduleNames = menu.getModuleNameKeys();
+        boolean railgunTab = menu.getSelectedTab() == DeviceHubMenu.TAB_RAILGUN;
+        int moduleListY = moduleListY(railgunTab);
+        int maxVisible = visibleModuleRows(railgunTab, moduleListY);
+        if (scrollY > 0 && scrollOffset > 0) {
+            scrollOffset--;
+        } else if (scrollY < 0) {
+            scrollOffset++;
+        }
+        scrollOffset = DeviceHubDisplayRules.clampScrollOffset(scrollOffset, moduleNames.size(), maxVisible);
+        return true;
+    }
+
+    // ── Drawing helpers ──
+
+    private void renderTabBar(GuiGraphics gfx, int startX, int y, int selected, int tabMask) {
+        for (int i = 0; i < TAB_COUNT; i++) {
+            int tx = startX + i * (TAB_WIDTH + TAB_GAP);
+            boolean available = (tabMask & (1 << i)) != 0;
+            boolean active = i == selected;
+
+            int borderColor = active ? TAB_CURRENT : (available ? BG_DEEP : TAB_DISABLED);
+            int fillColor = active ? darken(TAB_CURRENT) : (available ? BG_LIGHT : darken(TAB_DISABLED));
+
+            // Border
+            gfx.fill(tx - 1, y - 1, tx + TAB_WIDTH + 1, y + TAB_HEIGHT + 1, borderColor);
+            // Fill
+            gfx.fill(tx, y, tx + TAB_WIDTH, y + TAB_HEIGHT, fillColor);
+
+            // Label
+            Component label = Component.translatable(TAB_LABEL_KEYS[i]);
+            int textW = font.width(label);
+            int textColor = active ? TEXT_PRIMARY : (available ? TEXT_SECONDARY : darken(TEXT_SECONDARY));
+            gfx.drawString(font, label,
+                    tx + (TAB_WIDTH - textW) / 2, y + 4, textColor, false);
+        }
+    }
+
+    private void renderTabTooltips(GuiGraphics gfx, int mouseX, int mouseY, int startX, int y, int tabMask) {
+        for (int i = 0; i < TAB_COUNT; i++) {
+            int tx = startX + i * (TAB_WIDTH + TAB_GAP);
+            boolean available = (tabMask & (1 << i)) != 0;
+            if (!available && mouseX >= tx && mouseX <= tx + TAB_WIDTH && mouseY >= y && mouseY <= y + TAB_HEIGHT) {
+                gfx.renderTooltip(font, Component.translatable(TAB_REQUIRED_KEYS[i]), mouseX, mouseY);
+                return;
+            }
+        }
+    }
+
+    private void drawBar(GuiGraphics gfx, int x, int y, int w, int h, double ratio, int fillColor) {
+        // Background
+        gfx.fill(x - 1, y - 1, x + w + 1, y + h + 1, 0xFF3C3C3C);
+        gfx.fill(x, y, x + w, y + h, BG_DEEP);
+        // Fill
+        if (ratio > 0) {
+            int filled = (int) (w * Math.min(1.0, ratio));
+            if (filled > 0) {
+                gfx.fill(x, y, x + filled, y + h, fillColor);
+            }
+        }
+    }
+
+    private void drawToggleButton(GuiGraphics gfx, int x, int y, boolean on) {
+        int borderColor = on ? ENERGY_GREEN : TAB_DISABLED;
+        int fillColor = on ? darken(ENERGY_GREEN) : 0xFF2A2A2A;
+        gfx.fill(x - 1, y - 1, x + TOGGLE_W + 1, y + TOGGLE_H + 1, borderColor);
+        gfx.fill(x, y, x + TOGGLE_W, y + TOGGLE_H, fillColor);
+        String text = on ? "ON" : "OFF";
+        int textColor = on ? TEXT_PRIMARY : TEXT_SECONDARY;
+        int tw = font.width(text);
+        gfx.drawString(font, Component.literal(text), x + (TOGGLE_W - tw) / 2, y + 2, textColor, false);
+    }
+
+    private void renderModuleConfig(GuiGraphics gfx, int x, int y) {
+        int count = moduleConfigCount();
+        if (count <= 0) {
+            return;
+        }
+        gfx.fill(leftPos + 6, y - 4, leftPos + imageWidth - 6, y - 3, BG_DEEP);
+        gfx.drawString(font, Component.translatable("ae2lt.overload_armor.screen.module_options"), x, y, TEXT_PRIMARY, false);
+        int rowY = y + 14;
+        for (int i = 0; i < Math.min(count, 2); i++) {
+            String value = menu.getModuleConfigValues().get(i);
+            boolean editable = menu.getModuleConfigEditable().get(i);
+            gfx.drawString(font, Component.literal("  ").append(moduleConfigLabel(i)), x, rowY + 1, TEXT_PRIMARY, false);
+            drawConfigValueButton(gfx, configButtonX(), rowY - 1, value, editable);
+            rowY += MODULE_ROW_H;
+        }
+    }
+
+    private void drawConfigValueButton(GuiGraphics gfx, int x, int y, String value, boolean editable) {
+        int borderColor = editable ? HIGHLIGHT_GOLD : TAB_DISABLED;
+        int fillColor = editable ? darken(HIGHLIGHT_GOLD) : 0xFF2A2A2A;
+        gfx.fill(x - 1, y - 1, x + CONFIG_BUTTON_W + 1, y + CONFIG_BUTTON_H + 1, borderColor);
+        gfx.fill(x, y, x + CONFIG_BUTTON_W, y + CONFIG_BUTTON_H, fillColor);
+        int textColor = editable ? TEXT_PRIMARY : TEXT_SECONDARY;
+        int tw = font.width(value);
+        gfx.drawString(font, Component.literal(value), x + (CONFIG_BUTTON_W - tw) / 2, y + 2, textColor, false);
+    }
+
+    private boolean mouseClickedModuleConfig(double mouseX, double mouseY, int y) {
+        int count = moduleConfigCount();
+        if (count <= 0) {
+            return false;
+        }
+        int rowY = y + 14;
+        int buttonX = configButtonX();
+        for (int i = 0; i < Math.min(count, 2); i++) {
+            boolean editable = menu.getModuleConfigEditable().get(i);
+            if (editable
+                    && mouseX >= buttonX
+                    && mouseX <= buttonX + CONFIG_BUTTON_W
+                    && mouseY >= rowY - 1
+                    && mouseY <= rowY - 1 + CONFIG_BUTTON_H) {
+                PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                        DeviceHubActionPacket.ACTION_CYCLE_MODULE_CONFIG, i));
+                return true;
+            }
+            rowY += MODULE_ROW_H;
+        }
+        return false;
+    }
+
+    private int moduleConfigCount() {
+        return Math.min(
+                Math.min(Math.min(menu.getModuleConfigKeys().size(), menu.getModuleConfigLabels().size()),
+                        menu.getModuleConfigValues().size()),
+                Math.min(menu.getModuleConfigKinds().size(), menu.getModuleConfigEditable().size()));
+    }
+
+    private int configButtonX() {
+        return leftPos + imageWidth - 70;
+    }
+
+    private Component moduleConfigLabel(int index) {
+        String key = menu.getModuleConfigKeys().get(index);
+        if (key != null && !key.isBlank()) {
+            return Component.translatable("ae2lt.overload_armor.config." + key);
+        }
+        return Component.literal(menu.getModuleConfigLabels().get(index));
+    }
+
+    private int visibleModuleRows(boolean railgunTab, int moduleListY) {
+        int reserved = railgunTab ? 30 : 30 + MODULE_CONFIG_RESERVED_H;
+        return Math.max(1, (topPos + imageHeight - reserved - moduleListY) / MODULE_ROW_H);
+    }
+
+    private static int modulesY(boolean railgunTab) {
+        return railgunTab ? STATE_LINE_Y + 24 : MODULES_Y;
+    }
+
+    private int moduleListY(boolean railgunTab) {
+        return topPos + modulesY(railgunTab) + 14;
+    }
+
+    private static Component moduleName(String nameKey, int count) {
+        Component name = Component.translatable(nameKey);
+        if (count > 1) {
+            return Component.translatable("ae2lt.device_hub.module.counted", name, count);
+        }
+        return Component.literal("  ").append(name);
+    }
+
+    private void drawSettingRow(GuiGraphics gfx, int x, int y, Component label, boolean on, int onColor) {
+        gfx.drawString(font, Component.literal("  ").append(label), x, y + 1, TEXT_PRIMARY, false);
+        int toggleX = leftPos + imageWidth - 48;
+        int borderColor = on ? onColor : TAB_DISABLED;
+        int fillColor = on ? darken(onColor) : 0xFF2A2A2A;
+        gfx.fill(toggleX - 1, y - 1, toggleX + TOGGLE_W + 1, y + TOGGLE_H + 1, borderColor);
+        gfx.fill(toggleX, y, toggleX + TOGGLE_W, y + TOGGLE_H, fillColor);
+        String text = on ? "ON" : "OFF";
+        int textColor = on ? TEXT_PRIMARY : TEXT_SECONDARY;
+        int tw = font.width(text);
+        gfx.drawString(font, Component.literal(text), toggleX + (TOGGLE_W - tw) / 2, y + 2, textColor, false);
+    }
+
+    private void cycleTab(int dir) {
+        int current = menu.getSelectedTab();
+        int tabMask = menu.getTabAvailability();
+        for (int attempt = 0; attempt < TAB_COUNT; attempt++) {
+            current = (current + dir + TAB_COUNT) % TAB_COUNT;
+            if ((tabMask & (1 << current)) != 0) {
+                PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                        DeviceHubActionPacket.ACTION_SELECT_TAB, current));
+                playClick();
+                return;
+            }
+        }
+    }
+
+    private void playClick() {
+        if (minecraft != null && minecraft.getSoundManager() != null) {
+            minecraft.getSoundManager().play(
+                    SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK.value(), 1.0F));
+        }
+    }
+
+    private static int statusColor(String statusKey) {
+        return switch (statusKey) {
+            case "ae2lt.device_hub.status.missing_core",
+                    "ae2lt.device_hub.status.unpowered" -> FLUX_MISSING;
+            default -> FLUX_ONLINE;
+        };
+    }
+
+    private static int darken(int argb) {
+        int a = argb >>> 24;
+        int r = (int) (((argb >> 16) & 0xFF) * 0.45);
+        int g = (int) (((argb >> 8) & 0xFF) * 0.45);
+        int b = (int) ((argb & 0xFF) * 0.45);
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static String formatEnergy(long value) {
+        if (value >= 1_000_000_000) return String.format(Locale.ROOT, "%.1fG", value / 1_000_000_000.0);
+        if (value >= 1_000_000) return String.format(Locale.ROOT, "%.1fM", value / 1_000_000.0);
+        if (value >= 1_000) return String.format(Locale.ROOT, "%.1fk", value / 1_000.0);
+        return String.valueOf(value);
+    }
+}

@@ -1,6 +1,15 @@
 package com.moakiee.ae2lt.network;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.network.hub.DeviceHubActionPacket;
+import com.moakiee.ae2lt.network.hub.DeviceHubSyncPacket;
+import com.moakiee.ae2lt.network.hub.OpenDeviceHubPacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamChainFxPacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamModePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamTogglePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunBeamUpdatePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunFirePacket;
+import com.moakiee.ae2lt.network.railgun.RailgunRecoilFxPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -67,6 +76,61 @@ public final class NetworkInit {
                 FrequencyResponsePacket.TYPE,
                 FrequencyResponsePacket.STREAM_CODEC,
                 FrequencyResponsePacket::handle);
+        registrar.playToClient(
+                ArmorSubmoduleActivePacket.TYPE,
+                ArmorSubmoduleActivePacket.STREAM_CODEC,
+                ArmorSubmoduleActivePacket::handle);
+        registrar.playToClient(
+                FlightInertiaSyncPacket.TYPE,
+                FlightInertiaSyncPacket.STREAM_CODEC,
+                FlightInertiaSyncPacket::handle);
+
+        // Railgun: C→S (RailgunOpenGuiPacket removed — replaced by OpenDeviceHubPacket)
+        registrar.playToServer(
+                RailgunBeamTogglePacket.TYPE,
+                RailgunBeamTogglePacket.STREAM_CODEC,
+                RailgunBeamTogglePacket::handle);
+        registrar.playToServer(
+                RailgunBeamModePacket.TYPE,
+                RailgunBeamModePacket.STREAM_CODEC,
+                RailgunBeamModePacket::handle);
+        // Railgun: S→C
+        registrar.playToClient(
+                RailgunFirePacket.TYPE,
+                RailgunFirePacket.STREAM_CODEC,
+                RailgunFirePacket::handle);
+        registrar.playToClient(
+                RailgunBeamUpdatePacket.TYPE,
+                RailgunBeamUpdatePacket.STREAM_CODEC,
+                RailgunBeamUpdatePacket::handle);
+        registrar.playToClient(
+                RailgunBeamChainFxPacket.TYPE,
+                RailgunBeamChainFxPacket.STREAM_CODEC,
+                RailgunBeamChainFxPacket::handle);
+        registrar.playToClient(
+                RailgunRecoilFxPacket.TYPE,
+                RailgunRecoilFxPacket.STREAM_CODEC,
+                RailgunRecoilFxPacket::handle);
+
+        registrar.playToServer(
+                DashPacket.TYPE,
+                DashPacket.STREAM_CODEC,
+                DashPacket::handle);
+
+        // Device Hub: C→S
+        registrar.playToServer(
+                OpenDeviceHubPacket.TYPE,
+                OpenDeviceHubPacket.STREAM_CODEC,
+                OpenDeviceHubPacket::handle);
+        registrar.playToServer(
+                DeviceHubActionPacket.TYPE,
+                DeviceHubActionPacket.STREAM_CODEC,
+                DeviceHubActionPacket::handle);
+        // Device Hub: S→C
+        registrar.playToClient(
+                DeviceHubSyncPacket.TYPE,
+                DeviceHubSyncPacket.STREAM_CODEC,
+                DeviceHubSyncPacket::handle);
     }
 
     public static ResourceLocation id(String path) {

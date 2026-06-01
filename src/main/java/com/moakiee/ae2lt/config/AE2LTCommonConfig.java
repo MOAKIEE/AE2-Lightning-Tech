@@ -158,6 +158,59 @@ public final class AE2LTCommonConfig {
         return VALUES.pigmeeFumoGiftOnFirstJoin.get();
     }
 
+    public static int overloadArmorCleansePeriodTicks() { return VALUES.overloadArmorCleansePeriodTicks.get(); }
+    public static int overloadArmorSaturationCheckIntervalTicks() { return VALUES.overloadArmorSaturationCheckIntervalTicks.get(); }
+    public static double overloadArmorUnderwaterDigMultiplier() { return VALUES.overloadArmorUnderwaterDigMultiplier.get(); }
+    public static double overloadArmorAirborneDigMultiplier() { return VALUES.overloadArmorAirborneDigMultiplier.get(); }
+    public static boolean overloadArmorPhaseFlightEnabled() { return VALUES.overloadArmorPhaseFlightEnabled.get(); }
+    public static double overloadArmorPhaseFlightSpeedMultiplier() { return VALUES.overloadArmorPhaseFlightSpeedMultiplier.get(); }
+    public static long overloadArmorPassiveHvPerTick() { return VALUES.overloadArmorPassiveHvPerTick.get(); }
+    public static long overloadArmorFlightHvPerTick() { return VALUES.overloadArmorFlightHvPerTick.get(); }
+    public static long overloadArmorPhaseFlightEhvPerTick() { return VALUES.overloadArmorPhaseFlightEhvPerTick.get(); }
+    public static long overloadArmorDashHvCost() { return VALUES.overloadArmorDashHvCost.get(); }
+    public static long overloadArmorReflectHvPerDamage() { return VALUES.overloadArmorReflectHvPerDamage.get(); }
+    public static long overloadArmorMitigationHvPerDamage() { return VALUES.overloadArmorMitigationHvPerDamage.get(); }
+    public static long overloadArmorPhaseShieldEhvPerDamage() { return VALUES.overloadArmorPhaseShieldEhvPerDamage.get(); }
+    public static long overloadArmorCleanseHvPerEffect() { return VALUES.overloadArmorCleanseHvPerEffect.get(); }
+    public static long overloadArmorSaturationHvCost() { return VALUES.overloadArmorSaturationHvCost.get(); }
+    public static long overloadArmorDigAffinityHvPerUse() { return VALUES.overloadArmorDigAffinityHvPerUse.get(); }
+    public static long overloadArmorUndyingEhvCost() { return VALUES.overloadArmorUndyingEhvCost.get(); }
+
+    // ── Railgun: damage (per-tier base + beam settle, HV/EHV beam split) ──────
+    public static int railgunBeamHvDamagePerSettle() { return VALUES.railgunBeamHvDamagePerSettle.get(); }
+    public static int railgunBeamEhvDamagePerSettle() { return VALUES.railgunBeamEhvDamagePerSettle.get(); }
+    public static double railgunBeamHvBypass() { return VALUES.railgunBeamHvBypass.get(); }
+    public static double railgunBeamEhvBypass() { return VALUES.railgunBeamEhvBypass.get(); }
+    public static int railgunBaseDamageEhv1() { return VALUES.railgunBaseDamageEhv1.get(); }
+    public static int railgunBaseDamageEhv2() { return VALUES.railgunBaseDamageEhv2.get(); }
+    public static int railgunBaseDamageEhv3() { return VALUES.railgunBaseDamageEhv3.get(); }
+    public static double railgunChargedBypass() { return VALUES.railgunChargedBypass.get(); }
+
+    // ── Railgun: FE energy + lightning ammo ───────────────────────────────────
+    public static long railgunBeamFeCostPerSettle() { return VALUES.railgunBeamFeCostPerSettle.get(); }
+    public static long railgunFeCostTier1() { return VALUES.railgunFeCostTier1.get(); }
+    public static long railgunFeCostTier2() { return VALUES.railgunFeCostTier2.get(); }
+    public static long railgunFeCostTier3() { return VALUES.railgunFeCostTier3.get(); }
+    public static int railgunBeamHvCostInterval() { return VALUES.railgunBeamHvCostInterval.get(); }
+    public static long railgunBeamEhvCostPerSettle() { return VALUES.railgunBeamEhvCostPerSettle.get(); }
+    public static long railgunEhvCostTier1() { return VALUES.railgunEhvCostTier1.get(); }
+    public static long railgunEhvCostTier2() { return VALUES.railgunEhvCostTier2.get(); }
+    public static long railgunEhvCostTier3() { return VALUES.railgunEhvCostTier3.get(); }
+    public static long railgunBufferCapacity() { return VALUES.railgunBufferCapacity.get(); }
+
+    // ── Railgun: PvP / terrain switches and budget ────────────────────────────
+    public static boolean railgunDamagePlayers() { return VALUES.railgunDamagePlayers.get(); }
+    public static boolean railgunParalysisOnPlayers() { return VALUES.railgunParalysisOnPlayers.get(); }
+    public static boolean railgunTerrainDestructionEnabled() { return VALUES.railgunTerrainDestructionEnabled.get(); }
+    public static boolean railgunTerrainDropItems() { return VALUES.railgunTerrainDropItems.get(); }
+    public static int railgunTerrainBlocksPerTick() { return VALUES.railgunTerrainBlocksPerTick.get(); }
+
+    // ── Railgun: Overload Execution module ──────────────────────────────────
+    public static boolean overloadExecutionEnabled() { return VALUES.overloadExecutionEnabled.get(); }
+    public static int overloadExecutionDecayWindowTicks() { return VALUES.overloadExecutionDecayWindowTicks.get(); }
+    public static double overloadExecutionDecayPower() { return VALUES.overloadExecutionDecayPower.get(); }
+    public static int overloadExecutionMaxTracked() { return VALUES.overloadExecutionMaxTracked.get(); }
+
     private static final class Values {
         private final ModConfigSpec.IntValue configVersion;
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
@@ -195,6 +248,55 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
         private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
+
+        private final ModConfigSpec.IntValue overloadArmorCleansePeriodTicks;
+        private final ModConfigSpec.IntValue overloadArmorSaturationCheckIntervalTicks;
+        private final ModConfigSpec.DoubleValue overloadArmorUnderwaterDigMultiplier;
+        private final ModConfigSpec.DoubleValue overloadArmorAirborneDigMultiplier;
+        private final ModConfigSpec.BooleanValue overloadArmorPhaseFlightEnabled;
+        private final ModConfigSpec.DoubleValue overloadArmorPhaseFlightSpeedMultiplier;
+        private final ModConfigSpec.LongValue overloadArmorPassiveHvPerTick;
+        private final ModConfigSpec.LongValue overloadArmorFlightHvPerTick;
+        private final ModConfigSpec.LongValue overloadArmorPhaseFlightEhvPerTick;
+        private final ModConfigSpec.LongValue overloadArmorDashHvCost;
+        private final ModConfigSpec.LongValue overloadArmorReflectHvPerDamage;
+        private final ModConfigSpec.LongValue overloadArmorMitigationHvPerDamage;
+        private final ModConfigSpec.LongValue overloadArmorPhaseShieldEhvPerDamage;
+        private final ModConfigSpec.LongValue overloadArmorCleanseHvPerEffect;
+        private final ModConfigSpec.LongValue overloadArmorSaturationHvCost;
+        private final ModConfigSpec.LongValue overloadArmorDigAffinityHvPerUse;
+        private final ModConfigSpec.LongValue overloadArmorUndyingEhvCost;
+
+        // ── Railgun fields ────────────────────────────────────────────────
+        private final ModConfigSpec.IntValue railgunBeamHvDamagePerSettle;
+        private final ModConfigSpec.IntValue railgunBeamEhvDamagePerSettle;
+        private final ModConfigSpec.DoubleValue railgunBeamHvBypass;
+        private final ModConfigSpec.DoubleValue railgunBeamEhvBypass;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv1;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv2;
+        private final ModConfigSpec.IntValue railgunBaseDamageEhv3;
+        private final ModConfigSpec.DoubleValue railgunChargedBypass;
+        private final ModConfigSpec.LongValue railgunBeamFeCostPerSettle;
+        private final ModConfigSpec.LongValue railgunFeCostTier1;
+        private final ModConfigSpec.LongValue railgunFeCostTier2;
+        private final ModConfigSpec.LongValue railgunFeCostTier3;
+        private final ModConfigSpec.IntValue railgunBeamHvCostInterval;
+        private final ModConfigSpec.LongValue railgunBeamEhvCostPerSettle;
+        private final ModConfigSpec.LongValue railgunEhvCostTier1;
+        private final ModConfigSpec.LongValue railgunEhvCostTier2;
+        private final ModConfigSpec.LongValue railgunEhvCostTier3;
+        private final ModConfigSpec.LongValue railgunBufferCapacity;
+        private final ModConfigSpec.BooleanValue railgunDamagePlayers;
+        private final ModConfigSpec.BooleanValue railgunParalysisOnPlayers;
+        private final ModConfigSpec.BooleanValue railgunTerrainDestructionEnabled;
+        private final ModConfigSpec.BooleanValue railgunTerrainDropItems;
+        private final ModConfigSpec.IntValue railgunTerrainBlocksPerTick;
+
+        // Overload Execution (HP-record / decay model)
+        private final ModConfigSpec.BooleanValue overloadExecutionEnabled;
+        private final ModConfigSpec.IntValue overloadExecutionDecayWindowTicks;
+        private final ModConfigSpec.DoubleValue overloadExecutionDecayPower;
+        private final ModConfigSpec.IntValue overloadExecutionMaxTracked;
 
         private Values(ModConfigSpec.Builder builder) {
             configVersion = builder
@@ -338,6 +440,175 @@ public final class AE2LTCommonConfig {
             pigmeeFumoGiftOnFirstJoin = builder
                     .comment("Controls whether players receive a Pigmee Fumo as a gift on their first login.")
                     .define("giftOnFirstJoin", true);
+            builder.pop();
+
+            builder.push("overloadArmor");
+            builder.push("movement");
+            overloadArmorPhaseFlightEnabled = builder
+                    .comment("Master switch for phase flight.")
+                    .define("phaseFlightEnabled", true);
+            overloadArmorPhaseFlightSpeedMultiplier = builder
+                    .comment("Movement multiplier applied while phase flight is active.")
+                    .defineInRange("phaseFlightSpeedMultiplier", 0.35D, 0.0D, 4.0D);
+            builder.pop();
+
+            builder.push("defense");
+            overloadArmorCleansePeriodTicks = builder
+                    .comment("Ticks between automatic negative effect cleanse attempts.")
+                    .defineInRange("cleansePeriodTicks", 40, 1, 20 * 60 * 60);
+            builder.pop();
+
+            builder.push("utility");
+            overloadArmorSaturationCheckIntervalTicks = builder
+                    .comment("Ticks between saturation sustain checks.")
+                    .defineInRange("saturationCheckIntervalTicks", 20, 1, 20 * 60 * 60);
+            overloadArmorUnderwaterDigMultiplier = builder
+                    .comment("Break-speed multiplier applied by underwater dig affinity.")
+                    .defineInRange("underwaterDigMultiplier", 5.0D, 1.0D, 64.0D);
+            overloadArmorAirborneDigMultiplier = builder
+                    .comment("Break-speed multiplier applied by airborne dig affinity.")
+                    .defineInRange("airborneDigMultiplier", 5.0D, 1.0D, 64.0D);
+            builder.pop();
+
+            builder.push("lightningCosts");
+            overloadArmorPassiveHvPerTick = builder
+                    .comment("HV lightning consumed each tick per active normal armor module.")
+                    .defineInRange("passiveHvPerTick", 1L, 0L, Long.MAX_VALUE);
+            overloadArmorFlightHvPerTick = builder
+                    .comment("HV lightning consumed each tick while creative flight is active.")
+                    .defineInRange("flightHvPerTick", 2L, 0L, Long.MAX_VALUE);
+            overloadArmorPhaseFlightEhvPerTick = builder
+                    .comment("EHV lightning consumed each tick while phase flight is active.")
+                    .defineInRange("phaseFlightEhvPerTick", 1L, 0L, Long.MAX_VALUE);
+            overloadArmorDashHvCost = builder
+                    .comment("HV lightning consumed when dash triggers.")
+                    .defineInRange("dashHvCost", 16L, 0L, Long.MAX_VALUE);
+            overloadArmorReflectHvPerDamage = builder
+                    .comment("HV lightning consumed per reflected damage point.")
+                    .defineInRange("reflectHvPerDamage", 2L, 0L, Long.MAX_VALUE);
+            overloadArmorMitigationHvPerDamage = builder
+                    .comment("HV lightning consumed per damage point prevented by matrix shield.")
+                    .defineInRange("mitigationHvPerDamage", 1L, 0L, Long.MAX_VALUE);
+            overloadArmorPhaseShieldEhvPerDamage = builder
+                    .comment("EHV lightning consumed per damage point prevented by phase shield.")
+                    .defineInRange("phaseShieldEhvPerDamage", 1L, 0L, Long.MAX_VALUE);
+            overloadArmorCleanseHvPerEffect = builder
+                    .comment("HV lightning consumed per cleansed harmful effect.")
+                    .defineInRange("cleanseHvPerEffect", 8L, 0L, Long.MAX_VALUE);
+            overloadArmorSaturationHvCost = builder
+                    .comment("HV lightning consumed when saturation sustain restores hunger or saturation.")
+                    .defineInRange("saturationHvCost", 4L, 0L, Long.MAX_VALUE);
+            overloadArmorDigAffinityHvPerUse = builder
+                    .comment("HV lightning consumed when dig affinity corrects mining speed for one tick.")
+                    .defineInRange("digAffinityHvPerUse", 1L, 0L, Long.MAX_VALUE);
+            overloadArmorUndyingEhvCost = builder
+                    .comment("EHV lightning consumed by undying trigger before combo scaling.")
+                    .defineInRange("undyingEhvCost", 32L, 0L, Long.MAX_VALUE);
+            builder.pop();
+            builder.pop();
+
+            builder.push("railgun");
+            builder.push("damage");
+            railgunBeamHvDamagePerSettle = builder
+                    .comment("HV beam damage per 2-tick settle. Low base, no armor bypass — basic DPS ammo.")
+                    .defineInRange("beamHvDamagePerSettle", 10, 0, Integer.MAX_VALUE);
+            railgunBeamEhvDamagePerSettle = builder
+                    .comment("EHV beam damage per 2-tick settle. Higher base + strong armor bypass — anti-armor ammo.")
+                    .defineInRange("beamEhvDamagePerSettle", 30, 0, Integer.MAX_VALUE);
+            railgunBeamHvBypass = builder
+                    .comment("HV beam armor bypass (0.0 = fully blocked by armor, 1.0 = ignore armor).")
+                    .defineInRange("beamHvBypass", 0.0D, 0.0D, 1.0D);
+            railgunBeamEhvBypass = builder
+                    .comment("EHV beam armor bypass (0.0 = fully blocked by armor, 1.0 = ignore armor).")
+                    .defineInRange("beamEhvBypass", 0.8D, 0.0D, 1.0D);
+            railgunBaseDamageEhv1 = builder
+                    .comment("Charge tier 1 base damage.")
+                    .defineInRange("baseDamageEhv1", 100, 0, Integer.MAX_VALUE);
+            railgunBaseDamageEhv2 = builder
+                    .comment("Charge tier 2 base damage.")
+                    .defineInRange("baseDamageEhv2", 300, 0, Integer.MAX_VALUE);
+            railgunBaseDamageEhv3 = builder
+                    .comment("Charge tier 3 (max) base damage.")
+                    .defineInRange("baseDamageEhv3", 600, 0, Integer.MAX_VALUE);
+            railgunChargedBypass = builder
+                    .comment("Charged-shot armor bypass for all tiers (single dial — replaces per-tier 0.4/0.6/0.8).")
+                    .defineInRange("chargedBypass", 0.8D, 0.0D, 1.0D);
+            builder.pop();
+
+            builder.push("energy");
+            railgunBeamFeCostPerSettle = builder
+                    .comment("FE energy consumed per beam settle.")
+                    .defineInRange("beamFeCostPerSettle", 400L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier1 = builder
+                    .comment("FE energy consumed per tier-1 charged shot.")
+                    .defineInRange("feCostTier1", 8000L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier2 = builder
+                    .comment("FE energy consumed per tier-2 charged shot.")
+                    .defineInRange("feCostTier2", 40000L, 0L, Long.MAX_VALUE);
+            railgunFeCostTier3 = builder
+                    .comment("FE energy consumed per tier-3 (max) charged shot.")
+                    .defineInRange("feCostTier3", 200000L, 0L, Long.MAX_VALUE);
+            railgunBeamHvCostInterval = builder
+                    .comment("HV beam consumes 1 HV every N settles (settle = 2 ticks). N=8 means ~1.25 HV/sec.")
+                    .defineInRange("beamHvCostInterval", 8, 1, 64);
+            railgunBeamEhvCostPerSettle = builder
+                    .comment("EHV beam: EHV consumed per settle (each settle = 2 ticks). 1 = 10 EHV/sec sustained.")
+                    .defineInRange("beamEhvCostPerSettle", 1L, 0L, Long.MAX_VALUE);
+            railgunEhvCostTier1 = builder
+                    .comment("EHV consumed per tier-1 charged shot.")
+                    .defineInRange("ehvCostTier1", 32L, 0L, Long.MAX_VALUE);
+            railgunEhvCostTier2 = builder
+                    .comment("EHV consumed per tier-2 charged shot.")
+                    .defineInRange("ehvCostTier2", 96L, 0L, Long.MAX_VALUE);
+            railgunEhvCostTier3 = builder
+                    .comment("EHV consumed per tier-3 (max) charged shot.")
+                    .defineInRange("ehvCostTier3", 256L, 0L, Long.MAX_VALUE);
+            railgunBufferCapacity = builder
+                    .comment("Base FE stored in the railgun when no structural energy module is installed.",
+                            "Installing an energy module makes the railgun capacity equal to that module's capacity.")
+                    .defineInRange("bufferCapacity", 1_000_000L, 0L, Long.MAX_VALUE);
+            builder.pop();
+
+            builder.push("misc");
+            railgunDamagePlayers = builder
+                    .comment("Whether the railgun damages other players.")
+                    .define("damagePlayers", true);
+            railgunParalysisOnPlayers = builder
+                    .comment("Whether paralysis applies to players.")
+                    .define("paralysisOnPlayers", true);
+            builder.pop();
+
+            builder.push("terrain");
+            railgunTerrainDestructionEnabled = builder
+                    .comment("Master switch for railgun terrain destruction.",
+                            "When false, no railgun shot can break blocks even if the item setting is ON.")
+                    .define("enableTerrainDestruction", true);
+            railgunTerrainDropItems = builder
+                    .comment("Whether terrain destruction produces drops (drops auto-despawn after 60s).")
+                    .define("dropItems", false);
+            railgunTerrainBlocksPerTick = builder
+                    .comment("Block break budget per tick across all railgun terrain jobs.")
+                    .defineInRange("blocksPerTick", 200, 1, 8192);
+            builder.pop();
+
+            builder.push("overloadExecution");
+            overloadExecutionEnabled = builder
+                    .comment("Master switch for the Overload Execution module (EHv3-charged forced-kill).")
+                    .define("enabled", true);
+            overloadExecutionDecayWindowTicks = builder
+                    .comment("Decay window in ticks. After this many ticks since the last hit, the recorded HP fully resets to current HP.",
+                            "Default 1200 = 60 seconds.")
+                    .defineInRange("decayWindowTicks", 1200, 1, Integer.MAX_VALUE);
+            overloadExecutionDecayPower = builder
+                    .comment("Decay curve exponent (slow-start, fast-finish). recovery_fraction = (elapsed / window)^power.",
+                            "  1.0 = linear",
+                            "  2.0 = quadratic (default — early ticks barely heal, last ticks restore fast)",
+                            "  3.0 = cubic (even slower start)")
+                    .defineInRange("decayPower", 2.0D, 0.1D, 10.0D);
+            overloadExecutionMaxTracked = builder
+                    .comment("Maximum number of targets whose recorded HP is kept simultaneously on a single railgun.")
+                    .defineInRange("maxTracked", 8, 1, 64);
+            builder.pop();
             builder.pop();
         }
     }

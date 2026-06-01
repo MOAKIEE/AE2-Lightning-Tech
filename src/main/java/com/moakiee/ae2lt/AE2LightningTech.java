@@ -8,13 +8,16 @@ import com.moakiee.ae2lt.registry.ModItems;
 import com.moakiee.ae2lt.registry.ModAEKeyTypes;
 import com.moakiee.ae2lt.registry.ModFumos;
 import com.moakiee.ae2lt.registry.ModMenuTypes;
+import com.moakiee.ae2lt.registry.ModMobEffects;
 import com.moakiee.ae2lt.registry.ModRecipeTypes;
+import com.moakiee.ae2lt.registry.ModSounds;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.AE2LTConfigMigration;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
+import com.moakiee.ae2lt.blockentity.OverloadDeviceWorkbenchBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
@@ -43,11 +46,13 @@ import net.neoforged.fml.config.ModConfig;
 import net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
+import net.neoforged.neoforge.items.IItemHandler;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
+import appeng.api.features.GridLinkables;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
@@ -64,8 +69,11 @@ import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
 
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.MachineAdapterRegistry;
+import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.research.ResearchNoteGenerator;
 import com.moakiee.ae2lt.logic.research.ResearchNoteModulationHandler;
+import com.moakiee.ae2lt.overload.armor.ArmorEnergyBuffer;
+import com.moakiee.ae2lt.overload.armor.CelestweaveArmorMaterials;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
 
 import net.neoforged.neoforge.common.NeoForge;
@@ -98,6 +106,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.LIGHTNING_SIMULATION_CHAMBER);
                         output.accept(ModBlocks.LIGHTNING_ASSEMBLY_CHAMBER);
                         output.accept(ModBlocks.OVERLOAD_PROCESSING_FACTORY);
+                        output.accept(ModBlocks.OVERLOAD_DEVICE_WORKBENCH);
                         output.accept(ModBlocks.CRYSTAL_CATALYZER);
                         // 网络设备
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
@@ -147,12 +156,12 @@ public class AE2LightningTech {
                         output.accept(ModItems.THUNDERSTORM_CONDENSATE);
                         // 存储组件
                         output.accept(ModItems.LIGHTNING_ITEM_CELL_HOUSING);
+                        // 元件
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_I);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_II);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_III);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_IV);
                         output.accept(ModItems.LIGHTNING_STORAGE_COMPONENT_V);
-                        // 元件
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_I);
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_II);
                         output.accept(ModItems.LIGHTNING_CELL_COMPONENT_III);
@@ -167,6 +176,34 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
+                        // 苍穹织雷装备 + 模块
+                        output.accept(ModItems.OVERLOAD_MODULE_BASE);
+                        output.accept(ModItems.CELESTWEAVE_OCULUS);
+                        output.accept(ModItems.CELESTWEAVE_CORE);
+                        output.accept(ModItems.CELESTWEAVE_CONDUIT);
+                        output.accept(ModItems.CELESTWEAVE_STRIDE);
+                        output.accept(ModItems.ENERGY_MODULE_T1);
+                        output.accept(ModItems.ENERGY_MODULE_T2);
+                        output.accept(ModItems.ENERGY_MODULE_T3);
+                        output.accept(ModItems.ARMOR_SUBMODULE_NIGHT_VISION);
+                        output.accept(ModItems.ARMOR_SUBMODULE_WATER_BREATHING);
+                        output.accept(ModItems.ARMOR_SUBMODULE_REACH_EXTENSION);
+                        output.accept(ModItems.ARMOR_SUBMODULE_MATRIX_SHIELD);
+                        output.accept(ModItems.ARMOR_SUBMODULE_PHASE_SHIELD);
+                        output.accept(ModItems.ARMOR_SUBMODULE_REFLECT);
+                        output.accept(ModItems.ARMOR_SUBMODULE_UNDYING);
+                        output.accept(ModItems.ARMOR_SUBMODULE_DASH);
+                        output.accept(ModItems.ARMOR_SUBMODULE_FLIGHT);
+                        output.accept(ModItems.ARMOR_SUBMODULE_CLEANSE);
+                        output.accept(ModItems.ARMOR_SUBMODULE_SATURATION);
+                        output.accept(ModItems.ARMOR_SUBMODULE_DIG_AFFINITY);
+                        output.accept(ModItems.ARMOR_SUBMODULE_PHASE_FLIGHT);
+                        // 电磁炮 + 模块
+                        output.accept(ModItems.ELECTROMAGNETIC_RAILGUN);
+                        output.accept(ModItems.RAILGUN_MODULE_CORE);
+                        output.accept(ModItems.RAILGUN_MODULE_COMPUTE);
+                        output.accept(ModItems.RAILGUN_MODULE_ACCELERATION);
+                        output.accept(ModItems.RAILGUN_MODULE_OVERLOAD_EXECUTION);
                         // 水晶生长
                         output.accept(ModBlocks.FLAWLESS_BUDDING_OVERLOAD_CRYSTAL);
                         output.accept(ModBlocks.FLAWED_BUDDING_OVERLOAD_CRYSTAL);
@@ -189,11 +226,14 @@ public class AE2LightningTech {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITY_TYPES.register(modEventBus);
         ModEntities.ENTITY_TYPES.register(modEventBus);
+        CelestweaveArmorMaterials.ARMOR_MATERIALS.register(modEventBus);
         ModItems.ITEMS.register(modEventBus);
         ModMenuTypes.MENU_TYPES.register(modEventBus);
         ModRecipeTypes.RECIPE_SERIALIZERS.register(modEventBus);
         ModRecipeTypes.RECIPE_TYPES.register(modEventBus);
         ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        ModMobEffects.EFFECTS.register(modEventBus);
+        ModSounds.SOUND_EVENTS.register(modEventBus);
         CREATIVE_MODE_TABS.register(modEventBus);
         modEventBus.addListener(ModAEKeyTypes::register);
         modEventBus.addListener(this::registerCapabilities);
@@ -205,6 +245,16 @@ public class AE2LightningTech {
         NeoForge.EVENT_BUS.addListener(this::onServerTickPost);
         NeoForge.EVENT_BUS.register(new ResearchNoteModulationHandler());
     }
+
+    // Prevents automation from accessing the workbench inventory
+    private static final IItemHandler WORKBENCH_REJECTING_ITEM_HANDLER = new IItemHandler() {
+        @Override public int getSlots() { return 1; }
+        @Override public net.minecraft.world.item.ItemStack getStackInSlot(int slot) { return net.minecraft.world.item.ItemStack.EMPTY; }
+        @Override public net.minecraft.world.item.ItemStack insertItem(int slot, net.minecraft.world.item.ItemStack stack, boolean simulate) { return stack; }
+        @Override public net.minecraft.world.item.ItemStack extractItem(int slot, int amount, boolean simulate) { return net.minecraft.world.item.ItemStack.EMPTY; }
+        @Override public int getSlotLimit(int slot) { return 0; }
+        @Override public boolean isItemValid(int slot, net.minecraft.world.item.ItemStack stack) { return false; }
+    };
 
     private void registerCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlockEntity(
@@ -257,6 +307,24 @@ public class AE2LightningTech {
                 Capabilities.ItemHandler.BLOCK,
                 ModBlockEntities.CRYSTAL_CATALYZER.get(),
                 (blockEntity, side) -> blockEntity.getAutomationInventory());
+
+        event.registerBlockEntity(
+                Capabilities.ItemHandler.BLOCK,
+                ModBlockEntities.OVERLOAD_DEVICE_WORKBENCH.get(),
+                (blockEntity, side) -> WORKBENCH_REJECTING_ITEM_HANDLER);
+
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> RailgunEnergyBuffer.asEnergyStorage(stack),
+                ModItems.ELECTROMAGNETIC_RAILGUN.get());
+
+        event.registerItem(
+                Capabilities.EnergyStorage.ITEM,
+                (stack, context) -> ArmorEnergyBuffer.asEnergyStorage(stack),
+                ModItems.CELESTWEAVE_OCULUS.get(),
+                ModItems.CELESTWEAVE_CORE.get(),
+                ModItems.CELESTWEAVE_CONDUIT.get(),
+                ModItems.CELESTWEAVE_STRIDE.get());
 
         event.registerBlockEntity(
                 Capabilities.FluidHandler.BLOCK,
@@ -337,6 +405,11 @@ public class AE2LightningTech {
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOAD_PROCESSING_FACTORY.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.OVERLOAD_DEVICE_WORKBENCH.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
         event.registerBlockEntity(
@@ -523,6 +596,14 @@ public class AE2LightningTech {
                     null,
                     AtmosphericIonizerBlockEntity::serverTick);
 
+            var overloadDeviceWorkbenchBlock = ModBlocks.OVERLOAD_DEVICE_WORKBENCH.get();
+            var overloadDeviceWorkbenchBeType = ModBlockEntities.OVERLOAD_DEVICE_WORKBENCH.get();
+            overloadDeviceWorkbenchBlock.setBlockEntity(
+                    OverloadDeviceWorkbenchBlockEntity.class,
+                    overloadDeviceWorkbenchBeType,
+                    null,
+                    null);
+
             var crystalCatalyzerBlock = ModBlocks.CRYSTAL_CATALYZER.get();
             var crystalCatalyzerBeType = ModBlockEntities.CRYSTAL_CATALYZER.get();
             crystalCatalyzerBlock.setBlockEntity(
@@ -591,6 +672,9 @@ public class AE2LightningTech {
                     atmosphericIonizerBeType,
                     atmosphericIonizerBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    overloadDeviceWorkbenchBeType,
+                    overloadDeviceWorkbenchBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     crystalCatalyzerBeType,
                     crystalCatalyzerBlock.asItem());
 
@@ -641,6 +725,11 @@ public class AE2LightningTech {
 
             registerAppliedFluxInductionCardCompat();
             registerOverloadTntDispenseBehavior();
+
+            // Railgun: wireless link handler so AE2 wireless access points can bind it.
+            GridLinkables.register(
+                    ModItems.ELECTROMAGNETIC_RAILGUN.get(),
+                    com.moakiee.ae2lt.event.railgun.RailgunGridLinkHandler.INSTANCE);
 
         });
     }
@@ -701,6 +790,7 @@ public class AE2LightningTech {
         EjectModeRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
         ResearchNoteGenerator.onServerStopped();
+        com.moakiee.ae2lt.registry.ModDamageTypes.clearCache();
     }
 
     private void onServerTickPost(ServerTickEvent.Post event) {
