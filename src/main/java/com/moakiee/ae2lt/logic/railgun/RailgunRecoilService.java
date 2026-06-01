@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.logic.railgun;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -9,6 +10,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
 import com.moakiee.ae2lt.network.railgun.RailgunRecoilFxPacket;
+import com.moakiee.ae2lt.registry.ModItems;
 
 /**
  * Applies recoil to charged-fire only. Pushes the player backward + fires a
@@ -25,6 +27,7 @@ public final class RailgunRecoilService {
 
     public static void apply(ServerPlayer player, RailgunChargeTier tier) {
         if (tier == RailgunChargeTier.HV) return;
+        if (wearingFullCelestweaveSet(player)) return;
 
         double speed = switch (tier) {
             case EHV1 -> RailgunDefaults.RECOIL_SPEED_TIER1;
@@ -63,6 +66,13 @@ public final class RailgunRecoilService {
         player.getPersistentData().putLong(RECOIL_GRACE_TAG, level.getGameTime() + 60L);
 
         PacketDistributor.sendToPlayer(player, new RailgunRecoilFxPacket(pitchUp, tier.ordinal()));
+    }
+
+    private static boolean wearingFullCelestweaveSet(ServerPlayer player) {
+        return player.getItemBySlot(EquipmentSlot.HEAD).is(ModItems.CELESTWEAVE_OCULUS.get())
+                && player.getItemBySlot(EquipmentSlot.CHEST).is(ModItems.CELESTWEAVE_CORE.get())
+                && player.getItemBySlot(EquipmentSlot.LEGS).is(ModItems.CELESTWEAVE_CONDUIT.get())
+                && player.getItemBySlot(EquipmentSlot.FEET).is(ModItems.CELESTWEAVE_STRIDE.get());
     }
 
     public static boolean inRecoilGrace(ServerPlayer player) {
