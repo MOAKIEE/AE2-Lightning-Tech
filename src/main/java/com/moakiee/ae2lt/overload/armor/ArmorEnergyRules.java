@@ -2,9 +2,12 @@ package com.moakiee.ae2lt.overload.armor;
 
 public final class ArmorEnergyRules {
     public static final long BASE_CAPACITY_FE = 10_000_000L;
-    public static final long MODULE_T1_CAPACITY_FE = 100_000_000L;
-    public static final long MODULE_T2_CAPACITY_FE = 500_000_000L;
-    public static final long MODULE_T3_CAPACITY_FE = 2_000_000_000L;
+    public static final long MODULE_T1_CAPACITY_FE = 1_000_000_000L;
+    public static final long MODULE_T2_CAPACITY_FE = 5_000_000_000L;
+    public static final long MODULE_T3_CAPACITY_FE = 20_000_000_000L;
+    public static final long MODULE_T1_LEGACY_CAPACITY_FE = 100_000_000L;
+    public static final long MODULE_T2_LEGACY_CAPACITY_FE = 500_000_000L;
+    public static final long MODULE_T3_LEGACY_CAPACITY_FE = 2_000_000_000L;
 
     private ArmorEnergyRules() {
     }

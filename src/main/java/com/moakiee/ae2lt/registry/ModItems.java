@@ -275,19 +275,22 @@ public final class ModItems {
             "energy_module_t1",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.RARE),
-                    ArmorEnergyRules.MODULE_T1_CAPACITY_FE));
+                    ArmorEnergyRules.MODULE_T1_CAPACITY_FE,
+                    ArmorEnergyRules.MODULE_T1_LEGACY_CAPACITY_FE));
 
     public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T2 = ITEMS.register(
             "energy_module_t2",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
-                    ArmorEnergyRules.MODULE_T2_CAPACITY_FE));
+                    ArmorEnergyRules.MODULE_T2_CAPACITY_FE,
+                    ArmorEnergyRules.MODULE_T2_LEGACY_CAPACITY_FE));
 
     public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T3 = ITEMS.register(
             "energy_module_t3",
             () -> new ArmorEnergyModuleItem(
                     new Item.Properties().stacksTo(16).rarity(Rarity.EPIC).fireResistant(),
-                    ArmorEnergyRules.MODULE_T3_CAPACITY_FE));
+                    ArmorEnergyRules.MODULE_T3_CAPACITY_FE,
+                    ArmorEnergyRules.MODULE_T3_LEGACY_CAPACITY_FE));
 
     public static final DeferredItem<Item> OVERLOAD_MODULE_BASE =
             ITEMS.registerSimpleItem("overload_module_base", new Item.Properties());

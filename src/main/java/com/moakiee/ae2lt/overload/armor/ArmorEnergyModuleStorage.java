@@ -17,7 +17,7 @@ public final class ArmorEnergyModuleStorage {
         long capacity = 0L;
         for (ItemStack module : OverloadArmorState.loadModuleStacks(armor, registries)) {
             if (module.getItem() instanceof ArmorEnergyModuleItem energyModule) {
-                capacity = Math.max(capacity, energyModule.capacityFe());
+                capacity = Math.max(capacity, energyModule.armorCapacityFe());
                 continue;
             }
             if (module.getItem() instanceof OverloadDeviceModuleItem provider) {

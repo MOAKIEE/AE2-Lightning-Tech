@@ -14,21 +14,26 @@ import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.ModuleTooltip;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 import com.moakiee.ae2lt.item.railgun.RailgunEnergyModuleRules;
-import com.moakiee.ae2lt.util.EnergyText;
 
 public final class ArmorEnergyModuleItem extends Item implements OverloadDeviceModuleItem {
     private static final Set<DeviceKind> ACCEPTS = RailgunEnergyModuleRules.acceptedDeviceKinds();
     public static final String MODULE_TYPE_ID = "energy";
 
-    private final long capacityFe;
+    private final long armorCapacityFe;
+    private final long legacyCapacityFe;
 
-    public ArmorEnergyModuleItem(Properties properties, long capacityFe) {
+    public ArmorEnergyModuleItem(Properties properties, long armorCapacityFe, long legacyCapacityFe) {
         super(properties);
-        this.capacityFe = Math.max(0L, capacityFe);
+        this.armorCapacityFe = Math.max(0L, armorCapacityFe);
+        this.legacyCapacityFe = Math.max(0L, legacyCapacityFe);
+    }
+
+    public long armorCapacityFe() {
+        return armorCapacityFe;
     }
 
     public long capacityFe() {
-        return capacityFe;
+        return legacyCapacityFe;
     }
 
     @Override
@@ -53,13 +58,12 @@ public final class ArmorEnergyModuleItem extends Item implements OverloadDeviceM
 
     @Override
     public List<DeviceCapability> capabilities(ItemStack stack) {
-        return List.of(new DeviceCapability.EnergyCapacity(capacityFe));
+        return List.of(new DeviceCapability.EnergyCapacity(legacyCapacityFe));
     }
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, context, tooltip, flag);
-        tooltip.add(EnergyText.capacityFe(capacityFe));
         ModuleTooltip.appendInstallInfo(this, tooltip);
     }
 }

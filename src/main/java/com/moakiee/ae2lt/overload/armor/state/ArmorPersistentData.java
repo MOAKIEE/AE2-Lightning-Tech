@@ -261,7 +261,7 @@ public final class ArmorPersistentData {
             return 0L;
         }
         if (stack.getItem() instanceof ArmorEnergyModuleItem energyModule) {
-            return energyModule.capacityFe();
+            return energyModule.armorCapacityFe();
         }
         if (stack.getItem() instanceof OverloadDeviceModuleItem provider) {
             long capacity = 0L;
