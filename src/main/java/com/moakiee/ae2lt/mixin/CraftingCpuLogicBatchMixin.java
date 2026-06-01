@@ -21,6 +21,7 @@ import appeng.api.networking.energy.IEnergyService;
 import appeng.crafting.execution.CraftingCpuLogic;
 import appeng.crafting.execution.ExecutingCraftingJob;
 import appeng.crafting.inv.ListCraftingInventory;
+import appeng.hooks.ticking.TickHandler;
 import appeng.me.cluster.implementations.CraftingCPUCluster;
 import appeng.me.service.CraftingService;
 
@@ -44,6 +45,12 @@ public abstract class CraftingCpuLogicBatchMixin {
     private final Map<IPatternDetails, IdentityHashMap<ICraftingProvider, Boolean>> ae2lt$batchedByTask =
             new HashMap<>();
 
+    @Unique
+    private long ae2lt$batchTick = Long.MIN_VALUE;
+
+    @Unique
+    private boolean ae2lt$batchExhaustedThisTick;
+
     @WrapOperation(
             method = "tickCraftingLogic",
             at = @At(
@@ -59,8 +66,14 @@ public abstract class CraftingCpuLogicBatchMixin {
                                           IEnergyService energyService,
                                           Level level,
                                           Operation<Integer> original) {
-        ae2lt$batchedByTask.clear();
-        if (job == null) {
+        long now = TickHandler.instance().getCurrentTick();
+        if (now != ae2lt$batchTick) {
+            ae2lt$batchTick = now;
+            ae2lt$batchedByTask.clear();
+            ae2lt$batchExhaustedThisTick = false;
+        }
+
+        if (job == null || ae2lt$batchExhaustedThisTick) {
             return original.call(self, remainingOps, craftingService, energyService, level);
         }
 
@@ -76,10 +89,14 @@ public abstract class CraftingCpuLogicBatchMixin {
 
         if (batchResult.dispatchedCopies() > 0) {
             // Batch providers supply the internal parallel capacity, while the CPU pays dispatch pressure:
-            // n dispatched copies consume ceil(sqrt(n)) AE2 operations in the rolling usedOps window.
+            // each pushBatch dispatch of d copies costs ceil(sqrt(d)) ops, summed across this tick's
+            // dispatches. The ops budget caps the running sum, so a tick never exceeds its rolling usedOps.
             return batchResult.consumedCpuOps();
         }
 
+        // No batch-dispatchable task this tick (no batch provider / all full / out of material).
+        // Game time is frozen within a tick, so capacity cannot recover; skip the per-round re-probe.
+        ae2lt$batchExhaustedThisTick = true;
         return original.call(self, remainingOps, craftingService, energyService, level);
     }
 
