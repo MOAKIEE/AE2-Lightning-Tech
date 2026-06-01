@@ -126,7 +126,7 @@ public final class OverloadArmorUndyingHandler {
     }
 
     private static boolean tryProtectWithinWindow(ServerPlayer player, long now) {
-        if (hasActiveProtectionWindow(player, now)) {
+        if (hasActiveLastStand(player) && hasActiveProtectionWindow(player, now)) {
             recordProtectedTick(player, now);
             restoreSurvivalState(player);
             return true;
@@ -172,6 +172,10 @@ public final class OverloadArmorUndyingHandler {
     private static boolean hasActiveProtectionWindow(ServerPlayer player, long now) {
         long protectedUntil = player.getPersistentData().getLong(TAG_PROTECTED_UNTIL);
         return protectedUntil > now;
+    }
+
+    private static boolean hasActiveLastStand(ServerPlayer player) {
+        return !collectActiveLastStand(player).isEmpty();
     }
 
     private static boolean isIncomingUndyingCandidate(DamageSource source) {

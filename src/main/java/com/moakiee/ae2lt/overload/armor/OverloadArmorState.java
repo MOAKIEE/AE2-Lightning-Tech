@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.overload.armor;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
 
@@ -166,6 +167,7 @@ public final class OverloadArmorState {
                 stack.shrink(1);
             }
             saveModuleStacks(armor, registries, stacks);
+            pruneRemovedRuntime(getArmorId(armor), installedSubmoduleIds(armor, registries));
             return detached;
         }
         return ItemStack.EMPTY;
@@ -183,6 +185,7 @@ public final class OverloadArmorState {
             }
             stacks.remove(index);
             saveModuleStacks(armor, registries, stacks);
+            pruneRemovedRuntime(getArmorId(armor), installedSubmoduleIds(armor, registries));
             return stack.copy();
         }
         return ItemStack.EMPTY;
@@ -382,12 +385,7 @@ public final class OverloadArmorState {
 
     public static Snapshot tickEquipped(Player player, ItemStack armor, HolderLookup.Provider registries) {
         UUID id = ensureArmorId(armor);
-        var entries = collectInstalledSubmoduleEntries(armor, registries);
-        var installedIds = new HashSet<String>();
-        for (var entry : entries) {
-            installedIds.add(entry.submodule().id());
-        }
-        pruneRemovedRuntime(id, installedIds);
+        pruneRemovedRuntime(id, installedSubmoduleIds(armor, registries));
         return snapshot(player, armor, registries, true);
     }
 
@@ -522,6 +520,14 @@ public final class OverloadArmorState {
             }
             ArmorRuntimeRegistry.removeSubmodule(armorId, submoduleId);
         }
+    }
+
+    private static Set<String> installedSubmoduleIds(ItemStack armor, HolderLookup.Provider registries) {
+        var installedIds = new HashSet<String>();
+        for (var entry : collectInstalledSubmoduleEntries(armor, registries)) {
+            installedIds.add(entry.submodule().id());
+        }
+        return installedIds;
     }
 
     private static void setSubmoduleRuntimeActive(ItemStack armor, String submoduleId, boolean active) {
