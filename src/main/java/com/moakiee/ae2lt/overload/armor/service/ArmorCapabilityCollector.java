@@ -54,7 +54,7 @@ public final class ArmorCapabilityCollector {
                 for (int i = 0; i < iterations; i++) {
                     ItemStack unit = moduleStack.copyWithCount(1);
                     submoduleProvider.collectSubmodules(unit, submodule -> {
-                        if (submodule == null || !OverloadArmorState.isSubmoduleRuntimeActive(armor, submodule.id())) {
+                        if (submodule == null || !isSubmoduleActiveForSide(player, armor, submodule.id())) {
                             return;
                         }
                         for (var capability : module.capabilities(unit)) {
@@ -65,6 +65,14 @@ public final class ArmorCapabilityCollector {
             }
         }
         return List.copyOf(out);
+    }
+
+    private static boolean isSubmoduleActiveForSide(Player player, ItemStack armor, String submoduleId) {
+        if (player.level().isClientSide()) {
+            var armorId = OverloadArmorState.getArmorId(armor);
+            return armorId != null && OverloadArmorState.isClientSubmoduleActive(armorId, submoduleId);
+        }
+        return OverloadArmorState.isSubmoduleRuntimeActive(armor, submoduleId);
     }
 
     public record ActiveCapability(ItemStack armor, String submoduleId, DeviceCapability capability) {

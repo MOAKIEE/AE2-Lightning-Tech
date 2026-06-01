@@ -62,10 +62,7 @@ public final class OverloadArmorUtilityHandler {
     @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
         Player player = event.getEntity();
-        if (!(player instanceof ServerPlayer serverPlayer)) {
-            return;
-        }
-        var capabilities = ArmorCapabilityCollector.collectPerInstalledStack(serverPlayer);
+        var capabilities = ArmorCapabilityCollector.collectPerInstalledStack(player);
         double underwaterMultiplier = 1.0D;
         double airborneMultiplier = 1.0D;
         ActiveCapability pulseSource = null;
@@ -95,7 +92,7 @@ public final class OverloadArmorUtilityHandler {
             return;
         }
 
-        if (!ArmorLightningService.consume(
+        if (player instanceof ServerPlayer serverPlayer && !ArmorLightningService.consume(
                 serverPlayer,
                 pulseSource.armor(),
                 com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
@@ -244,10 +241,10 @@ public final class OverloadArmorUtilityHandler {
             double airborneMultiplier) {
         double multiplier = 1.0D;
         if (underwater) {
-            multiplier = Math.max(multiplier, underwaterMultiplier);
+            multiplier *= Math.max(1.0D, underwaterMultiplier);
         }
         if (airborne) {
-            multiplier = Math.max(multiplier, airborneMultiplier);
+            multiplier *= Math.max(1.0D, airborneMultiplier);
         }
         return multiplier;
     }
