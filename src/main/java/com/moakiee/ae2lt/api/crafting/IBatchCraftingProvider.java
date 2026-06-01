@@ -15,10 +15,19 @@ import appeng.api.stacks.KeyCounter;
  */
 public interface IBatchCraftingProvider extends ICraftingProvider {
     /**
-     * Maximum copies this provider can accept for this pattern right now.
+     * Optional hint: how many copies this provider could accept for this pattern right now.
+     *
+     * <p>This is only an advisory upper bound on how many copies the CPU pre-extracts before
+     * calling {@link #pushBatch}; it is NOT a correctness constraint. {@code pushBatch} is the
+     * real gatekeeper (it returns the leftover it could not accept), and the CPU's own op budget
+     * also limits dispatch. Returning {@code 0} opts this provider out for now (busy / full /
+     * offline). The default returns {@link Integer#MAX_VALUE} when not busy, i.e. "no extra cap
+     * beyond what pushBatch and the CPU budget already enforce". Override with a tighter, accurate
+     * value if you want to stop the CPU from over-extracting inputs that pushBatch would only
+     * reinject.
      */
     default int getBatchCapacity(IPatternDetails details) {
-        return isBusy() ? 0 : 1;
+        return isBusy() ? 0 : Integer.MAX_VALUE;
     }
 
     /**

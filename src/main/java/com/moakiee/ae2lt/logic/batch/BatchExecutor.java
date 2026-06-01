@@ -56,14 +56,14 @@ public final class BatchExecutor {
 
             var perTaskBatched = batchedByTask.computeIfAbsent(details, key -> new IdentityHashMap<>());
 
-            var eligible = new java.util.ArrayList<IBatchCraftingProvider>();
+            var eligible = new java.util.ArrayList<EligibleProvider>();
             long availableBatchCapacity = 0;
             for (var provider : cs.getProviders(details)) {
                 if (!(provider instanceof IBatchCraftingProvider batch)) continue;
                 if (perTaskBatched.containsKey(provider)) continue;
                 int capacity = batch.getBatchCapacity(details);
                 if (capacity <= 0) continue;
-                eligible.add(batch);
+                eligible.add(new EligibleProvider(batch, capacity));
                 availableBatchCapacity += capacity;
                 if (availableBatchCapacity >= Integer.MAX_VALUE) {
                     availableBatchCapacity = Integer.MAX_VALUE;
@@ -71,6 +71,12 @@ public final class BatchExecutor {
                 }
             }
             if (eligible.isEmpty() || availableBatchCapacity <= 0) continue;
+
+            // Dispatch smaller-capacity providers first: the even split (leftover/remaining) grows
+            // as remaining shrinks, so leaving the largest provider last lets it absorb the
+            // remainder. Front-loading large providers caps them to the small even share and leaves
+            // the batch under-filled.
+            eligible.sort(java.util.Comparator.comparingInt(EligibleProvider::capacity));
 
             int copyBudget = BatchCpuAccounting.maxCopiesForCpuOps(opsBudget);
             if (copyBudget <= 0) {
@@ -108,13 +114,14 @@ public final class BatchExecutor {
             int leftover = realCraft;
 
             for (int i = 0; i < eligible.size() && leftover > 0; i++) {
-                var batch = eligible.get(i);
+                var batch = eligible.get(i).provider();
                 int sliceCap = BatchCpuAccounting.maxCopiesForCpuOps(opsBudget);
                 if (sliceCap <= 0) break;
                 int remainingProviders = eligible.size() - i;
                 int slice = Math.max(1, leftover / remainingProviders);
                 slice = Math.min(slice, leftover);
                 slice = Math.min(slice, sliceCap);
+                slice = Math.min(slice, eligible.get(i).capacity()); // cap by this provider's reported capacity
                 KeyCounter[] subInputs = ParallelBatchCpuHelper.copySlice(result, slice);
 
                 int subLeftover;
@@ -182,6 +189,9 @@ public final class BatchExecutor {
 
         if (dirty) markDirty.run();
         return new BatchRunResult(totalPushed, consumedOps);
+    }
+
+    private record EligibleProvider(IBatchCraftingProvider provider, int capacity) {
     }
 
     public record BatchRunResult(int dispatchedCopies, int consumedCpuOps) {
