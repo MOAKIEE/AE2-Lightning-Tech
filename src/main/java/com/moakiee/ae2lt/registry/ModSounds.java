@@ -39,8 +39,12 @@ public final class ModSounds {
     public static final DeferredHolder<SoundEvent, SoundEvent> RAILGUN_BEAM_LOOP =
             register("railgun.beam.loop");
 
-    /** 右键蓄力中的循环音（按蓄力档位 pitch 渐高）。 */
-    public static final DeferredHolder<SoundEvent, SoundEvent> RAILGUN_CHARGE_LOOP =
+    /** 右键蓄力中的一次性上升音。 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> RAILGUN_CHARGE_RAMP =
+            register("railgun.charge.ramp");
+
+    /** 右键满蓄后继续按住时的高压维持循环音。 */
+    public static final DeferredHolder<SoundEvent, SoundEvent> RAILGUN_CHARGE_SUSTAIN =
             register("railgun.charge.loop");
 
     private static DeferredHolder<SoundEvent, SoundEvent> register(String name) {

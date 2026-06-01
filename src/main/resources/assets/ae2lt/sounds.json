@@ -2,15 +2,13 @@
   "railgun.fire.charged": {
     "subtitle": "subtitles.ae2lt.railgun.fire.charged",
     "sounds": [
-      { "name": "minecraft:item.trident.thunder", "type": "event", "volume": 0.8, "pitch": 1.35 },
-      { "name": "minecraft:entity.lightning_bolt.impact", "type": "event", "volume": 0.45, "pitch": 1.65 }
+      { "name": "ae2lt:railgun/fire", "stream": false }
     ]
   },
   "railgun.fire.max": {
     "subtitle": "subtitles.ae2lt.railgun.fire.max",
     "sounds": [
-      { "name": "minecraft:entity.lightning_bolt.thunder", "type": "event", "volume": 0.9, "pitch": 1.0 },
-      { "name": "minecraft:item.trident.thunder", "type": "event", "volume": 0.7, "pitch": 0.8 }
+      { "name": "ae2lt:railgun/fire", "stream": false }
     ]
   },
   "railgun.fire.impact": {
@@ -29,13 +27,19 @@
   "railgun.beam.loop": {
     "subtitle": "subtitles.ae2lt.railgun.beam.loop",
     "sounds": [
-      { "name": "minecraft:block.beacon.ambient", "type": "event", "volume": 0.45, "pitch": 1.55, "stream": false }
+      { "name": "ae2lt:railgun/beam_loop", "stream": false }
     ]
   },
   "railgun.charge.loop": {
     "subtitle": "subtitles.ae2lt.railgun.charge.loop",
     "sounds": [
-      { "name": "minecraft:block.beacon.ambient", "type": "event", "volume": 0.35, "pitch": 0.75, "stream": false }
+      { "name": "ae2lt:railgun/charge_loop", "stream": false }
+    ]
+  },
+  "railgun.charge.ramp": {
+    "subtitle": "subtitles.ae2lt.railgun.charge.ramp",
+    "sounds": [
+      { "name": "ae2lt:railgun/charge_ramp", "stream": false }
     ]
   }
 }

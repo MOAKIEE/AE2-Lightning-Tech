@@ -564,6 +564,7 @@
   "subtitles.ae2lt.railgun.beam.chain": "电磁炮链式电弧",
   "subtitles.ae2lt.railgun.beam.loop": "电磁炮高能光束",
   "subtitles.ae2lt.railgun.charge.loop": "电磁炮蓄能嗡鸣",
+  "subtitles.ae2lt.railgun.charge.ramp": "电磁炮蓄力爬升",
   "ae2lt.overload_armor.not_equipped": "未检测到已装备的过载装甲",
   "ae2lt.overload_armor.status.ready": "状态：装甲就绪",
   "ae2lt.overload_armor.status.missing_core": "状态：缺少核心模块",
