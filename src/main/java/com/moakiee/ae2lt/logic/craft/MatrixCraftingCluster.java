@@ -13,7 +13,15 @@ import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 
+/**
+ * Multiblock-side rate limiter that wraps a shared {@link CraftingCore} engine: it aggregates the
+ * pattern units and thread units of a formed structure, caps batch copies by the structure's thread
+ * budget, and schedules them on the engine. The engine itself stays a pure assembler + time wheel.
+ */
 public final class MatrixCraftingCluster {
+    // L0 placeholder; L1 will derive this from the floorplan (critical path − clock units).
+    private static final int MATRIX_DELAY_TICKS = 1;
+
     private final BooleanSupplier formed;
     private final List<MatrixPatternCore> patternCores;
     private final List<MatrixCraftCore> craftCores;
@@ -24,14 +32,13 @@ public final class MatrixCraftingCluster {
                                  List<? extends MatrixPatternCore> patternCores,
                                  List<? extends MatrixCraftCore> craftCores,
                                  CraftingCoreHost host,
-                                 CoreParams params,
                                  CopyAssembler assembler,
                                  CraftingCoreRegistry registry) {
         this.formed = Objects.requireNonNull(formed);
         this.patternCores = new ArrayList<>(patternCores);
         this.craftCores = new ArrayList<>(craftCores);
         this.host = new MatrixHost(Objects.requireNonNull(host));
-        this.engine = new CraftingCore(this.host, params, assembler, registry);
+        this.engine = new CraftingCore(this.host, assembler, registry);
     }
 
     public void addPatternCore(MatrixPatternCore core) {
@@ -87,9 +94,16 @@ public final class MatrixCraftingCluster {
         return availableCapacity();
     }
 
-    public int pushBatch(IPatternDetails details, KeyCounter[] scaledInputs, int maxCraft) {
+    /**
+     * Rate limiter entry point: cap copies by the structure's free thread budget and schedule them
+     * on the shared engine with the structure's delay. Inputs are a single-copy template.
+     */
+    public int pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int maxCraft) {
         if (!hasPattern(details)) return maxCraft;
-        return engine.pushBatch(details, scaledInputs, maxCraft);
+        int copies = Math.min(maxCraft, availableCapacity());
+        if (copies <= 0) return maxCraft;
+        engine.pushBatch(details, oneCopyTemplate, copies, MATRIX_DELAY_TICKS);
+        return maxCraft - copies;
     }
 
     public boolean isBusy() {
@@ -98,7 +112,7 @@ public final class MatrixCraftingCluster {
 
     public int availableCapacity() {
         if (!formed.getAsBoolean()) return 0;
-        return engine.availableCapacity();
+        return Math.max(0, totalThreadCapacity() - engine.liveThreads());
     }
 
     public int threadsInFlight() {
@@ -141,11 +155,6 @@ public final class MatrixCraftingCluster {
         }
 
         @Override
-        public int maxThreads() {
-            return totalThreadCapacity();
-        }
-
-        @Override
         public boolean isRemoved() {
             return delegate.isRemoved();
         }
@@ -153,16 +162,6 @@ public final class MatrixCraftingCluster {
         @Override
         public boolean isConnected() {
             return formed.getAsBoolean() && delegate.isConnected();
-        }
-
-        @Override
-        public double extractEnergy(double amount) {
-            return delegate.extractEnergy(amount);
-        }
-
-        @Override
-        public void injectEnergy(double amount) {
-            delegate.injectEnergy(amount);
         }
 
         @Override

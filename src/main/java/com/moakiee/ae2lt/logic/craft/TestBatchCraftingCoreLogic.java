@@ -12,7 +12,6 @@ import net.minecraft.world.level.block.Block;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.LockCraftingMode;
-import appeng.api.config.PowerMultiplier;
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.networking.security.IActionSource;
@@ -25,8 +24,12 @@ import appeng.me.helpers.MachineSource;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.api.crafting.IBatchCraftingProvider;
 import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 
+/**
+ * Single-block test rig that acts as the rate limiter in front of a {@link CraftingCore}:
+ * it implements the {@link IBatchCraftingProvider} contract, caps copies by the engine's free
+ * thread budget and schedules them with a fixed delay. The core itself only assembles + delivers.
+ */
 public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements IBatchCraftingProvider {
     private static final String TAG_CORE = "BatchCraftingCore";
     private static final int TEST_MAX_THREADS = 1000;
@@ -46,13 +49,12 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         this.actionSource = new MachineSource(mainNode::getNode);
         this.core = new CraftingCore(
                 new CoreHost(),
-                new CoreParams(TEST_DELAY_TICKS, AE2LTCommonConfig.craftingCoreAePerCopy()),
                 new MolecularCopyAssembler(host::getLevel),
                 AE2LightningTech.craftingCoreRegistry());
         this.dispatcher = new CraftingCorePatternDispatcher(
                 this::canAcceptBatch,
                 this::hasLoadedPattern,
-                core::pushBatch);
+                this::limitedPush);
     }
 
     @Override
@@ -63,8 +65,8 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
     }
 
     @Override
-    public int pushBatch(IPatternDetails details, KeyCounter[] scaledInputs, int maxCraft) {
-        return dispatcher.pushBatch(details, scaledInputs, maxCraft);
+    public int pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int maxCraft) {
+        return dispatcher.pushBatch(details, oneCopyTemplate, maxCraft);
     }
 
     @Override
@@ -72,7 +74,7 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         if (!canAcceptBatch() || !hasLoadedPattern(details)) {
             return 0;
         }
-        return core.availableCapacity();
+        return Math.max(0, TEST_MAX_THREADS - core.liveThreads());
     }
 
     @Override
@@ -107,6 +109,15 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         return core.threadsInFlight();
     }
 
+    /** Rate limiter: cap copies by the engine's free thread budget, then schedule with a fixed delay. */
+    private int limitedPush(IPatternDetails details, KeyCounter[] oneCopyTemplate, int maxCraft) {
+        if (maxCraft <= 0) return 0;
+        int copies = Math.min(maxCraft, Math.max(0, TEST_MAX_THREADS - core.liveThreads()));
+        if (copies <= 0) return maxCraft;
+        core.pushBatch(details, oneCopyTemplate, copies, TEST_DELAY_TICKS);
+        return maxCraft - copies;
+    }
+
     private boolean canAcceptBatch() {
         return gridNode.isActive() && getCraftingLockedReason() == LockCraftingMode.NONE;
     }
@@ -123,11 +134,6 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         }
 
         @Override
-        public int maxThreads() {
-            return TEST_MAX_THREADS;
-        }
-
-        @Override
         public boolean isRemoved() {
             return host.isRemoved();
         }
@@ -135,23 +141,6 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         @Override
         public boolean isConnected() {
             return gridNode.isActive() && gridNode.getGrid() != null;
-        }
-
-        @Override
-        public double extractEnergy(double amount) {
-            var grid = gridNode.getGrid();
-            if (grid == null || amount <= 0.0D) {
-                return 0.0D;
-            }
-            return grid.getEnergyService().extractAEPower(amount, Actionable.MODULATE, PowerMultiplier.CONFIG);
-        }
-
-        @Override
-        public void injectEnergy(double amount) {
-            var grid = gridNode.getGrid();
-            if (grid != null && amount > 0.0D) {
-                grid.getEnergyService().injectPower(amount, Actionable.MODULATE);
-            }
         }
 
         @Override

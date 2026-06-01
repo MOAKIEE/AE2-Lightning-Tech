@@ -29,16 +29,14 @@ import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 
 class CraftingCoreTest {
     @Test
-    void pushBatchAssemblesOnceAndDeliversAfterDelay() {
-        var host = new FakeHost(100, 10, 1_000);
+    void assemblesOnceAndDeliversAfterDelay() {
+        var host = new FakeHost(100);
         var registry = new CraftingCoreRegistry();
         var assembler = new FakeAssembler(key("diamond"), 2, stack(key("bucket"), 1));
-        var core = new CraftingCore(host, new CoreParams(2, 20.0D), assembler, registry);
-        var input = key("stick");
+        var core = new CraftingCore(host, assembler, registry);
 
-        int leftover = core.pushBatch(new FakePattern(), scaled(input, 5), 5);
+        core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 5, 2);
 
-        assertEquals(0, leftover);
         assertEquals(1, assembler.calls);
         assertEquals(5, core.threadsInFlight());
 
@@ -54,121 +52,42 @@ class CraftingCoreTest {
     }
 
     @Test
-    void capacityLimitsCopiesAndReturnsLeftover() {
-        var host = new FakeHost(0, 3, 1_000);
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(key("diamond"), 1),
-                new CraftingCoreRegistry());
+    void getSizeReportsScheduledCopiesInTargetSlot() {
+        var host = new FakeHost(0);
+        var core = new CraftingCore(host, new FakeAssembler(key("diamond"), 1), new CraftingCoreRegistry());
 
-        int leftover = core.pushBatch(new FakePattern(), scaled(key("stick"), 7), 7);
+        core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 4, 3); // now=0, due=3 -> wheel[3]
 
-        assertEquals(4, leftover);
-        assertEquals(3, core.threadsInFlight());
-    }
-
-    @Test
-    void availableCapacitySweepsCompletedWorkBeforeTheRegistryTickRuns() {
-        var host = new FakeHost(0, 2, 1_000);
-        var core = new CraftingCore(
-                host,
-                new CoreParams(2, 20.0D),
-                new FakeAssembler(key("diamond"), 1),
-                new CraftingCoreRegistry());
-
-        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
-        assertEquals(0, core.availableCapacity());
-
-        host.time = 2;
-
-        assertEquals(2, core.availableCapacity());
-        assertEquals(2, host.network.getLong(key("diamond")));
-        assertEquals(0, core.threadsInFlight());
-    }
-
-    @Test
-    void oneTickDelayLetsCapacityRefillEveryTick() {
-        var host = new FakeHost(0, 2, 1_000);
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(key("diamond"), 1),
-                new CraftingCoreRegistry());
-
-        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
-        host.time = 1;
-
-        assertEquals(2, core.availableCapacity());
-        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
-        assertEquals(0, core.availableCapacity());
-    }
-
-    @Test
-    void energyShortageScalesCopiesDownAndRefundsUnusedEnergy() {
-        var host = new FakeHost(0, 10, 55.0D);
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(key("diamond"), 1),
-                new CraftingCoreRegistry());
-
-        int leftover = core.pushBatch(new FakePattern(), scaled(key("stick"), 5), 5);
-
-        assertEquals(3, leftover);
-        assertEquals(2, core.threadsInFlight());
-        assertEquals(15.0D, host.energy, 0.0001D);
-    }
-
-    @Test
-    void mixedKeysInOneSlotAreRejectedWithoutSideEffects() {
-        var host = new FakeHost(0, 10, 1_000);
-        var assembler = new FakeAssembler(key("diamond"), 1);
-        var core = new CraftingCore(host, new CoreParams(1, 20.0D), assembler, new CraftingCoreRegistry());
-        var slot = new KeyCounter();
-        slot.add(key("stick"), 3);
-        slot.add(key("cobble"), 3);
-
-        int leftover = core.pushBatch(new FakePattern(), new KeyCounter[] {slot}, 3);
-
-        assertEquals(3, leftover);
-        assertEquals(0, assembler.calls);
-        assertEquals(1_000.0D, host.energy, 0.0001D);
-        assertEquals(0, core.threadsInFlight());
+        assertEquals(4, core.getSize(3));
+        assertEquals(0, core.getSize(2));
+        assertEquals(4, core.threadsInFlight());
     }
 
     @Test
     void nonMolecularPatternsAreRejectedWithoutSideEffects() {
-        var host = new FakeHost(0, 10, 1_000);
+        var host = new FakeHost(0);
         var assembler = new FakeAssembler(key("diamond"), 1);
-        var core = new CraftingCore(host, new CoreParams(1, 20.0D), assembler, new CraftingCoreRegistry());
+        var core = new CraftingCore(host, assembler, new CraftingCoreRegistry());
 
-        int leftover = core.pushBatch(new FakePlainPattern(), scaled(key("stick"), 3), 3);
+        core.pushBatch(new FakePlainPattern(), inputs(key("stick"), 1), 3, 1);
 
-        assertEquals(3, leftover);
         assertEquals(0, assembler.calls);
-        assertEquals(1_000.0D, host.energy, 0.0001D);
         assertEquals(0, core.threadsInFlight());
     }
 
     @Test
-    void partialNetworkInsertKeepsThreadBudgetUntilFullyDrained() {
-        var host = new FakeHost(0, 2, 1_000);
+    void partialNetworkInsertKeepsThreadsUntilFullyDrained() {
+        var host = new FakeHost(0);
         host.maxInsertPerCall = 3;
         var output = key("diamond");
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(output, 5),
-                new CraftingCoreRegistry());
+        var core = new CraftingCore(host, new FakeAssembler(output, 5), new CraftingCoreRegistry());
 
-        assertEquals(0, core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2));
+        core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 2, 1); // now=0, due=1
 
         host.time = 1;
         core.sweepTick();
         assertEquals(3, host.network.getLong(output));
         assertEquals(2, core.threadsInFlight());
-        assertEquals(1, core.pushBatch(new FakePattern(), scaled(key("stick"), 1), 1));
 
         host.maxInsertPerCall = Long.MAX_VALUE;
         host.time = 2;
@@ -179,16 +98,12 @@ class CraftingCoreTest {
 
     @Test
     void disconnectedHostKeepsOutputsInWheelUntilReconnect() {
-        var host = new FakeHost(0, 2, 1_000);
+        var host = new FakeHost(0);
         host.connected = false;
         var output = key("diamond");
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(output, 1),
-                new CraftingCoreRegistry());
+        var core = new CraftingCore(host, new FakeAssembler(output, 1), new CraftingCoreRegistry());
 
-        core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2);
+        core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 2, 1);
         host.time = 1;
         core.sweepTick();
 
@@ -205,16 +120,12 @@ class CraftingCoreTest {
 
     @Test
     void removedHostHardFlushesToWorldAndDeregisters() {
-        var host = new FakeHost(0, 2, 1_000);
+        var host = new FakeHost(0);
         var output = key("diamond");
         var registry = new CraftingCoreRegistry();
-        var core = new CraftingCore(
-                host,
-                new CoreParams(1, 20.0D),
-                new FakeAssembler(output, 1),
-                registry);
+        var core = new CraftingCore(host, new FakeAssembler(output, 1), registry);
 
-        core.pushBatch(new FakePattern(), scaled(key("stick"), 2), 2);
+        core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 2, 1);
         host.removed = true;
 
         assertFalse(core.sweepTick());
@@ -222,7 +133,7 @@ class CraftingCoreTest {
         assertEquals(0, core.threadsInFlight());
     }
 
-    private static KeyCounter[] scaled(AEKey key, long amount) {
+    private static KeyCounter[] inputs(AEKey key, long amount) {
         var counter = new KeyCounter();
         counter.add(key, amount);
         return new KeyCounter[] {counter};
@@ -238,28 +149,19 @@ class CraftingCoreTest {
 
     private static final class FakeHost implements CraftingCoreHost {
         long time;
-        int maxThreads;
-        double energy;
         boolean connected = true;
         boolean removed;
         long maxInsertPerCall = Long.MAX_VALUE;
         final Object2LongOpenHashMap<AEKey> network = new Object2LongOpenHashMap<>();
         final Object2LongOpenHashMap<AEKey> spawned = new Object2LongOpenHashMap<>();
 
-        FakeHost(long time, int maxThreads, double energy) {
+        FakeHost(long time) {
             this.time = time;
-            this.maxThreads = maxThreads;
-            this.energy = energy;
         }
 
         @Override
         public long getGameTime() {
             return time;
-        }
-
-        @Override
-        public int maxThreads() {
-            return maxThreads;
         }
 
         @Override
@@ -270,18 +172,6 @@ class CraftingCoreTest {
         @Override
         public boolean isConnected() {
             return connected;
-        }
-
-        @Override
-        public double extractEnergy(double amount) {
-            double extracted = Math.min(amount, energy);
-            energy -= extracted;
-            return extracted;
-        }
-
-        @Override
-        public void injectEnergy(double amount) {
-            energy += amount;
         }
 
         @Override

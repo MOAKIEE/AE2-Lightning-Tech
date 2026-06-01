@@ -11,7 +11,19 @@ import appeng.api.stacks.KeyCounter;
 import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 import it.unimi.dsi.fastutil.objects.Object2LongMap;
 
+/**
+ * Pure batch crafting engine: a hashed time wheel that assembles one copy of a pattern and
+ * schedules {@code copies} of its output to be delivered after a per-push delay.
+ *
+ * <p>This class deliberately does NOT manage thread capacity, energy or input scaling. Those are
+ * the responsibility of the caller (a rate limiter that implements
+ * {@link com.moakiee.ae2lt.api.crafting.IBatchCraftingProvider}). The engine simply assembles and
+ * delivers; {@link #liveThreads()} / {@link #getSize(int)} expose state so the limiter can budget.
+ */
 public final class CraftingCore implements Sweepable {
+    public static final int WHEEL_SIZE = 16;
+    public static final int WHEEL_MASK = WHEEL_SIZE - 1;
+
     private static final String NBT_CELLS = "cells";
     private static final String NBT_INDEX = "i";
     private static final String NBT_COPIES = "n";
@@ -20,17 +32,14 @@ public final class CraftingCore implements Sweepable {
     private static final String NBT_AMOUNT = "v";
 
     private final CraftingCoreHost host;
-    private final CoreParams params;
     private final CopyAssembler assembler;
     private final CraftingCoreRegistry registry;
-    private final WheelCell[] wheel = new WheelCell[CoreParams.WHEEL_SIZE];
+    private final WheelCell[] wheel = new WheelCell[WHEEL_SIZE];
     private int threadsInFlight;
     private long lastSweptTick;
 
-    public CraftingCore(CraftingCoreHost host, CoreParams params, CopyAssembler assembler,
-                        CraftingCoreRegistry registry) {
+    public CraftingCore(CraftingCoreHost host, CopyAssembler assembler, CraftingCoreRegistry registry) {
         this.host = host;
-        this.params = params;
         this.assembler = assembler;
         this.registry = registry;
         for (int i = 0; i < wheel.length; i++) {
@@ -38,62 +47,42 @@ public final class CraftingCore implements Sweepable {
         }
     }
 
-    public int pushBatch(IPatternDetails details, KeyCounter[] scaledInputs, int maxCraft) {
-        if (maxCraft <= 0) return 0;
-        if (!(details instanceof IMolecularAssemblerSupportedPattern)) return maxCraft;
+    /**
+     * Assemble one copy of {@code details} from the single-copy input template and schedule
+     * {@code copies} of its output for delivery after {@code delay} ticks.
+     *
+     * <p>The engine does not enforce any capacity, energy or scaling: the caller (rate limiter)
+     * must have already decided {@code copies} and {@code delay}. Inputs are a single-copy
+     * template (NOT multiplied by {@code copies}); materials are assumed to have been extracted
+     * upstream already.
+     */
+    public void pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int copies, int delay) {
+        if (copies <= 0 || oneCopyTemplate == null) return;
+        if (!(details instanceof IMolecularAssemblerSupportedPattern)) return;
 
+        int d = Math.max(1, Math.min(delay, WHEEL_MASK));
         long now = host.getGameTime();
         sweepNonLive(now);
 
-        int available = host.maxThreads() - threadsInFlight;
-        if (available <= 0) return maxCraft;
-        int copies = Math.min(maxCraft, available);
-
-        KeyCounter[] oneCopy = buildOneCopyTemplate(scaledInputs, maxCraft);
-        if (oneCopy == null) return maxCraft;
-
-        if (params.aePerCopy() > 0.0D) {
-            double wanted = params.aePerCopy() * copies;
-            double extracted = host.extractEnergy(wanted);
-            int affordable = (int) Math.floor(extracted / params.aePerCopy());
-            if (affordable <= 0) {
-                host.injectEnergy(extracted);
-                return maxCraft;
-            }
-            if (affordable < copies) {
-                double refund = extracted - affordable * params.aePerCopy();
-                if (refund > 0.0D) {
-                    host.injectEnergy(refund);
-                }
-                copies = affordable;
-            }
-        }
-
         CopyAssembler.AssembledCopy assembled;
         try {
-            assembled = assembler.assembleOneCopy(details, oneCopy);
+            assembled = assembler.assembleOneCopy(details, oneCopyTemplate);
         } catch (Throwable t) {
-            if (params.aePerCopy() > 0.0D) {
-                host.injectEnergy(copies * params.aePerCopy());
-            }
-            appeng.core.AELog.warn("[ae2lt] batch crafting core assemble failed for %s; refunding %d copies. %s",
+            appeng.core.AELog.warn("[ae2lt] batch crafting core assemble failed for %s; dropping %d copies. %s",
                     details, copies, t);
-            return maxCraft;
+            return;
         }
 
         if (assembled == null || assembled.output() == null || assembled.outputCount() <= 0) {
-            if (params.aePerCopy() > 0.0D) {
-                host.injectEnergy(copies * params.aePerCopy());
-            }
-            return maxCraft;
+            return;
         }
 
-        WheelCell cell = wheel[(int) (now & CoreParams.WHEEL_MASK)];
-        accumulate(cell, assembled.output(), assembled.outputCount() * copies);
+        WheelCell cell = wheel[(int) ((now + d) & WHEEL_MASK)];
+        accumulate(cell, assembled.output(), assembled.outputCount() * (long) copies);
         if (assembled.remainders() != null) {
             for (var remainder : assembled.remainders()) {
                 if (remainder != null) {
-                    accumulate(cell, remainder.key(), remainder.count() * copies);
+                    accumulate(cell, remainder.key(), remainder.count() * (long) copies);
                 }
             }
         }
@@ -101,7 +90,21 @@ public final class CraftingCore implements Sweepable {
         cell.copies += copies;
         threadsInFlight += copies;
         registry.markActive(this);
-        return maxCraft - copies;
+    }
+
+    /** In-flight copies currently scheduled in the wheel cell at {@code slot} (mod wheel size). */
+    public long getSize(int slot) {
+        return wheel[slot & WHEEL_MASK].copies;
+    }
+
+    /** Sweep matured cells up to now, then report total in-flight copies (for the rate limiter). */
+    public int liveThreads() {
+        sweepNonLive(host.getGameTime());
+        return threadsInFlight;
+    }
+
+    public int threadsInFlight() {
+        return threadsInFlight;
     }
 
     @Override
@@ -156,7 +159,7 @@ public final class CraftingCore implements Sweepable {
         ListTag cells = tag.getList(NBT_CELLS, Tag.TAG_COMPOUND);
         for (int i = 0; i < cells.size(); i++) {
             CompoundTag cellTag = cells.getCompound(i);
-            int idx = cellTag.getByte(NBT_INDEX) & CoreParams.WHEEL_MASK;
+            int idx = cellTag.getByte(NBT_INDEX) & WHEEL_MASK;
             int copies = cellTag.getInt(NBT_COPIES);
             if (copies <= 0) continue;
 
@@ -181,25 +184,16 @@ public final class CraftingCore implements Sweepable {
         }
     }
 
-    public int threadsInFlight() {
-        return threadsInFlight;
-    }
-
-    public int availableCapacity() {
-        sweepNonLive(host.getGameTime());
-        return Math.max(0, host.maxThreads() - threadsInFlight);
-    }
-
     private void sweepNonLive(long now) {
         if (threadsInFlight == 0) {
             lastSweptTick = now;
             return;
         }
 
-        long from = Math.max(lastSweptTick + 1, now - CoreParams.WHEEL_SIZE + 1L);
+        long from = Math.max(lastSweptTick + 1, now - WHEEL_SIZE + 1L);
         long completedThrough = lastSweptTick;
         for (long tick = from; tick <= now; tick++) {
-            int slot = (int) ((tick - params.delayTicks()) & CoreParams.WHEEL_MASK);
+            int slot = (int) (tick & WHEEL_MASK);
             if (!drainSlot(slot, false)) {
                 lastSweptTick = tick - 1L;
                 return;
@@ -273,27 +267,5 @@ public final class CraftingCore implements Sweepable {
         if (key != null && amount > 0) {
             cell.outputs.addTo(key, amount);
         }
-    }
-
-    private static KeyCounter[] buildOneCopyTemplate(KeyCounter[] scaledInputs, int maxCraft) {
-        var result = new KeyCounter[scaledInputs.length];
-        for (int i = 0; i < scaledInputs.length; i++) {
-            KeyCounter src = scaledInputs[i];
-            if (src.size() > 1) {
-                return null;
-            }
-            var dst = new KeyCounter();
-            for (var entry : src) {
-                long amount = entry.getLongValue();
-                if (amount <= 0 || amount % maxCraft != 0) {
-                    return null;
-                }
-                long perCopy = amount / maxCraft;
-                if (perCopy <= 0) return null;
-                dst.add(entry.getKey(), perCopy);
-            }
-            result[i] = dst;
-        }
-        return result;
     }
 }

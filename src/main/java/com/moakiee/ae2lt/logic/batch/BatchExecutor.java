@@ -112,6 +112,7 @@ public final class BatchExecutor {
 
             int initialRealCraft = realCraft;
             int leftover = realCraft;
+            KeyCounter[] oneCopy = ParallelBatchCpuHelper.cloneSingleCopy(result);
 
             for (int i = 0; i < eligible.size() && leftover > 0; i++) {
                 var batch = eligible.get(i).provider();
@@ -122,11 +123,10 @@ public final class BatchExecutor {
                 slice = Math.min(slice, leftover);
                 slice = Math.min(slice, sliceCap);
                 slice = Math.min(slice, eligible.get(i).capacity()); // cap by this provider's reported capacity
-                KeyCounter[] subInputs = ParallelBatchCpuHelper.copySlice(result, slice);
 
                 int subLeftover;
                 try {
-                    subLeftover = batch.pushBatch(details, subInputs, slice);
+                    subLeftover = batch.pushBatch(details, oneCopy, slice);
                 } catch (Throwable t) {
                     appeng.core.AELog.warn("[ae2lt] IBatchCraftingProvider %s threw during pushBatch; treating as full leftover. %s",
                             batch, t);

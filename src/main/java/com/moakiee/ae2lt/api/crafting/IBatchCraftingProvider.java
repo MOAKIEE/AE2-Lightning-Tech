@@ -7,11 +7,10 @@ import appeng.api.stacks.KeyCounter;
 /**
  * Optional crafting-provider contract for CPU-side batch dispatch.
  *
- * <p>The AE2 CPU mixin may pre-extract up to {@code maxCraft} homogeneous
- * copies of a pattern's inputs and pass the scaled inputs to this method once.
- * Implementations return how many copies were not accepted; the CPU reinjects
- * that leftover and treats the accepted copy count as if that many vanilla
- * {@link #pushPattern} calls had succeeded.
+ * <p>The AE2 CPU mixin pre-extracts up to {@code maxCraft} homogeneous copies of a pattern's
+ * inputs, then hands this method a SINGLE-COPY input template plus {@code maxCraft}.
+ * Implementations return how many copies were not accepted; the CPU reinjects that leftover and
+ * treats the accepted copy count as if that many vanilla {@link #pushPattern} calls had succeeded.
  */
 public interface IBatchCraftingProvider extends ICraftingProvider {
     /**
@@ -34,11 +33,11 @@ public interface IBatchCraftingProvider extends ICraftingProvider {
      * Try to consume up to {@code maxCraft} copies of {@code details}.
      *
      * @param details the pattern being crafted
-     * @param scaledInputs inputs already multiplied by {@code maxCraft}
+     * @param oneCopyTemplate single-copy input template (NOT multiplied by {@code maxCraft})
      * @param maxCraft maximum copies the caller is willing to dispatch
      * @return leftover copy count in {@code [0, maxCraft]}
      */
-    int pushBatch(IPatternDetails details, KeyCounter[] scaledInputs, int maxCraft);
+    int pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int maxCraft);
 
     @Override
     default boolean pushPattern(IPatternDetails patternDetails, KeyCounter[] inputHolder) {
