@@ -20,7 +20,6 @@ import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
-import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilAutomationInventory;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilEnergyStorage;
 import com.moakiee.ae2lt.machine.teslacoil.TeslaCoilInventory;
@@ -45,7 +44,7 @@ import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
-        implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
+        implements IActionHost, FrequencyBindingHost {
     public static final int ENERGY_CAPACITY = 16_000_000;
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_ENERGY = "Energy";

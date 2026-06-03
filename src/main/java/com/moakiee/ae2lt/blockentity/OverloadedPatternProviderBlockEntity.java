@@ -34,7 +34,6 @@ import appeng.menu.MenuOpener;
 import appeng.menu.locator.MenuHostLocator;
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
-import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.logic.OverloadedPatternProviderLogic;
 import com.moakiee.ae2lt.logic.WirelessConnectionLists;
 import com.moakiee.ae2lt.logic.WirelessConnectionRef;
@@ -55,7 +54,7 @@ import com.moakiee.ae2lt.registry.ModBlocks;
  * wireless dispatch or auto-return — those use wireless connector records instead.
  */
 public class OverloadedPatternProviderBlockEntity extends PatternProviderBlockEntity
-        implements FrequencyBindingHost, OverloadedGridNodeOwner {
+        implements FrequencyBindingHost {
 
     /** Pattern slots displayed per GUI page. */
     public static final int SLOTS_PER_PAGE = 36;

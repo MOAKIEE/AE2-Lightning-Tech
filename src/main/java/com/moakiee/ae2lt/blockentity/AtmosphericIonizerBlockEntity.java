@@ -20,7 +20,6 @@ import appeng.menu.locator.MenuHostLocator;
 
 import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
-import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.logic.WeatherControlHelper;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
@@ -49,7 +48,7 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
 public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
-        implements IActionHost, FrequencyBindingHost, OverloadedGridNodeOwner {
+        implements IActionHost, FrequencyBindingHost {
     private static final Logger LOG = LogUtils.getLogger();
     public static final int PROCESS_TICKS = 100;
     private static final double POWER_EPSILON = 0.01D;
