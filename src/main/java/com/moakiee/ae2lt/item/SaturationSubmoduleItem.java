@@ -15,7 +15,6 @@ public final class SaturationSubmoduleItem extends AbstractSingleArmorSubmoduleI
                 properties.stacksTo(1),
                 ArmorPart.HEAD,
                 SaturationSubmodule.INSTANCE,
-                "item.ae2lt.module_saturation.tooltip",
                 stack -> List.of(
                         new DeviceCapability.FoodSustain(
                                 20,

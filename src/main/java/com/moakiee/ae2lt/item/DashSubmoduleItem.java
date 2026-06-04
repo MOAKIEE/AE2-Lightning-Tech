@@ -14,7 +14,6 @@ public final class DashSubmoduleItem extends AbstractSingleArmorSubmoduleItem {
                 properties.stacksTo(64),
                 ArmorPart.FEET,
                 DashSubmodule.INSTANCE,
-                "item.ae2lt.module_dash.tooltip",
                 stack -> List.of(
                         new DeviceCapability.DashEffect(1.8D, 40),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.DASH_PASSIVE_DRAIN_FE),

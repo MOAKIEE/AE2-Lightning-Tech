@@ -15,7 +15,6 @@ public final class FlightSubmoduleItem extends AbstractSingleArmorSubmoduleItem 
                 properties.stacksTo(1),
                 ArmorPart.LEGS,
                 FlightSubmodule.INSTANCE,
-                "item.ae2lt.module_creative_flight.tooltip",
                 stack -> List.of(
                         new DeviceCapability.FlightMode(FlightKind.CREATIVE),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.FLIGHT_HOVER_DRAIN_FE)));

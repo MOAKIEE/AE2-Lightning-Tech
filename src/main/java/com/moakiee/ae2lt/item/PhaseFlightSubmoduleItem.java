@@ -15,7 +15,6 @@ public final class PhaseFlightSubmoduleItem extends AbstractSingleArmorSubmodule
                 properties.stacksTo(1),
                 ArmorPart.LEGS,
                 PhaseFlightSubmodule.INSTANCE,
-                "item.ae2lt.module_phase_flight.tooltip",
                 stack -> List.of(
                         new DeviceCapability.FlightMode(FlightKind.PHASE),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.PHASE_FLIGHT_PASSIVE_DRAIN_FE)));

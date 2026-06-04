@@ -15,7 +15,6 @@ public final class PurificationSubmoduleItem extends AbstractSingleArmorSubmodul
                 properties.stacksTo(1),
                 ArmorPart.CHEST,
                 PurificationSubmodule.INSTANCE,
-                "item.ae2lt.module_purification.tooltip",
                 stack -> List.of(
                         new DeviceCapability.PurificationTuning(
                                 AE2LTCommonConfig.overloadArmorPurificationPeriodTicks(),

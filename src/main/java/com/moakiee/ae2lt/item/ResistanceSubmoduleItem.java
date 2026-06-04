@@ -11,13 +11,11 @@ public final class ResistanceSubmoduleItem extends AbstractSingleArmorSubmoduleI
 
     public ResistanceSubmoduleItem(
             Properties properties,
-            ResistanceSubmodule submodule,
-            String tooltipKey) {
+            ResistanceSubmodule submodule) {
         super(
                 properties.stacksTo(1),
                 ArmorPart.CHEST,
                 submodule,
-                tooltipKey,
                 stack -> List.of(
                         new DeviceCapability.StagedMitigation(submodule.id()),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.RESISTANCE_PASSIVE_DRAIN_FE)));

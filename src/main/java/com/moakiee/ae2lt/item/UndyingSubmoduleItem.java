@@ -15,7 +15,6 @@ public final class UndyingSubmoduleItem extends AbstractSingleArmorSubmoduleItem
                 properties.stacksTo(1),
                 ArmorPart.CHEST,
                 UndyingSubmodule.INSTANCE,
-                "item.ae2lt.module_undying.tooltip",
                 stack -> List.of(
                         new DeviceCapability.LastStandTuning(
                                 ArmorOverloadRules.UNDYING_TRIGGER_COST_FE,

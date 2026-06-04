@@ -16,7 +16,6 @@ public final class WaterBreathingSubmoduleItem extends AbstractSingleArmorSubmod
                 properties.stacksTo(64),
                 ArmorPart.HEAD,
                 WaterBreathingSubmodule.INSTANCE,
-                "item.ae2lt.module_water_breathing.tooltip",
                 stack -> List.of(
                         new DeviceCapability.StatusEffectGrant(MobEffects.WATER_BREATHING, 0),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.WATER_BREATHING_PASSIVE_DRAIN_FE)));

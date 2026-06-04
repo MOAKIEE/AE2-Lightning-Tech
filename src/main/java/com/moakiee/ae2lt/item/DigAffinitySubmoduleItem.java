@@ -15,7 +15,6 @@ public final class DigAffinitySubmoduleItem extends AbstractSingleArmorSubmodule
                 properties.stacksTo(1),
                 ArmorPart.FEET,
                 DigAffinitySubmodule.INSTANCE,
-                "item.ae2lt.module_dig_affinity.tooltip",
                 stack -> List.of(
                         new DeviceCapability.DigAffinity("underwater", AE2LTCommonConfig.overloadArmorUnderwaterDigMultiplier()),
                         new DeviceCapability.DigAffinity("airborne", AE2LTCommonConfig.overloadArmorAirborneDigMultiplier()),

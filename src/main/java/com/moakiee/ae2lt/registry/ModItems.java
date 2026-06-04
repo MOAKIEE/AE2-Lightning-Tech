@@ -219,16 +219,14 @@ public final class ModItems {
             "module_matrix_shield",
             properties -> new ResistanceSubmoduleItem(
                     properties,
-                    ResistanceSubmodule.T1,
-                    "item.ae2lt.module_matrix_shield.tooltip"),
+                    ResistanceSubmodule.T1),
             new Item.Properties());
 
     public static final DeferredItem<ResistanceSubmoduleItem> CELESTWEAVE_SUBMODULE_PHASE_SHIELD = ITEMS.registerItem(
             "module_phase_shield",
             properties -> new ResistanceSubmoduleItem(
                     properties,
-                    ResistanceSubmodule.T2,
-                    "item.ae2lt.module_phase_shield.tooltip"),
+                    ResistanceSubmodule.T2),
             new Item.Properties());
 
     public static final DeferredItem<ReflectSubmoduleItem> CELESTWEAVE_SUBMODULE_REFLECT = ITEMS.registerItem(

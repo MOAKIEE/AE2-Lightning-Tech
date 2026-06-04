@@ -16,7 +16,6 @@ public final class NightVisionSubmoduleItem extends AbstractSingleArmorSubmodule
                 properties.stacksTo(64),
                 ArmorPart.HEAD,
                 NightVisionSubmodule.INSTANCE,
-                "item.ae2lt.module_night_vision.tooltip",
                 stack -> List.of(
                         new DeviceCapability.StatusEffectGrant(MobEffects.NIGHT_VISION, 0),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.NIGHT_VISION_PASSIVE_DRAIN_FE)));
