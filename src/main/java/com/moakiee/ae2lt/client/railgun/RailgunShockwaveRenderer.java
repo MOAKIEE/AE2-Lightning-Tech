@@ -54,6 +54,7 @@ public final class RailgunShockwaveRenderer {
     }
 
     private static final int RING_SEGMENTS = 64;
+    private static final float SHOCKWAVE_RADIUS_JITTER = 0.095F;
     // Plain ArrayList: render-thread-only (packet handlers enqueueWork to client thread).
     private static final java.util.List<Burst> ACTIVE = new ArrayList<>();
 
@@ -106,7 +107,7 @@ public final class RailgunShockwaveRenderer {
             float radius = burst.maxRadius * (1.0F - (1.0F - t) * (1.0F - t));
             float ringFade = 1.0F - t;
             float ringWidth = burst.maxRadius * 0.18F * (1.0F - t * 0.5F);
-            addRing(mc.level, bb, matrix, burst.center, radius, ringWidth,
+            addRing(mc.level, bb, matrix, burst.center, radius, ringWidth, t,
                     burst.r, burst.g, burst.b, 0.85F * ringFade);
         }
         var built = bb.build();
@@ -123,23 +124,27 @@ public final class RailgunShockwaveRenderer {
     }
 
     private static void addRing(Level level, BufferBuilder bb, org.joml.Matrix4f matrix, Vec3 center,
-                                float radius, float thickness,
+                                float radius, float thickness, float progress,
                                 float r, float g, float b, float alpha) {
         if (radius <= 0.0F || thickness <= 0.0F) return;
-        float inner = Math.max(0.0F, radius - thickness * 0.5F);
-        float outer = radius + thickness * 0.5F;
         // Per-segment block occlusion: cast from ring center to each slice's mid-point
         // and skip slices that hit geometry. Without this the horizontal disc punches
         // through walls when the impact point lands on a vertical surface.
-        double testR = outer + 0.05D;
         double cy = center.y + 0.05D;
         float y = (float) cy;
         Vec3 castFrom = new Vec3(center.x, cy, center.z);
         for (int i = 0; i < RING_SEGMENTS; i++) {
             double a0 = (i / (double) RING_SEGMENTS) * Math.PI * 2.0D;
             double a1 = ((i + 1) / (double) RING_SEGMENTS) * Math.PI * 2.0D;
+            float radius0 = irregularRadius(center, radius, i, progress);
+            float radius1 = irregularRadius(center, radius, i + 1, progress);
+            float inner0 = Math.max(0.0F, radius0 - thickness * 0.5F);
+            float inner1 = Math.max(0.0F, radius1 - thickness * 0.5F);
+            float outer0 = radius0 + thickness * 0.5F;
+            float outer1 = radius1 + thickness * 0.5F;
             if (level != null) {
                 double midA = (a0 + a1) * 0.5D;
+                double testR = Math.max(outer0, outer1) + 0.05D;
                 double mx = center.x + Math.cos(midA) * testR;
                 double mz = center.z + Math.sin(midA) * testR;
                 HitResult hr = level.clip(new ClipContext(castFrom,
@@ -150,21 +155,30 @@ public final class RailgunShockwaveRenderer {
             }
             double cos0 = Math.cos(a0), sin0 = Math.sin(a0);
             double cos1 = Math.cos(a1), sin1 = Math.sin(a1);
-            // Ground-aligned (XZ plane) ring quad strip.
-            float ix0 = (float) (center.x + cos0 * inner);
-            float iz0 = (float) (center.z + sin0 * inner);
-            float ix1 = (float) (center.x + cos1 * inner);
-            float iz1 = (float) (center.z + sin1 * inner);
-            float ox0 = (float) (center.x + cos0 * outer);
-            float oz0 = (float) (center.z + sin0 * outer);
-            float ox1 = (float) (center.x + cos1 * outer);
-            float oz1 = (float) (center.z + sin1 * outer);
+            // Ground-aligned (XZ plane) ring quad strip, with a lightly broken edge.
+            float ix0 = (float) (center.x + cos0 * inner0);
+            float iz0 = (float) (center.z + sin0 * inner0);
+            float ix1 = (float) (center.x + cos1 * inner1);
+            float iz1 = (float) (center.z + sin1 * inner1);
+            float ox0 = (float) (center.x + cos0 * outer0);
+            float oz0 = (float) (center.z + sin0 * outer0);
+            float ox1 = (float) (center.x + cos1 * outer1);
+            float oz1 = (float) (center.z + sin1 * outer1);
             // Soft outer edge: feather alpha to zero at the very rim.
             bb.addVertex(matrix, ix0, y, iz0).setColor(r, g, b, alpha);
             bb.addVertex(matrix, ix1, y, iz1).setColor(r, g, b, alpha);
             bb.addVertex(matrix, ox1, y, oz1).setColor(r, g, b, alpha * 0.15F);
             bb.addVertex(matrix, ox0, y, oz0).setColor(r, g, b, alpha * 0.15F);
         }
+    }
+
+    private static float irregularRadius(Vec3 center, float radius, int segment, float progress) {
+        if (radius <= 0.0F) return radius;
+        double phase = center.x * 0.17D + center.y * 0.11D + center.z * 0.13D;
+        double slow = Math.sin(segment * 0.59D + phase + progress * 2.4D);
+        double fast = Math.sin(segment * 1.37D + phase * 0.43D - progress * 3.1D);
+        float offset = (float) (slow * 0.68D + fast * 0.32D);
+        return radius * (1.0F + offset * SHOCKWAVE_RADIUS_JITTER);
     }
 
 }
