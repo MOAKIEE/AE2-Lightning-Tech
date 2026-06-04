@@ -19,9 +19,9 @@ public final class CelestweaveArmorEnergyLevel implements LayeredDraw.Layer {
     private static final int INNER_WIDTH = 79;
     private static final int INNER_HEIGHT = 4;
     private static final ResourceLocation BAR_BASE = ResourceLocation.fromNamespaceAndPath(
-            "ae2lt", "textures/gui/hud/base.png");
-    private static final ResourceLocation BAR_FILL = ResourceLocation.fromNamespaceAndPath(
-            "ae2lt", "textures/gui/hud/horizontal_power_long.png");
+            "ae2lt", "textures/gui/hud/hud_bar.png");
+    private static final ResourceLocation BAR_OVERLAY = ResourceLocation.fromNamespaceAndPath(
+            "ae2lt", "textures/gui/hud/hud_bar_overlay.png");
 
     private CelestweaveArmorEnergyLevel() {
     }
@@ -55,7 +55,7 @@ public final class CelestweaveArmorEnergyLevel implements LayeredDraw.Layer {
 
         graphics.blit(BAR_BASE, x, y, 0, 0, BAR_WIDTH, BAR_HEIGHT, BAR_WIDTH, BAR_HEIGHT);
         if (length > 0) {
-            graphics.blit(BAR_FILL, x + 1, y + 1, length, INNER_HEIGHT, 0, 0, length, INNER_HEIGHT, INNER_WIDTH, INNER_HEIGHT);
+            graphics.blit(BAR_OVERLAY, x + 1, y + 1, length, INNER_HEIGHT, 1, 1, length, INNER_HEIGHT, BAR_WIDTH, BAR_HEIGHT);
         }
         minecraft.gui.leftHeight += 8;
     }
