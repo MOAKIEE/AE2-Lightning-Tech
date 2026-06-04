@@ -39,9 +39,12 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     private static final int TEXT_ON_DARK_BG = 0xFFFFFFFF;
     private static final int ROW_HOVER = 0x304D4D67;
     private static final int ROW_SELECTED = 0x404D4D67;
-    private static final int BUTTON_BORDER = 0xFF8E8465;
+    private static final int ROW_DIVIDER = 0xFF878DA4;
+    private static final int BUTTON_BORDER = 0xFF4D5268;
+    private static final int BUTTON_BORDER_HOVER = 0xFF8C96B3;
     private static final int BUTTON_DISABLED = 0xFF6B7086;
     private static final int BUTTON_FILL = 0xFF69708A;
+    private static final int BUTTON_FILL_HOVER = 0xFF7B849F;
     private static final int BUTTON_FILL_DISABLED = 0xFF7D839B;
     private static final int BUTTON_TEXT = TEXT_ON_DARK_BG;
 
@@ -86,9 +89,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
     private static final int CONFIG_X = 12;
     private static final int CONFIG_HEADER_Y = 144;
     private static final int CONFIG_Y = 160;
-    private static final int CONFIG_BUTTON_X = 108;
-    private static final int CONFIG_BUTTON_W = 56;
+    private static final int CONFIG_BUTTON_X = 124;
+    private static final int CONFIG_BUTTON_W = 40;
     private static final int CONFIG_BUTTON_H = 12;
+    private static final int CONFIG_ROW_H = 16;
 
     private static final int CHECKBOX_WIDTH = 22;
     private static final int CHECKBOX_HEIGHT = 12;
@@ -158,7 +162,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         if (railgunTab) {
             renderRailgunSettings(gfx);
         } else {
-            renderModuleConfig(gfx);
+            renderModuleConfig(gfx, mouseX, mouseY);
         }
 
         renderTabTooltips(gfx, mouseX, mouseY, tabMask);
@@ -262,6 +266,14 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
                 boolean enabled = idx < moduleEnabled.size() && moduleEnabled.get(idx);
                 drawCheckbox(gfx, leftPos + MODULE_CHECKBOX_X, rowY + 1, enabled);
             }
+
+            if (i < Math.min(moduleNameKeys.size(), MODULE_VISIBLE_ROWS) - 1) {
+                gfx.fill(leftPos + MODULE_LIST_X,
+                        rowY + MODULE_ROW_H - 1,
+                        leftPos + MODULE_LIST_RIGHT,
+                        rowY + MODULE_ROW_H,
+                        ROW_DIVIDER);
+            }
         }
 
         if (moduleNameKeys.size() > MODULE_VISIBLE_ROWS) {
@@ -287,7 +299,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
                 TEXTURE_SIZE);
     }
 
-    private void renderModuleConfig(GuiGraphics gfx) {
+    private void renderModuleConfig(GuiGraphics gfx, int mouseX, int mouseY) {
         int x = leftPos + CONFIG_X;
         int y = topPos + CONFIG_Y;
         gfx.drawString(font, Component.translatable("ae2lt.overload_armor.screen.module_options"),
@@ -303,8 +315,8 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             boolean editable = menu.getModuleConfigEditable().get(i);
             gfx.drawString(font, moduleConfigLabel(i),
                     x, rowY + 1, TEXT_ON_DARK_BG, false);
-            drawConfigValueButton(gfx, leftPos + CONFIG_BUTTON_X, rowY - 1, value, editable);
-            rowY += MODULE_ROW_H;
+            drawConfigValueButton(gfx, leftPos + CONFIG_BUTTON_X, rowY - 1, value, editable, mouseX, mouseY);
+            rowY += CONFIG_ROW_H;
         }
     }
 
@@ -341,9 +353,15 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
                 CHECKBOX_TEXTURE_SIZE);
     }
 
-    private void drawConfigValueButton(GuiGraphics gfx, int x, int y, String value, boolean editable) {
-        int borderColor = editable ? BUTTON_BORDER : BUTTON_DISABLED;
-        int fillColor = editable ? BUTTON_FILL : BUTTON_FILL_DISABLED;
+    private void drawConfigValueButton(
+            GuiGraphics gfx, int x, int y, String value, boolean editable, int mouseX, int mouseY) {
+        boolean hovered = editable
+                && mouseX >= x
+                && mouseX <= x + CONFIG_BUTTON_W
+                && mouseY >= y
+                && mouseY <= y + CONFIG_BUTTON_H;
+        int borderColor = editable ? hovered ? BUTTON_BORDER_HOVER : BUTTON_BORDER : BUTTON_DISABLED;
+        int fillColor = editable ? hovered ? BUTTON_FILL_HOVER : BUTTON_FILL : BUTTON_FILL_DISABLED;
         gfx.fill(x - 1, y - 1, x + CONFIG_BUTTON_W + 1, y + CONFIG_BUTTON_H + 1, borderColor);
         gfx.fill(x, y, x + CONFIG_BUTTON_W, y + CONFIG_BUTTON_H, fillColor);
         String text = truncate(font, value, CONFIG_BUTTON_W - 4);
@@ -370,7 +388,7 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
                         DeviceHubActionPacket.ACTION_CYCLE_MODULE_CONFIG, i));
                 return true;
             }
-            rowY += MODULE_ROW_H;
+            rowY += CONFIG_ROW_H;
         }
         return false;
     }
