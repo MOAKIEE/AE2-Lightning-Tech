@@ -91,7 +91,7 @@ public final class RailgunDefaults {
 
     // ── Paralysis effect ──────────────────────────────────────────────────
     /** Duration of electromagnetic paralysis effect on hit (20 = 1s). */
-    public static final int PARALYSIS_DURATION_TICKS = 20;
+    public static final int PARALYSIS_DURATION_TICKS = 40;
 
     // ── Recoil ────────────────────────────────────────────────────────────
     public static final double RECOIL_SPEED_TIER1 = 0.6D;

@@ -7,13 +7,13 @@ import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.entity.LivingEntity;
 
 /**
- * Electromagnetic Paralysis: -50% movement speed (precise, via attribute modifier),
- * 1 second by default. Independent of vanilla MOVEMENT_SLOWDOWN so they can stack.
+ * Electromagnetic Paralysis: -75% movement speed (precise, via attribute modifier),
+ * 2 seconds by default. Independent of vanilla MOVEMENT_SLOWDOWN so they can stack.
  *
- * <p>The exact -50% multiplier is achieved via {@code addAttributeModifier} on
+ * <p>The exact -75% multiplier is achieved via {@code addAttributeModifier} on
  * {@link net.minecraft.world.entity.ai.attributes.Attributes#MOVEMENT_SPEED}
- * with operation {@code ADD_MULTIPLIED_TOTAL} and value {@code -0.5}.
- * Vanilla SLOWNESS uses 0.15 per amplifier which can't hit -50% exactly.
+ * with operation {@code ADD_MULTIPLIED_TOTAL} and value {@code -0.75}.
+ * Vanilla SLOWNESS uses 0.15 per amplifier which can't hit -75% exactly.
  */
 public class ElectromagneticParalysisEffect extends MobEffect {
     public ElectromagneticParalysisEffect() {
@@ -22,8 +22,8 @@ public class ElectromagneticParalysisEffect extends MobEffect {
 
     @Override
     public boolean shouldApplyEffectTickThisTick(int duration, int amplifier) {
-        // Spawn sparks every 5 ticks for visual feedback.
-        return duration % 5 == 0;
+        // Spawn sparks every 4 ticks for stronger visual feedback.
+        return duration % 4 == 0;
     }
 
     @Override
@@ -36,8 +36,8 @@ public class ElectromagneticParalysisEffect extends MobEffect {
                     entity.getX(),
                     entity.getY() + entity.getBbHeight() / 2.0,
                     entity.getZ(),
-                    2,
-                    w, h, w, 0.05);
+                    4,
+                    w, h, w, 0.07);
         }
         return true;
     }

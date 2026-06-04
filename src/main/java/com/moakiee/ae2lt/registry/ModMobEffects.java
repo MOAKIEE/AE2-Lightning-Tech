@@ -25,7 +25,7 @@ public final class ModMobEffects {
                                 ResourceLocation.fromNamespaceAndPath(
                                         AE2LightningTech.MODID,
                                         "electromagnetic_paralysis_speed"),
-                                -0.5D,
+                                -0.75D,
                                 AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
                         return effect;
                     });
