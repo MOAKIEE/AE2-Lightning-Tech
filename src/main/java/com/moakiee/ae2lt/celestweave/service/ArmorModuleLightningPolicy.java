@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.capability.FlightKind;
+import com.moakiee.ae2lt.celestweave.ArmorOverloadRules;
 import com.moakiee.ae2lt.celestweave.service.ArmorLightningService.LightningCost;
 
 public final class ArmorModuleLightningPolicy {
@@ -59,6 +60,11 @@ public final class ArmorModuleLightningPolicy {
     }
 
     public static LightningCost triggeredCost(Trigger trigger) {
-        return LightningCost.NONE;
+        return switch (trigger) {
+            case MATRIX_SHIELD -> LightningCost.hv(1L);
+            case PHASE_SHIELD -> LightningCost.ehv(1L);
+            case UNDYING -> LightningCost.ehv(ArmorOverloadRules.UNDYING_TRIGGER_COST_EHV);
+            default -> LightningCost.NONE;
+        };
     }
 }

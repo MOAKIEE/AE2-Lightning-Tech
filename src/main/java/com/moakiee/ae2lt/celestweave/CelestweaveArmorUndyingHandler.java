@@ -20,6 +20,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
+import com.moakiee.ae2lt.celestweave.service.ArmorModuleLightningPolicy;
 import com.moakiee.ae2lt.celestweave.module.UndyingSubmodule;
 import com.moakiee.ae2lt.celestweave.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.celestweave.service.ArmorEnergyService;
@@ -151,7 +152,8 @@ public final class CelestweaveArmorUndyingHandler {
                 continue;
             }
             long lightningCost = ArmorOverloadCombo.scaledCost(
-                    AE2LTCommonConfig.overloadArmorUndyingEhvCost(),
+                    ArmorModuleLightningPolicy.triggeredCost(ArmorModuleLightningPolicy.Trigger.UNDYING)
+                            .extremeHighVoltage(),
                     comboIndex);
             if (!ArmorLightningService.consume(
                     player,

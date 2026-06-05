@@ -19,8 +19,8 @@ import com.moakiee.ae2lt.celestweave.service.ArmorCapabilityCollector;
 import com.moakiee.ae2lt.celestweave.service.ArmorCapabilityCollector.ActiveCapability;
 import com.moakiee.ae2lt.celestweave.service.ArmorEnergyService;
 import com.moakiee.ae2lt.celestweave.service.ArmorLightningService;
+import com.moakiee.ae2lt.celestweave.service.ArmorModuleLightningPolicy;
 import com.moakiee.ae2lt.celestweave.service.ArmorResourceFeedback;
-import com.moakiee.ae2lt.me.key.LightningKey;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
 
 /**
@@ -119,7 +119,8 @@ public final class CelestweaveArmorDamageHandler {
             return true;
         }
         long amount = (long) Math.ceil(preventedDamage * mitigationLightningPerDamage(staged.stage()));
-        if (amount <= 0L) {
+        long feCost = (long) Math.ceil(preventedDamage * mitigationFePerDamage(staged.stage()));
+        if (amount <= 0L && feCost <= 0L) {
             return true;
         }
         var submodule = mitigationSubmoduleForStage(staged.stage());
@@ -128,11 +129,18 @@ public final class CelestweaveArmorDamageHandler {
                 submodule,
                 serverPlayer.level().getGameTime());
         long finalAmount = ArmorOverloadCombo.scaledCost(amount, comboIndex);
-        LightningKey key = "phase_shield".equals(staged.stage())
-                ? LightningKey.EXTREME_HIGH_VOLTAGE
-                : LightningKey.HIGH_VOLTAGE;
-        if (!ArmorLightningService.consume(serverPlayer, mitigation.armor(), key, finalAmount)) {
-            if (key == LightningKey.EXTREME_HIGH_VOLTAGE) {
+        ArmorEnergyService.EnergyPayment payment = ArmorEnergyService.consumeActiveCostPayment(
+                serverPlayer,
+                mitigation.armor(),
+                feCost);
+        if (!payment.paid()) {
+            ArmorResourceFeedback.noFe(serverPlayer);
+            return false;
+        }
+        var lightningCost = shieldLightningCost(staged.stage()).times(finalAmount);
+        if (!ArmorLightningService.consume(serverPlayer, mitigation.armor(), lightningCost)) {
+            payment.refund();
+            if (lightningCost.extremeHighVoltage() > 0L) {
                 ArmorResourceFeedback.noExtremeHighVoltage(serverPlayer);
             } else {
                 ArmorResourceFeedback.noHighVoltage(serverPlayer);
@@ -150,8 +158,22 @@ public final class CelestweaveArmorDamageHandler {
 
     private static long mitigationLightningPerDamage(String stage) {
         return "phase_shield".equals(stage)
-                ? AE2LTCommonConfig.overloadArmorPhaseShieldEhvPerDamage()
-                : AE2LTCommonConfig.overloadArmorMitigationHvPerDamage();
+                ? ArmorModuleLightningPolicy.triggeredCost(ArmorModuleLightningPolicy.Trigger.PHASE_SHIELD)
+                        .extremeHighVoltage()
+                : ArmorModuleLightningPolicy.triggeredCost(ArmorModuleLightningPolicy.Trigger.MATRIX_SHIELD)
+                        .highVoltage();
+    }
+
+    private static long mitigationFePerDamage(String stage) {
+        return "phase_shield".equals(stage)
+                ? ArmorOverloadRules.PHASE_SHIELD_ACTIVE_COST_FE_PER_DAMAGE
+                : ArmorOverloadRules.MATRIX_SHIELD_ACTIVE_COST_FE_PER_DAMAGE;
+    }
+
+    private static ArmorLightningService.LightningCost shieldLightningCost(String stage) {
+        return "phase_shield".equals(stage)
+                ? ArmorModuleLightningPolicy.triggeredCost(ArmorModuleLightningPolicy.Trigger.PHASE_SHIELD)
+                : ArmorModuleLightningPolicy.triggeredCost(ArmorModuleLightningPolicy.Trigger.MATRIX_SHIELD);
     }
 
     private static ResistanceSubmodule mitigationSubmoduleForStage(String stage) {
@@ -205,16 +227,6 @@ public final class CelestweaveArmorDamageHandler {
                     cost);
             if (!payment.paid()) {
                 ArmorResourceFeedback.noFe(serverPlayer);
-                continue;
-            }
-            long lightningCost = (long) Math.ceil(amount * AE2LTCommonConfig.overloadArmorReflectHvPerDamage());
-            if (!ArmorLightningService.consume(
-                    serverPlayer,
-                    active.armor(),
-                    com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
-                    lightningCost)) {
-                payment.refund();
-                ArmorResourceFeedback.noHighVoltage(serverPlayer);
                 continue;
             }
             reflected += amount;

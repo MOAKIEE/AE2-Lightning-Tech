@@ -9,14 +9,19 @@ import net.minecraft.nbt.ByteTag;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.api.distmarker.Dist;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
+import com.moakiee.ae2lt.celestweave.ArmorOverloadRules;
 import com.moakiee.ae2lt.celestweave.ArmorFlightSpeedRules;
 import com.moakiee.ae2lt.celestweave.CelestweaveArmorState;
+import com.moakiee.ae2lt.celestweave.service.ArmorLightningService;
+import com.moakiee.ae2lt.celestweave.service.ArmorResourceFeedback;
+import com.moakiee.ae2lt.me.key.LightningKey;
 
 public final class PhaseFlightSubmodule extends AbstractCelestweaveArmorSubmodule {
 
@@ -295,6 +300,16 @@ public final class PhaseFlightSubmodule extends AbstractCelestweaveArmorSubmodul
             return false;
         }
         if (!player.isInWall()) {
+            clearTransientPhaseState(player);
+            return false;
+        }
+        if (player instanceof ServerPlayer serverPlayer
+                && !ArmorLightningService.consume(
+                        serverPlayer,
+                        armor,
+                        LightningKey.EXTREME_HIGH_VOLTAGE,
+                        ArmorOverloadRules.PHASE_FLIGHT_ESCAPE_COST_EHV_PER_TICK)) {
+            ArmorResourceFeedback.noExtremeHighVoltage(serverPlayer);
             clearTransientPhaseState(player);
             return false;
         }

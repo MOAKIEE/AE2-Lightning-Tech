@@ -170,16 +170,7 @@ public final class AE2LTCommonConfig {
     public static long overloadArmorPassiveHvPerTick() { return VALUES.overloadArmorPassiveHvPerTick.get(); }
     public static long overloadArmorFlightHvPerTick() { return VALUES.overloadArmorFlightHvPerTick.get(); }
     public static long overloadArmorPhaseFlightHvPerTick() { return VALUES.overloadArmorPhaseFlightHvPerTick.get(); }
-    public static long overloadArmorDashHvCost() { return 0L; }
-    public static long overloadArmorReflectHvPerDamage() { return 0L; }
-    public static long overloadArmorMitigationHvPerDamage() { return 0L; }
-    public static long overloadArmorPhaseShieldEhvPerDamage() { return 0L; }
-    public static long overloadArmorPurificationHvPerEffect() { return 0L; }
-    public static long overloadArmorSaturationHvCost() { return 0L; }
-    public static long overloadArmorDigAffinityHvPerUse() { return 0L; }
-    public static long overloadArmorUndyingEhvCost() { return 0L; }
     public static int overloadArmorShieldComboWindowTicks() { return VALUES.overloadArmorShieldComboWindowTicks.get(); }
-    public static int overloadArmorPurificationComboWindowTicks() { return VALUES.overloadArmorPurificationComboWindowTicks.get(); }
     public static int overloadArmorUndyingComboWindowTicks() { return VALUES.overloadArmorUndyingComboWindowTicks.get(); }
 
     // ── Railgun: damage (per-tier base + beam settle) ────────────────────────
@@ -264,16 +255,7 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.LongValue overloadArmorPassiveHvPerTick;
         private final ModConfigSpec.LongValue overloadArmorFlightHvPerTick;
         private final ModConfigSpec.LongValue overloadArmorPhaseFlightHvPerTick;
-        private final ModConfigSpec.LongValue overloadArmorDashHvCost;
-        private final ModConfigSpec.LongValue overloadArmorReflectHvPerDamage;
-        private final ModConfigSpec.LongValue overloadArmorMitigationHvPerDamage;
-        private final ModConfigSpec.LongValue overloadArmorPhaseShieldEhvPerDamage;
-        private final ModConfigSpec.LongValue overloadArmorPurificationHvPerEffect;
-        private final ModConfigSpec.LongValue overloadArmorSaturationHvCost;
-        private final ModConfigSpec.LongValue overloadArmorDigAffinityHvPerUse;
-        private final ModConfigSpec.LongValue overloadArmorUndyingEhvCost;
         private final ModConfigSpec.IntValue overloadArmorShieldComboWindowTicks;
-        private final ModConfigSpec.IntValue overloadArmorPurificationComboWindowTicks;
         private final ModConfigSpec.IntValue overloadArmorUndyingComboWindowTicks;
 
         // ── Railgun fields ────────────────────────────────────────────────
@@ -495,39 +477,12 @@ public final class AE2LTCommonConfig {
             overloadArmorPhaseFlightHvPerTick = builder
                     .comment("HV lightning consumed each tick while phase flight is active.")
                     .defineInRange("phaseFlightHvPerTick", 8L, 0L, Long.MAX_VALUE);
-            overloadArmorDashHvCost = builder
-                    .comment("Deprecated: dash no longer consumes lightning.")
-                    .defineInRange("dashHvCost", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorReflectHvPerDamage = builder
-                    .comment("Deprecated: reflect no longer consumes lightning.")
-                    .defineInRange("reflectHvPerDamage", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorMitigationHvPerDamage = builder
-                    .comment("Deprecated: matrix shield no longer consumes lightning.")
-                    .defineInRange("mitigationHvPerDamage", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorPhaseShieldEhvPerDamage = builder
-                    .comment("Deprecated: phase shield no longer consumes lightning.")
-                    .defineInRange("phaseShieldEhvPerDamage", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorPurificationHvPerEffect = builder
-                    .comment("Deprecated: purification no longer consumes lightning.")
-                    .defineInRange("purificationHvPerEffect", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorSaturationHvCost = builder
-                    .comment("Deprecated: saturation sustain no longer consumes lightning.")
-                    .defineInRange("saturationHvCost", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorDigAffinityHvPerUse = builder
-                    .comment("Deprecated: dig affinity no longer consumes lightning.")
-                    .defineInRange("digAffinityHvPerUse", 0L, 0L, Long.MAX_VALUE);
-            overloadArmorUndyingEhvCost = builder
-                    .comment("Deprecated: undying no longer consumes lightning.")
-                    .defineInRange("undyingEhvCost", 0L, 0L, Long.MAX_VALUE);
             builder.pop();
 
             builder.push("penalty");
             overloadArmorShieldComboWindowTicks = builder
                     .comment("Ticks in the linear combo window for matrix and phase shield lightning cost scaling.")
                     .defineInRange("shieldComboWindowTicks", 200, 1, 20 * 60 * 60);
-            overloadArmorPurificationComboWindowTicks = builder
-                    .comment("Ticks in the linear combo window for purification lightning cost scaling.")
-                    .defineInRange("purificationComboWindowTicks", 200, 1, 20 * 60 * 60);
             overloadArmorUndyingComboWindowTicks = builder
                     .comment("Ticks in the linear combo window for undying FE and EHV cost scaling.")
                     .defineInRange("undyingComboWindowTicks", 200, 1, 20 * 60 * 60);

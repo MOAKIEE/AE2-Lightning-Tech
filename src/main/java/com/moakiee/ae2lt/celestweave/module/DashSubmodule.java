@@ -10,11 +10,9 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.api.distmarker.Dist;
 
-import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.celestweave.ArmorOverloadRules;
 import com.moakiee.ae2lt.celestweave.CelestweaveArmorState;
 import com.moakiee.ae2lt.celestweave.service.ArmorEnergyService;
-import com.moakiee.ae2lt.celestweave.service.ArmorLightningService;
 import com.moakiee.ae2lt.celestweave.service.ArmorResourceFeedback;
 
 public final class DashSubmodule extends AbstractCelestweaveArmorSubmodule {
@@ -81,16 +79,6 @@ public final class DashSubmodule extends AbstractCelestweaveArmorSubmodule {
             ArmorResourceFeedback.noFe(player);
             return;
         }
-        if (!ArmorLightningService.consume(
-                player,
-                armor,
-                com.moakiee.ae2lt.me.key.LightningKey.HIGH_VOLTAGE,
-                AE2LTCommonConfig.overloadArmorDashHvCost())) {
-            payment.refund();
-            ArmorResourceFeedback.noHighVoltage(player);
-            return;
-        }
-
         var look = player.getLookAngle();
         player.setDeltaMovement(
                 player.getDeltaMovement().x + look.x * IMPULSE,
