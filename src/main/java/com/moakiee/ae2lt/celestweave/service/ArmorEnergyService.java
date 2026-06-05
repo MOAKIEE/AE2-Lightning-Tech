@@ -205,7 +205,12 @@ public final class ArmorEnergyService {
             }
             List<DeviceCapability> capabilities = provider.capabilities(module);
             boolean movingFlight = hasFlightMode(capabilities) && isMovingInFlight(player);
-            LightningCost moduleLightning = passiveLightningCost(capabilities, movingFlight)
+            LightningCost moduleLightning = ArmorModuleLightningPolicy.passiveCost(
+                            capabilities,
+                            movingFlight,
+                            AE2LTCommonConfig.overloadArmorPassiveHvPerTick(),
+                            AE2LTCommonConfig.overloadArmorFlightHvPerTick(),
+                            AE2LTCommonConfig.overloadArmorPhaseFlightHvPerTick())
                     .times(Math.max(1, module.getCount()));
             lightning = lightning.plus(moduleLightning);
             for (DeviceCapability capability : capabilities) {
@@ -221,29 +226,6 @@ public final class ArmorEnergyService {
             }
         }
         return new PassiveCost((long) Math.ceil(drain * multiplier), lightning);
-    }
-
-    private static LightningCost passiveLightningCost(List<DeviceCapability> capabilities, boolean movingFlight) {
-        LightningCost cost = LightningCost.NONE;
-        boolean flight = false;
-        boolean phaseFlight = false;
-        for (DeviceCapability capability : capabilities) {
-            if (capability instanceof DeviceCapability.FlightMode mode) {
-                flight = true;
-                phaseFlight = mode.kind() == com.moakiee.ae2lt.device.capability.FlightKind.PHASE;
-            }
-        }
-        if (phaseFlight) {
-            cost = cost.plus(LightningCost.hv(AE2LTCommonConfig.overloadArmorPhaseFlightHvPerTick()));
-        } else if (flight) {
-            cost = cost.plus(LightningCost.hv(AE2LTCommonConfig.overloadArmorFlightHvPerTick()));
-            if (movingFlight) {
-                cost = cost.plus(LightningCost.hv(AE2LTCommonConfig.overloadArmorFlightHvPerTick()));
-            }
-        } else {
-            cost = cost.plus(LightningCost.hv(AE2LTCommonConfig.overloadArmorPassiveHvPerTick()));
-        }
-        return cost;
     }
 
     private static boolean moduleRuntimeActive(ItemStack armor, ItemStack module) {

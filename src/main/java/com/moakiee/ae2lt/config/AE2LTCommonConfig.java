@@ -170,14 +170,14 @@ public final class AE2LTCommonConfig {
     public static long overloadArmorPassiveHvPerTick() { return VALUES.overloadArmorPassiveHvPerTick.get(); }
     public static long overloadArmorFlightHvPerTick() { return VALUES.overloadArmorFlightHvPerTick.get(); }
     public static long overloadArmorPhaseFlightHvPerTick() { return VALUES.overloadArmorPhaseFlightHvPerTick.get(); }
-    public static long overloadArmorDashHvCost() { return VALUES.overloadArmorDashHvCost.get(); }
-    public static long overloadArmorReflectHvPerDamage() { return VALUES.overloadArmorReflectHvPerDamage.get(); }
-    public static long overloadArmorMitigationHvPerDamage() { return VALUES.overloadArmorMitigationHvPerDamage.get(); }
-    public static long overloadArmorPhaseShieldEhvPerDamage() { return VALUES.overloadArmorPhaseShieldEhvPerDamage.get(); }
-    public static long overloadArmorPurificationHvPerEffect() { return VALUES.overloadArmorPurificationHvPerEffect.get(); }
-    public static long overloadArmorSaturationHvCost() { return VALUES.overloadArmorSaturationHvCost.get(); }
-    public static long overloadArmorDigAffinityHvPerUse() { return VALUES.overloadArmorDigAffinityHvPerUse.get(); }
-    public static long overloadArmorUndyingEhvCost() { return VALUES.overloadArmorUndyingEhvCost.get(); }
+    public static long overloadArmorDashHvCost() { return 0L; }
+    public static long overloadArmorReflectHvPerDamage() { return 0L; }
+    public static long overloadArmorMitigationHvPerDamage() { return 0L; }
+    public static long overloadArmorPhaseShieldEhvPerDamage() { return 0L; }
+    public static long overloadArmorPurificationHvPerEffect() { return 0L; }
+    public static long overloadArmorSaturationHvCost() { return 0L; }
+    public static long overloadArmorDigAffinityHvPerUse() { return 0L; }
+    public static long overloadArmorUndyingEhvCost() { return 0L; }
     public static int overloadArmorShieldComboWindowTicks() { return VALUES.overloadArmorShieldComboWindowTicks.get(); }
     public static int overloadArmorPurificationComboWindowTicks() { return VALUES.overloadArmorPurificationComboWindowTicks.get(); }
     public static int overloadArmorUndyingComboWindowTicks() { return VALUES.overloadArmorUndyingComboWindowTicks.get(); }
@@ -487,7 +487,7 @@ public final class AE2LTCommonConfig {
 
             builder.push("lightningCosts");
             overloadArmorPassiveHvPerTick = builder
-                    .comment("HV lightning consumed each tick per active normal armor module.")
+                    .comment("HV lightning consumed each tick by the active reach extension armor module.")
                     .defineInRange("passiveHvPerTick", 1L, 0L, Long.MAX_VALUE);
             overloadArmorFlightHvPerTick = builder
                     .comment("HV lightning consumed each tick while creative flight is active.")
@@ -496,29 +496,29 @@ public final class AE2LTCommonConfig {
                     .comment("HV lightning consumed each tick while phase flight is active.")
                     .defineInRange("phaseFlightHvPerTick", 8L, 0L, Long.MAX_VALUE);
             overloadArmorDashHvCost = builder
-                    .comment("HV lightning consumed when dash triggers.")
-                    .defineInRange("dashHvCost", 256L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: dash no longer consumes lightning.")
+                    .defineInRange("dashHvCost", 0L, 0L, Long.MAX_VALUE);
             overloadArmorReflectHvPerDamage = builder
-                    .comment("HV lightning consumed per reflected damage point.")
-                    .defineInRange("reflectHvPerDamage", 24L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: reflect no longer consumes lightning.")
+                    .defineInRange("reflectHvPerDamage", 0L, 0L, Long.MAX_VALUE);
             overloadArmorMitigationHvPerDamage = builder
-                    .comment("HV lightning consumed per damage point prevented by matrix shield.")
-                    .defineInRange("mitigationHvPerDamage", 32L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: matrix shield no longer consumes lightning.")
+                    .defineInRange("mitigationHvPerDamage", 0L, 0L, Long.MAX_VALUE);
             overloadArmorPhaseShieldEhvPerDamage = builder
-                    .comment("EHV lightning consumed per damage point prevented by phase shield.")
-                    .defineInRange("phaseShieldEhvPerDamage", 8L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: phase shield no longer consumes lightning.")
+                    .defineInRange("phaseShieldEhvPerDamage", 0L, 0L, Long.MAX_VALUE);
             overloadArmorPurificationHvPerEffect = builder
-                    .comment("HV lightning consumed per purified status effect.")
-                    .defineInRange("purificationHvPerEffect", 512L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: purification no longer consumes lightning.")
+                    .defineInRange("purificationHvPerEffect", 0L, 0L, Long.MAX_VALUE);
             overloadArmorSaturationHvCost = builder
-                    .comment("HV lightning consumed when saturation sustain restores hunger or saturation.")
-                    .defineInRange("saturationHvCost", 64L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: saturation sustain no longer consumes lightning.")
+                    .defineInRange("saturationHvCost", 0L, 0L, Long.MAX_VALUE);
             overloadArmorDigAffinityHvPerUse = builder
-                    .comment("HV lightning consumed when dig affinity corrects mining speed for one tick.")
-                    .defineInRange("digAffinityHvPerUse", 4L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: dig affinity no longer consumes lightning.")
+                    .defineInRange("digAffinityHvPerUse", 0L, 0L, Long.MAX_VALUE);
             overloadArmorUndyingEhvCost = builder
-                    .comment("EHV lightning consumed by undying trigger before combo scaling.")
-                    .defineInRange("undyingEhvCost", 2048L, 0L, Long.MAX_VALUE);
+                    .comment("Deprecated: undying no longer consumes lightning.")
+                    .defineInRange("undyingEhvCost", 0L, 0L, Long.MAX_VALUE);
             builder.pop();
 
             builder.push("penalty");

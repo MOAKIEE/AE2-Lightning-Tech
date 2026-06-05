@@ -15,7 +15,9 @@ public final class ReflectSubmoduleItem extends AbstractSingleArmorSubmoduleItem
                 ArmorPart.CHEST,
                 ReflectSubmodule.INSTANCE,
                 stack -> List.of(
-                        new DeviceCapability.ReflectTuning(0.30D, 30_000L),
+                        new DeviceCapability.ReflectTuning(
+                                0.30D,
+                                ArmorOverloadRules.REFLECT_ACTIVE_COST_FE_PER_DAMAGE),
                         new DeviceCapability.PassiveDrain(ArmorOverloadRules.REFLECT_PASSIVE_DRAIN_FE)));
     }
 }
