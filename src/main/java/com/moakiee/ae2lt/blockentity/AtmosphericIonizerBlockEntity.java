@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 
 import appeng.api.config.Actionable;
 import appeng.api.config.PowerMultiplier;
-import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
@@ -76,8 +75,7 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         this.logic = new AtmosphericIonizerLogic(this);
         getMainNode()
                 .setIdlePowerUsage(0)
-                .addService(appeng.api.networking.ticking.IGridTickable.class, logic)
-                .setFlags(GridFlags.REQUIRE_CHANNEL);
+                .addService(appeng.api.networking.ticking.IGridTickable.class, logic);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, AtmosphericIonizerBlockEntity be) {

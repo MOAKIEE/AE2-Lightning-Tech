@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Set;
 
 import appeng.api.config.Actionable;
-import appeng.api.networking.GridFlags;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.api.networking.security.IActionHost;
@@ -75,8 +74,7 @@ public class TeslaCoilBlockEntity extends AENetworkedBlockEntity
         this.logic = new TeslaCoilLogic(this);
         getMainNode()
                 .setIdlePowerUsage(0)
-                .addService(IGridTickable.class, logic)
-                .setFlags(GridFlags.REQUIRE_CHANNEL);
+                .addService(IGridTickable.class, logic);
     }
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, TeslaCoilBlockEntity be) {
