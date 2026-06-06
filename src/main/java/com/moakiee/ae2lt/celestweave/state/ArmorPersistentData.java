@@ -117,6 +117,27 @@ public final class ArmorPersistentData {
         return List.copyOf(result);
     }
 
+    public static boolean hasInstalledSubmodule(ItemStack armor, String submoduleId) {
+        if (submoduleId == null || submoduleId.isBlank()) {
+            return false;
+        }
+        CompoundTag root = rootTag(armor);
+        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
+            return false;
+        }
+        CompoundTag armorTag = root.getCompound(TAG_ROOT);
+        if (!armorTag.contains(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_LIST)) {
+            return false;
+        }
+        ListTag list = armorTag.getList(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            if (submoduleId.equals(persistedModuleTypeId(list.getCompound(i)))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static void saveModuleStacks(ItemStack armor, HolderLookup.Provider registries, List<ItemStack> stacks) {
         updateArmorTag(armor, armorTag -> {
             ListTag out = new ListTag();
@@ -254,6 +275,29 @@ public final class ArmorPersistentData {
             }
         });
         return ref[0];
+    }
+
+    private static String persistedModuleTypeId(CompoundTag stackTag) {
+        String itemId = stackTag.getString("id");
+        return switch (itemId) {
+            case "ae2lt:energy_module_t1",
+                 "ae2lt:energy_module_t2",
+                 "ae2lt:energy_module_t3" -> ArmorEnergyModuleItem.MODULE_TYPE_ID;
+            case "ae2lt:module_night_vision" -> "night_vision";
+            case "ae2lt:module_water_breathing" -> "water_breathing";
+            case "ae2lt:module_reach_extension" -> "reach_extension";
+            case "ae2lt:module_matrix_shield" -> "matrix_shield";
+            case "ae2lt:module_phase_shield" -> "phase_shield";
+            case "ae2lt:module_reflect" -> "reflect";
+            case "ae2lt:module_undying" -> "undying";
+            case "ae2lt:module_dash" -> "dash";
+            case "ae2lt:module_creative_flight" -> "flight";
+            case "ae2lt:module_purification" -> "purification";
+            case "ae2lt:module_saturation" -> "saturation";
+            case "ae2lt:module_dig_affinity" -> "dig_affinity";
+            case "ae2lt:module_phase_flight" -> "phase_flight";
+            default -> "";
+        };
     }
 
     private static long energyCapacityFe(ItemStack stack) {

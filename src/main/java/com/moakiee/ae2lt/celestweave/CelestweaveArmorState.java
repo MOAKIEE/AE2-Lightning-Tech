@@ -267,8 +267,12 @@ public final class CelestweaveArmorState {
         return submodule == null ? 0 : Math.max(0, submodule.getMaxInstallAmount());
     }
 
+    public static boolean isSubmoduleInstalled(ItemStack armor, HolderLookup.Provider registries, String submoduleId) {
+        return getInstalledAmount(armor, registries, submoduleId) > 0;
+    }
+
     public static boolean isSubmoduleInstalled(ItemStack armor, String submoduleId) {
-        return getInstalledAmount(armor, null, submoduleId) > 0;
+        return ArmorPersistentData.hasInstalledSubmodule(armor, submoduleId);
     }
 
     public static boolean isSubmoduleEnabled(ItemStack armor, CelestweaveArmorSubmodule submodule) {

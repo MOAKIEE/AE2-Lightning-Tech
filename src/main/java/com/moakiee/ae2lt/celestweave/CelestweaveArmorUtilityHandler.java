@@ -207,7 +207,10 @@ public final class CelestweaveArmorUtilityHandler {
             if (armor.isEmpty() || !(armor.getItem() instanceof BaseCelestweaveArmorItem)) {
                 continue;
             }
-            if (CelestweaveArmorState.isSubmoduleInstalled(armor, PhaseFlightSubmodule.INSTANCE.id())) {
+            if (CelestweaveArmorState.isSubmoduleInstalled(
+                    armor,
+                    player.registryAccess(),
+                    PhaseFlightSubmodule.INSTANCE.id())) {
                 return armor;
             }
         }
