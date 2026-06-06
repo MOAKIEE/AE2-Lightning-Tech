@@ -22,11 +22,14 @@ public final class WirelessLinkOps {
     }
 
     public static boolean isConnectedTo(@Nullable IGridConnection connection, @Nullable IGridNode node, @Nullable IGridNode other) {
-        return hasLiveConnection(connection, node) && other != null && connection.getOtherSide(node) == other;
+        return hasLiveConnection(connection, node)
+                && !connection.isInWorld()
+                && other != null
+                && connection.getOtherSide(node) == other;
     }
 
     public static void destroy(@Nullable IGridConnection connection, @Nullable IGridNode node) {
-        if (hasLiveConnection(connection, node)) {
+        if (hasLiveConnection(connection, node) && !connection.isInWorld()) {
             connection.destroy();
         }
     }
@@ -34,7 +37,10 @@ public final class WirelessLinkOps {
     public static IGridConnection createVirtualConnection(IGridNode targetNode, IGridNode transmitterNode) {
         for (var connection : targetNode.getConnections()) {
             if (connection.getOtherSide(targetNode) == transmitterNode) {
-                return connection;
+                if (!connection.isInWorld()) {
+                    return connection;
+                }
+                throw new IllegalStateException("A physical connection already exists between the target and transmitter.");
             }
         }
         return GridConnection.create(targetNode, transmitterNode, null);

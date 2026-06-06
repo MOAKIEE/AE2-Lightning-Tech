@@ -249,7 +249,7 @@ public final class WirelessLinkRegistry extends SavedData {
         }
 
         IGridNode transmitterNode = manager.resolveNode(frequencyId, level.getServer());
-        if (transmitterNode != null && isAlreadyInFrequencyGrid(target.node(), transmitterNode)) {
+        if (transmitterNode != null && alreadyHasFrequencyChannel(target.node(), transmitterNode)) {
             return automatic
                     ? ActionFeedback.green("ae2lt.frequency_card.auto_silent_skip")
                     : ActionFeedback.yellow("ae2lt.frequency_card.already_in_frequency");
@@ -428,7 +428,7 @@ public final class WirelessLinkRegistry extends SavedData {
         return NativeHostSafety.classify(
                 targetNode != null,
                 transmitterNode != null,
-                nodesReady && isAlreadyInFrequencyGrid(targetNode, transmitterNode),
+                nodesReady && alreadyHasFrequencyChannel(targetNode, transmitterNode),
                 nodesReady && wouldMergeControllerNetworks(targetNode.getGrid(), transmitterNode.getGrid()));
     }
 
@@ -487,22 +487,32 @@ public final class WirelessLinkRegistry extends SavedData {
             return markState(link, WirelessLinkState.PENDING_TRANSMITTER, server, cleanupPass);
         }
 
+        IGridNode targetNode = target.target().node();
         var runtime = runtimeConnections.get(link.linkId());
-        if (WirelessLinkOps.isConnectedTo(runtime, target.target().node(), transmitterNode)) {
+        if (WirelessLinkOps.isConnectedTo(runtime, targetNode, transmitterNode)) {
+            if (!MultiblockLinkReadiness.canKeepVirtualConnection(targetNode)) {
+                destroyRuntimeConnection(link, targetNode);
+                return markState(link, WirelessLinkState.TARGET_NOT_READY, server, cleanupPass);
+            }
             return link.withState(WirelessLinkState.CONNECTED, currentGameTime(server)).clearInvalidTracking(currentGameTime(server));
         }
         runtimeConnections.remove(link.linkId());
 
-        if (isAlreadyInFrequencyGrid(target.target().node(), transmitterNode)) {
+        if (!MultiblockLinkReadiness.canKeepVirtualConnection(targetNode)) {
+            destroyRuntimeConnection(link, targetNode);
+            return markState(link, WirelessLinkState.TARGET_NOT_READY, server, cleanupPass);
+        }
+
+        if (alreadyHasFrequencyChannel(targetNode, transmitterNode)) {
             return markState(link, WirelessLinkState.REDUNDANT_LINK, server, cleanupPass);
         }
 
-        if (wouldMergeControllerNetworks(target.target().node().getGrid(), transmitterNode.getGrid())) {
+        if (wouldMergeControllerNetworks(targetNode.getGrid(), transmitterNode.getGrid())) {
             return markState(link, WirelessLinkState.DISCONNECTED, server, cleanupPass);
         }
 
         try {
-            var connection = WirelessLinkOps.createVirtualConnection(target.target().node(), transmitterNode);
+            var connection = WirelessLinkOps.createVirtualConnection(targetNode, transmitterNode);
             runtimeConnections.put(link.linkId(), connection);
             return link.withState(WirelessLinkState.CONNECTED, currentGameTime(server)).clearInvalidTracking(currentGameTime(server));
         } catch (IllegalStateException e) {
@@ -623,6 +633,9 @@ public final class WirelessLinkRegistry extends SavedData {
     private void destroyRuntimeConnection(WirelessLink link, @Nullable IGridNode targetNode) {
         var runtime = runtimeConnections.remove(link.linkId());
         WirelessLinkOps.destroy(runtime, targetNode);
+        if (targetNode != null) {
+            MultiblockLinkReadiness.refreshAfterVirtualConnectionRemoved(targetNode);
+        }
     }
 
     @Nullable
@@ -775,6 +788,11 @@ public final class WirelessLinkRegistry extends SavedData {
         IGrid targetGrid = targetNode.getGrid();
         IGrid transmitterGrid = transmitterNode.getGrid();
         return targetGrid != null && transmitterGrid != null && targetGrid == transmitterGrid;
+    }
+
+    private static boolean alreadyHasFrequencyChannel(IGridNode targetNode, IGridNode transmitterNode) {
+        return isAlreadyInFrequencyGrid(targetNode, transmitterNode)
+                && targetNode.meetsChannelRequirements();
     }
 
     private static boolean wouldMergeControllerNetworks(@Nullable IGrid targetGrid, @Nullable IGrid frequencyGrid) {
