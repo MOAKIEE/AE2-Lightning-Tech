@@ -10,6 +10,7 @@ import com.moakiee.ae2lt.item.OverloadCrystalItem;
 import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
+import com.moakiee.ae2lt.item.OverloadedFrequencyCardItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
@@ -139,6 +140,11 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOADED_WIRELESS_CONNECT_TOOL = ITEMS.registerItem(
             "overloaded_wireless_connect_tool",
             OverloadedWirelessConnectorItem::new,
+            new Item.Properties());
+
+    public static final DeferredItem<Item> OVERLOADED_FREQUENCY_CARD = ITEMS.registerItem(
+            "overloaded_frequency_card",
+            OverloadedFrequencyCardItem::new,
             new Item.Properties());
 
     public static final DeferredItem<Item> OVERLOAD_PATTERN = ITEMS.registerItem(

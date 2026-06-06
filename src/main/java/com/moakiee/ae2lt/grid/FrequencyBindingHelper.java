@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import appeng.api.networking.IGridConnection;
+import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
 import appeng.api.networking.IGridNodeListener;
 import appeng.me.GridConnection;
@@ -358,6 +359,16 @@ public final class FrequencyBindingHelper
             return;
         }
 
+        if (isAlreadyInFrequencyGrid(myNode, remoteNode)) {
+            return;
+        }
+
+        if (wouldMergeControllerNetworks(myNode.getGrid(), remoteNode.getGrid())) {
+            LOG.warn("Virtual connection blocked to avoid controller-network merge: device@{} -> freq={}",
+                    be.getBlockPos(), frequencyId);
+            return;
+        }
+
         for (var conn : myNode.getConnections()) {
             if (conn.getOtherSide(myNode) == remoteNode) {
                 return;
@@ -420,5 +431,18 @@ public final class FrequencyBindingHelper
         if (currentTarget == null || connectedTarget != currentTarget) {
             destroyVirtualConnection();
         }
+    }
+
+    private static boolean isAlreadyInFrequencyGrid(IGridNode targetNode, IGridNode transmitterNode) {
+        IGrid targetGrid = targetNode.getGrid();
+        IGrid transmitterGrid = transmitterNode.getGrid();
+        return targetGrid != null && transmitterGrid != null && targetGrid == transmitterGrid;
+    }
+
+    private static boolean wouldMergeControllerNetworks(@Nullable IGrid targetGrid, @Nullable IGrid frequencyGrid) {
+        if (targetGrid == null || targetGrid == frequencyGrid) {
+            return false;
+        }
+        return !OverloadedChannelOwnerHelper.getAllControllerNodes(targetGrid).isEmpty();
     }
 }

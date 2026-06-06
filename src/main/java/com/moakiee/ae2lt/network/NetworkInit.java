@@ -20,6 +20,14 @@ public final class NetworkInit {
                 WirelessConnectorUsePacket.STREAM_CODEC,
                 WirelessConnectorUsePacket::handle);
         registrar.playToServer(
+                FrequencyCardUsePacket.TYPE,
+                FrequencyCardUsePacket.STREAM_CODEC,
+                FrequencyCardUsePacket::handle);
+        registrar.playToServer(
+                ToggleFrequencyCardAutoConnectPacket.TYPE,
+                ToggleFrequencyCardAutoConnectPacket.STREAM_CODEC,
+                ToggleFrequencyCardAutoConnectPacket::handle);
+        registrar.playToServer(
                 OpenFrequencyMenuPacket.TYPE,
                 OpenFrequencyMenuPacket.STREAM_CODEC,
                 OpenFrequencyMenuPacket::handle);
