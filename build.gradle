@@ -30,6 +30,13 @@ repositories {
             includeGroup "curse.maven"
         }
     }
+    maven {
+        name = "Curios"
+        url = uri("https://maven.theillusivec4.top/")
+        content {
+            includeGroup "top.theillusivec4.curios"
+        }
+    }
 }
 
 base {
@@ -186,6 +193,8 @@ dependencies {
     runtimeOnly "curse.maven:toms-storage-378609:7659872"
     runtimeOnly "curse.maven:kubejs-238086:7278501"
     runtimeOnly "curse.maven:rhino-416294:7104526"
+    compileOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1:api"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:9.5.1+1.21.1"
 
     runtimeOnly files("libs/observable-5.4.4.jar")
     runtimeOnly "curse.maven:kotlin-for-forge-351264:7471280"

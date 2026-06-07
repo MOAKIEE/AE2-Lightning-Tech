@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.item;
 
 import com.moakiee.ae2lt.network.FrequencyCardUsePacket;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -158,57 +159,60 @@ public class OverloadedFrequencyCardItem extends Item {
     }
 
     public static Optional<ItemStack> findAutoConnectCard(Player player) {
-        UUID playerUuid = player.getUUID();
-        var main = player.getMainHandItem();
-        if (isUsableAutoCard(main, playerUuid)) {
-            return Optional.of(main);
-        }
-
-        var offhand = player.getOffhandItem();
-        if (isUsableAutoCard(offhand, playerUuid)) {
-            return Optional.of(offhand);
-        }
-
-        ItemStack hotbarCandidate = ItemStack.EMPTY;
-        int hotbarCount = 0;
-        var inventory = player.getInventory();
-        for (int slot = 0; slot < 9 && slot < inventory.items.size(); slot++) {
-            var stack = inventory.items.get(slot);
-            if (isUsableAutoCard(stack, playerUuid)) {
-                hotbarCandidate = stack;
-                hotbarCount++;
-            }
-        }
-        if (hotbarCount == 1) {
-            return Optional.of(hotbarCandidate);
-        }
-        if (hotbarCount > 1) {
-            return Optional.empty();
-        }
-
-        ItemStack backpackCandidate = ItemStack.EMPTY;
-        int backpackCount = 0;
-        for (int slot = 9; slot < inventory.items.size(); slot++) {
-            var stack = inventory.items.get(slot);
-            if (isUsableAutoCard(stack, playerUuid)) {
-                backpackCandidate = stack;
-                backpackCount++;
-            }
-        }
-        return backpackCount == 1 ? Optional.of(backpackCandidate) : Optional.empty();
+        return selectAutoConnectCard(player).selected();
     }
 
     public static boolean hasMultipleAutoConnectCandidates(Player player) {
+        return selectAutoConnectCard(player).ambiguous();
+    }
+
+    public static FrequencyCardCandidateSelector.Selection<ItemStack> selectToggleCard(Player player) {
+        return selectCard(player, false);
+    }
+
+    private static FrequencyCardCandidateSelector.Selection<ItemStack> selectAutoConnectCard(Player player) {
+        return selectCard(player, true);
+    }
+
+    private static FrequencyCardCandidateSelector.Selection<ItemStack> selectCard(
+            Player player,
+            boolean requireAutoConnect) {
         UUID playerUuid = player.getUUID();
-        int count = 0;
-        if (isUsableAutoCard(player.getMainHandItem(), playerUuid)) count++;
-        if (isUsableAutoCard(player.getOffhandItem(), playerUuid)) count++;
-        for (var stack : player.getInventory().items) {
-            if (isUsableAutoCard(stack, playerUuid)) {
-                count++;
-            }
+        var candidates = new ArrayList<FrequencyCardCandidateSelector.Candidate<ItemStack>>();
+
+        var main = player.getMainHandItem();
+        addCandidate(candidates, FrequencyCardCandidateSelector.Source.MAIN_HAND, main, playerUuid, requireAutoConnect);
+
+        var offhand = player.getOffhandItem();
+        addCandidate(candidates, FrequencyCardCandidateSelector.Source.OFF_HAND, offhand, playerUuid, requireAutoConnect);
+
+        for (var stack : CuriosFrequencyCardFinder.findFrequencyCards(player)) {
+            addCandidate(candidates, FrequencyCardCandidateSelector.Source.CURIOS, stack, playerUuid, requireAutoConnect);
         }
-        return count > 1;
+
+        var inventory = player.getInventory();
+        for (int slot = 0; slot < 9 && slot < inventory.items.size(); slot++) {
+            var stack = inventory.items.get(slot);
+            addCandidate(candidates, FrequencyCardCandidateSelector.Source.HOTBAR, stack, playerUuid, requireAutoConnect);
+        }
+
+        for (int slot = 9; slot < inventory.items.size(); slot++) {
+            var stack = inventory.items.get(slot);
+            addCandidate(candidates, FrequencyCardCandidateSelector.Source.BACKPACK, stack, playerUuid, requireAutoConnect);
+        }
+
+        return FrequencyCardCandidateSelector.select(candidates);
+    }
+
+    private static void addCandidate(
+            List<FrequencyCardCandidateSelector.Candidate<ItemStack>> candidates,
+            FrequencyCardCandidateSelector.Source source,
+            ItemStack stack,
+            UUID playerUuid,
+            boolean requireAutoConnect) {
+        if (requireAutoConnect ? isUsableAutoCard(stack, playerUuid) : isToggleCandidate(stack, playerUuid)) {
+            candidates.add(new FrequencyCardCandidateSelector.Candidate<>(source, stack));
+        }
     }
 
     private static boolean isUsableAutoCard(ItemStack stack, UUID playerUuid) {
@@ -217,6 +221,14 @@ public class OverloadedFrequencyCardItem extends Item {
         }
         var data = getData(stack);
         return data.isBound() && data.autoConnect() && data.canBeUsedBy(playerUuid);
+    }
+
+    private static boolean isToggleCandidate(ItemStack stack, UUID playerUuid) {
+        if (!(stack.getItem() instanceof OverloadedFrequencyCardItem)) {
+            return false;
+        }
+        var data = getData(stack);
+        return !data.isBound() || data.canBeUsedBy(playerUuid);
     }
 
     private static OverloadedFrequencyCardData fromTag(CompoundTag tag) {

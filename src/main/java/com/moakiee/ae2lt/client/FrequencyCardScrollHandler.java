@@ -39,7 +39,7 @@ public final class FrequencyCardScrollHandler {
             return;
         }
 
-        PacketDistributor.sendToServer(new ToggleFrequencyCardAutoConnectPacket(hand));
+        PacketDistributor.sendToServer(ToggleFrequencyCardAutoConnectPacket.forHand(hand));
         event.setCanceled(true);
     }
 }

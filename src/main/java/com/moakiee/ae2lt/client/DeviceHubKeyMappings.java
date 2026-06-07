@@ -15,6 +15,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.menu.hub.DeviceHubMenu;
+import com.moakiee.ae2lt.network.ToggleFrequencyCardAutoConnectPacket;
 import com.moakiee.ae2lt.network.DashPacket;
 import com.moakiee.ae2lt.network.hub.OpenDeviceHubPacket;
 import com.moakiee.ae2lt.celestweave.BaseCelestweaveArmorItem;
@@ -33,6 +34,11 @@ public final class DeviceHubKeyMappings {
             GLFW.GLFW_KEY_G,
             CATEGORY);
 
+    public static final KeyMapping TOGGLE_FREQUENCY_CARD_AUTO_CONNECT = new KeyMapping(
+            "key.ae2lt.toggle_frequency_card_auto_connect",
+            GLFW.GLFW_KEY_UNKNOWN,
+            CATEGORY);
+
     private DeviceHubKeyMappings() {
     }
 
@@ -40,6 +46,7 @@ public final class DeviceHubKeyMappings {
     public static void register(RegisterKeyMappingsEvent event) {
         event.register(DASH);
         event.register(OPEN_CONFIG);
+        event.register(TOGGLE_FREQUENCY_CARD_AUTO_CONNECT);
     }
 
     @EventBusSubscriber(modid = AE2LightningTech.MODID, bus = EventBusSubscriber.Bus.GAME, value = Dist.CLIENT)
@@ -56,6 +63,10 @@ public final class DeviceHubKeyMappings {
 
             while (DASH.consumeClick()) {
                 PacketDistributor.sendToServer(new DashPacket());
+            }
+
+            while (TOGGLE_FREQUENCY_CARD_AUTO_CONNECT.consumeClick()) {
+                PacketDistributor.sendToServer(ToggleFrequencyCardAutoConnectPacket.forPreferredCard());
             }
 
             while (OPEN_CONFIG.consumeClick()) {
