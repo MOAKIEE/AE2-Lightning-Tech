@@ -18,7 +18,6 @@ import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
 import com.moakiee.ae2lt.item.OverloadedFrequencyCardItem;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,11 +49,10 @@ public final class WirelessLinkRegistry extends SavedData {
     private static final int RESTORE_BATCH_SIZE = 64;
     private static final int RESTORE_INTERVAL_TICKS = 20;
 
-    private final Map<UUID, WirelessLink> links = new LinkedHashMap<>();
+    private final WirelessLinkIndex links = new WirelessLinkIndex();
     private final Map<UUID, IGridConnection> runtimeConnections = new HashMap<>();
     private final List<PendingAutoConnect> pendingAutoConnect = new ArrayList<>();
 
-    private int restoreCursor;
     private int restoreCooldown;
     private long nextCleanupGameTime;
 
@@ -283,12 +281,12 @@ public final class WirelessLinkRegistry extends SavedData {
                         target.blockEntityTypeId(),
                         owner,
                         now);
-        links.put(link.linkId(), link);
+        links.put(link);
         registerDevice(link);
         setDirty();
 
         var updated = establishOrUpdate(link, level.getServer(), false);
-        links.put(updated.linkId(), updated);
+        links.put(updated);
         setDirty();
 
         if (updated.state() == WirelessLinkState.CONNECTED) {
@@ -434,33 +432,18 @@ public final class WirelessLinkRegistry extends SavedData {
 
     private void processLinks(MinecraftServer server, boolean cleanupPass) {
         if (links.isEmpty()) {
-            restoreCursor = 0;
             return;
-        }
-
-        var snapshot = new ArrayList<>(links.values());
-        if (restoreCursor >= snapshot.size()) {
-            restoreCursor = 0;
         }
 
         int batch = cleanupPass
                 ? Math.max(1, AE2LTCommonConfig.frequencyCardCleanupBatchSize())
                 : RESTORE_BATCH_SIZE;
-        int processed = 0;
-        while (processed < batch && !snapshot.isEmpty()) {
-            if (restoreCursor >= snapshot.size()) {
-                restoreCursor = 0;
-            }
-            var link = snapshot.get(restoreCursor++);
-            if (links.containsKey(link.linkId())) {
+        for (var link : links.nextBatch(batch)) {
+            if (links.contains(link.linkId())) {
                 var updated = establishOrUpdate(link, server, cleanupPass);
-                if (links.containsKey(updated.linkId())) {
-                    links.put(updated.linkId(), updated);
+                if (links.contains(updated.linkId())) {
+                    links.put(updated);
                 }
-            }
-            processed++;
-            if (processed >= snapshot.size()) {
-                break;
             }
         }
     }
@@ -648,29 +631,12 @@ public final class WirelessLinkRegistry extends SavedData {
 
     @Nullable
     private WirelessLink findLink(int frequencyId, ResourceKey<Level> dimension, BlockPos pos, WirelessLinkMode mode, String sideName) {
-        for (var link : links.values()) {
-            if (link.frequencyId() == frequencyId
-                    && link.dimensionId().equals(dimension.location().toString())
-                    && link.posLong() == pos.asLong()
-                    && link.mode() == mode
-                    && link.sideName().equals(sideName)) {
-                return link;
-            }
-        }
-        return null;
+        return links.find(frequencyId, dimension.location().toString(), pos.asLong(), mode, sideName);
     }
 
     @Nullable
     private WirelessLink findAnyLink(ResourceKey<Level> dimension, BlockPos pos, WirelessLinkMode mode, String sideName) {
-        for (var link : links.values()) {
-            if (link.dimensionId().equals(dimension.location().toString())
-                    && link.posLong() == pos.asLong()
-                    && link.mode() == mode
-                    && link.sideName().equals(sideName)) {
-                return link;
-            }
-        }
-        return null;
+        return links.findAny(dimension.location().toString(), pos.asLong(), mode, sideName);
     }
 
     private TargetResolution resolveTarget(ServerLevel level, BlockPos pos, @Nullable Direction face, @Nullable Vec3 hitVec) {
@@ -845,7 +811,7 @@ public final class WirelessLinkRegistry extends SavedData {
         var list = root.getList("links", Tag.TAG_COMPOUND);
         for (int i = 0; i < list.size(); i++) {
             var loaded = loadLink(list.getCompound(i));
-            loaded.ifPresent(link -> links.put(link.linkId(), link));
+            loaded.ifPresent(links::put);
         }
     }
 
