@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.blockentity;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
@@ -23,6 +24,7 @@ import com.moakiee.ae2lt.logic.ConnectionEndpoints;
 import com.moakiee.ae2lt.logic.DirectMEInsertInventory;
 import com.moakiee.ae2lt.logic.EjectModeRegistry;
 import com.moakiee.ae2lt.logic.OverloadedInterfaceLogic;
+import com.moakiee.ae2lt.logic.OverloadedInterfaceTickDecider;
 import com.moakiee.ae2lt.logic.WirelessConnectionLists;
 import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.WirelessConnectionRef;
@@ -107,6 +109,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public enum IOSpeedMode   { NORMAL, FAST }
     public enum ExportMode    { OFF, AUTO }
     public enum ImportMode    { OFF, AUTO, EJECT }
+
+    private static final List<Direction> ALL_NORMAL_IO_DIRECTIONS =
+            List.of(Direction.values());
 
     // ══════════════════════════════════════════════════════════════════════
     //  Transfer budget
@@ -545,6 +550,8 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     private final Map<WirelessConnection, ConnectionState> connectionStates =
             new HashMap<>();
+    private final Map<Direction, ConnectionState> normalConnectionStates =
+            new EnumMap<>(Direction.class);
     private List<WirelessConnection> validConnectionsCache = List.of();
     private long    validConnectionsCacheTick = -1;
     private boolean connectionsDirty = true;
@@ -812,6 +819,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     public @Nullable Direction getEnergyOutputDir() { return energyOutputDir; }
     public void setEnergyOutputDir(@Nullable Direction d) {
         if (energyOutputDir == d) return; energyOutputDir = d;
+        normalConnectionStates.clear();
         saveChanges(); markForUpdate();
     }
 
@@ -949,6 +957,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
         validEnergyTargetsVersion++;
         connectionStates.clear();
+        normalConnectionStates.clear();
         resetIOWheel();
         wirelessDistributor.clearTickState(true);
     }
@@ -967,6 +976,9 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     private void wakeWirelessIo() {
         for (var state : connectionStates.values()) {
+            state.resetWirelessIo(ioSpeedMode);
+        }
+        for (var state : normalConnectionStates.values()) {
             state.resetWirelessIo(ioSpeedMode);
         }
         keyTypeLockUntil.clear();
@@ -1050,25 +1062,101 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         // 能量层:每 tick 触发(内部 wheel + scheduleDelay 已经是自适应的)
         be.tickEnergyTransfer(sl);
 
-        // Wireless IO: timing-wheel driven per-connection scheduling
-        if (be.interfaceMode != InterfaceMode.WIRELESS) return;
-        be.tickWirelessIO(sl);
+        // Item IO: wireless uses the timing wheel; normal mode scans adjacent targets.
+        if (be.interfaceMode == InterfaceMode.WIRELESS) {
+            be.tickWirelessIO(sl);
+        } else {
+            be.tickNormalIO(sl);
+        }
     }
 
     private boolean hasServerTickWork() {
-        if (interfaceMode == InterfaceMode.WIRELESS && !importBuffer.isEmpty()) {
-            return true;
+        boolean wirelessMode = interfaceMode == InterfaceMode.WIRELESS;
+        boolean hasConnections = !connections.isEmpty();
+        boolean hasEnergyOutput = energyOutputDir != null;
+        boolean hasFeKey = AppFluxHelper.FE_KEY != null;
+        boolean mayTransferEnergy = (wirelessMode && hasConnections) || hasEnergyOutput;
+        boolean hasInduction = mayTransferEnergy && hasFeKey && hasInductionCard();
+
+        return OverloadedInterfaceTickDecider.hasServerTickWork(
+                wirelessMode,
+                !importBuffer.isEmpty(),
+                hasConnections,
+                importMode == ImportMode.AUTO,
+                exportMode == ExportMode.AUTO,
+                hasEnergyOutput,
+                hasFeKey,
+                hasInduction);
+    }
+
+    private void tickNormalIO(ServerLevel sl) {
+        if (interfaceMode != InterfaceMode.NORMAL) return;
+        var grid = getMainNode().getGrid();
+        if (grid == null) return;
+
+        long now = sl.getGameTime();
+        var meStorage = grid.getStorageService().getInventory();
+        var source = machineSource;
+
+        flushImportBuffer(meStorage, source, now);
+
+        boolean activeImport = importMode == ImportMode.AUTO;
+        boolean activeExport = exportMode == ExportMode.AUTO;
+        if (!activeImport && !activeExport) return;
+
+        for (var direction : normalIoDirections()) {
+            var conn = new WirelessConnection(
+                    sl.dimension(),
+                    getBlockPos().relative(direction),
+                    direction.getOpposite());
+            var state = normalConnectionStates.computeIfAbsent(
+                    direction, ignored -> new ConnectionState());
+            var wrappers = state.resolveWrappers(sl, conn);
+            if (wrappers == null) continue;
+
+            for (var wrapperEntry : wrappers.entrySet()) {
+                var keyType = wrapperEntry.getKey();
+                if (!isWirelessIoKeyType(keyType)) continue;
+                var wrapper = wrapperEntry.getValue();
+                if (activeImport) {
+                    runNormalImportIfDue(state, keyType, wrapper, source, now);
+                }
+                if (activeExport) {
+                    runNormalExportIfDue(state, keyType, wrapper, meStorage, source, now);
+                }
+            }
         }
-        if (interfaceMode == InterfaceMode.WIRELESS
-                && !connections.isEmpty()
-                && (importMode == ImportMode.AUTO || exportMode == ExportMode.AUTO)) {
-            return true;
+    }
+
+    private List<Direction> normalIoDirections() {
+        if (OverloadedInterfaceTickDecider.normalIoDirectionCount(energyOutputDir != null) == 1
+                && energyOutputDir != null) {
+            return List.of(energyOutputDir);
         }
-        if ((interfaceMode == InterfaceMode.WIRELESS && !connections.isEmpty())
-                || energyOutputDir != null) {
-            return AppFluxHelper.FE_KEY != null && hasInductionCard();
+        return ALL_NORMAL_IO_DIRECTIONS;
+    }
+
+    private void runNormalImportIfDue(ConnectionState state, AEKeyType keyType,
+                                      MEStorage wrapper, IActionSource source, long now) {
+        var cd = state.cdFor(keyType, IoDirection.IMPORT);
+        if (cd.cooldownUntil() > now) return;
+
+        long locked = lockedUntil(keyType, now);
+        if (locked > now) {
+            cd.cooldownUntil = locked;
+            return;
         }
-        return false;
+
+        runExtract(state, keyType, wrapper, source, now, IMPORT_TRANSFER_LIMIT);
+    }
+
+    private void runNormalExportIfDue(ConnectionState state, AEKeyType keyType,
+                                      MEStorage wrapper, MEStorage meStorage,
+                                      IActionSource source, long now) {
+        var cd = state.cdFor(keyType, IoDirection.EXPORT);
+        if (cd.cooldownUntil() > now) return;
+
+        runExport(state, keyType, wrapper, meStorage, source, now);
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -1785,18 +1873,15 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
 
     public void refreshEjectRegistrations() {
         unregisterEject();
-        if (importMode != ImportMode.EJECT || level==null || level.isClientSide()) return;
+        if (!OverloadedInterfaceTickDecider.shouldRegisterEjectPorts(
+                interfaceMode == InterfaceMode.WIRELESS,
+                importMode == ImportMode.EJECT)
+                || level==null || level.isClientSide()) return;
         var srv = level.getServer(); if (srv==null) return;
-        if (interfaceMode == InterfaceMode.WIRELESS) {
-            for (var c : connections) {
-                if (!c.dimension().equals(level.dimension())) continue;
-                registerEjectAt(srv, c.dimension(),
-                        c.pos().relative(c.boundFace()), c.boundFace().getOpposite());
-            }
-        } else {
-            for (Direction d : Direction.values())
-                registerEjectAt(srv, level.dimension(),
-                        getBlockPos().relative(d), d.getOpposite());
+        for (var c : connections) {
+            if (!c.dimension().equals(level.dimension())) continue;
+            registerEjectAt(srv, c.dimension(),
+                    c.pos().relative(c.boundFace()), c.boundFace().getOpposite());
         }
     }
 
