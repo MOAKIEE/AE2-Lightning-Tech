@@ -117,26 +117,8 @@ public final class CelestweaveArmorUtilityHandler {
                 continue;
             }
             int limit = Math.max(1, purification.strength());
-            int removable = countPurifiableEffects(player, limit);
-            if (removable > 0) {
-                purifyEffects(player, limit);
-                continue;
-            }
             purifyEffects(player, limit);
         }
-    }
-
-    private static int countPurifiableEffects(ServerPlayer player, int maxEffects) {
-        int count = 0;
-        for (var effect : List.copyOf(player.getActiveEffects())) {
-            if (count >= maxEffects) {
-                break;
-            }
-            if (PurificationEffectRules.canPurify(effect)) {
-                count++;
-            }
-        }
-        return count;
     }
 
     private static int purifyEffects(ServerPlayer player, int maxEffects) {
@@ -163,7 +145,7 @@ public final class CelestweaveArmorUtilityHandler {
             if (!(active.capability() instanceof DeviceCapability.FoodSustain foodSustain)) {
                 continue;
             }
-            if (SaturationSubmodule.getCooldown(active.armor()) > 0) {
+            if (SaturationSubmodule.getCooldown(active.armor(), player) > 0) {
                 continue;
             }
             int intervalTicks = Math.max(1, foodSustain.checkIntervalTicks());
@@ -173,7 +155,7 @@ public final class CelestweaveArmorUtilityHandler {
             int currentFood = foodData.getFoodLevel();
             float currentSaturation = foodData.getSaturationLevel();
             if (currentFood >= targetFood && currentSaturation >= targetSaturation) {
-                SaturationSubmodule.setCooldown(active.armor(), intervalTicks);
+                SaturationSubmodule.setCooldown(active.armor(), player, intervalTicks);
                 return;
             }
             if (currentFood < targetFood) {
@@ -182,7 +164,7 @@ public final class CelestweaveArmorUtilityHandler {
             if (currentSaturation < targetSaturation) {
                 foodData.setSaturation(Math.max(currentSaturation, targetSaturation));
             }
-            SaturationSubmodule.setCooldown(active.armor(), intervalTicks);
+            SaturationSubmodule.setCooldown(active.armor(), player, intervalTicks);
             return;
         }
     }
@@ -218,6 +200,7 @@ public final class CelestweaveArmorUtilityHandler {
     }
 
     private static void clearPlayerRuntime(Player player) {
+        ArmorCapabilityCollector.clearCache(player);
         PhaseFlightSubmodule.clearTransientPhaseState(player);
         for (EquipmentSlot slot : List.of(
                 EquipmentSlot.HEAD,

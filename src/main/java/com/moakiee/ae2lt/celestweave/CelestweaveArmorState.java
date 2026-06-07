@@ -329,11 +329,20 @@ public final class CelestweaveArmorState {
             HolderLookup.Provider registries,
             boolean equipped,
             Dist dist) {
+        syncSubmoduleActiveState(player, armor, collectInstalledSubmoduleEntries(armor, registries), equipped, dist);
+    }
+
+    public static void syncSubmoduleActiveState(
+            @Nullable Player player,
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            boolean equipped,
+            Dist dist) {
         UUID armorId = ensureArmorId(armor);
-        for (var submodule : collectSubmodules(armor, registries)) {
-            boolean active = equipped
-                    && hasCore(armor, registries)
-                    && isSubmoduleEnabled(armor, submodule);
+        boolean hasCore = equipped && ArmorPersistentData.hasStructuralCore(armor);
+        for (var entry : installedSubmodules) {
+            var submodule = entry.submodule();
+            boolean active = hasCore && isSubmoduleEnabled(armor, submodule);
             Boolean previous = dist == Dist.CLIENT
                     ? ArmorRuntimeRegistry.setClientSubmoduleActive(armorId, submodule.id(), active)
                     : ArmorRuntimeRegistry.setServerSubmoduleActive(armorId, submodule.id(), active);
@@ -378,7 +387,15 @@ public final class CelestweaveArmorState {
             ItemStack armor,
             HolderLookup.Provider registries,
             Dist dist) {
-        for (var entry : collectInstalledSubmoduleEntries(armor, registries)) {
+        tickActiveSubmodules(player, armor, collectInstalledSubmoduleEntries(armor, registries), dist);
+    }
+
+    public static void tickActiveSubmodules(
+            @Nullable Player player,
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            Dist dist) {
+        for (var entry : installedSubmodules) {
             var submodule = entry.submodule();
             if (!isSubmoduleRuntimeActive(armor, submodule.id())) {
                 continue;
@@ -388,8 +405,16 @@ public final class CelestweaveArmorState {
     }
 
     public static Snapshot tickEquipped(Player player, ItemStack armor, HolderLookup.Provider registries) {
+        return tickEquipped(player, armor, collectInstalledSubmoduleEntries(armor, registries), registries);
+    }
+
+    public static Snapshot tickEquipped(
+            Player player,
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            HolderLookup.Provider registries) {
         UUID id = ensureArmorId(armor);
-        pruneRemovedRuntime(id, installedSubmoduleIds(armor, registries));
+        pruneRemovedRuntime(id, installedSubmoduleIds(installedSubmodules));
         return snapshot(player, armor, registries, true);
     }
 
@@ -498,7 +523,7 @@ public final class CelestweaveArmorState {
         return ref[0];
     }
 
-    private static List<InstalledSubmodule> collectInstalledSubmoduleEntries(
+    public static List<InstalledSubmodule> collectInstalledSubmoduleEntries(
             ItemStack armor,
             HolderLookup.Provider registries) {
         var result = new ArrayList<InstalledSubmodule>();
@@ -527,8 +552,12 @@ public final class CelestweaveArmorState {
     }
 
     private static Set<String> installedSubmoduleIds(ItemStack armor, HolderLookup.Provider registries) {
+        return installedSubmoduleIds(collectInstalledSubmoduleEntries(armor, registries));
+    }
+
+    private static Set<String> installedSubmoduleIds(List<InstalledSubmodule> installedSubmodules) {
         var installedIds = new HashSet<String>();
-        for (var entry : collectInstalledSubmoduleEntries(armor, registries)) {
+        for (var entry : installedSubmodules) {
             installedIds.add(entry.submodule().id());
         }
         return installedIds;
@@ -574,7 +603,7 @@ public final class CelestweaveArmorState {
         }
     }
 
-    private record InstalledSubmodule(ItemStack stack, CelestweaveArmorSubmodule submodule, int count) {
+    public record InstalledSubmodule(ItemStack stack, CelestweaveArmorSubmodule submodule, int count) {
     }
 
     public record Snapshot(

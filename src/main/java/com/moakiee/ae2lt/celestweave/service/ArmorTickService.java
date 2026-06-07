@@ -19,7 +19,8 @@ public final class ArmorTickService {
             HolderLookup.Provider registries,
             Dist dist) {
         CelestweaveArmorState.ensureArmorId(armor);
-        CelestweaveArmorState.syncSubmoduleActiveState(player, armor, registries, equipped, dist);
+        var installedSubmodules = CelestweaveArmorState.collectInstalledSubmoduleEntries(armor, registries);
+        CelestweaveArmorState.syncSubmoduleActiveState(player, armor, installedSubmodules, equipped, dist);
         if (!equipped) {
             CelestweaveArmorState.clearTransientRuntime(armor);
             return;
@@ -28,13 +29,13 @@ public final class ArmorTickService {
         if (player instanceof ServerPlayer serverPlayer) {
             ArmorEnergyService.refillFromBoundNetworkIfLow(serverPlayer, armor, registries);
             if (!ArmorEnergyService.consumePassiveDrain(serverPlayer, armor, registries)) {
-                CelestweaveArmorState.syncSubmoduleActiveState(player, armor, registries, false, dist);
-                CelestweaveArmorState.tickEquipped(player, armor, registries);
+                CelestweaveArmorState.syncSubmoduleActiveState(player, armor, installedSubmodules, false, dist);
+                CelestweaveArmorState.tickEquipped(player, armor, installedSubmodules, registries);
                 return;
             }
         }
 
-        CelestweaveArmorState.tickActiveSubmodules(player, armor, registries, dist);
-        CelestweaveArmorState.tickEquipped(player, armor, registries);
+        CelestweaveArmorState.tickActiveSubmodules(player, armor, installedSubmodules, dist);
+        CelestweaveArmorState.tickEquipped(player, armor, installedSubmodules, registries);
     }
 }

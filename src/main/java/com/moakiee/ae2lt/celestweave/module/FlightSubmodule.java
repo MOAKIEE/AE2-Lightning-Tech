@@ -26,6 +26,7 @@ public final class FlightSubmodule extends AbstractCelestweaveArmorSubmodule {
     private static final String TAG_HAD_MAYFLY = "FlightHadMayfly";
     private static final String TAG_WAS_FLYING = "FlightWasFlying";
     private static final String TAG_PREVIOUS_SPEED = "FlightPreviousFlyingSpeed";
+    private static final float SPEED_EPSILON = 1.0E-6F;
     private FlightSubmodule() {}
 
     @Override
@@ -78,8 +79,11 @@ public final class FlightSubmodule extends AbstractCelestweaveArmorSubmodule {
             if (!player.getAbilities().mayfly) {
                 grantFlight(player, armor);
             } else {
-                player.getAbilities().setFlyingSpeed(ArmorFlightSpeedRules.activeFlightSpeed(armor));
-                player.onUpdateAbilities();
+                updateAbilitiesIfChanged(
+                        player,
+                        true,
+                        player.getAbilities().flying,
+                        ArmorFlightSpeedRules.activeFlightSpeed(armor));
             }
             if (player.isFallFlying() && player.isSprinting()) {
                 tickElytraBoost(player, armor);
@@ -178,9 +182,11 @@ public final class FlightSubmodule extends AbstractCelestweaveArmorSubmodule {
             data.putFloat(TAG_PREVIOUS_SPEED, abilities.getFlyingSpeed());
             CelestweaveArmorState.setSubmoduleData(armor, INSTANCE, data);
         }
-        abilities.mayfly = true;
-        abilities.setFlyingSpeed(ArmorFlightSpeedRules.activeFlightSpeed(armor));
-        player.onUpdateAbilities();
+        updateAbilitiesIfChanged(
+                player,
+                true,
+                abilities.flying,
+                ArmorFlightSpeedRules.activeFlightSpeed(armor));
     }
 
     private static void revokeFlight(Player player, ItemStack armor) {
@@ -206,11 +212,38 @@ public final class FlightSubmodule extends AbstractCelestweaveArmorSubmodule {
             return;
         }
         boolean phaseFlightActive = CelestweaveArmorState.isSubmoduleRuntimeActive(armor, PhaseFlightSubmodule.INSTANCE.id());
-        abilities.mayfly = hadMayfly || phaseFlightActive;
-        abilities.flying = (wasFlying || phaseFlightActive) && abilities.mayfly;
-        abilities.setFlyingSpeed(phaseFlightActive
-                ? ArmorFlightSpeedRules.activeFlightSpeed(armor)
-                : previousSpeed > 0.0F ? previousSpeed : FlightSpeedOption.VANILLA_FLYING_SPEED);
-        player.onUpdateAbilities();
+        boolean targetMayfly = hadMayfly || phaseFlightActive;
+        updateAbilitiesIfChanged(
+                player,
+                targetMayfly,
+                (wasFlying || phaseFlightActive) && targetMayfly,
+                phaseFlightActive
+                        ? ArmorFlightSpeedRules.activeFlightSpeed(armor)
+                        : previousSpeed > 0.0F ? previousSpeed : FlightSpeedOption.VANILLA_FLYING_SPEED);
+    }
+
+    private static boolean updateAbilitiesIfChanged(
+            Player player,
+            boolean mayfly,
+            boolean flying,
+            float desiredSpeed) {
+        var abilities = player.getAbilities();
+        boolean changed = false;
+        if (abilities.mayfly != mayfly) {
+            abilities.mayfly = mayfly;
+            changed = true;
+        }
+        if (abilities.flying != flying) {
+            abilities.flying = flying;
+            changed = true;
+        }
+        if (Math.abs(abilities.getFlyingSpeed() - desiredSpeed) > SPEED_EPSILON) {
+            abilities.setFlyingSpeed(desiredSpeed);
+            changed = true;
+        }
+        if (changed) {
+            player.onUpdateAbilities();
+        }
+        return changed;
     }
 }

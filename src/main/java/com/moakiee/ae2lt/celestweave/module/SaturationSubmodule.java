@@ -13,7 +13,7 @@ public final class SaturationSubmodule extends AbstractCelestweaveArmorSubmodule
 
     public static final SaturationSubmodule INSTANCE = new SaturationSubmodule();
 
-    private static final String TAG_COOLDOWN = "SaturationCheckCooldown";
+    private static final String TAG_READY_AT_TICK = "SaturationCheckReadyAtTick";
 
     private SaturationSubmodule() {
     }
@@ -46,32 +46,41 @@ public final class SaturationSubmodule extends AbstractCelestweaveArmorSubmodule
     @Override
     public void onDeactivated(@Nullable Player player, Dist dist, ItemStack armor) {
         if (dist == Dist.DEDICATED_SERVER) {
-            setCooldown(armor, 0);
+            setCooldown(armor, player, 0);
         }
     }
 
     @Override
     public int tickActive(@Nullable Player player, Dist dist, ItemStack armor) {
-        if (dist == Dist.DEDICATED_SERVER) {
-            int cooldown = getCooldown(armor);
-            if (cooldown > 0) {
-                setCooldown(armor, cooldown - 1);
-            }
-        }
         return 0;
     }
 
+    /**
+     * @deprecated Cooldowns are stored as expiry game ticks; use {@link #getCooldown(ItemStack, Player)}.
+     */
+    @Deprecated
     public static int getCooldown(ItemStack armor) {
-        var data = CelestweaveArmorState.getSubmoduleData(armor, INSTANCE);
-        return data.contains(TAG_COOLDOWN, CompoundTag.TAG_INT) ? data.getInt(TAG_COOLDOWN) : 0;
+        return 0;
     }
 
-    public static void setCooldown(ItemStack armor, int ticks) {
+    public static int getCooldown(ItemStack armor, @Nullable Player player) {
+        if (player == null) {
+            return 0;
+        }
         var data = CelestweaveArmorState.getSubmoduleData(armor, INSTANCE);
-        if (ticks <= 0) {
-            data.remove(TAG_COOLDOWN);
+        if (!data.contains(TAG_READY_AT_TICK, CompoundTag.TAG_LONG)) {
+            return 0;
+        }
+        long remaining = data.getLong(TAG_READY_AT_TICK) - player.level().getGameTime();
+        return (int) Math.min(Integer.MAX_VALUE, Math.max(0L, remaining));
+    }
+
+    public static void setCooldown(ItemStack armor, @Nullable Player player, int ticks) {
+        var data = CelestweaveArmorState.getSubmoduleData(armor, INSTANCE);
+        if (ticks <= 0 || player == null) {
+            data.remove(TAG_READY_AT_TICK);
         } else {
-            data.putInt(TAG_COOLDOWN, ticks);
+            data.putLong(TAG_READY_AT_TICK, player.level().getGameTime() + ticks);
         }
         CelestweaveArmorState.setSubmoduleData(armor, INSTANCE, data);
     }

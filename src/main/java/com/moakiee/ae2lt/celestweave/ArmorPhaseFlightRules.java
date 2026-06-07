@@ -17,7 +17,7 @@ public final class ArmorPhaseFlightRules {
             boolean active,
             boolean changed,
             boolean predictiveMovement) {
-        return changed || (active && predictiveMovement);
+        return changed;
     }
 
     public static boolean shouldApplyPseudoSpectatorState(

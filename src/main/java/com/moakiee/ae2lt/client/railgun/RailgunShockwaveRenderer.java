@@ -34,6 +34,10 @@ import com.moakiee.ae2lt.AE2LightningTech;
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public final class RailgunShockwaveRenderer {
 
+    private static final int RING_SEGMENTS = 64;
+    private static final int OCCLUSION_REFRESH_TICKS = 1;
+    private static final float SHOCKWAVE_RADIUS_JITTER = 0.095F;
+
     /** A single live shockwave + flash burst. */
     public static final class Burst {
         final Vec3 center;
@@ -41,6 +45,8 @@ public final class RailgunShockwaveRenderer {
         final int totalLifetime;
         int remaining;
         final float r, g, b;
+        final boolean[] occludedSegments = new boolean[RING_SEGMENTS];
+        long lastOcclusionTick = Long.MIN_VALUE;
 
         Burst(Vec3 center, float maxRadius, int lifetime, float r, float g, float b) {
             this.center = center;
@@ -53,8 +59,6 @@ public final class RailgunShockwaveRenderer {
         }
     }
 
-    private static final int RING_SEGMENTS = 64;
-    private static final float SHOCKWAVE_RADIUS_JITTER = 0.095F;
     // Plain ArrayList: render-thread-only (packet handlers enqueueWork to client thread).
     private static final java.util.List<Burst> ACTIVE = new ArrayList<>();
 
@@ -80,6 +84,7 @@ public final class RailgunShockwaveRenderer {
 
         Camera cam = e.getCamera();
         Vec3 camPos = cam.getPosition();
+        long gameTick = mc.level.getGameTime();
         PoseStack stack = e.getPoseStack();
         stack.pushPose();
         stack.translate(-camPos.x, -camPos.y, -camPos.z);
@@ -107,7 +112,10 @@ public final class RailgunShockwaveRenderer {
             float radius = burst.maxRadius * (1.0F - (1.0F - t) * (1.0F - t));
             float ringFade = 1.0F - t;
             float ringWidth = burst.maxRadius * 0.18F * (1.0F - t * 0.5F);
-            addRing(mc.level, bb, matrix, burst.center, radius, ringWidth, t,
+            if (gameTick - burst.lastOcclusionTick >= OCCLUSION_REFRESH_TICKS) {
+                refreshOcclusion(mc.level, burst, radius, ringWidth, t, gameTick);
+            }
+            addRing(bb, matrix, burst, radius, ringWidth, t,
                     burst.r, burst.g, burst.b, 0.85F * ringFade);
         }
         var built = bb.build();
@@ -123,17 +131,44 @@ public final class RailgunShockwaveRenderer {
         stack.popPose();
     }
 
-    private static void addRing(Level level, BufferBuilder bb, org.joml.Matrix4f matrix, Vec3 center,
+    private static void refreshOcclusion(Level level, Burst burst, float radius, float thickness,
+                                         float progress, long gameTick) {
+        burst.lastOcclusionTick = gameTick;
+        if (level == null || radius <= 0.0F || thickness <= 0.0F) {
+            java.util.Arrays.fill(burst.occludedSegments, false);
+            return;
+        }
+        Vec3 center = burst.center;
+        double cy = center.y + 0.05D;
+        Vec3 castFrom = new Vec3(center.x, cy, center.z);
+        for (int i = 0; i < RING_SEGMENTS; i++) {
+            double a0 = (i / (double) RING_SEGMENTS) * Math.PI * 2.0D;
+            double a1 = ((i + 1) / (double) RING_SEGMENTS) * Math.PI * 2.0D;
+            float radius0 = irregularRadius(center, radius, i, progress);
+            float radius1 = irregularRadius(center, radius, i + 1, progress);
+            float outer0 = radius0 + thickness * 0.5F;
+            float outer1 = radius1 + thickness * 0.5F;
+            double midA = (a0 + a1) * 0.5D;
+            double testR = Math.max(outer0, outer1) + 0.05D;
+            double mx = center.x + Math.cos(midA) * testR;
+            double mz = center.z + Math.sin(midA) * testR;
+            HitResult hr = level.clip(new ClipContext(castFrom,
+                    new Vec3(mx, cy, mz),
+                    ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
+                    CollisionContext.empty()));
+            burst.occludedSegments[i] = hr.getType() != HitResult.Type.MISS;
+        }
+    }
+
+    private static void addRing(BufferBuilder bb, org.joml.Matrix4f matrix, Burst burst,
                                 float radius, float thickness, float progress,
                                 float r, float g, float b, float alpha) {
         if (radius <= 0.0F || thickness <= 0.0F) return;
-        // Per-segment block occlusion: cast from ring center to each slice's mid-point
-        // and skip slices that hit geometry. Without this the horizontal disc punches
-        // through walls when the impact point lands on a vertical surface.
+        Vec3 center = burst.center;
         double cy = center.y + 0.05D;
         float y = (float) cy;
-        Vec3 castFrom = new Vec3(center.x, cy, center.z);
         for (int i = 0; i < RING_SEGMENTS; i++) {
+            if (burst.occludedSegments[i]) continue;
             double a0 = (i / (double) RING_SEGMENTS) * Math.PI * 2.0D;
             double a1 = ((i + 1) / (double) RING_SEGMENTS) * Math.PI * 2.0D;
             float radius0 = irregularRadius(center, radius, i, progress);
@@ -142,17 +177,6 @@ public final class RailgunShockwaveRenderer {
             float inner1 = Math.max(0.0F, radius1 - thickness * 0.5F);
             float outer0 = radius0 + thickness * 0.5F;
             float outer1 = radius1 + thickness * 0.5F;
-            if (level != null) {
-                double midA = (a0 + a1) * 0.5D;
-                double testR = Math.max(outer0, outer1) + 0.05D;
-                double mx = center.x + Math.cos(midA) * testR;
-                double mz = center.z + Math.sin(midA) * testR;
-                HitResult hr = level.clip(new ClipContext(castFrom,
-                        new Vec3(mx, cy, mz),
-                        ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE,
-                        CollisionContext.empty()));
-                if (hr.getType() != HitResult.Type.MISS) continue;
-            }
             double cos0 = Math.cos(a0), sin0 = Math.sin(a0);
             double cos1 = Math.cos(a1), sin1 = Math.sin(a1);
             // Ground-aligned (XZ plane) ring quad strip, with a lightly broken edge.
