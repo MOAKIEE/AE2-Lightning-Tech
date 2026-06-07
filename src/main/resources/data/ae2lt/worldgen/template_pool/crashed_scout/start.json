@@ -1,0 +1,15 @@
+{
+  "name": "ae2lt:crashed_scout/start",
+  "fallback": "minecraft:empty",
+  "elements": [
+    {
+      "weight": 1,
+      "element": {
+        "element_type": "minecraft:single_pool_element",
+        "location": "ae2lt:crashed_overload_scout/crashed_scout_1",
+        "projection": "rigid",
+        "processors": "ae2lt:crater_crust_cleaner"
+      }
+    }
+  ]
+}

@@ -19,6 +19,9 @@
     "GridConnectionMaxChannelsMixin",
     "GridGetMachineNodesMixin",
     "PathingCalculationCapMixin",
+    "LivingEntityUndyingMixin",
+    "ServerPlayerUndyingMixin",
+    "PlayerPhaseFlightMixin",
     "ControllerValidatorMixin",
     "EjectCapabilityMixin",
     "EjectGhostBEMixin"
@@ -27,7 +30,8 @@
     "client.CableBusRenderStateMixin",
     "client.CableBusContainerRenderMixin",
     "client.CableBusBakedModelMixin",
-    "client.PatternProviderScreenAccessor"
+    "client.PatternProviderScreenAccessor",
+    "client.RailgunHumanoidModelMixin"
   ],
   "injectors": {
     "defaultRequire": 1

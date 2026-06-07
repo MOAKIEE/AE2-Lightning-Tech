@@ -1,0 +1,14 @@
+{
+  "structures": [
+    {
+      "structure": "ae2lt:crashed_scout",
+      "weight": 1
+    }
+  ],
+  "placement": {
+    "type": "minecraft:random_spread",
+    "spacing": 64,
+    "separation": 16,
+    "salt": 48291054
+  }
+}
