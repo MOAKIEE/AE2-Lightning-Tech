@@ -54,6 +54,12 @@ Charging also drains FE from the railgun buffer each tick: 1,000 / 4,000 / 10,00
 
 If EHV ammunition is missing, the core module can automatically substitute High Voltage Lightning at a ratio of **16 HV = 1 EHV**.
 
+## Recoil
+
+Charged shots apply tier-based recoil; crouching halves it, while firing mid-air makes it stronger.
+
+Wearing the complete Celestweave set (<ItemLink id="ae2lt:celestweave_oculus" />, <ItemLink id="ae2lt:celestweave_core" />, <ItemLink id="ae2lt:celestweave_conduit" />, <ItemLink id="ae2lt:celestweave_stride" />) cancels charged-shot recoil entirely, including the view kick and camera shake feedback.
+
 ## Modules
 
 | Module | Limit | Effect |

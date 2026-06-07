@@ -54,6 +54,12 @@ item_ids:
 
 若极高压闪电不足，过载内核模块会按 **16 高压闪电 = 1 极高压闪电** 的比例自动代偿。
 
+## 后坐力
+
+蓄力射击会根据档位产生后坐力；潜行时后坐力减半，在空中发射时后坐力更强。
+
+穿戴完整的苍穹织雷套装（<ItemLink id="ae2lt:celestweave_oculus" />、<ItemLink id="ae2lt:celestweave_core" />、<ItemLink id="ae2lt:celestweave_conduit" />、<ItemLink id="ae2lt:celestweave_stride" />）时，电磁炮蓄力射击没有后坐力，也不会触发对应的视角抬升与震屏反馈。
+
 ## 模块
 
 | 模块 | 上限 | 作用 |
