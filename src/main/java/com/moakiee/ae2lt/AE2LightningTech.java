@@ -64,6 +64,7 @@ import appeng.core.definitions.AEItems;
 import com.moakiee.ae2lt.api.AE2LTCapabilities;
 import com.moakiee.ae2lt.api.frequency.FrequencyApi;
 import com.moakiee.ae2lt.grid.WirelessFrequencyManager;
+import com.moakiee.ae2lt.grid.wirelesslink.WirelessLinkRegistry;
 import com.moakiee.ae2lt.grid.api.FrequencyApiBridge;
 import com.moakiee.ae2lt.me.GridLightningEnergyHandler;
 import com.moakiee.ae2lt.me.cell.InfiniteCellHandler;
@@ -176,6 +177,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.OVERLOAD_PATTERN);
                         output.accept(ModItems.OVERLOAD_PATTERN_ENCODER);
                         output.accept(ModItems.OVERLOADED_WIRELESS_CONNECT_TOOL);
+                        output.accept(ModItems.OVERLOADED_FREQUENCY_CARD);
                         output.accept(ModItems.OVERLOADED_FILTER_COMPONENT);
                         // 苍穹织雷装备 + 模块
                         output.accept(ModItems.OVERLOAD_MODULE_BASE);
@@ -786,11 +788,13 @@ public class AE2LightningTech {
     private void onServerStarting(ServerStartingEvent event) {
         EjectModeRegistry.onServerStart(event.getServer());
         WirelessFrequencyManager.onServerStart(event.getServer());
+        WirelessLinkRegistry.onServerStart(event.getServer());
         ResearchNoteGenerator.onServerStarting();
     }
 
     private void onServerStopped(ServerStoppedEvent event) {
         EjectModeRegistry.onServerStop();
+        WirelessLinkRegistry.onServerStop();
         WirelessFrequencyManager.onServerStop();
         ResearchNoteGenerator.onServerStopped();
         com.moakiee.ae2lt.registry.ModDamageTypes.clearCache();
@@ -798,6 +802,10 @@ public class AE2LightningTech {
 
     private void onServerTickPost(ServerTickEvent.Post event) {
         WirelessFrequencyManager.flushPendingDeviceNotifications();
+        var registry = WirelessLinkRegistry.get();
+        if (registry != null) {
+            registry.tick(event.getServer());
+        }
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
