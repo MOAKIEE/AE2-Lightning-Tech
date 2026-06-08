@@ -59,7 +59,7 @@ public final class ModDataComponents {
                             .persistent(ItemStack.OPTIONAL_CODEC)
                             .networkSynchronized(ItemStack.OPTIONAL_STREAM_CODEC));
 
-    /** Persistent UI toggles for the railgun (terrain destruction, PVP lock). */
+    /** Persistent UI toggles for the railgun (terrain destruction, PVP). */
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<RailgunSettings>>
             RAILGUN_SETTINGS = DATA_COMPONENTS.registerComponentType(
                     "railgun_settings",

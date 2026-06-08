@@ -332,8 +332,8 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
                 menu.isTerrainDestruction());
         rowY += MODULE_ROW_H + 2;
         drawSettingRow(gfx, x, rowY,
-                Component.translatable("ae2lt.device_hub.setting.pvp_lock"),
-                menu.isPvpLock());
+                Component.translatable("ae2lt.device_hub.setting.pvp"),
+                menu.isPvp());
     }
 
     private void drawSettingRow(GuiGraphics gfx, int x, int y, Component label, boolean on) {

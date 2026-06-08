@@ -23,7 +23,7 @@ public record DamageContext(
         double chainRadius,
         boolean isMaxCharged,
         boolean isBeam,
-        boolean pvpLock) {
+        boolean pvp) {
 
     /** Per-segment armor reduction approximation. Uses
      * vanilla rule {@code armor / 25} clamped to 0.8. */
@@ -37,7 +37,7 @@ public record DamageContext(
     }
 
     public static DamageContext buildBeam(Player player, RailgunModuleEntries mods, Level level,
-                                          boolean pvpLock) {
+                                          boolean pvp) {
         boolean storm = isStorming(level, player);
         int compute = countChainTuning(mods);
         double base = AE2LTCommonConfig.railgunBeamDamagePerSettle();
@@ -63,10 +63,10 @@ public record DamageContext(
                 radius,
                 false,
                 true,
-                pvpLock);
+                pvp);
     }
 
-    public static DamageContext buildCharged(Player player, RailgunChargeTier tier, RailgunModuleEntries mods, Level level, boolean pvpLock) {
+    public static DamageContext buildCharged(Player player, RailgunChargeTier tier, RailgunModuleEntries mods, Level level, boolean pvp) {
         boolean storm = isStorming(level, player);
         int compute = countChainTuning(mods);
         double base = switch (tier) {
@@ -126,7 +126,7 @@ public record DamageContext(
                 radius,
                 tier.isMax(),
                 false,
-                pvpLock);
+                pvp);
     }
 
     private static boolean isStorming(Level level, Player player) {

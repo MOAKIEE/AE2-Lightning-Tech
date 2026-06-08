@@ -196,11 +196,11 @@ public final class RailgunBeamService {
         }
 
         // Raycast & damage
-        BeamTrace trace = traceBeam(level, player);
+        BeamTrace trace = traceBeam(level, player, settings.pvp());
         EntityHitResult ehr = trace.entityHit();
 
         if (ehr != null && ehr.getEntity() instanceof LivingEntity primary) {
-            DamageContext ctx = DamageContext.buildBeam(player, mods, level, settings.pvpLock());
+            DamageContext ctx = DamageContext.buildBeam(player, mods, level, settings.pvp());
             // Primary hit
             DamageSource ds = beamDamageSource(level, player);
             double armorReduction = DamageContext.effectiveArmorReduction(primary);
@@ -231,7 +231,7 @@ public final class RailgunBeamService {
         return true;
     }
 
-    private static BeamTrace traceBeam(ServerLevel level, ServerPlayer player) {
+    private static BeamTrace traceBeam(ServerLevel level, ServerPlayer player, boolean pvp) {
         Vec3 from = player.getEyePosition();
         double range = RailgunDefaults.BEAM_RANGE;
         Vec3 dir = player.getLookAngle();
@@ -240,7 +240,10 @@ public final class RailgunBeamService {
         Vec3 endBlock = bhr.getType() == HitResult.Type.MISS ? to : bhr.getLocation();
         EntityHitResult ehr = ProjectileUtil.getEntityHitResult(player, from, endBlock,
                 new AABB(from, endBlock).inflate(0.5D),
-                e -> e instanceof LivingEntity le && le != player && !le.isSpectator(),
+                e -> e instanceof LivingEntity le
+                        && le != player
+                        && !le.isSpectator()
+                        && (pvp || !(le instanceof net.minecraft.world.entity.player.Player)),
                 Double.MAX_VALUE);
         Vec3 endPoint = ehr != null ? lockedTargetPoint(ehr.getEntity()) : endBlock;
         return new BeamTrace(from, endPoint, ehr);

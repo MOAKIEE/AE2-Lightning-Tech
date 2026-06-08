@@ -55,7 +55,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     private boolean hasCore;
     private boolean powered;
     private boolean terrainDestruction;
-    private boolean pvpLock;
+    private boolean pvp;
     private List<String> moduleNameKeys = List.of();
     private List<Integer> moduleCounts = List.of();
     private List<Boolean> moduleEnabled = List.of();
@@ -165,7 +165,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
                 status.hasCore(),
                 status.powered(),
                 status.terrainDestruction(),
-                status.pvpLock(),
+                status.pvp(),
                 nameKeys,
                 counts,
                 enabled,
@@ -202,7 +202,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
             boolean hasCore,
             boolean powered,
             boolean terrainDestruction,
-            boolean pvpLock,
+            boolean pvp,
             List<String> nameKeys,
             List<Integer> counts,
             List<Boolean> enabled,
@@ -215,7 +215,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         this.hasCore = hasCore;
         this.powered = powered;
         this.terrainDestruction = terrainDestruction;
-        this.pvpLock = pvpLock;
+        this.pvp = pvp;
         this.moduleNameKeys = List.copyOf(nameKeys);
         this.moduleCounts = List.copyOf(counts);
         this.moduleEnabled = List.copyOf(enabled);
@@ -263,8 +263,8 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         return terrainDestruction;
     }
 
-    public boolean isPvpLock() {
-        return pvpLock;
+    public boolean isPvp() {
+        return pvp;
     }
 
     public int getSelectedModuleIndex() {
@@ -334,7 +334,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         ItemStack railgun = findDevice(player, TAB_RAILGUN);
         if (railgun.isEmpty()) return;
         RailgunSettings s = railgun.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
-        railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withPvpLock(!s.pvpLock()));
+        railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withPvp(!s.pvp()));
     }
 
     public void cycleSelectedModuleConfig(int optionIndex) {

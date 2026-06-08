@@ -70,7 +70,7 @@ public final class RailgunChainResolver {
         visited.add(start.getId());
 
         List<LivingEntity> seeds = findNearestK(
-                level, source, start, ctx.chainRadius(), visited, ctx.pvpLock(), forks);
+                level, source, start, ctx.chainRadius(), visited, ctx.pvp(), forks);
         if (seeds.isEmpty()) return out;
 
         // 分支视觉起点：飞溅二次链场景沿用 firstSegmentVisualStart；主链场景用 start 中心。
@@ -103,7 +103,7 @@ public final class RailgunChainResolver {
         LivingEntity prev = seed;
         for (int i = 1; i < ctx.chainSegments(); i++) {
             damage *= ctx.chainDecay();
-            LivingEntity next = findNearest(level, source, prev, ctx.chainRadius(), visited, ctx.pvpLock());
+            LivingEntity next = findNearest(level, source, prev, ctx.chainRadius(), visited, ctx.pvp());
             if (next == null) break;
             visited.add(next.getId());
             out.add(new Hit(next, damage, false, false, null));
@@ -144,7 +144,7 @@ public final class RailgunChainResolver {
             if (!ctx.isMaxCharged() || i > 0) {
                 damage *= ctx.chainDecay();
             }
-            LivingEntity next = findNearest(level, source, prev, ctx.chainRadius(), visited, ctx.pvpLock());
+            LivingEntity next = findNearest(level, source, prev, ctx.chainRadius(), visited, ctx.pvp());
             if (next == null) break;
             visited.add(next.getId());
             Vec3 visualStart = (!firstEmitted) ? firstSegmentVisualStart : null;
@@ -172,7 +172,7 @@ public final class RailgunChainResolver {
 
         AABB box = new AABB(from, to).inflate(1.5D);
         List<LivingEntity> candidates = level.getEntitiesOfClass(LivingEntity.class, box,
-                e -> e != source && e != firstHit && shouldTarget(e, ctx.pvpLock()));
+                e -> e != source && e != firstHit && shouldTarget(e, ctx.pvp()));
         // Sort by projected distance along dir
         candidates.sort((a, b) -> {
             double da = a.position().subtract(from).dot(dir);
@@ -207,7 +207,7 @@ public final class RailgunChainResolver {
         AABB box = new AABB(center, center).inflate(radius);
         double r2 = radius * radius;
         for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box,
-                e -> e != source && e.getId() != excludeId && shouldTarget(e, ctx.pvpLock()))) {
+                e -> e != source && e.getId() != excludeId && shouldTarget(e, ctx.pvp()))) {
             if (ent.position().distanceToSqr(center) > r2) continue;
             double dmg = ctx.firstDamage() * damageRatio;
             if (ent instanceof Player) {
@@ -240,7 +240,7 @@ public final class RailgunChainResolver {
         AABB box = new AABB(center, center).inflate(radius);
         double r2 = radius * radius;
         for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box,
-                e -> e != source && shouldTarget(e, ctx.pvpLock()))) {
+                e -> e != source && shouldTarget(e, ctx.pvp()))) {
             if (ent.getId() == primaryId) continue;
             double d2 = ent.position().distanceToSqr(center);
             if (d2 > r2) continue;
@@ -251,7 +251,6 @@ public final class RailgunChainResolver {
             if (ent instanceof Player) {
                 dmg *= 0.5D;
             }
-            // Reuse pulse flag so applyAll's "pulse skips pvpLock" branch works
             out.add(new Hit(ent, dmg, false, true));
         }
         return out;
@@ -263,13 +262,13 @@ public final class RailgunChainResolver {
             Entity from,
             double radius,
             Set<Integer> visited,
-            boolean pvpLock) {
+            boolean pvp) {
         Vec3 c = from.position();
         AABB box = new AABB(c, c).inflate(radius);
         LivingEntity best = null;
         double r2 = radius * radius;
         double bestDistSqr = Double.MAX_VALUE;
-        for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box, e -> shouldTarget(e, pvpLock))) {
+        for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box, e -> shouldTarget(e, pvp))) {
             if (ent == source) continue;
             if (visited.contains(ent.getId())) continue;
             double d2 = ent.position().distanceToSqr(c);
@@ -289,14 +288,14 @@ public final class RailgunChainResolver {
             Entity from,
             double radius,
             Set<Integer> visited,
-            boolean pvpLock,
+            boolean pvp,
             int k) {
         if (k <= 0) return List.of();
         Vec3 c = from.position();
         AABB box = new AABB(c, c).inflate(radius);
         double r2 = radius * radius;
         List<LivingEntity> all = new ArrayList<>();
-        for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box, e -> shouldTarget(e, pvpLock))) {
+        for (LivingEntity ent : level.getEntitiesOfClass(LivingEntity.class, box, e -> shouldTarget(e, pvp))) {
             if (ent == source) continue;
             if (visited.contains(ent.getId())) continue;
             if (ent.position().distanceToSqr(c) > r2) continue;
@@ -311,12 +310,11 @@ public final class RailgunChainResolver {
         return all;
     }
 
-    private static boolean shouldTarget(LivingEntity entity, boolean pvpLock) {
+    private static boolean shouldTarget(LivingEntity entity, boolean pvp) {
         if (!entity.isAlive()) return false;
         if (entity.isInvulnerable()) return false;
         if (entity instanceof Player p) {
-            if (pvpLock) return false;
-            return !p.isCreative() && !p.isSpectator();
+            return pvp && !p.isCreative() && !p.isSpectator();
         }
         // Mobs: include hostile/neutral/passive; design says all enemies inc. neutral.
         return entity instanceof Mob || entity instanceof LivingEntity;

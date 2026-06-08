@@ -76,7 +76,7 @@ Without compute modules, chain arcs are disabled. With two acceleration modules,
 Open the Overload Device Hub with the default key G while holding the railgun.
 
 * **Terrain Destruction** controls whether charged shots break terrain. It is off by default and can still be disabled by server config
-* **PVP Lock** makes targeting and chain behavior avoid other players
+* **PVP** allows the railgun to damage other players when enabled. When disabled, players are not targeted or damaged
 * The hub also shows module counts, FE storage and bound network status
 
 ## Combat Notes

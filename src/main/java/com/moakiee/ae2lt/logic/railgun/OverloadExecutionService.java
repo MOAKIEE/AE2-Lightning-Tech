@@ -95,7 +95,7 @@ public final class OverloadExecutionService {
         if (!mods.hasOverloadExecution()) return;
 
         RailgunSettings settings = stack.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
-        if (settings.pvpLock() && target instanceof Player) return;
+        if (!settings.pvp() && target instanceof Player) return;
         int maxTracked = AE2LTCommonConfig.overloadExecutionMaxTracked();
         int decayWindow = AE2LTCommonConfig.overloadExecutionDecayWindowTicks();
         double decayPower = AE2LTCommonConfig.overloadExecutionDecayPower();

@@ -30,7 +30,7 @@ public record DeviceStatusModel(
         List<ModuleInfo> modules,
         int selectedModuleIndex,
         List<ModuleConfigInfo> moduleConfigs,
-        boolean terrainDestruction, boolean pvpLock
+        boolean terrainDestruction, boolean pvp
 ) {
     public record ModuleInfo(String nameKey, int count, boolean enabled) {
     }
@@ -127,7 +127,7 @@ public record DeviceStatusModel(
 
         return new DeviceStatusModel(
                 name, hasStructuralCore, powered, modules, -1, List.of(),
-                terrainAllowed && settings.terrainDestruction(), settings.pvpLock());
+                terrainAllowed && settings.terrainDestruction(), settings.pvp());
     }
 
     private static List<ModuleConfigInfo> moduleConfigs(ItemStack armor, ServerPlayer player, int selectedModuleIndex) {

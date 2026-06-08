@@ -140,9 +140,12 @@ public final class RailgunFireService {
         BlockHitResult bhr = level.clip(new ClipContext(from, to, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
         Vec3 endBlock = bhr.getType() == HitResult.Type.MISS ? to : bhr.getLocation();
         EntityHitResult ehr = ProjectileUtil.getEntityHitResult(level, player, from, endBlock, new AABB(from, endBlock).inflate(1.0D),
-                e -> e instanceof LivingEntity le && le != player && !le.isSpectator());
+                e -> e instanceof LivingEntity le
+                        && le != player
+                        && !le.isSpectator()
+                        && (settings.pvp() || !(le instanceof Player)));
 
-        DamageContext ctx = DamageContext.buildCharged(player, tier, mods, level, settings.pvpLock());
+        DamageContext ctx = DamageContext.buildCharged(player, tier, mods, level, settings.pvp());
         Vec3 firstHitPos = ehr != null ? ehr.getLocation() : endBlock;
         List<RailgunChainResolver.Hit> hits = new ArrayList<>();
         int primaryId = -1;
@@ -243,7 +246,7 @@ public final class RailgunFireService {
             if (target == null || !target.isAlive()) continue;
             if (target instanceof Player tp) {
                 if (!damagePlayers) continue;
-                if (ctx.pvpLock() && !hit.pulse()) continue;
+                if (!ctx.pvp()) continue;
                 if (tp.isCreative() || tp.isSpectator()) continue;
             }
             double armorReduction = DamageContext.effectiveArmorReduction(target);

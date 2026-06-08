@@ -18,7 +18,7 @@ public record DeviceHubSyncPacket(
         boolean hasCore,
         boolean powered,
         boolean terrainDestruction,
-        boolean pvpLock,
+        boolean pvp,
         List<String> moduleNameKeys,
         List<Integer> moduleCounts,
         List<Boolean> moduleEnabled,
@@ -46,7 +46,7 @@ public record DeviceHubSyncPacket(
         boolean hasCore = buf.readBoolean();
         boolean powered = buf.readBoolean();
         boolean terrainDestruction = buf.readBoolean();
-        boolean pvpLock = buf.readBoolean();
+        boolean pvp = buf.readBoolean();
         int count = buf.readVarInt();
         List<String> nameKeys = new ArrayList<>(count);
         List<Integer> counts = new ArrayList<>(count);
@@ -74,7 +74,7 @@ public record DeviceHubSyncPacket(
                 hasCore,
                 powered,
                 terrainDestruction,
-                pvpLock,
+                pvp,
                 nameKeys,
                 counts,
                 enabled,
@@ -91,7 +91,7 @@ public record DeviceHubSyncPacket(
         buf.writeBoolean(hasCore);
         buf.writeBoolean(powered);
         buf.writeBoolean(terrainDestruction);
-        buf.writeBoolean(pvpLock);
+        buf.writeBoolean(pvp);
         int count = Math.min(Math.min(moduleNameKeys.size(), moduleCounts.size()), moduleEnabled.size());
         buf.writeVarInt(count);
         for (int i = 0; i < count; i++) {
@@ -121,7 +121,7 @@ public record DeviceHubSyncPacket(
                         pkt.hasCore(),
                         pkt.powered(),
                         pkt.terrainDestruction(),
-                        pkt.pvpLock(),
+                        pkt.pvp(),
                         pkt.moduleNameKeys(),
                         pkt.moduleCounts(),
                         pkt.moduleEnabled(),
