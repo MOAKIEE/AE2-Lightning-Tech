@@ -4,6 +4,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.block.AtmosphericIonizerBlock;
 import com.moakiee.ae2lt.block.BuddingOverloadCrystalBlock;
 import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
+import com.moakiee.ae2lt.block.FirmamentConversionCoreBlock;
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
@@ -89,8 +90,10 @@ public final class ModBlocks {
     public static final DeferredBlock<Block> OVERLOAD_MACHINE_FRAME =
             registerBlock("overload_machine_frame", () -> new Block(OVERLOAD_MACHINE_FRAME_PROPERTIES));
 
-    public static final DeferredBlock<Block> FIRMAMENT_CONVERSION_CORE =
-            registerBlock("firmament_conversion_core", () -> new Block(FIRMAMENT_CONVERSION_CORE_PROPERTIES));
+    public static final DeferredBlock<FirmamentConversionCoreBlock> FIRMAMENT_CONVERSION_CORE =
+            registerBlock(
+                    "firmament_conversion_core",
+                    () -> new FirmamentConversionCoreBlock(FIRMAMENT_CONVERSION_CORE_PROPERTIES));
 
     public static final DeferredBlock<OverloadTntBlock> OVERLOAD_TNT =
             registerBlock("overload_tnt", () -> new OverloadTntBlock(BlockBehaviour.Properties.ofFullCopy(net.minecraft.world.level.block.Blocks.TNT)));

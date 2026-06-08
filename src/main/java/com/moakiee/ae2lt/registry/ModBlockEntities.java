@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.blockentity.AtmosphericIonizerBlockEntity;
 import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
+import com.moakiee.ae2lt.blockentity.FirmamentConversionCoreBlockEntity;
 import com.moakiee.ae2lt.blockentity.FumoBlockEntity;
 import com.moakiee.ae2lt.blockentity.GhostOutputBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
@@ -34,6 +35,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             LightningCollectorBlockEntity::new,
                             ModBlocks.LIGHTNING_COLLECTOR.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<FirmamentConversionCoreBlockEntity>>
+            FIRMAMENT_CONVERSION_CORE = BLOCK_ENTITY_TYPES.register(
+                    "firmament_conversion_core",
+                    () -> BlockEntityType.Builder.of(
+                            FirmamentConversionCoreBlockEntity::new,
+                            ModBlocks.FIRMAMENT_CONVERSION_CORE.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<OverloadedControllerBlockEntity>>

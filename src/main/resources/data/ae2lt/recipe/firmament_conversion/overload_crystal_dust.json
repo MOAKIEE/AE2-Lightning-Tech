@@ -1,0 +1,16 @@
+{
+  "type": "ae2lt:firmament_conversion",
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_crystal_dust"
+      },
+      "count": 1
+    }
+  ],
+  "result": {
+    "id": "ae2lt:firmament_dust",
+    "count": 1
+  },
+  "processTime": 40
+}
