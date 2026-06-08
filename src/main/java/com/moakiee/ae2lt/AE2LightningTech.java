@@ -147,6 +147,7 @@ public class AE2LightningTech {
                         output.accept(ModItems.FIRMAMENT_MIXTURE);
                         output.accept(ModItems.FIRMAMENT_ALLOY_INGOT);
                         output.accept(ModItems.FIRMAMENT_ESSENCE);
+                        output.accept(ModItems.FIRMAMENT_SPIRIT_CORE);
                         output.accept(ModItems.FIRMAMENT_SUPERCONDUCTING_WIRE);
                         output.accept(ModItems.OVERLOAD_ALLOY);
                         output.accept(ModItems.OVERLOAD_ALLOY_BLANK);

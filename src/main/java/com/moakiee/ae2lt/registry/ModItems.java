@@ -73,6 +73,9 @@ public final class ModItems {
     public static final DeferredItem<RisingItem> FIRMAMENT_ESSENCE =
             ITEMS.registerItem("firmament_essence", RisingItem::new, new Item.Properties());
 
+    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE =
+            ITEMS.registerItem("firmament_spirit_core", RisingItem::new, new Item.Properties());
+
     public static final DeferredItem<RisingItem> FIRMAMENT_SUPERCONDUCTING_WIRE =
             ITEMS.registerItem("firmament_superconducting_wire", RisingItem::new, new Item.Properties());
 
