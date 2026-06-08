@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.item.FixedInfiniteCellItem;
 import com.moakiee.ae2lt.item.FloatingMatterItem;
 import com.moakiee.ae2lt.item.InfiniteStorageCellItem;
 import com.moakiee.ae2lt.item.LightningStorageComponentItem;
+import com.moakiee.ae2lt.item.RisingItem;
 import com.moakiee.ae2lt.item.CelestweaveConduitItem;
 import com.moakiee.ae2lt.item.CelestweaveCoreItem;
 import com.moakiee.ae2lt.item.CelestweaveOculusItem;
@@ -60,8 +61,8 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL_DUST =
             ITEMS.registerSimpleItem("overload_crystal_dust", new Item.Properties());
 
-    public static final DeferredItem<Item> FIRMAMENT_DUST =
-            ITEMS.registerSimpleItem("firmament_dust", new Item.Properties());
+    public static final DeferredItem<RisingItem> FIRMAMENT_DUST =
+            ITEMS.registerItem("firmament_dust", RisingItem::new, new Item.Properties());
 
     public static final DeferredItem<Item> UNOVERLOADED_CIRCUIT_BOARD =
             ITEMS.registerSimpleItem("unoverloaded_circuit_board", new Item.Properties());
