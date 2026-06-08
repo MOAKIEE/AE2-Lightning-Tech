@@ -2,6 +2,7 @@ package com.moakiee.ae2lt.blockentity;
 
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.grid.OverloadedGridNodeOwner;
+import com.moakiee.ae2lt.logic.PassiveAeCharger;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
@@ -12,7 +13,6 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 
-import appeng.api.config.Actionable;
 import appeng.api.networking.IManagedGridNode;
 import appeng.api.util.AECableType;
 import appeng.blockentity.networking.ControllerBlockEntity;
@@ -25,7 +25,8 @@ import appeng.blockentity.networking.ControllerBlockEntity;
  * Important: later 128-channel logic is keyed off this concrete owner type,
  * so vanilla ControllerBlockEntity instances remain untouched.
  */
-public class OverloadedControllerBlockEntity extends ControllerBlockEntity implements OverloadedGridNodeOwner {
+public class OverloadedControllerBlockEntity extends ControllerBlockEntity
+        implements OverloadedGridNodeOwner, PassiveAeCharger.Storage {
     private static final double INTERNAL_MAX_POWER = 16_000_000.0;
 
     public OverloadedControllerBlockEntity(BlockPos pos, BlockState blockState) {
@@ -42,7 +43,7 @@ public class OverloadedControllerBlockEntity extends ControllerBlockEntity imple
             return;
         }
 
-        be.injectAEPower(AE2LTCommonConfig.overloadedControllerPassiveAePerTick(), Actionable.MODULATE);
+        PassiveAeCharger.charge(be, AE2LTCommonConfig.overloadedControllerPassiveAePerTick());
     }
 
     public IEnergyStorage getEnergyStorageCapability(Direction side) {
