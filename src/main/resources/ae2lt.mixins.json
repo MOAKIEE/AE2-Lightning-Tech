@@ -25,7 +25,8 @@
     "PlayerPhaseFlightMixin",
     "ControllerValidatorMixin",
     "EjectCapabilityMixin",
-    "EjectGhostBEMixin"
+    "EjectGhostBEMixin",
+    "AnnihilationPlaneShulkerMixin"
   ],
   "client": [
     "client.CableBusRenderStateMixin",
