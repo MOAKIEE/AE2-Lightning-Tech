@@ -141,6 +141,7 @@ public class AE2LightningTech {
                         // 材料
                         output.accept(ModItems.OVERLOAD_CRYSTAL);
                         output.accept(ModItems.OVERLOAD_CRYSTAL_DUST);
+                        output.accept(ModItems.FIRMAMENT_DUST);
                         output.accept(ModItems.OVERLOAD_ALLOY);
                         output.accept(ModItems.OVERLOAD_ALLOY_BLANK);
                         output.accept(ModItems.OVERLOAD_ALLOY_PLATE);

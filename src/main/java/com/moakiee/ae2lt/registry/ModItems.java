@@ -59,6 +59,9 @@ public final class ModItems {
     public static final DeferredItem<Item> OVERLOAD_CRYSTAL_DUST =
             ITEMS.registerSimpleItem("overload_crystal_dust", new Item.Properties());
 
+    public static final DeferredItem<Item> FIRMAMENT_DUST =
+            ITEMS.registerSimpleItem("firmament_dust", new Item.Properties());
+
     public static final DeferredItem<Item> UNOVERLOADED_CIRCUIT_BOARD =
             ITEMS.registerSimpleItem("unoverloaded_circuit_board", new Item.Properties());
 
