@@ -22,6 +22,8 @@ import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.api.distmarker.Dist;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 public class OverloadedFrequencyCardItem extends Item {
@@ -100,7 +102,7 @@ public class OverloadedFrequencyCardItem extends Item {
             TooltipFlag tooltipFlag) {
         var data = getData(stack);
         if (data.isBound()) {
-            tooltip.add(Component.translatable("tooltip.ae2lt.frequency_card.frequency", data.frequencyId())
+            tooltip.add(Component.translatable("tooltip.ae2lt.frequency_card.frequency", tooltipFrequencyName(data.frequencyId()))
                     .withStyle(ChatFormatting.AQUA));
         } else {
             tooltip.add(Component.translatable("tooltip.ae2lt.frequency_card.unbound")
@@ -160,6 +162,13 @@ public class OverloadedFrequencyCardItem extends Item {
 
     public static Optional<ItemStack> findAutoConnectCard(Player player) {
         return selectAutoConnectCard(player).selected();
+    }
+
+    private static String tooltipFrequencyName(int frequencyId) {
+        String frequencyName = FMLEnvironment.dist == Dist.CLIENT
+                ? com.moakiee.ae2lt.client.FrequencyCardClientNames.frequencyName(frequencyId)
+                : null;
+        return FrequencyCardDisplayName.displayName(frequencyId, frequencyName);
     }
 
     public static boolean hasMultipleAutoConnectCandidates(Player player) {
