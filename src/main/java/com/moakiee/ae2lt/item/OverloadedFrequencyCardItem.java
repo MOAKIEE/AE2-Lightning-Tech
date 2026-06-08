@@ -15,7 +15,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.CustomData;
@@ -24,7 +23,9 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.network.PacketDistributor;
 
-public class OverloadedFrequencyCardItem extends Item {
+import appeng.items.materials.UpgradeCardItem;
+
+public class OverloadedFrequencyCardItem extends UpgradeCardItem {
     private static final String TAG_FREQUENCY_ID = "FrequencyId";
     private static final String TAG_AUTO_CONNECT = "AutoConnect";
     private static final String TAG_BOUND_CONTROLLER_DIM = "BoundControllerDim";

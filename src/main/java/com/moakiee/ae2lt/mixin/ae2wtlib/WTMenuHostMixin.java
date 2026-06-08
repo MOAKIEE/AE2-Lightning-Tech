@@ -76,7 +76,10 @@ public abstract class WTMenuHostMixin {
         if (manager == null) {
             return null;
         }
-        return manager.resolveNode(freqId, serverLevel.getServer());
+        // Frequency-card terminal access is reserved for advanced transmitters;
+        // a normal-controller transmitter resolves to null, leaving the terminal
+        // without remote access (the card is effectively inert).
+        return manager.resolveAdvancedNode(freqId, serverLevel.getServer());
     }
 
     @Unique

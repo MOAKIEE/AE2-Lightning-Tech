@@ -8,14 +8,18 @@ import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.DataSlot;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.BlockHitResult;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.network.PacketDistributor;
 
+import appeng.api.implementations.menuobjects.IMenuItem;
+import appeng.api.storage.ISubMenuHost;
+import appeng.menu.AEBaseMenu;
+import appeng.menu.ISubMenu;
 import appeng.menu.locator.ItemMenuHostLocator;
 
 import com.moakiee.ae2lt.api.frequency.FrequencyBindingHost;
@@ -31,7 +35,7 @@ import com.moakiee.ae2lt.network.SyncFrequencyListPacket;
  * Carries the block entity position and device type to the client; the
  * currently bound frequency id is auto-synced via a {@link DataSlot}.
  */
-public class FrequencyMenu extends AbstractContainerMenu {
+public class FrequencyMenu extends AEBaseMenu implements ISubMenu {
 
     public static final MenuType<FrequencyMenu> TYPE = IMenuTypeExtension.create(FrequencyMenu::clientCreate);
 
@@ -55,6 +59,13 @@ public class FrequencyMenu extends AbstractContainerMenu {
     @Nullable
     private final ServerPlayer cardPlayer;
 
+    // AE2 sub-menu host (card mode only), resolved once at construction while the
+    // terminal is guaranteed present. Mirrors how AE2's own sub-menus store the
+    // host set by MenuOpener; {@link #getHost()} just returns it. Null in
+    // block-entity mode (standalone menu, no parent).
+    @Nullable
+    private ISubMenuHost cachedSubMenuHost;
+
     private final DataSlot freqIdSlot = DataSlot.standalone();
     private final DataSlot linkActiveSlot = DataSlot.standalone();
     private final DataSlot usedChannelsSlot = DataSlot.standalone();
@@ -67,7 +78,7 @@ public class FrequencyMenu extends AbstractContainerMenu {
 
     // server constructor
     public FrequencyMenu(int containerId, Inventory playerInv, BlockEntity be) {
-        super(TYPE, containerId);
+        super(TYPE, containerId, playerInv, be);
         this.blockPos = be.getBlockPos();
         this.backingBlockEntity = be;
         this.cardMode = false;
@@ -115,7 +126,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
 
     // server constructor (card mode: targets a frequency card in a terminal upgrade slot)
     public FrequencyMenu(int containerId, Inventory playerInv, ItemMenuHostLocator terminalLocator) {
-        super(TYPE, containerId);
+        super(TYPE, containerId, playerInv, null);
+        setLocator(terminalLocator);
         this.blockPos = BlockPos.ZERO;
         this.backingBlockEntity = null;
         this.cardMode = true;
@@ -124,6 +136,10 @@ public class FrequencyMenu extends AbstractContainerMenu {
         this.isController = false;
         this.isAdvanced = false;
         this.deviceName = "item.ae2lt.overloaded_frequency_card";
+
+        // Resolve the parent ISubMenuHost now, while the terminal is guaranteed
+        // present, so the native back button can return reliably later.
+        this.cachedSubMenuHost = resolveSubMenuHost();
 
         var cardData = readCardData();
         int freqId = cardData.isBound() ? cardData.frequencyId() : -1;
@@ -154,14 +170,15 @@ public class FrequencyMenu extends AbstractContainerMenu {
         int used = buf.readInt();
         int max = buf.readInt();
         boolean autoConnect = buf.readBoolean();
-        return new FrequencyMenu(containerId, cardMode, pos, controller, advanced, deviceName,
+        return new FrequencyMenu(containerId, playerInv, cardMode, pos, controller, advanced, deviceName,
                 freqId, linkActive, used, max, autoConnect);
     }
 
     // client-side constructor
-    private FrequencyMenu(int containerId, boolean cardMode, BlockPos pos, boolean isController, boolean isAdvanced,
-                          String deviceName, int freqId, boolean linkActive, int used, int max, boolean autoConnect) {
-        super(TYPE, containerId);
+    private FrequencyMenu(int containerId, Inventory playerInv, boolean cardMode, BlockPos pos, boolean isController,
+                          boolean isAdvanced, String deviceName, int freqId, boolean linkActive, int used, int max,
+                          boolean autoConnect) {
+        super(TYPE, containerId, playerInv, null);
         this.blockPos = pos;
         this.isController = isController;
         this.isAdvanced = isAdvanced;
@@ -413,6 +430,33 @@ public class FrequencyMenu extends AbstractContainerMenu {
         return terminalLocator.locateItem(cardPlayer);
     }
 
+    // --- ISubMenu: card mode is a sub-menu of the wireless terminal (or any
+    // AE2 ISubMenuHost device) it was opened from. The back button sends AE2's
+    // native SwitchGuisPacket.returnToParentMenu(), whose server handler calls
+    // getHost().returnToMainMenu(...) -- exactly how AE2's own AESubScreen works.
+    // getLocator() is inherited from AEBaseMenu (set via setLocator in the
+    // card-mode constructor). ---
+
+    @Override
+    @Nullable
+    public ISubMenuHost getHost() {
+        return cachedSubMenuHost;
+    }
+
+    @Nullable
+    private ISubMenuHost resolveSubMenuHost() {
+        if (terminalLocator == null || cardPlayer == null) {
+            return null;
+        }
+        ItemStack terminal = resolveTerminalStack();
+        if (terminal.getItem() instanceof IMenuItem menuItem
+                && menuItem.getMenuHost(cardPlayer, terminalLocator, (BlockHitResult) null)
+                        instanceof ISubMenuHost subHost) {
+            return subHost;
+        }
+        return null;
+    }
+
     private OverloadedFrequencyCardData readCardData() {
         return TerminalCardAccess.readCardData(resolveTerminalStack());
     }
@@ -425,7 +469,8 @@ public class FrequencyMenu extends AbstractContainerMenu {
         if (manager == null) {
             return 0;
         }
-        return manager.resolveNode(freqId, cardPlayer.serverLevel().getServer()) != null ? 1 : 0;
+        // The card is only active when bound to an advanced transmitter.
+        return manager.resolveAdvancedNode(freqId, cardPlayer.serverLevel().getServer()) != null ? 1 : 0;
     }
 
     public int getUsedChannels() {

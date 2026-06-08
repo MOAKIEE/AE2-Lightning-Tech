@@ -1,9 +1,9 @@
 package com.moakiee.ae2lt.client.ae2wtlib;
 
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
@@ -14,6 +14,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import appeng.client.gui.AEBaseScreen;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.client.gui.IconTabButton;
 import com.moakiee.ae2lt.network.OpenFrequencyCardMenuPacket;
 
 /**
@@ -28,7 +29,12 @@ import com.moakiee.ae2lt.network.OpenFrequencyCardMenuPacket;
 @EventBusSubscriber(modid = AE2LightningTech.MODID, value = Dist.CLIENT)
 public final class FrequencyTerminalButton {
 
-    private static final int BUTTON_SIZE = 18;
+    // AE2 TabButton renders at a fixed 22×22 footprint; mirror it so the
+    // bottom-left placement lines up with the GUI panel edge.
+    private static final int BUTTON_SIZE = 22;
+
+    private static final ResourceLocation FREQUENCY_ICON = ResourceLocation.fromNamespaceAndPath(
+            AE2LightningTech.MODID, "textures/gui/buttons/frequency_connect.png");
 
     private FrequencyTerminalButton() {
     }
@@ -49,15 +55,21 @@ public final class FrequencyTerminalButton {
         }
 
         int token = screen.getMenu().containerId;
-        int x = screen.getGuiLeft();
-        int y = Math.max(2, screen.getGuiTop() - BUTTON_SIZE - 2);
+        // Place the button in the screen's left toolbar column, bottom-aligned
+        // with the GUI panel. AE2 centers its GUIs vertically, so the panel
+        // height can be derived from the window height and top inset.
+        int guiHeight = screen.height - 2 * screen.getGuiTop();
+        int x = screen.getGuiLeft() - BUTTON_SIZE;
+        int y = screen.getGuiTop() + guiHeight - BUTTON_SIZE;
 
-        Button button = Button.builder(
-                        Component.translatable("ae2lt.gui.button.frequency_card_short"),
-                        btn -> PacketDistributor.sendToServer(new OpenFrequencyCardMenuPacket(token)))
-                .bounds(x, y, BUTTON_SIZE, BUTTON_SIZE)
-                .tooltip(Tooltip.create(Component.translatable("ae2lt.gui.button.open_frequency_card")))
-                .build();
+        Component tooltip = Component.translatable("ae2lt.gui.button.open_frequency_card");
+        IconTabButton button = new IconTabButton(
+                FREQUENCY_ICON,
+                tooltip,
+                btn -> PacketDistributor.sendToServer(new OpenFrequencyCardMenuPacket(token)));
+        button.setX(x);
+        button.setY(y);
+        button.setTooltip(Tooltip.create(tooltip));
         event.addListener(button);
     }
 }

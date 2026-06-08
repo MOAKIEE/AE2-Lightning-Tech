@@ -182,6 +182,30 @@ public final class WirelessLinkRegistry extends SavedData {
         return connectOrDisconnectTarget(player, frequencyId, level, pos, resolution.target(), false);
     }
 
+    /**
+     * @return whether the block at {@code pos} is an AE2 network-related block
+     *         (controller, frequency-binding host, part host, or any in-world
+     *         node host) that a frequency card would attempt to link. Used by
+     *         the terminal-held right-click handler to decide whether to
+     *         intercept the interaction for linking instead of letting the
+     *         block's (or the terminal's) own GUI open.
+     */
+    public boolean isPotentialLinkTarget(ServerLevel level, BlockPos pos) {
+        var be = level.getBlockEntity(pos);
+        if (be instanceof OverloadedControllerBlockEntity
+                || be instanceof WirelessOverloadedControllerBlockEntity
+                || be instanceof ControllerBlockEntity) {
+            return true;
+        }
+        if (be instanceof com.moakiee.ae2lt.api.frequency.FrequencyBindingHost) {
+            return true;
+        }
+        if (be instanceof IPartHost) {
+            return true;
+        }
+        return GridHelper.getNodeHost(level, pos) != null;
+    }
+
     private Optional<ActionFeedback> handleNativeFrequencyHost(
             ServerPlayer player,
             int frequencyId,
@@ -244,6 +268,12 @@ public final class WirelessLinkRegistry extends SavedData {
             return ActionFeedback.red(target.mode() == WirelessLinkMode.PART
                     ? "ae2lt.frequency_card.part_other_frequency"
                     : "ae2lt.frequency_card.other_frequency");
+        }
+
+        // Frequency-card links require an advanced transmitter. Reject creation
+        // when the frequency's transmitter is missing or a normal controller.
+        if (!manager.isAdvancedTransmitter(frequencyId)) {
+            return ActionFeedback.red("ae2lt.frequency_card.requires_advanced_transmitter");
         }
 
         IGridNode transmitterNode = manager.resolveNode(frequencyId, level.getServer());
@@ -460,6 +490,18 @@ public final class WirelessLinkRegistry extends SavedData {
             return markState(link, WirelessLinkState.FREQUENCY_INVALID, server, cleanupPass);
         }
 
+        // Frequency-card links are only valid while the transmitter is an
+        // advanced controller. If the frequency lost its transmitter or it was
+        // swapped for a normal controller, sever any runtime connection and
+        // report the link as transmitter-pending (it reconnects automatically
+        // if an advanced transmitter takes the frequency again).
+        if (!manager.isAdvancedTransmitter(link.frequencyId())) {
+            if (runtimeConnections.containsKey(link.linkId())) {
+                destroyRuntimeConnection(link, target.target().node());
+            }
+            return markState(link, WirelessLinkState.PENDING_TRANSMITTER, server, cleanupPass);
+        }
+
         if (!link.ownerCanUseFrequency(frequency.getPlayerAccess(link.ownerUuid()).canUse())) {
             destroyRuntimeConnection(link, target.target().node());
             return markState(link, WirelessLinkState.PERMISSION_DENIED, server, cleanupPass);
@@ -576,6 +618,17 @@ public final class WirelessLinkRegistry extends SavedData {
         long now = currentGameTime(server);
         if (!state.isCleanupCandidate()) {
             return link.withState(state, now).clearInvalidTracking(now);
+        }
+
+        // The bound target block/part is confirmed gone or replaced (chunk is
+        // loaded). Remove the link right away — including its device
+        // registration and any runtime virtual connection — so a destroyed
+        // device never leaves a dangling link, even when periodic auto-cleanup
+        // is disabled or its delay/threshold has not elapsed.
+        if (state.isDeterministicFailure()) {
+            var updated = link.withState(state, now);
+            removeLink(updated);
+            return updated;
         }
 
         long firstInvalid = link.firstInvalidTime() <= 0 ? now : link.firstInvalidTime();

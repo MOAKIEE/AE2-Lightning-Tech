@@ -276,6 +276,28 @@ public final class WirelessFrequencyManager extends SavedData {
         return null;
     }
 
+    /**
+     * Whether the frequency's transmitter is an advanced wireless controller.
+     * Reads the persisted advanced flag, so it stays accurate even when the
+     * transmitter chunk is unloaded.
+     */
+    public boolean isAdvancedTransmitter(int freqId) {
+        var entry = transmitters.get(freqId);
+        return entry != null && entry.advanced();
+    }
+
+    /**
+     * Frequency-card variant of {@link #resolveNode}: only returns a node when
+     * the transmitter is an advanced controller. Frequency-card connectivity
+     * (terminal remote access, hand-held device links) is reserved for advanced
+     * controllers, so a normal-controller transmitter makes the card inert —
+     * this returns {@code null} as if the frequency had no transmitter.
+     */
+    @Nullable
+    public IGridNode resolveAdvancedNode(int freqId, MinecraftServer server) {
+        return isAdvancedTransmitter(freqId) ? resolveNode(freqId, server) : null;
+    }
+
     // ── Listeners ──
 
     public void addListener(int freqId, TransmitterListener listener) {

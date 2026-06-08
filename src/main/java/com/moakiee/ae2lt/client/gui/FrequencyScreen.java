@@ -13,6 +13,7 @@ import appeng.client.gui.style.ScreenStyle;
 import appeng.client.gui.widgets.AE2Button;
 import appeng.client.gui.widgets.AETextField;
 import appeng.client.gui.widgets.TabButton;
+import appeng.core.network.serverbound.SwitchGuisPacket;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.client.ClientFrequencyCache;
@@ -250,6 +251,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
 
     private int lastCacheRevision = -1;
     private int lastFreqId = Integer.MIN_VALUE;
+    private boolean lastAutoConnect;
 
     // popup state for Members tab
     private UUID popupMemberUUID;
@@ -311,6 +313,7 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         FrequencyBindingClient.restoreCursorPositionIfNeeded(freqMenu().getBlockPos());
         lastCacheRevision = ClientFrequencyCache.revision();
         lastFreqId = freqMenu().getCurrentFrequencyId();
+        lastAutoConnect = freqMenu().isAutoConnect();
         initTabWidgets();
     }
 
@@ -319,9 +322,11 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         super.containerTick();
         int rev = ClientFrequencyCache.revision();
         int fid = freqMenu().getCurrentFrequencyId();
-        if (rev != lastCacheRevision || fid != lastFreqId) {
+        boolean auto = freqMenu().isAutoConnect();
+        if (rev != lastCacheRevision || fid != lastFreqId || auto != lastAutoConnect) {
             lastCacheRevision = rev;
             lastFreqId = fid;
+            lastAutoConnect = auto;
             initTabWidgets();
         }
     }
@@ -450,6 +455,23 @@ public class FrequencyScreen extends AbstractContainerScreen<FrequencyMenu> {
         int y0 = topPos;
 
         buildTopTabs(x0, y0, false);
+
+        // Card mode is opened from a wireless terminal; offer a back button at
+        // the top-left (mirroring the create "+" tab on the right) that reopens
+        // the terminal instead of forcing the player to close the whole GUI.
+        // Styled like AE2's native sub-menu back button: a BOX-style TabButton
+        // carrying the engine's BACK glyph, so it matches the tab row exactly.
+        if (freqMenu().isCardMode()) {
+            Component backTooltip = Component.translatable("ae2lt.gui.button.return_to_terminal");
+            HoverableTabButton backButton = new HoverableTabButton(
+                    Icon.BACK, null, backTooltip,
+                    btn -> PacketDistributor.sendToServer(SwitchGuisPacket.returnToParentMenu()));
+            backButton.setStyle(TabButton.Style.BOX);
+            backButton.setX(x0 - TAB_WIDTH + 6);
+            backButton.setY(y0 - TAB_HEIGHT);
+            backButton.setTooltip(Tooltip.create(backTooltip));
+            addRenderableWidget(backButton);
+        }
 
         // Password prompt re-evaluation: if the target frequency now
         // grants us membership (server accepted our password and

@@ -91,7 +91,25 @@ public record FrequencyCardUsePacket(
             return;
         }
 
-        var data = OverloadedFrequencyCardItem.getData(stack);
+        tryLinkWithCard(player, stack, level, pos, face,
+                new net.minecraft.world.phys.Vec3(hitX, hitY, hitZ));
+    }
+
+    /**
+     * Performs the non-shift "connect/disconnect target" action for a frequency
+     * card against the block at {@code pos}, displaying the resulting feedback on
+     * the player's action bar. Shared by the held-card right-click (this packet)
+     * and the terminal-held right-click handler, so a card installed inside a
+     * wireless terminal links exactly like a card held in hand.
+     */
+    public static void tryLinkWithCard(
+            ServerPlayer player,
+            net.minecraft.world.item.ItemStack card,
+            ServerLevel level,
+            BlockPos pos,
+            Direction face,
+            net.minecraft.world.phys.Vec3 hitVec) {
+        var data = OverloadedFrequencyCardItem.getData(card);
         if (!data.isBound()) {
             message(player, "ae2lt.frequency_card.unbound_message", ChatFormatting.RED);
             return;
@@ -114,7 +132,7 @@ public record FrequencyCardUsePacket(
                 level,
                 pos,
                 face,
-                new net.minecraft.world.phys.Vec3(hitX, hitY, hitZ));
+                hitVec);
         player.displayClientMessage(
                 Component.translatable(feedback.translationKey(), feedback.args())
                         .withStyle(feedback.style()),
