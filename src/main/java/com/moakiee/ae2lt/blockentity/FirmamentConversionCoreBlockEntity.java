@@ -5,8 +5,11 @@ import java.util.Optional;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -14,8 +17,10 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.levelgen.structure.Structure;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
 
+import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.machine.firmament.FirmamentConversionAutomationInventory;
 import com.moakiee.ae2lt.machine.firmament.FirmamentConversionInventory;
 import com.moakiee.ae2lt.machine.firmament.recipe.FirmamentConversionLockedRecipe;
@@ -24,6 +29,8 @@ import com.moakiee.ae2lt.machine.firmament.recipe.FirmamentConversionRecipeServi
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 
 public class FirmamentConversionCoreBlockEntity extends BlockEntity {
+    private static final ResourceLocation FIRMAMENT_STARSHIP_ID =
+            ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "firmament_starship");
     private static final String TAG_INVENTORY = "Inventory";
     private static final String TAG_LOCKED_RECIPE = "LockedRecipe";
     private static final String TAG_PROGRESS = "Progress";
@@ -123,6 +130,13 @@ public class FirmamentConversionCoreBlockEntity extends BlockEntity {
     }
 
     private void tickServer() {
+        if (!canProcessHere()) {
+            if (lockedRecipe != null || progress != 0) {
+                abortProcessing();
+            }
+            return;
+        }
+
         if (lockedRecipe == null) {
             lockCurrentRecipe();
             return;
@@ -156,6 +170,23 @@ public class FirmamentConversionCoreBlockEntity extends BlockEntity {
         progress = 0;
         setChanged();
         return Optional.of(lockedRecipe);
+    }
+
+    private boolean canProcessHere() {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return false;
+        }
+
+        Structure structure = serverLevel.registryAccess()
+                .registryOrThrow(Registries.STRUCTURE)
+                .get(FIRMAMENT_STARSHIP_ID);
+        if (structure == null) {
+            return false;
+        }
+
+        return serverLevel.structureManager()
+                .getStructureWithPieceAt(worldPosition, structure)
+                .isValid();
     }
 
     public boolean completeLockedRecipe(
