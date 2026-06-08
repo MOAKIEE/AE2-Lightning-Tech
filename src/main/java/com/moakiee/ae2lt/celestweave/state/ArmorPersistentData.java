@@ -65,17 +65,21 @@ public final class ArmorPersistentData {
         return Math.max(0L, root.getCompound(TAG_ROOT).getLong(TAG_ENERGY_MODULE_CAPACITY_FE));
     }
 
+    // Tag presence distinguishes "computed, value is 0" from "never computed" (legacy stacks).
+    public static boolean hasCachedEnergyModuleCapacityFe(ItemStack armor) {
+        CompoundTag root = rootTag(armor);
+        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
+            return false;
+        }
+        return root.getCompound(TAG_ROOT).contains(TAG_ENERGY_MODULE_CAPACITY_FE, Tag.TAG_LONG);
+    }
+
     public static void setCachedEnergyModuleCapacityFe(ItemStack armor, long capacityFe) {
         if (armor == null || armor.isEmpty()) {
             return;
         }
-        updateArmorTag(armor, armorTag -> {
-            if (capacityFe > 0L) {
-                armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, capacityFe);
-            } else {
-                armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
-            }
-        });
+        // Always store (even 0) so the cache reliably hits next tick.
+        updateArmorTag(armor, armorTag -> armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, Math.max(0L, capacityFe)));
     }
 
     public static ItemStack structuralCore(ItemStack armor) {
@@ -178,11 +182,8 @@ public final class ArmorPersistentData {
                 armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
             } else {
                 armorTag.put(TAG_INSTALLED_SUBMODULES, out);
-                if (energyCapacityFe > 0L) {
-                    armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, energyCapacityFe);
-                } else {
-                    armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
-                }
+                // Always cache (even 0) so the tick path hits the cache instead of reparsing.
+                armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, energyCapacityFe);
             }
         });
     }

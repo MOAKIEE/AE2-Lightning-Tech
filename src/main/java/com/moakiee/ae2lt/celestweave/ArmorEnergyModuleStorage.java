@@ -11,6 +11,11 @@ public final class ArmorEnergyModuleStorage {
     }
 
     public static long capacityFe(ItemStack armor, HolderLookup.Provider registries) {
+        // Cache hit: skip module NBT reparse entirely (tick-path hot loop). The cache is
+        // written on every saveModuleStacks, so it stays fresh across install/uninstall.
+        if (CelestweaveArmorState.hasCachedEnergyModuleCapacityFe(armor)) {
+            return CelestweaveArmorState.getCachedEnergyModuleCapacityFe(armor);
+        }
         if (registries == null) {
             return CelestweaveArmorState.getCachedEnergyModuleCapacityFe(armor);
         }

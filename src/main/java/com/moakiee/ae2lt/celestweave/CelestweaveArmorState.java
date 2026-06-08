@@ -49,6 +49,10 @@ public final class CelestweaveArmorState {
         return ArmorPersistentData.getCachedEnergyModuleCapacityFe(armor);
     }
 
+    public static boolean hasCachedEnergyModuleCapacityFe(ItemStack armor) {
+        return ArmorPersistentData.hasCachedEnergyModuleCapacityFe(armor);
+    }
+
     public static void setCachedEnergyModuleCapacityFe(ItemStack armor, long capacityFe) {
         ArmorPersistentData.setCachedEnergyModuleCapacityFe(armor, capacityFe);
     }
