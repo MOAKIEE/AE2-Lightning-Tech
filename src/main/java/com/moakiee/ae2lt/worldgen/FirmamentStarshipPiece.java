@@ -21,13 +21,22 @@ public final class FirmamentStarshipPiece extends TemplateStructurePiece {
             ResourceLocation template,
             BlockPos position,
             Rotation rotation) {
+        this(structureTemplateManager, template, position, rotation, BlockPos.ZERO);
+    }
+
+    public FirmamentStarshipPiece(
+            StructureTemplateManager structureTemplateManager,
+            ResourceLocation template,
+            BlockPos position,
+            Rotation rotation,
+            BlockPos rotationPivot) {
         super(
                 ModStructureTypes.FIRMAMENT_STARSHIP_PIECE.get(),
                 0,
                 structureTemplateManager,
                 template,
                 template.toString(),
-                makeSettings(rotation),
+                makeSettings(rotation, rotationPivot),
                 position);
     }
 
@@ -36,13 +45,14 @@ public final class FirmamentStarshipPiece extends TemplateStructurePiece {
                 ModStructureTypes.FIRMAMENT_STARSHIP_PIECE.get(),
                 tag,
                 structureTemplateManager,
-                location -> makeSettings(readRotation(tag)));
+                location -> makeSettings(readRotation(tag), readRotationPivot(tag)));
     }
 
-    private static StructurePlaceSettings makeSettings(Rotation rotation) {
+    private static StructurePlaceSettings makeSettings(Rotation rotation, BlockPos rotationPivot) {
         return new StructurePlaceSettings()
                 .setIgnoreEntities(false)
                 .addProcessor(BlockIgnoreProcessor.STRUCTURE_AND_AIR)
+                .setRotationPivot(rotationPivot)
                 .setRotation(rotation);
     }
 
@@ -50,6 +60,10 @@ public final class FirmamentStarshipPiece extends TemplateStructurePiece {
     protected void addAdditionalSaveData(StructurePieceSerializationContext context, CompoundTag tag) {
         super.addAdditionalSaveData(context, tag);
         tag.putString("Rot", this.placeSettings.getRotation().getSerializedName());
+        BlockPos rotationPivot = this.placeSettings.getRotationPivot();
+        tag.putInt("RPX", rotationPivot.getX());
+        tag.putInt("RPY", rotationPivot.getY());
+        tag.putInt("RPZ", rotationPivot.getZ());
     }
 
     private static Rotation readRotation(CompoundTag tag) {
@@ -60,6 +74,13 @@ public final class FirmamentStarshipPiece extends TemplateStructurePiece {
             }
         }
         return Rotation.NONE;
+    }
+
+    private static BlockPos readRotationPivot(CompoundTag tag) {
+        if (!tag.contains("RPX") || !tag.contains("RPY") || !tag.contains("RPZ")) {
+            return BlockPos.ZERO;
+        }
+        return new BlockPos(tag.getInt("RPX"), tag.getInt("RPY"), tag.getInt("RPZ"));
     }
 
     @Override

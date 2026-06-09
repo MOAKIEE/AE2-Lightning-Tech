@@ -14,6 +14,7 @@ import net.minecraft.world.level.block.Rotation;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.levelgen.structure.Structure;
 import net.minecraft.world.level.levelgen.structure.StructureType;
+import net.minecraft.world.level.levelgen.structure.templatesystem.StructureTemplate;
 
 public final class FirmamentStarshipStructure extends Structure {
     public static final MapCodec<FirmamentStarshipStructure> CODEC =
@@ -75,12 +76,22 @@ public final class FirmamentStarshipStructure extends Structure {
     private Structure.GenerationStub createGenerationStub(Structure.GenerationContext context, Anchor anchor) {
         RandomSource random = context.random();
         int yOffset = this.minYOffset + random.nextInt(this.maxYOffset - this.minYOffset + 1);
-        FirmamentStarshipPlacement.Position placement = FirmamentStarshipPlacement.offsetFromAnchor(
-                anchor.x(), anchor.y(), anchor.z(), this.horizontalOffset, yOffset);
-        BlockPos startPos = new BlockPos(placement.x(), placement.y(), placement.z());
+        ChunkPos chunkPos = context.chunkPos();
+        StructureTemplate structureTemplate = context.structureTemplateManager().getOrCreate(this.template);
+        FirmamentStarshipPlacement.Position center = FirmamentStarshipPlacement.offsetFromStartChunk(
+                chunkPos.getMiddleBlockX(), anchor.y(), chunkPos.getMiddleBlockZ(), this.horizontalOffset, yOffset);
+        FirmamentStarshipPlacement.Position origin = FirmamentStarshipPlacement.originFromCenter(
+                center,
+                structureTemplate.getSize().getX(),
+                structureTemplate.getSize().getZ());
+        BlockPos startPos = new BlockPos(origin.x(), origin.y(), origin.z());
+        BlockPos rotationPivot = new BlockPos(
+                structureTemplate.getSize().getX() / 2,
+                0,
+                structureTemplate.getSize().getZ() / 2);
         Rotation rotation = Rotation.getRandom(random);
         return new Structure.GenerationStub(startPos, builder -> builder.addPiece(new FirmamentStarshipPiece(
-                context.structureTemplateManager(), this.template, startPos, rotation)));
+                context.structureTemplateManager(), this.template, startPos, rotation, rotationPivot)));
     }
 
     private Optional<Anchor> findBestAnchor(Structure.GenerationContext context) {

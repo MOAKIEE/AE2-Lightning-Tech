@@ -21,6 +21,19 @@ public final class FirmamentStarshipPlacement {
         return new Position(anchorX + offsetX, anchorY + verticalOffset, anchorZ + offsetZ);
     }
 
+    public static Position offsetFromStartChunk(
+            int startChunkMiddleX,
+            int anchorY,
+            int startChunkMiddleZ,
+            int horizontalOffset,
+            int verticalOffset) {
+        return offsetFromAnchor(startChunkMiddleX, anchorY, startChunkMiddleZ, horizontalOffset, verticalOffset);
+    }
+
+    public static Position originFromCenter(Position center, int sizeX, int sizeZ) {
+        return new Position(center.x() - sizeX / 2, center.y(), center.z() - sizeZ / 2);
+    }
+
     public record Position(int x, int y, int z) {
     }
 }
