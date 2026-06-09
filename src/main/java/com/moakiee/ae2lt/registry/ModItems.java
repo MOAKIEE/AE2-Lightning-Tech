@@ -73,8 +73,20 @@ public final class ModItems {
     public static final DeferredItem<RisingItem> FIRMAMENT_ESSENCE =
             ITEMS.registerItem("firmament_essence", RisingItem::new, new Item.Properties());
 
-    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE =
-            ITEMS.registerItem("firmament_spirit_core", RisingItem::new, new Item.Properties());
+    public static final DeferredItem<RisingItem> INACTIVE_FIRMAMENT_SPIRIT_CORE =
+            ITEMS.registerItem("inactive_firmament_spirit_core", RisingItem::new, new Item.Properties());
+
+    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE_OCULUS =
+            ITEMS.registerItem("firmament_spirit_core_oculus", RisingItem::new, new Item.Properties());
+
+    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE_CORE =
+            ITEMS.registerItem("firmament_spirit_core_core", RisingItem::new, new Item.Properties());
+
+    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE_CONDUIT =
+            ITEMS.registerItem("firmament_spirit_core_conduit", RisingItem::new, new Item.Properties());
+
+    public static final DeferredItem<RisingItem> FIRMAMENT_SPIRIT_CORE_STRIDE =
+            ITEMS.registerItem("firmament_spirit_core_stride", RisingItem::new, new Item.Properties());
 
     public static final DeferredItem<RisingItem> FIRMAMENT_SUPERCONDUCTING_WIRE =
             ITEMS.registerItem("firmament_superconducting_wire", RisingItem::new, new Item.Properties());
