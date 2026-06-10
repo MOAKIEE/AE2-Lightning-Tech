@@ -5,6 +5,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
@@ -82,6 +83,13 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** 9-slot return page view exposed via getReturnInv() for the GUI. */
     private final UnlimitedReturnInventory returnPageView;
     private boolean returnSyncing = false;
+    /**
+     * Snapshot of what was last pushed into {@link #returnPageView}. Copy-back
+     * only writes slots the player actually changed, so concurrent inserts into
+     * {@link #fullReturnInv} (auto-return, eject) are never clobbered by a
+     * stale full-page overwrite.
+     */
+    private final GenericStack[] returnPageSnapshot = new GenericStack[9];
 
     private final OverloadedPatternProviderBlockEntity overloadedHost;
     private final IManagedGridNode gridNode;
@@ -127,9 +135,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private boolean wirelessGlobalBackpressure = false;
     private final Map<Integer, ItemStack> pendingOverflowPatternDefinitions = new HashMap<>();
     private final List<PendingBucketLoad> pendingOverflowBuckets = new ArrayList<>();
-
-    /** Round-robin index across the *valid* connection list for SINGLE_TARGET. */
-    private int wirelessRoundRobin = 0;
 
     // ---- unified per-connection state ---------------------------------------------
 
@@ -395,6 +400,23 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     /** Refresh the validated wireless-connection view at most once per second. */
     private static final int VALIDATE_INTERVAL = 20;
 
+    /**
+     * Active auto-return prices two logical stages: extraction from the target
+     * machine (1 AE/op) + injection into the network (1 AE/op). Paths that
+     * perform both stages in a single code step bill with this multiplier.
+     * EJECT mode skips the extraction stage (machines push by themselves) and
+     * only pays AE2's standard injection when the return inventory drains.
+     */
+    private static final double ACTIVE_RETURN_COST_MULTIPLIER = 2.0;
+
+    /**
+     * Items extracted from target machines that could not be placed into the
+     * return inventory / network (power shortage, full return inventory, full
+     * network). Persisted to NBT and retried every tick — auto-return must
+     * never destroy items it has already extracted.
+     */
+    private final Map<AEKey, Long> returnOverflowBuffer = new LinkedHashMap<>();
+
     /** Cached list of valid wireless connections (shared by energy + auto-return). */
     private List<WirelessConnection> validConnectionsCache = List.of();
 
@@ -503,19 +525,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         return fullReturnInv;
     }
 
-    /**
-     * Cap {@code amount} to what the grid can afford for an external EJECT-mode
-     * insert. Returns 0 when the grid is unavailable or out of power.
-     */
-    public long maxAffordableExternalReturn(AEKey what, long amount) {
-        return PowerCostUtil.maxAffordable(gridNode.getGrid(), what, amount);
-    }
-
-    /** Drain the AE corresponding to {@code amount} of {@code what} for an external EJECT-mode insert. */
-    public void consumeExternalReturnPower(AEKey what, long amount) {
-        PowerCostUtil.consume(gridNode.getGrid(), what, amount);
-    }
-
     @Override
     public void resetCraftingLock() {
         super.resetCraftingLock();
@@ -553,25 +562,35 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             int offset = currentPage * 9;
             for (int i = 0; i < 9; i++) {
                 int fullIdx = offset + i;
-                if (fullIdx < fullReturnInv.size()) {
-                    returnPageView.setStack(i, fullReturnInv.getStack(fullIdx));
-                } else {
-                    returnPageView.setStack(i, null);
-                }
+                GenericStack stack = fullIdx < fullReturnInv.size()
+                        ? fullReturnInv.getStack(fullIdx)
+                        : null;
+                returnPageView.setStack(i, stack);
+                returnPageSnapshot[i] = stack;
             }
         } finally {
             returnSyncing = false;
         }
     }
 
-    /** Copy 9 slots from returnPageView back to fullReturnInv. */
+    /**
+     * Copy player-modified slots from returnPageView back to fullReturnInv.
+     * Slots unchanged since the last {@link #syncReturnPageViewFromFull} are
+     * skipped so concurrent auto-return inserts into the same page survive.
+     */
     private void syncReturnFullFromPageView() {
         int offset = currentPage * 9;
         for (int i = 0; i < 9; i++) {
             int fullIdx = offset + i;
-            if (fullIdx < fullReturnInv.size()) {
-                fullReturnInv.setStack(fullIdx, returnPageView.getStack(i));
+            if (fullIdx >= fullReturnInv.size()) {
+                continue;
             }
+            var current = returnPageView.getStack(i);
+            if (java.util.Objects.equals(current, returnPageSnapshot[i])) {
+                continue;
+            }
+            fullReturnInv.setStack(fullIdx, current);
+            returnPageSnapshot[i] = current;
         }
     }
 
@@ -1436,6 +1455,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     public void tickAutoReturn() {
         if (!hasAnyTickWork()) return;
 
+        flushReturnOverflow();
         tickWirelessInductionEnergy();
 
         var returnMode = overloadedHost.getReturnMode();
@@ -1464,6 +1484,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      */
     public boolean hasAnyTickWork() {
         if (!pendingOverflowByConn.isEmpty()) return true;
+        if (!returnOverflowBuffer.isEmpty()) return true;
         if (overloadedHost.getProviderMode() == ProviderMode.WIRELESS
                 && gridNode.isActive()
                 && isInductionCardInstalled()
@@ -1605,18 +1626,27 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     private void returnToNetwork(List<GenericStack> outputs) {
         if (outputs.isEmpty()) return;
-        gridNode.ifPresent((grid, node) -> {
-            var storage = grid.getStorageService().getInventory();
-            for (var stack : outputs) {
-                long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
-                if (affordable <= 0) continue;
-                long inserted = storage.insert(stack.what(), affordable,
-                        appeng.api.config.Actionable.MODULATE, wirelessSource);
-                if (inserted > 0) {
-                    PowerCostUtil.consume(grid, stack.what(), inserted);
+        var grid = gridNode.getGrid();
+        for (var stack : outputs) {
+            long remaining = stack.amount();
+            if (grid != null && remaining > 0) {
+                var storage = grid.getStorageService().getInventory();
+                long affordable = PowerCostUtil.maxAffordable(
+                        grid, stack.what(), remaining, ACTIVE_RETURN_COST_MULTIPLIER);
+                if (affordable > 0) {
+                    long inserted = storage.insert(stack.what(), affordable,
+                            Actionable.MODULATE, wirelessSource);
+                    if (inserted > 0) {
+                        PowerCostUtil.consume(grid, stack.what(), inserted,
+                                ACTIVE_RETURN_COST_MULTIPLIER);
+                        remaining -= inserted;
+                    }
                 }
             }
-        });
+            if (remaining > 0) {
+                addToReturnOverflow(stack.what(), remaining);
+            }
+        }
     }
 
 
@@ -1644,12 +1674,68 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     protected void insertOutputsToReturnInv(List<GenericStack> outputs) {
         var grid = gridNode.getGrid();
         for (var stack : outputs) {
-            long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
-            if (affordable <= 0) continue;
-            long inserted = fullReturnInv.insert(0, stack.what(), affordable, Actionable.MODULATE);
-            if (inserted > 0) {
-                PowerCostUtil.consume(grid, stack.what(), inserted);
+            long remaining = stack.amount();
+            // Extraction stage of active auto-return (1 AE/op); the injection
+            // stage is billed by AE2's powered insert when the return
+            // inventory drains into the network.
+            long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), remaining);
+            if (affordable > 0) {
+                long inserted = fullReturnInv.insert(0, stack.what(), affordable, Actionable.MODULATE);
+                if (inserted > 0) {
+                    PowerCostUtil.consume(grid, stack.what(), inserted);
+                    remaining -= inserted;
+                }
             }
+            if (remaining > 0) {
+                addToReturnOverflow(stack.what(), remaining);
+            }
+        }
+    }
+
+    // ---- return-overflow buffer (never void extracted items) -----------------
+
+    private void addToReturnOverflow(AEKey what, long amount) {
+        if (amount <= 0) return;
+        returnOverflowBuffer.merge(what, amount, (oldAmount, added) ->
+                oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
+        overloadedHost.saveChanges();
+        alertGridTick();
+    }
+
+    /** Retry pushing buffered overflow into the ME network. */
+    private void flushReturnOverflow() {
+        if (returnOverflowBuffer.isEmpty()) return;
+        var grid = gridNode.getGrid();
+        if (grid == null) return;
+        var storage = grid.getStorageService().getInventory();
+        boolean changed = false;
+
+        var it = returnOverflowBuffer.entrySet().iterator();
+        while (it.hasNext()) {
+            var entry = it.next();
+            long remaining = entry.getValue();
+            if (remaining <= 0) {
+                it.remove();
+                changed = true;
+                continue;
+            }
+            // Buffered items skipped their stage charges when the original
+            // insert failed, so bill both stages here (extraction + injection).
+            long affordable = PowerCostUtil.maxAffordable(
+                    grid, entry.getKey(), remaining, ACTIVE_RETURN_COST_MULTIPLIER);
+            if (affordable <= 0) continue;
+            long inserted = storage.insert(entry.getKey(), affordable, Actionable.MODULATE, wirelessSource);
+            if (inserted <= 0) continue;
+            PowerCostUtil.consume(grid, entry.getKey(), inserted, ACTIVE_RETURN_COST_MULTIPLIER);
+            changed = true;
+            if (inserted >= remaining) {
+                it.remove();
+            } else {
+                entry.setValue(remaining - inserted);
+            }
+        }
+        if (changed) {
+            overloadedHost.saveChanges();
         }
     }
 
@@ -1753,13 +1839,17 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
      * connections, or patterns change.
      */
     public void refreshEjectRegistrations() {
+        var level = overloadedHost.getLevel();
+        // The registry is server-only static state; on the integrated server the
+        // client thread must never touch it (readFromStream reaches this path).
+        if (level != null && level.isClientSide()) return;
+
         var removed = EjectModeRegistry.unregisterAll(overloadedHost, true);
         invalidateCapabilitiesAt(removed);
 
         if (overloadedHost.getReturnMode() != ReturnMode.EJECT) return;
         if (overloadedHost.getProviderMode() != ProviderMode.WIRELESS) return;
 
-        var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) return;
 
         for (var conn : overloadedHost.getConnections()) {
@@ -2177,20 +2267,13 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private void loadFromSavedData() {
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) {
-            org.slf4j.LoggerFactory.getLogger("ae2lt").warn(
-                    "[SavedData] loadFromSavedData skipped: level={} pos={}",
-                    level, overloadedHost.getBlockPos());
             return;
         }
         var savedData = PatternStorageSavedData.get(sl);
         var stored = savedData.get(overloadedHost.getBlockPos().asLong());
         if (stored == null) {
-            org.slf4j.LoggerFactory.getLogger("ae2lt").info(
-                    "[SavedData] No stored data for pos={}", overloadedHost.getBlockPos());
             return;
         }
-        org.slf4j.LoggerFactory.getLogger("ae2lt").info(
-                "[SavedData] Loaded {} patterns for pos={}", stored.length, overloadedHost.getBlockPos());
         var inv = ((PatternProviderLogicAccessor) this).getPatternInventory();
         int limit = Math.min(stored.length, inv.size());
         for (int i = 0; i < limit; i++) {
@@ -2285,6 +2368,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         for (var bucket : pendingOverflowByConn.values()) {
             addBucketDrops(bucket, drops);
         }
+        for (var entry : returnOverflowBuffer.entrySet()) {
+            entry.getKey().addDrops(entry.getValue(), drops,
+                    overloadedHost.getLevel(), overloadedHost.getBlockPos());
+        }
         if (totalCapacity > 36) {
             removeSavedData();
         }
@@ -2297,6 +2384,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             removeSavedData();
         }
         clearWirelessOverflowState();
+        returnOverflowBuffer.clear();
         connectionStates.clear();
         machineNextPoll.clear();
         machineBackoff.clear();
@@ -2308,7 +2396,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         returnRobinIndex = 0;
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
-        invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost, true));
+        if (overloadedHost.getLevel() instanceof ServerLevel) {
+            invalidateCapabilitiesAt(EjectModeRegistry.unregisterAll(overloadedHost, true));
+        }
     }
 
     // ---- NBT persistence --------------------------------------------------------
@@ -2326,9 +2416,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final String TAG_OVERFLOW_REMAINING = "remaining";
     private static final String TAG_OVERFLOW_FALLBACK = "fallback";
     private static final String TAG_OVERFLOW_COMPACT = "compact";
-    private static final String TAG_W_ROUND_ROBIN = "WirelessRoundRobin";
     private static final String TAG_UNLOCK_MATCH_MODE = "Ae2ltUnlockMatchMode";
     private static final String TAG_UNLOCK_TEMPLATE = "Ae2ltUnlockTemplate";
+    private static final String TAG_RETURN_OVERFLOW = "ae2lt:return_overflow";
 
     @Override
     public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
@@ -2345,7 +2435,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         } else {
             super.writeToNBT(tag, registries);
         }
-        tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
         if (pendingUnlockMatchMode != null) {
             tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
         }
@@ -2353,6 +2442,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             tag.put(TAG_UNLOCK_TEMPLATE, pendingUnlockTemplate.saveOptional(registries));
         }
         writeWirelessOverflowToNBT(tag, registries);
+        writeReturnOverflowToNBT(tag, registries);
     }
 
     @Override
@@ -2361,7 +2451,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (totalCapacity > 36) {
             needsSavedDataLoad = true;
         }
-        wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
         pendingUnlockMatchMode = null;
         pendingUnlockTemplate = null;
         if (tag.contains(TAG_UNLOCK_MATCH_MODE, Tag.TAG_STRING)) {
@@ -2378,6 +2467,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             }
         }
         readWirelessOverflowFromNBT(tag, registries);
+        readReturnOverflowFromNBT(tag, registries);
         cachedOutputFilter = null;
         outputFilterDirty = true;
         invalidateValidConnectionsCache();
@@ -2523,6 +2613,29 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     }
 
+    private void writeReturnOverflowToNBT(CompoundTag tag, HolderLookup.Provider registries) {
+        if (returnOverflowBuffer.isEmpty()) return;
+        var list = new ListTag();
+        for (var entry : returnOverflowBuffer.entrySet()) {
+            list.add(GenericStack.writeTag(registries,
+                    new GenericStack(entry.getKey(), entry.getValue())));
+        }
+        tag.put(TAG_RETURN_OVERFLOW, list);
+    }
+
+    private void readReturnOverflowFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
+        returnOverflowBuffer.clear();
+        if (!tag.contains(TAG_RETURN_OVERFLOW, Tag.TAG_LIST)) return;
+        var list = tag.getList(TAG_RETURN_OVERFLOW, Tag.TAG_COMPOUND);
+        for (int i = 0; i < list.size(); i++) {
+            var stack = GenericStack.readTag(registries, list.getCompound(i));
+            if (stack != null && stack.amount() > 0) {
+                returnOverflowBuffer.merge(stack.what(), stack.amount(), (oldAmount, added) ->
+                        oldAmount > Long.MAX_VALUE - added ? Long.MAX_VALUE : oldAmount + added);
+            }
+        }
+    }
+
     private static List<GenericStack> readGenericStackList(HolderLookup.Provider registries, ListTag list) {
         var stacks = new ArrayList<GenericStack>(list.size());
         for (int i = 0; i < list.size(); i++) {
@@ -2545,9 +2658,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         for (var entry : pendingOverflowPatternDefinitions.entrySet()) {
             var details = PatternDetailsHelper.decodePattern(entry.getValue(), level);
             if (details != null) {
-                patternById.put(entry.getKey(), details);
-                patternTable.put(details, entry.getKey());
-                nextPatternId = Math.max(nextPatternId, (entry.getKey() + 1) & 0xFFFF);
+                int id = entry.getKey();
+                patternById.put(id, details);
+                patternTable.put(details, id);
+                nextPatternId = Math.max(nextPatternId, (id + 1) & 0xFFFF);
             }
         }
 
