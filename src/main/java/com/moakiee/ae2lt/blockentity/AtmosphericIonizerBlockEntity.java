@@ -22,6 +22,7 @@ import com.moakiee.ae2lt.grid.FrequencyBindingHelper;
 import com.moakiee.ae2lt.grid.FrequencyBindingHost;
 import com.moakiee.ae2lt.item.WeatherCondensateItem;
 import com.moakiee.ae2lt.logic.WeatherControlHelper;
+import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerInventory;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerLogic;
 import com.moakiee.ae2lt.machine.atmosphericionizer.AtmosphericIonizerStatus;
@@ -472,6 +473,14 @@ public class AtmosphericIonizerBlockEntity extends AENetworkedBlockEntity
         var grid = getMainNode().getGrid();
         if (grid == null) {
             return false;
+        }
+
+        if (mode == Actionable.SIMULATE) {
+            // Require an idle-drain reserve on top so the later MODULATE
+            // draw can never starve the grid into a power-down reboot.
+            double total = amount + PowerCostUtil.idleReserve(grid);
+            double available = grid.getEnergyService().extractAEPower(total, mode, PowerMultiplier.CONFIG);
+            return available >= total - POWER_EPSILON;
         }
 
         double extracted = grid.getEnergyService().extractAEPower(amount, mode, PowerMultiplier.CONFIG);

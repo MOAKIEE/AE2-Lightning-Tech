@@ -22,7 +22,19 @@ public final class PowerCostUtil {
     /** AE charged for each logical transfer operation (1 item / 125 mB / etc.). */
     public static final double AE_PER_OPERATION = 1.0;
 
+    /**
+     * Ticks of idle drain kept untouched by bulk consumers. Draining the grid
+     * to exactly zero makes the end-of-tick idle payment fail, which AE2
+     * punishes with an instant network power-down plus a 30-tick reboot delay.
+     */
+    private static final double RESERVE_TICKS = 60.0;
+
     private PowerCostUtil() {
+    }
+
+    /** AE amount bulk consumers must leave in the grid (see {@link #RESERVE_TICKS}). */
+    public static double idleReserve(IGrid grid) {
+        return grid.getEnergyService().getIdlePowerUsage() * RESERVE_TICKS;
     }
 
     public static double cost(AEKey key, long amount) {
@@ -63,13 +75,15 @@ public final class PowerCostUtil {
         if (need <= 0.0) {
             return requested;
         }
+        double reserve = idleReserve(grid);
         double available = grid.getEnergyService()
-                .extractAEPower(need, Actionable.SIMULATE, PowerMultiplier.CONFIG);
-        if (available + 1.0e-6 >= need) {
+                .extractAEPower(need + reserve, Actionable.SIMULATE, PowerMultiplier.CONFIG);
+        double usable = available - reserve;
+        if (usable + 1.0e-6 >= need) {
             return requested;
         }
         long perOp = Math.max(1L, key.getAmountPerOperation());
-        long affordableOps = (long) Math.floor(available / AE_PER_OPERATION);
+        long affordableOps = (long) Math.floor(usable / AE_PER_OPERATION);
         if (affordableOps <= 0) {
             return 0;
         }
@@ -111,9 +125,10 @@ public final class PowerCostUtil {
         if (grid == null) {
             return false;
         }
+        double total = need + idleReserve(grid);
         double available = grid.getEnergyService()
-                .extractAEPower(need, Actionable.SIMULATE, PowerMultiplier.CONFIG);
-        return available + 1.0e-6 >= need;
+                .extractAEPower(total, Actionable.SIMULATE, PowerMultiplier.CONFIG);
+        return available + 1.0e-6 >= total;
     }
 
     /**
