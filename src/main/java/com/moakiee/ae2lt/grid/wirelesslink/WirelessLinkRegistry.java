@@ -162,6 +162,51 @@ public final class WirelessLinkRegistry extends SavedData {
         processLinks(server, cleanupPass);
     }
 
+    public void onBlockChanged(ServerLevel level, BlockPos changedPos) {
+        var candidates = links.findAllInDimension(level.dimension().location().toString());
+        if (candidates.isEmpty()) {
+            return;
+        }
+
+        long changedPosLong = changedPos.asLong();
+        long now = currentGameTime(level.getServer());
+        boolean changed = false;
+
+        for (var link : candidates) {
+            if (!links.contains(link.linkId())) {
+                continue;
+            }
+
+            if (link.posLong() == changedPosLong) {
+                removeLink(link);
+                changed = true;
+                continue;
+            }
+
+            if (!runtimeConnections.containsKey(link.linkId())) {
+                continue;
+            }
+
+            var target = resolvePersistedTarget(link, level.getServer());
+            if (target.target() == null) {
+                continue;
+            }
+
+            IGridNode targetNode = target.target().node();
+            if (MultiblockLinkReadiness.isKnownMultiblockAffectedByChange(targetNode, changedPos)) {
+                destroyRuntimeConnection(link, targetNode);
+                if (links.contains(link.linkId())) {
+                    links.put(link.withState(WirelessLinkState.TARGET_NOT_READY, now));
+                }
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            setDirty();
+        }
+    }
+
     public ActionFeedback handleManualUse(
             ServerPlayer player,
             int frequencyId,

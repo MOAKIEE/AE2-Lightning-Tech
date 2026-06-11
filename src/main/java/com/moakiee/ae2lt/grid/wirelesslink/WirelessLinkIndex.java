@@ -31,6 +31,16 @@ final class WirelessLinkIndex {
         return byId.values();
     }
 
+    List<WirelessLink> findAllInDimension(String dimensionId) {
+        var matches = new ArrayList<WirelessLink>();
+        for (var link : byId.values()) {
+            if (link.dimensionId().equals(dimensionId)) {
+                matches.add(link);
+            }
+        }
+        return matches;
+    }
+
     void clear() {
         byId.clear();
         byTarget.clear();

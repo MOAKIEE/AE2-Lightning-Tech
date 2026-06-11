@@ -5,6 +5,7 @@ import appeng.api.networking.IGridMultiblock;
 import appeng.api.networking.IGridNode;
 import java.lang.reflect.Method;
 import java.util.Iterator;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -32,6 +33,28 @@ public final class MultiblockLinkReadiness {
         return multiblock != null && containsSelf(multiblock.getMultiblockNodes(), node);
     }
 
+    public static boolean isKnownMultiblockAffectedByChange(IGridNode node, BlockPos changedPos) {
+        Object owner = getOwner(node);
+        if (!(owner instanceof BlockEntity blockEntity)) {
+            return false;
+        }
+
+        var blockId = BuiltInRegistries.BLOCK.getKey(currentBlockState(blockEntity).getBlock());
+        if (!node.hasFlag(GridFlags.MULTIBLOCK)
+                && !isKnownFormedStateMultiblock(owner.getClass().getName(), blockId)) {
+            return false;
+        }
+
+        Object cluster = invokeNoArg(owner, "getCluster");
+        if (cluster == null) {
+            return false;
+        }
+
+        BlockPos min = invokeBlockPos(cluster, "getBoundsMin");
+        BlockPos max = invokeBlockPos(cluster, "getBoundsMax");
+        return min != null && max != null && contains(min, max, changedPos);
+    }
+
     public static void refreshAfterVirtualConnectionRemoved(IGridNode node) {
         Object owner = getOwner(node);
         if (!(owner instanceof BlockEntity blockEntity)) {
@@ -56,6 +79,18 @@ public final class MultiblockLinkReadiness {
             }
         }
         return false;
+    }
+
+    static boolean contains(BlockPos min, BlockPos max, BlockPos pos) {
+        int minX = Math.min(min.getX(), max.getX());
+        int minY = Math.min(min.getY(), max.getY());
+        int minZ = Math.min(min.getZ(), max.getZ());
+        int maxX = Math.max(min.getX(), max.getX());
+        int maxY = Math.max(min.getY(), max.getY());
+        int maxZ = Math.max(min.getZ(), max.getZ());
+        return pos.getX() >= minX && pos.getX() <= maxX
+                && pos.getY() >= minY && pos.getY() <= maxY
+                && pos.getZ() >= minZ && pos.getZ() <= maxZ;
     }
 
     static boolean isKnownFormedStateMultiblock(String ownerClassName, String blockNamespace, String blockPath) {
@@ -92,6 +127,24 @@ public final class MultiblockLinkReadiness {
         } catch (RuntimeException ignored) {
             return null;
         }
+    }
+
+    private static Object invokeNoArg(Object target, String methodName) {
+        Method method = findMethod(target.getClass(), methodName);
+        if (method == null) {
+            return null;
+        }
+        try {
+            method.setAccessible(true);
+            return method.invoke(target);
+        } catch (ReflectiveOperationException | RuntimeException ignored) {
+            return null;
+        }
+    }
+
+    private static BlockPos invokeBlockPos(Object target, String methodName) {
+        Object value = invokeNoArg(target, methodName);
+        return value instanceof BlockPos pos ? pos : null;
     }
 
     private static BlockState currentBlockState(BlockEntity blockEntity) {

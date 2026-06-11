@@ -13,6 +13,8 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ServerLevelAccessor;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
@@ -31,6 +33,17 @@ public final class FrequencyCardAutoConnectHandler {
         var registry = WirelessLinkRegistry.get();
         if (registry != null) {
             registry.queueAutoConnect(player, player.level().dimension(), event.getPos(), null, 2);
+        }
+    }
+
+    @SubscribeEvent(priority = EventPriority.LOWEST)
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        if (event.isCanceled() || !(event.getLevel() instanceof ServerLevelAccessor levelAccessor)) {
+            return;
+        }
+        var registry = WirelessLinkRegistry.get();
+        if (registry != null) {
+            registry.onBlockChanged(levelAccessor.getLevel(), event.getPos());
         }
     }
 
