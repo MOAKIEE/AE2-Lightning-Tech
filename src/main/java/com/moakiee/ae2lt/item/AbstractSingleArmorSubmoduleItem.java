@@ -25,7 +25,8 @@ public abstract class AbstractSingleArmorSubmoduleItem extends Item implements C
             ArmorPart armorPart,
             CelestweaveArmorSubmodule submodule,
             Function<ItemStack, List<DeviceCapability>> capabilityFactory) {
-        super(properties);
+        // Unified module stack size; submodules are stateless (config lives on the armor).
+        super(properties.stacksTo(16));
         this.armorPart = armorPart;
         this.submodule = submodule;
         this.capabilityFactory = capabilityFactory;

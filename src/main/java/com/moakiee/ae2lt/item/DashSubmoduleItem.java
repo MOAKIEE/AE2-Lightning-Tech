@@ -11,7 +11,7 @@ public final class DashSubmoduleItem extends AbstractSingleArmorSubmoduleItem {
 
     public DashSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(64),
+                properties,
                 ArmorPart.FEET,
                 DashSubmodule.INSTANCE,
                 stack -> List.of(

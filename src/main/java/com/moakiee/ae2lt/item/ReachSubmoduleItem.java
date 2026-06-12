@@ -11,7 +11,7 @@ public final class ReachSubmoduleItem extends AbstractSingleArmorSubmoduleItem {
 
     public ReachSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.CHEST,
                 ReachSubmodule.INSTANCE,
                 stack -> List.of(

@@ -13,7 +13,7 @@ public final class NightVisionSubmoduleItem extends AbstractSingleArmorSubmodule
 
     public NightVisionSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(64),
+                properties,
                 ArmorPart.HEAD,
                 NightVisionSubmodule.INSTANCE,
                 stack -> List.of(

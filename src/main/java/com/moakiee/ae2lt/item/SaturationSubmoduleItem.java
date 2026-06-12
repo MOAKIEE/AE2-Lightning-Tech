@@ -12,7 +12,7 @@ public final class SaturationSubmoduleItem extends AbstractSingleArmorSubmoduleI
 
     public SaturationSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.HEAD,
                 SaturationSubmodule.INSTANCE,
                 stack -> List.of(

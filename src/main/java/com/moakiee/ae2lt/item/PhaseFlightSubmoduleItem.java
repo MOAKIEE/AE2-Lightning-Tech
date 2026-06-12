@@ -12,7 +12,7 @@ public final class PhaseFlightSubmoduleItem extends AbstractSingleArmorSubmodule
 
     public PhaseFlightSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.LEGS,
                 PhaseFlightSubmodule.INSTANCE,
                 stack -> List.of(

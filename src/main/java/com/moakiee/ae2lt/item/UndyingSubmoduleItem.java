@@ -12,7 +12,7 @@ public final class UndyingSubmoduleItem extends AbstractSingleArmorSubmoduleItem
 
     public UndyingSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.CHEST,
                 UndyingSubmodule.INSTANCE,
                 stack -> List.of(

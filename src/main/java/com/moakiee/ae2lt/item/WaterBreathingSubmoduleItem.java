@@ -13,7 +13,7 @@ public final class WaterBreathingSubmoduleItem extends AbstractSingleArmorSubmod
 
     public WaterBreathingSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(64),
+                properties,
                 ArmorPart.HEAD,
                 WaterBreathingSubmodule.INSTANCE,
                 stack -> List.of(

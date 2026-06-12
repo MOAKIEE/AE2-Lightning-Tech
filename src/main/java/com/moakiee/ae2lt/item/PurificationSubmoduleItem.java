@@ -12,7 +12,7 @@ public final class PurificationSubmoduleItem extends AbstractSingleArmorSubmodul
 
     public PurificationSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.CHEST,
                 PurificationSubmodule.INSTANCE,
                 stack -> List.of(

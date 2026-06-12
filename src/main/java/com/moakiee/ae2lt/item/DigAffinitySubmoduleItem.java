@@ -12,7 +12,7 @@ public final class DigAffinitySubmoduleItem extends AbstractSingleArmorSubmodule
 
     public DigAffinitySubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.FEET,
                 DigAffinitySubmodule.INSTANCE,
                 stack -> List.of(

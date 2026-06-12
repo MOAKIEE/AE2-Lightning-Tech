@@ -11,7 +11,7 @@ public final class ReflectSubmoduleItem extends AbstractSingleArmorSubmoduleItem
 
     public ReflectSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(64),
+                properties,
                 ArmorPart.CHEST,
                 ReflectSubmodule.INSTANCE,
                 stack -> List.of(

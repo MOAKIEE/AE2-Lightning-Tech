@@ -256,7 +256,7 @@ public final class ModItems {
     public static final DeferredItem<ReachSubmoduleItem> CELESTWEAVE_SUBMODULE_REACH_EXTENSION = ITEMS.registerItem(
             "module_reach_extension",
             ReachSubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<ResistanceSubmoduleItem> CELESTWEAVE_SUBMODULE_MATRIX_SHIELD = ITEMS.registerItem(
             "module_matrix_shield",
@@ -290,27 +290,27 @@ public final class ModItems {
     public static final DeferredItem<FlightSubmoduleItem> CELESTWEAVE_SUBMODULE_FLIGHT = ITEMS.registerItem(
             "module_creative_flight",
             FlightSubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<PurificationSubmoduleItem> CELESTWEAVE_SUBMODULE_PURIFICATION = ITEMS.registerItem(
             "module_purification",
             PurificationSubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<SaturationSubmoduleItem> CELESTWEAVE_SUBMODULE_SATURATION = ITEMS.registerItem(
             "module_saturation",
             SaturationSubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<DigAffinitySubmoduleItem> CELESTWEAVE_SUBMODULE_DIG_AFFINITY = ITEMS.registerItem(
             "module_dig_affinity",
             DigAffinitySubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<PhaseFlightSubmoduleItem> CELESTWEAVE_SUBMODULE_PHASE_FLIGHT = ITEMS.registerItem(
             "module_phase_flight",
             PhaseFlightSubmoduleItem::new,
-            new Item.Properties().stacksTo(1));
+            new Item.Properties());
 
     public static final DeferredItem<ArmorEnergyModuleItem> ENERGY_MODULE_T1 = ITEMS.register(
             "energy_module_t1",
@@ -363,7 +363,7 @@ public final class ModItems {
     public static final DeferredItem<RailgunModuleItem> RAILGUN_MODULE_OVERLOAD_EXECUTION = ITEMS.register(
             "railgun_module_overload_execution",
             () -> new RailgunModuleItem(
-                    new Item.Properties().stacksTo(1).rarity(Rarity.EPIC),
+                    new Item.Properties().stacksTo(16).rarity(Rarity.EPIC),
                     RailgunModuleType.OVERLOAD_EXECUTION));
 
     public static final DeferredItem<ColoredPartItem<OverloadedCablePart>> OVERLOADED_CABLE =

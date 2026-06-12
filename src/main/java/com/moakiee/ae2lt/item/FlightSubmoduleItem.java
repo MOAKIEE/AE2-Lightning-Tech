@@ -12,7 +12,7 @@ public final class FlightSubmoduleItem extends AbstractSingleArmorSubmoduleItem 
 
     public FlightSubmoduleItem(Properties properties) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.LEGS,
                 FlightSubmodule.INSTANCE,
                 stack -> List.of(

@@ -13,7 +13,7 @@ public final class ResistanceSubmoduleItem extends AbstractSingleArmorSubmoduleI
             Properties properties,
             ResistanceSubmodule submodule) {
         super(
-                properties.stacksTo(1),
+                properties,
                 ArmorPart.CHEST,
                 submodule,
                 stack -> List.of(
