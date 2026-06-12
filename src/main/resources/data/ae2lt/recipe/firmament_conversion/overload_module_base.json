@@ -1,0 +1,24 @@
+{
+  "type": "ae2lt:firmament_conversion",
+  "inputs": [
+    {
+      "ingredient": {
+        "item": "ae2lt:firmament_superconducting_wire"
+      },
+      "count": 8
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:firmament_alloy_ingot"
+      },
+      "count": 4
+    }
+  ],
+  "results": [
+    {
+      "id": "ae2lt:overload_module_base",
+      "count": 1
+    }
+  ],
+  "processTime": 100
+}
