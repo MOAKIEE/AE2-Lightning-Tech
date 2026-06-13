@@ -3,15 +3,21 @@
   "inputs": [
     {
       "ingredient": {
-        "item": "ae2lt:firmament_superconducting_wire"
+        "item": "ae2lt:firmament_essence"
       },
-      "count": 8
+      "count": 4
     },
     {
       "ingredient": {
         "item": "ae2lt:firmament_alloy_ingot"
       },
       "count": 4
+    },
+    {
+      "ingredient": {
+        "item": "ae2lt:overload_alloy_plate"
+      },
+      "count": 2
     }
   ],
   "results": [
