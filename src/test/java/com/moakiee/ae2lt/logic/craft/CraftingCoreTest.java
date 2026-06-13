@@ -97,6 +97,38 @@ class CraftingCoreTest {
     }
 
     @Test
+    void rejectsNewPushesWhileMaturedOutputsAreBlocked() {
+        var host = new FakeHost(0);
+        host.maxInsertPerCall = 0;
+        var assembler = new FakeAssembler(key("diamond"), 1);
+        var core = new CraftingCore(host, assembler, new CraftingCoreRegistry());
+
+        int firstAccepted = core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 2, 1);
+        host.time = 1;
+        int blockedAccepted = core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 3, 1);
+
+        assertEquals(2, firstAccepted);
+        assertEquals(0, blockedAccepted);
+        assertEquals(1, assembler.calls);
+        assertEquals(2, core.threadsInFlight());
+        assertEquals(0, host.network.getLong(key("diamond")));
+    }
+
+    @Test
+    void saturatesCopyCountersInsteadOfOverflowing() {
+        var host = new FakeHost(0);
+        var core = new CraftingCore(host, new FakeAssembler(key("diamond"), 1), new CraftingCoreRegistry());
+
+        int firstAccepted = core.pushBatch(new FakePattern(), inputs(key("stick"), 1), Integer.MAX_VALUE, 1);
+        int saturatedAccepted = core.pushBatch(new FakePattern(), inputs(key("stick"), 1), 1, 1);
+
+        assertEquals(Integer.MAX_VALUE, firstAccepted);
+        assertEquals(0, saturatedAccepted);
+        assertEquals(Integer.MAX_VALUE, core.threadsInFlight());
+        assertEquals(Integer.MAX_VALUE, core.getSize(1));
+    }
+
+    @Test
     void disconnectedHostKeepsOutputsInWheelUntilReconnect() {
         var host = new FakeHost(0);
         host.connected = false;

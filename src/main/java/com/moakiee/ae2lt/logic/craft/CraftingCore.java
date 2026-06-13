@@ -56,13 +56,22 @@ public final class CraftingCore implements Sweepable {
      * template (NOT multiplied by {@code copies}); materials are assumed to have been extracted
      * upstream already.
      */
-    public void pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int copies, int delay) {
-        if (copies <= 0 || oneCopyTemplate == null) return;
-        if (!(details instanceof IMolecularAssemblerSupportedPattern)) return;
+    public int pushBatch(IPatternDetails details, KeyCounter[] oneCopyTemplate, int copies, int delay) {
+        if (copies <= 0 || oneCopyTemplate == null) return 0;
+        if (!(details instanceof IMolecularAssemblerSupportedPattern)) return 0;
 
         int d = Math.max(1, Math.min(delay, WHEEL_MASK));
         long now = host.getGameTime();
         sweepNonLive(now);
+        if (lastSweptTick < now) {
+            return 0;
+        }
+
+        WheelCell cell = wheel[(int) ((now + d) & WHEEL_MASK)];
+        int accepted = appendableCopies(cell, copies);
+        if (accepted <= 0) {
+            return 0;
+        }
 
         CopyAssembler.AssembledCopy assembled;
         try {
@@ -70,26 +79,26 @@ public final class CraftingCore implements Sweepable {
         } catch (Throwable t) {
             appeng.core.AELog.warn("[ae2lt] batch crafting core assemble failed for %s; dropping %d copies. %s",
                     details, copies, t);
-            return;
+            return 0;
         }
 
         if (assembled == null || assembled.output() == null || assembled.outputCount() <= 0) {
-            return;
+            return 0;
         }
 
-        WheelCell cell = wheel[(int) ((now + d) & WHEEL_MASK)];
-        accumulate(cell, assembled.output(), assembled.outputCount() * (long) copies);
+        accumulate(cell, assembled.output(), saturatedMultiply(assembled.outputCount(), accepted));
         if (assembled.remainders() != null) {
             for (var remainder : assembled.remainders()) {
                 if (remainder != null) {
-                    accumulate(cell, remainder.key(), remainder.count() * (long) copies);
+                    accumulate(cell, remainder.key(), saturatedMultiply(remainder.count(), accepted));
                 }
             }
         }
 
-        cell.copies += copies;
-        threadsInFlight += copies;
+        cell.copies += accepted;
+        threadsInFlight += accepted;
         registry.markActive(this);
+        return accepted;
     }
 
     /** In-flight copies currently scheduled in the wheel cell at {@code slot} (mod wheel size). */
@@ -263,9 +272,27 @@ public final class CraftingCore implements Sweepable {
         threadsInFlight = 0;
     }
 
+    private int appendableCopies(WheelCell cell, int requested) {
+        int cellSpace = Integer.MAX_VALUE - cell.copies;
+        int globalSpace = Integer.MAX_VALUE - threadsInFlight;
+        return Math.min(requested, Math.min(cellSpace, globalSpace));
+    }
+
+    private static long saturatedMultiply(long amount, int copies) {
+        if (amount <= 0 || copies <= 0) return 0L;
+        if (amount > Long.MAX_VALUE / copies) return Long.MAX_VALUE;
+        return amount * (long) copies;
+    }
+
+    private static long saturatedAdd(long left, long right) {
+        if (right <= 0) return left;
+        if (left > Long.MAX_VALUE - right) return Long.MAX_VALUE;
+        return left + right;
+    }
+
     private static void accumulate(WheelCell cell, AEKey key, long amount) {
         if (key != null && amount > 0) {
-            cell.outputs.addTo(key, amount);
+            cell.outputs.put(key, saturatedAdd(cell.outputs.getLong(key), amount));
         }
     }
 }

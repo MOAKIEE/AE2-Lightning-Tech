@@ -8,6 +8,7 @@ import java.util.function.BooleanSupplier;
 
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.Tag;
 
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEKey;
@@ -19,14 +20,16 @@ import appeng.api.stacks.KeyCounter;
  * budget, and schedules them on the engine. The engine itself stays a pure assembler + time wheel.
  */
 public final class MatrixCraftingCluster {
-    // L0 placeholder; L1 will derive this from the floorplan (critical path − clock units).
-    private static final int MATRIX_DELAY_TICKS = 1;
+    private static final String NBT_HEAT = "heat";
+    private static final String NBT_LAST_LIMITER_TICK = "lastLimiterTick";
 
     private final BooleanSupplier formed;
     private final List<MatrixPatternCore> patternCores;
     private final List<MatrixCraftCore> craftCores;
     private final MatrixHost host;
     private final CraftingCore engine;
+    private double heat;
+    private long lastLimiterTick;
 
     public MatrixCraftingCluster(BooleanSupplier formed,
                                  List<? extends MatrixPatternCore> patternCores,
@@ -102,8 +105,8 @@ public final class MatrixCraftingCluster {
         if (!hasPattern(details)) return maxCraft;
         int copies = Math.min(maxCraft, availableCapacity());
         if (copies <= 0) return maxCraft;
-        engine.pushBatch(details, oneCopyTemplate, copies, MATRIX_DELAY_TICKS);
-        return maxCraft - copies;
+        int accepted = engine.pushBatch(details, oneCopyTemplate, copies, MatrixCraftingMath.MATRIX_DELAY_TICKS);
+        return maxCraft - accepted;
     }
 
     public boolean isBusy() {
@@ -119,12 +122,43 @@ public final class MatrixCraftingCluster {
         return engine.threadsInFlight();
     }
 
+    public MatrixCraftingProfile craftingProfile() {
+        if (!formed.getAsBoolean()) return MatrixCraftingProfile.empty();
+
+        var units = new ArrayList<MatrixCraftingUnit>();
+        for (var core : craftCores) {
+            if (core != null) {
+                units.addAll(core.craftingUnits());
+            }
+        }
+        return MatrixCraftingProfile.fromUnits(units);
+    }
+
+    public MatrixCraftingMath.Snapshot tickLimiter() {
+        var snapshot = craftingProfile().snapshot(heat);
+        heat = snapshot.heat();
+        lastLimiterTick = host.getGameTime();
+        return snapshot;
+    }
+
+    public double heat() {
+        return heat;
+    }
+
+    public long lastLimiterTick() {
+        return lastLimiterTick;
+    }
+
     public void writeEngineTo(CompoundTag tag, HolderLookup.Provider registries) {
         engine.writeTo(tag, registries);
+        tag.putDouble(NBT_HEAT, heat);
+        tag.putLong(NBT_LAST_LIMITER_TICK, lastLimiterTick);
     }
 
     public void readEngineFrom(CompoundTag tag, HolderLookup.Provider registries) {
         engine.readFrom(tag, registries);
+        heat = tag.contains(NBT_HEAT, Tag.TAG_DOUBLE) ? tag.getDouble(NBT_HEAT) : 0.0D;
+        lastLimiterTick = tag.contains(NBT_LAST_LIMITER_TICK, Tag.TAG_LONG) ? tag.getLong(NBT_LAST_LIMITER_TICK) : 0L;
     }
 
     public int totalThreadCapacity() {
