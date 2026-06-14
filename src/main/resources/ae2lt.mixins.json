@@ -29,6 +29,7 @@
     "client.CableBusBakedModelMixin",
     "client.PatternProviderScreenAccessor",
     "client.AEBaseScreenAccessor",
+    "client.VerticalButtonBarAccessor",
     "client.AEBaseScreenFrequencyTerminalButtonMixin"
   ],
   "injectors": {
