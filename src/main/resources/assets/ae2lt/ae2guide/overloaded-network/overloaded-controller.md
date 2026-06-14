@@ -48,6 +48,8 @@ What this means for the player:
 
 The Overloaded ME Controller follows the same placement and multiblock rules as the vanilla controller.
 
+To give a controller multiblock wireless transmission, replace only **one** controller block with a [Wireless Overloaded Controller](wireless-network.md) or Advanced Wireless Overloaded Controller. It broadcasts the ME network that the whole controller multiblock belongs to, so the remaining blocks can stay regular Overloaded ME Controllers.
+
 For full effect, pair it with [Overloaded Cable](overloaded-cable.md).
 
 ## Compared to the Vanilla Controller
