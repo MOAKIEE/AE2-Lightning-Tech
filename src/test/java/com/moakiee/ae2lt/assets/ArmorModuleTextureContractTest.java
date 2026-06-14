@@ -1,5 +1,6 @@
 package com.moakiee.ae2lt.assets;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
@@ -44,5 +45,15 @@ final class ArmorModuleTextureContractTest {
 
             assertTrue(Files.isRegularFile(texturePath), module + " texture should exist");
         }
+    }
+
+    @Test
+    void celestweaveArmorDoesNotDeclareRenderedArmorLayers() throws Exception {
+        String source = Files.readString(Path.of(
+                "src/main/java/com/moakiee/ae2lt/celestweave/CelestweaveArmorMaterials.java"));
+
+        assertFalse(
+                source.contains("new ArmorMaterial.Layer"),
+                "Celestweave should remain equipable without rendering a worn armor model");
     }
 }
