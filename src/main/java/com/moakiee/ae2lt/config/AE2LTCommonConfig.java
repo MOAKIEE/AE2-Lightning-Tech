@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.config;
 
+import com.moakiee.ae2lt.blockentity.ExtendedPatternProviderCapacity;
+
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 public final class AE2LTCommonConfig {
@@ -52,6 +54,10 @@ public final class AE2LTCommonConfig {
 
     public static int wirelessConnectorMaxDistance() {
         return VALUES.wirelessConnectorMaxDistance.get();
+    }
+
+    public static int extendedPatternProviderPages() {
+        return ExtendedPatternProviderCapacity.clampPages(VALUES.extendedPatternProviderPages.get());
     }
 
     public static int overloadFactoryParallelPerMatrix() {
@@ -193,6 +199,7 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue overloadedControllerChannelsPerController;
         private final ModConfigSpec.DoubleValue overloadedControllerPassiveAePerTick;
         private final ModConfigSpec.IntValue wirelessConnectorMaxDistance;
+        private final ModConfigSpec.IntValue extendedPatternProviderPages;
         private final ModConfigSpec.IntValue overloadFactoryParallelPerMatrix;
         private final ModConfigSpec.LongValue overloadFactoryEnergyCapacity;
         private final ModConfigSpec.LongValue overloadFactoryFePerTickNoSpeedCard;
@@ -314,6 +321,14 @@ public final class AE2LTCommonConfig {
                             "Only limits links from overloaded providers, interfaces, and power supplies to target machines.",
                             "Set to 0 to disable this distance limit.")
                     .defineInRange("maxDistance", 128, 0, Integer.MAX_VALUE);
+            builder.pop();
+            builder.push("extendedPatternProvider");
+            extendedPatternProviderPages = builder
+                    .comment("Number of 36-slot pattern pages in the Extended Overloaded Pattern Provider.")
+                    .defineInRange("pages",
+                            ExtendedPatternProviderCapacity.DEFAULT_PAGES,
+                            1,
+                            ExtendedPatternProviderCapacity.MAX_PAGES);
             builder.pop();
             builder.pop();
 

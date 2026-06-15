@@ -3,7 +3,6 @@ package com.moakiee.ae2lt.client;
 import java.util.List;
 
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
@@ -46,9 +45,6 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
     private final TextureToggleButton filteredImportButton;
 
     private static final int SLOTS_PER_PAGE = 36;
-
-    private Button prevPageButton;
-    private Button nextPageButton;
 
     public OverloadedPatternProviderScreen(M menu, Inventory playerInventory,
                                            Component title, ScreenStyle style) {
@@ -97,17 +93,6 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
         super.init();
 
         alignSlotPositions();
-
-        prevPageButton = Button.builder(Component.literal("<"),
-                btn -> this.menu.clientPrevPage())
-                .bounds(this.leftPos + 110, this.topPos + 30, 14, 12).build();
-
-        nextPageButton = Button.builder(Component.literal(">"),
-                btn -> this.menu.clientNextPage())
-                .bounds(this.leftPos + 156, this.topPos + 30, 14, 12).build();
-
-        addRenderableWidget(prevPageButton);
-        addRenderableWidget(nextPageButton);
     }
 
     /**
@@ -135,7 +120,11 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
         if (tp > 1) {
             String pageText = (this.menu.getCurrentPage() + 1) + "/" + tp;
             int textWidth = this.font.width(pageText);
-            guiGraphics.drawString(this.font, pageText, 136 - textWidth / 2, 33, 0x404040, false);
+            guiGraphics.drawString(this.font, pageText,
+                    PatternProviderPageIndicator.centeredX(this.imageWidth, textWidth),
+                    33,
+                    0x404040,
+                    false);
         }
     }
 
@@ -166,12 +155,22 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
         this.wirelessSpeedButton.setState(this.menu.isFastSpeedMode());
         this.wirelessSpeedButton.setVisibility(
                 this.menu.isWirelessMode() && this.menu.isWirelessTuningVisible());
+    }
 
-        boolean multiPage = this.menu.getTotalPages() > 1;
-        prevPageButton.visible = multiPage;
-        nextPageButton.visible = multiPage;
-        prevPageButton.active = multiPage && this.menu.getCurrentPage() > 0;
-        nextPageButton.active = multiPage && this.menu.getCurrentPage() < this.menu.getTotalPages() - 1;
+    @Override
+    public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+        if (this.menu.getTotalPages() > 1) {
+            var direction = PatternProviderPageScroll.directionForDelta(scrollY);
+            if (direction == PatternProviderPageScroll.Direction.PREVIOUS) {
+                this.menu.clientPrevPage();
+                return true;
+            }
+            if (direction == PatternProviderPageScroll.Direction.NEXT) {
+                this.menu.clientNextPage();
+                return true;
+            }
+        }
+        return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
     }
 
     private void setBlockingModeButtonVisible(boolean visible) {
