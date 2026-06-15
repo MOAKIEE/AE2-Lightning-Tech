@@ -56,6 +56,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
     private boolean powered;
     private boolean terrainDestruction;
     private boolean pvp;
+    private boolean soundEnabled;
     private List<String> moduleNameKeys = List.of();
     private List<Integer> moduleCounts = List.of();
     private List<Boolean> moduleEnabled = List.of();
@@ -166,6 +167,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
                 status.powered(),
                 status.terrainDestruction(),
                 status.pvp(),
+                status.soundEnabled(),
                 nameKeys,
                 counts,
                 enabled,
@@ -203,6 +205,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
             boolean powered,
             boolean terrainDestruction,
             boolean pvp,
+            boolean soundEnabled,
             List<String> nameKeys,
             List<Integer> counts,
             List<Boolean> enabled,
@@ -216,6 +219,7 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         this.powered = powered;
         this.terrainDestruction = terrainDestruction;
         this.pvp = pvp;
+        this.soundEnabled = soundEnabled;
         this.moduleNameKeys = List.copyOf(nameKeys);
         this.moduleCounts = List.copyOf(counts);
         this.moduleEnabled = List.copyOf(enabled);
@@ -265,6 +269,10 @@ public class DeviceHubMenu extends AbstractContainerMenu {
 
     public boolean isPvp() {
         return pvp;
+    }
+
+    public boolean isSoundEnabled() {
+        return soundEnabled;
     }
 
     public int getSelectedModuleIndex() {
@@ -335,6 +343,14 @@ public class DeviceHubMenu extends AbstractContainerMenu {
         if (railgun.isEmpty()) return;
         RailgunSettings s = railgun.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
         railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withPvp(!s.pvp()));
+    }
+
+    public void toggleRailgunSound() {
+        if (!(getPlayer() instanceof ServerPlayer player)) return;
+        ItemStack railgun = findDevice(player, TAB_RAILGUN);
+        if (railgun.isEmpty()) return;
+        RailgunSettings s = railgun.getOrDefault(ModDataComponents.RAILGUN_SETTINGS.get(), RailgunSettings.DEFAULT);
+        railgun.set(ModDataComponents.RAILGUN_SETTINGS.get(), s.withSound(!s.soundEnabled()));
     }
 
     public void cycleSelectedModuleConfig(int optionIndex) {

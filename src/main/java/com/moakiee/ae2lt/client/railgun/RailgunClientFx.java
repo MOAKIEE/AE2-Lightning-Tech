@@ -134,12 +134,14 @@ public final class RailgunClientFx {
         // 6. Sound: the muzzle report belongs near the shooter, not the impact
         // point. Otherwise a long-range shot can look correct but be inaudible
         // for the player who fired it.
-        var sound = isMax ? ModSounds.RAILGUN_FIRE_MAX.get() : ModSounds.RAILGUN_FIRE_CHARGED.get();
-        mc.level.playLocalSound(plasmaOrigin.x, plasmaOrigin.y, plasmaOrigin.z, sound, SoundSource.PLAYERS,
-                isMax ? 1.7f : 0.9f + 0.15f * tier, 1.0f, false);
-        if (isMax) {
-            mc.level.playLocalSound(hit.x, hit.y, hit.z, ModSounds.RAILGUN_FIRE_IMPACT.get(),
-                    SoundSource.PLAYERS, 1.4f, 0.7f, false);
+        if (p.soundEnabled()) {
+            var sound = isMax ? ModSounds.RAILGUN_FIRE_MAX.get() : ModSounds.RAILGUN_FIRE_CHARGED.get();
+            mc.level.playLocalSound(plasmaOrigin.x, plasmaOrigin.y, plasmaOrigin.z, sound, SoundSource.PLAYERS,
+                    isMax ? 1.7f : 0.9f + 0.15f * tier, 1.0f, false);
+            if (isMax) {
+                mc.level.playLocalSound(hit.x, hit.y, hit.z, ModSounds.RAILGUN_FIRE_IMPACT.get(),
+                        SoundSource.PLAYERS, 1.4f, 0.7f, false);
+            }
         }
     }
 }

@@ -12,6 +12,7 @@ import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.ElectromagneticRailgunItem;
+import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
 /**
@@ -39,7 +40,10 @@ public final class RailgunSoundController {
         LocalPlayer player = mc.player;
 
         // -- Beam loop --
-        boolean beamFiring = RailgunBeamRenderClient.isLocalFiring();
+        ItemStack localRailgun = localRailgunStack(player);
+        boolean beamFiring = RailgunBeamRenderClient.isLocalFiring()
+                && !localRailgun.isEmpty()
+                && RailgunSettings.soundEnabled(localRailgun);
         if (beamFiring) {
             if (beamSound == null || beamSound.isStopped()) {
                 beamSound = new RailgunBeamLoopSound(player);
@@ -55,7 +59,8 @@ public final class RailgunSoundController {
         // -- Charge loop --
         ItemStack using = player.getUseItem();
         boolean charging = player.isUsingItem()
-                && using.getItem() instanceof ElectromagneticRailgunItem;
+                && using.getItem() instanceof ElectromagneticRailgunItem
+                && RailgunSettings.soundEnabled(using);
         if (charging) {
             long chargeTicks = using.getOrDefault(ModDataComponents.RAILGUN_CHARGE_TICKS.get(), 0L);
             RailgunChargeSoundPhase phase = RailgunChargeSoundPhase.fromChargeTicks(
@@ -91,6 +96,15 @@ public final class RailgunSoundController {
                 }
             }
         }
+    }
+
+    private static ItemStack localRailgunStack(LocalPlayer player) {
+        ItemStack main = player.getMainHandItem();
+        if (main.getItem() instanceof ElectromagneticRailgunItem) {
+            return main;
+        }
+        ItemStack offhand = player.getOffhandItem();
+        return offhand.getItem() instanceof ElectromagneticRailgunItem ? offhand : ItemStack.EMPTY;
     }
 
     @SubscribeEvent

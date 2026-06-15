@@ -21,6 +21,7 @@
     "GridGetMachineNodesMixin",
     "PathingCalculationCapMixin",
     "LivingEntityUndyingMixin",
+    "LivingEntityShieldHitFeedbackMixin",
     "ServerPlayerUndyingMixin",
     "PlayerPhaseFlightMixin",
     "ControllerValidatorMixin",
@@ -35,7 +36,9 @@
     "client.PatternProviderScreenAccessor",
     "client.RailgunHumanoidModelMixin",
     "client.AEBaseScreenAccessor",
-    "client.AEBaseScreenFrequencyTerminalButtonMixin"
+    "client.AEBaseScreenFrequencyTerminalButtonMixin",
+    "client.ClientPacketListenerShieldHitFeedbackMixin",
+    "client.LocalPlayerShieldHitFeedbackMixin"
   ],
   "injectors": {
     "defaultRequire": 1

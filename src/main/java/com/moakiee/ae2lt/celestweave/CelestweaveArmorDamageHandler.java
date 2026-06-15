@@ -1,5 +1,8 @@
 package com.moakiee.ae2lt.celestweave;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import net.minecraft.tags.DamageTypeTags;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageTypes;
@@ -10,6 +13,7 @@ import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.LivingDamageEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
@@ -21,6 +25,7 @@ import com.moakiee.ae2lt.celestweave.service.ArmorEnergyService;
 import com.moakiee.ae2lt.celestweave.service.ArmorLightningService;
 import com.moakiee.ae2lt.celestweave.service.ArmorModuleLightningPolicy;
 import com.moakiee.ae2lt.celestweave.service.ArmorResourceFeedback;
+import com.moakiee.ae2lt.network.ShieldHitFeedbackSuppressionPacket;
 import com.moakiee.ae2lt.registry.ModDamageTypes;
 
 /**
@@ -33,6 +38,8 @@ import com.moakiee.ae2lt.registry.ModDamageTypes;
 @EventBusSubscriber(modid = AE2LightningTech.MODID)
 public final class CelestweaveArmorDamageHandler {
     private static final ThreadLocal<Boolean> REFLECTING_DAMAGE = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Set<Integer>> SUPPRESSING_SHIELD_HIT_FEEDBACK =
+            ThreadLocal.withInitial(HashSet::new);
 
     private CelestweaveArmorDamageHandler() {}
 
@@ -51,6 +58,9 @@ public final class CelestweaveArmorDamageHandler {
                     incoming);
             if (payMitigationLightning(player, mitigation, staged, incoming - afterMitigation)) {
                 event.setNewDamage(afterMitigation);
+                if (!ResistanceSubmodule.isHitFeedbackEnabled(mitigation.armor(), staged.stage())) {
+                    markSuppressShieldHitFeedback(player);
+                }
             }
         }
         if (!isReflectingDamage()) {
@@ -178,6 +188,38 @@ public final class CelestweaveArmorDamageHandler {
 
     private static ResistanceSubmodule mitigationSubmoduleForStage(String stage) {
         return "phase_shield".equals(stage) ? ResistanceSubmodule.T2 : ResistanceSubmodule.T1;
+    }
+
+    public static boolean shouldSuppressShieldHitFeedback(LivingEntity entity) {
+        return entity != null && SUPPRESSING_SHIELD_HIT_FEEDBACK.get().contains(entity.getId());
+    }
+
+    public static void suppressShieldHitFeedback(LivingEntity entity) {
+        if (entity == null) {
+            return;
+        }
+        entity.hurtTime = 0;
+        entity.hurtDuration = 0;
+    }
+
+    public static void clearSuppressShieldHitFeedback(LivingEntity entity) {
+        if (entity == null) {
+            return;
+        }
+        var suppressing = SUPPRESSING_SHIELD_HIT_FEEDBACK.get();
+        suppressing.remove(entity.getId());
+        if (suppressing.isEmpty()) {
+            SUPPRESSING_SHIELD_HIT_FEEDBACK.remove();
+        }
+    }
+
+    private static void markSuppressShieldHitFeedback(LivingEntity entity) {
+        SUPPRESSING_SHIELD_HIT_FEEDBACK.get().add(entity.getId());
+        if (entity instanceof ServerPlayer serverPlayer) {
+            PacketDistributor.sendToPlayer(
+                    serverPlayer,
+                    new ShieldHitFeedbackSuppressionPacket(serverPlayer.getId()));
+        }
     }
 
     private static void reflectIncomingDamage(Player player, DamageSource source, float incomingDamage) {

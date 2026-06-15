@@ -28,8 +28,9 @@ import com.moakiee.ae2lt.network.NetworkInit;
  *                   arc segment; empty if no chain triggered this tick
  * @param firstHit   primary impact point (entity's hit center) — used as the
  *                   origin for the first arc and for impact sparks
+ * @param soundEnabled true when railgun-specific sounds should play client-side
  */
-public record RailgunBeamChainFxPacket(UUID shooterId, Vec3 firstHit, List<Vec3> chainPath)
+public record RailgunBeamChainFxPacket(UUID shooterId, Vec3 firstHit, List<Vec3> chainPath, boolean soundEnabled)
         implements CustomPacketPayload {
 
     public static final Type<RailgunBeamChainFxPacket> TYPE =
@@ -54,6 +55,7 @@ public record RailgunBeamChainFxPacket(UUID shooterId, Vec3 firstHit, List<Vec3>
             buf.writeDouble(v.y);
             buf.writeDouble(v.z);
         }
+        buf.writeBoolean(soundEnabled);
     }
 
     public static RailgunBeamChainFxPacket decode(RegistryFriendlyByteBuf buf) {
@@ -64,7 +66,8 @@ public record RailgunBeamChainFxPacket(UUID shooterId, Vec3 firstHit, List<Vec3>
         for (int i = 0; i < n; i++) {
             path.add(new Vec3(buf.readDouble(), buf.readDouble(), buf.readDouble()));
         }
-        return new RailgunBeamChainFxPacket(id, first, path);
+        boolean soundEnabled = buf.readBoolean();
+        return new RailgunBeamChainFxPacket(id, first, path, soundEnabled);
     }
 
     public static void handle(RailgunBeamChainFxPacket p, IPayloadContext ctx) {

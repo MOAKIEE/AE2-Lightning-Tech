@@ -334,6 +334,10 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
         drawSettingRow(gfx, x, rowY,
                 Component.translatable("ae2lt.device_hub.setting.pvp"),
                 menu.isPvp());
+        rowY += MODULE_ROW_H + 2;
+        drawSettingRow(gfx, x, rowY,
+                Component.translatable("ae2lt.device_hub.setting.sound"),
+                menu.isSoundEnabled());
     }
 
     private void drawSettingRow(GuiGraphics gfx, int x, int y, Component label, boolean on) {
@@ -497,6 +501,12 @@ public class DeviceHubScreen extends AbstractContainerScreen<DeviceHubMenu> {
             if (mouseY >= checkboxY && mouseY <= checkboxY + CHECKBOX_HEIGHT) {
                 PacketDistributor.sendToServer(new DeviceHubActionPacket(
                         DeviceHubActionPacket.ACTION_TOGGLE_PVP, 0));
+                return true;
+            }
+            checkboxY += MODULE_ROW_H + 2;
+            if (mouseY >= checkboxY && mouseY <= checkboxY + CHECKBOX_HEIGHT) {
+                PacketDistributor.sendToServer(new DeviceHubActionPacket(
+                        DeviceHubActionPacket.ACTION_TOGGLE_SOUND, 0));
                 return true;
             }
         }

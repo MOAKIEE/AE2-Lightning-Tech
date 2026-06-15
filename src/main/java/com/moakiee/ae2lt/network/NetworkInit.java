@@ -90,6 +90,10 @@ public final class NetworkInit {
                 FlightInertiaSyncPacket.TYPE,
                 FlightInertiaSyncPacket.STREAM_CODEC,
                 FlightInertiaSyncPacket::handle);
+        registrar.playToClient(
+                ShieldHitFeedbackSuppressionPacket.TYPE,
+                ShieldHitFeedbackSuppressionPacket.STREAM_CODEC,
+                ShieldHitFeedbackSuppressionPacket::handle);
 
         // Railgun: C→S (RailgunOpenGuiPacket removed — replaced by OpenDeviceHubPacket)
         registrar.playToServer(

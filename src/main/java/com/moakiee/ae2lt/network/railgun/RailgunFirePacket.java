@@ -26,6 +26,7 @@ import com.moakiee.ae2lt.network.NetworkInit;
  * @param chainPath   pairs of points (from, to) for each chain segment to render
  * @param tier        charge tier ordinal (0=HV, 1=EHV1, 2=EHV2, 3=EHV3)
  * @param isMax       true on max-tier shots
+ * @param soundEnabled true when railgun-specific sounds should play client-side
  * @param impactRadius radius (blocks) of the impact splash AOE for shockwave rendering
  */
 public record RailgunFirePacket(
@@ -35,6 +36,7 @@ public record RailgunFirePacket(
         List<Vec3> chainPath,
         int tier,
         boolean isMax,
+        boolean soundEnabled,
         float impactRadius) implements CustomPacketPayload {
 
     public static final Type<RailgunFirePacket> TYPE =
@@ -58,6 +60,7 @@ public record RailgunFirePacket(
         }
         buf.writeVarInt(tier);
         buf.writeBoolean(isMax);
+        buf.writeBoolean(soundEnabled);
         buf.writeFloat(impactRadius);
     }
 
@@ -72,8 +75,9 @@ public record RailgunFirePacket(
         }
         int tier = buf.readVarInt();
         boolean isMax = buf.readBoolean();
+        boolean soundEnabled = buf.readBoolean();
         float impactRadius = buf.readFloat();
-        return new RailgunFirePacket(shooterId, from, first, path, tier, isMax, impactRadius);
+        return new RailgunFirePacket(shooterId, from, first, path, tier, isMax, soundEnabled, impactRadius);
     }
 
     public static void handle(RailgunFirePacket p, IPayloadContext ctx) {

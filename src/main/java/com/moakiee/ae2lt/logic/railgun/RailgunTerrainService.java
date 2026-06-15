@@ -35,6 +35,7 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.config.AE2LTCommonConfig;
 import com.moakiee.ae2lt.config.RailgunDefaults;
 import com.moakiee.ae2lt.item.railgun.RailgunChargeTier;
+import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 
 /**
  * Async block-destruction service. Each charged shot may queue thousands of
@@ -79,8 +80,10 @@ public final class RailgunTerrainService {
         };
 
         BlockPos centerPos = BlockPos.containing(center);
-        level.playSound(null, centerPos, ModSounds.RAILGUN_FIRE_IMPACT.get(), SoundSource.BLOCKS,
-                1.5F + tier.ordinal() * 0.3F, 0.5F);
+        if (RailgunSettings.soundEnabled(stack)) {
+            level.playSound(null, centerPos, ModSounds.RAILGUN_FIRE_IMPACT.get(), SoundSource.BLOCKS,
+                    1.5F + tier.ordinal() * 0.3F, 0.5F);
+        }
 
         List<BlockPos> candidates = collectSphere(centerPos, radius);
         // Fisher-Yates shuffle directly on the level's RandomSource (Collections.shuffle

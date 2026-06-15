@@ -30,7 +30,7 @@ public record DeviceStatusModel(
         List<ModuleInfo> modules,
         int selectedModuleIndex,
         List<ModuleConfigInfo> moduleConfigs,
-        boolean terrainDestruction, boolean pvp
+        boolean terrainDestruction, boolean pvp, boolean soundEnabled
 ) {
     public record ModuleInfo(String nameKey, int count, boolean enabled) {
     }
@@ -39,7 +39,7 @@ public record DeviceStatusModel(
     }
 
     public static final DeviceStatusModel EMPTY = new DeviceStatusModel(
-            "", false, false, List.of(), -1, List.of(), false, false);
+            "", false, false, List.of(), -1, List.of(), false, false, false);
 
     /** Build status snapshot from an armor stack worn by the player. */
     public static DeviceStatusModel fromArmorStack(ItemStack armor, ServerPlayer player) {
@@ -79,7 +79,7 @@ public record DeviceStatusModel(
         List<ModuleConfigInfo> moduleConfigs = moduleConfigs(armor, player, clampedModuleIndex);
 
         return new DeviceStatusModel(
-                name, snapshot.hasCore(), powered, modules, clampedModuleIndex, moduleConfigs, false, false);
+                name, snapshot.hasCore(), powered, modules, clampedModuleIndex, moduleConfigs, false, false, false);
     }
 
     /** Build status snapshot from a railgun stack held by the player. */
@@ -127,7 +127,7 @@ public record DeviceStatusModel(
 
         return new DeviceStatusModel(
                 name, hasStructuralCore, powered, modules, -1, List.of(),
-                terrainAllowed && settings.terrainDestruction(), settings.pvp());
+                terrainAllowed && settings.terrainDestruction(), settings.pvp(), settings.soundEnabled());
     }
 
     private static List<ModuleConfigInfo> moduleConfigs(ItemStack armor, ServerPlayer player, int selectedModuleIndex) {

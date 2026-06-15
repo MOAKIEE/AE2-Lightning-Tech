@@ -221,7 +221,7 @@ public final class RailgunBeamService {
                 // (RailgunChargeTier.EHV3 only) ignores it for any non-EHv3 value.
                 RailgunFireService.applyAll(level, player, chain, ctx, stack, RailgunChargeTier.HV);
                 if (!chain.isEmpty()) {
-                    broadcastBeamChainFx(level, player, primary, chain);
+                    broadcastBeamChainFx(level, player, primary, chain, settings.soundEnabled());
                 }
             }
         }
@@ -270,7 +270,8 @@ public final class RailgunBeamService {
      */
     private static void broadcastBeamChainFx(ServerLevel level, ServerPlayer player,
                                              LivingEntity primary,
-                                             List<RailgunChainResolver.Hit> chain) {
+                                             List<RailgunChainResolver.Hit> chain,
+                                             boolean soundEnabled) {
         java.util.List<Vec3> path = new java.util.ArrayList<>(chain.size() * 2);
         Vec3 prev = primary.position().add(0.0D, primary.getBbHeight() / 2.0D, 0.0D);
         Vec3 firstHit = prev;
@@ -282,7 +283,7 @@ public final class RailgunBeamService {
             prev = cur;
         }
         if (path.isEmpty()) return;
-        var pkt = new RailgunBeamChainFxPacket(player.getUUID(), firstHit, path);
+        var pkt = new RailgunBeamChainFxPacket(player.getUUID(), firstHit, path, soundEnabled);
         NetworkHandler.sendToTrackingChunk(level, player.chunkPosition(), pkt);
     }
 

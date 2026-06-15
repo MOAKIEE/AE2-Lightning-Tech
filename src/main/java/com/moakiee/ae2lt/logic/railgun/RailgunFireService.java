@@ -223,7 +223,7 @@ public final class RailgunFireService {
         RailgunRecoilService.apply(player, tier);
 
         // 6. Broadcast client FX
-        broadcastFire(level, player, from, firstHitPos, tier, hits, effectivePulseRadius);
+        broadcastFire(level, player, from, firstHitPos, tier, hits, effectivePulseRadius, settings.soundEnabled());
     }
 
     public static void applyAll(ServerLevel level, ServerPlayer player, List<RailgunChainResolver.Hit> hits, DamageContext ctx) {
@@ -273,7 +273,7 @@ public final class RailgunFireService {
 
     private static void broadcastFire(ServerLevel level, ServerPlayer player, Vec3 from, Vec3 firstHit,
                                       RailgunChargeTier tier, List<RailgunChainResolver.Hit> hits,
-                                      double effectivePulseRadius) {
+                                      double effectivePulseRadius, boolean soundEnabled) {
         List<Vec3> chainPath = new ArrayList<>();
         Vec3 prev = firstHit;
         for (var h : hits) {
@@ -299,7 +299,8 @@ public final class RailgunFireService {
         if (tier.isMax()) {
             impactR = Math.max(impactR, effectivePulseRadius);
         }
-        var pkt = new RailgunFirePacket(player.getUUID(), from, firstHit, chainPath, tier.ordinal(), tier.isMax(), (float) impactR);
+        var pkt = new RailgunFirePacket(
+                player.getUUID(), from, firstHit, chainPath, tier.ordinal(), tier.isMax(), soundEnabled, (float) impactR);
         NetworkHandler.sendToTrackingChunk(level, player.chunkPosition(), pkt);
     }
 

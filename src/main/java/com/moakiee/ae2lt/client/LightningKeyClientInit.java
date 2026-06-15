@@ -31,6 +31,7 @@ public final class LightningKeyClientInit {
     public static void onClientSetup(FMLClientSetupEvent event) {
         event.enqueueWork(() -> {
             RailgunClientBootstrap.install();
+            ShieldHitFeedbackClientBootstrap.install();
             AEKeyRendering.register(LightningKeyType.INSTANCE, LightningKey.class, LightningKeyRenderHandler.INSTANCE);
 
             ItemProperties.register(

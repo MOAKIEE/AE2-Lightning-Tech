@@ -19,6 +19,7 @@ public record DeviceHubSyncPacket(
         boolean powered,
         boolean terrainDestruction,
         boolean pvp,
+        boolean soundEnabled,
         List<String> moduleNameKeys,
         List<Integer> moduleCounts,
         List<Boolean> moduleEnabled,
@@ -47,6 +48,7 @@ public record DeviceHubSyncPacket(
         boolean powered = buf.readBoolean();
         boolean terrainDestruction = buf.readBoolean();
         boolean pvp = buf.readBoolean();
+        boolean soundEnabled = buf.readBoolean();
         int count = buf.readVarInt();
         List<String> nameKeys = new ArrayList<>(count);
         List<Integer> counts = new ArrayList<>(count);
@@ -75,6 +77,7 @@ public record DeviceHubSyncPacket(
                 powered,
                 terrainDestruction,
                 pvp,
+                soundEnabled,
                 nameKeys,
                 counts,
                 enabled,
@@ -92,6 +95,7 @@ public record DeviceHubSyncPacket(
         buf.writeBoolean(powered);
         buf.writeBoolean(terrainDestruction);
         buf.writeBoolean(pvp);
+        buf.writeBoolean(soundEnabled);
         int count = Math.min(Math.min(moduleNameKeys.size(), moduleCounts.size()), moduleEnabled.size());
         buf.writeVarInt(count);
         for (int i = 0; i < count; i++) {
@@ -122,6 +126,7 @@ public record DeviceHubSyncPacket(
                         pkt.powered(),
                         pkt.terrainDestruction(),
                         pkt.pvp(),
+                        pkt.soundEnabled(),
                         pkt.moduleNameKeys(),
                         pkt.moduleCounts(),
                         pkt.moduleEnabled(),

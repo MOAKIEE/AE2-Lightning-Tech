@@ -60,8 +60,10 @@ public final class RailgunBeamChainFx {
         // SFX on its own; we don't want cumulative noise.
         Vec3 first = p.firstHit();
         mc.level.addParticle(ParticleTypes.FLASH, first.x, first.y, first.z, 0, 0, 0);
-        mc.level.playLocalSound(first.x, first.y, first.z,
-                ModSounds.RAILGUN_BEAM_CHAIN.get(), SoundSource.PLAYERS,
-                0.35F, 1.6F, false);
+        if (p.soundEnabled()) {
+            mc.level.playLocalSound(first.x, first.y, first.z,
+                    ModSounds.RAILGUN_BEAM_CHAIN.get(), SoundSource.PLAYERS,
+                    0.35F, 1.6F, false);
+        }
     }
 }
