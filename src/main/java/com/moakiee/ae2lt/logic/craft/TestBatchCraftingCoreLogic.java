@@ -32,7 +32,7 @@ import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
  */
 public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements IBatchCraftingProvider {
     private static final String TAG_CORE = "BatchCraftingCore";
-    private static final int TEST_MAX_THREADS = 1000;
+    private static final int TEST_MAX_THREADS = 2_000_000;
     private static final int TEST_DELAY_TICKS = 1;
 
     private final IManagedGridNode gridNode;
@@ -45,7 +45,6 @@ public class TestBatchCraftingCoreLogic extends PatternProviderLogic implements 
         super(mainNode, host);
         this.gridNode = mainNode;
         this.host = host;
-        mainNode.setFlags();
         this.actionSource = new MachineSource(mainNode::getNode);
         this.core = new CraftingCore(
                 new CoreHost(),
