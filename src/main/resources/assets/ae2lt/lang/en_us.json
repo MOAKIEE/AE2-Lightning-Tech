@@ -42,6 +42,7 @@
   "item.ae2lt.thunderstorm_condensate": "Thunderstorm Condensate",
   "item.ae2lt.overload_pattern": "Overload Pattern",
   "item.ae2lt.overload_pattern_encoder": "Overload Pattern Encoder",
+  "item.ae2lt.overloaded_pattern_provider_upgrade": "Overloaded Pattern Provider Upgrade",
   "jei.ae2lt.overload_growth.title": "Overload Crystal Growth",
   "jei.ae2lt.lightning_assembly.title": "Lightning Assembly Chamber",
   "jei.ae2lt.lightning_assembly.energy": "Energy Cost: %s FE",
