@@ -26,18 +26,22 @@ public final class PowerCostUtil {
     public static final double AE_PER_OPERATION = 1.0;
 
     /**
-     * Ticks of idle drain kept untouched by bulk consumers. Draining the grid
-     * to exactly zero makes the end-of-tick idle payment fail, which AE2
-     * punishes with an instant network power-down plus a 30-tick reboot delay.
+     * Idle drain kept untouched by bulk consumers. Leave enough for the current
+     * tick's idle payment so active transfers cannot push the grid into AE2's
+     * powered-off reboot delay.
      */
-    private static final double RESERVE_TICKS = 60.0;
+    private static final double RESERVE_TICKS = 1.0;
 
     private PowerCostUtil() {
     }
 
     /** AE amount bulk consumers must leave in the grid (see {@link #RESERVE_TICKS}). */
     public static double idleReserve(IGrid grid) {
-        return grid.getEnergyService().getIdlePowerUsage() * RESERVE_TICKS;
+        return idleReserveForIdlePowerUsage(grid.getEnergyService().getIdlePowerUsage());
+    }
+
+    private static double idleReserveForIdlePowerUsage(double idlePowerUsage) {
+        return Math.max(0.0, idlePowerUsage) * RESERVE_TICKS;
     }
 
     public static double cost(AEKey key, long amount) {
@@ -128,9 +132,19 @@ public final class PowerCostUtil {
         if (grid == null) {
             return false;
         }
-        double total = need + idleReserve(grid);
-        double available = grid.getEnergyService()
+        var energyService = grid.getEnergyService();
+        double idlePowerUsage = energyService.getIdlePowerUsage();
+        double total = need + idleReserveForIdlePowerUsage(idlePowerUsage);
+        double available = energyService
                 .extractAEPower(total, Actionable.SIMULATE, PowerMultiplier.CONFIG);
+        return canAfford(available, need, idlePowerUsage);
+    }
+
+    private static boolean canAfford(double available, double need, double idlePowerUsage) {
+        if (need <= 0.0) {
+            return true;
+        }
+        double total = need + idleReserveForIdlePowerUsage(idlePowerUsage);
         return available + 1.0e-6 >= total;
     }
 
