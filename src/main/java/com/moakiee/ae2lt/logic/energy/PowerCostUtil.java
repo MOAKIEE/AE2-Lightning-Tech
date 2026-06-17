@@ -79,8 +79,9 @@ public final class PowerCostUtil {
         if (need <= 0.0) {
             return requested;
         }
-        double reserve = idleReserve(grid);
-        double available = grid.getEnergyService()
+        var energyService = grid.getEnergyService();
+        double reserve = idleReserveForIdlePowerUsage(energyService.getIdlePowerUsage());
+        double available = energyService
                 .extractAEPower(need + reserve, Actionable.SIMULATE, PowerMultiplier.CONFIG);
         double usable = available - reserve;
         if (usable + 1.0e-6 >= need) {
@@ -133,18 +134,9 @@ public final class PowerCostUtil {
             return false;
         }
         var energyService = grid.getEnergyService();
-        double idlePowerUsage = energyService.getIdlePowerUsage();
-        double total = need + idleReserveForIdlePowerUsage(idlePowerUsage);
+        double total = need + idleReserveForIdlePowerUsage(energyService.getIdlePowerUsage());
         double available = energyService
                 .extractAEPower(total, Actionable.SIMULATE, PowerMultiplier.CONFIG);
-        return canAfford(available, need, idlePowerUsage);
-    }
-
-    private static boolean canAfford(double available, double need, double idlePowerUsage) {
-        if (need <= 0.0) {
-            return true;
-        }
-        double total = need + idleReserveForIdlePowerUsage(idlePowerUsage);
         return available + 1.0e-6 >= total;
     }
 
