@@ -714,6 +714,7 @@ public class AE2LightningTech {
         }
 
         Upgrades.add(inductionCard, ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
+        Upgrades.add(inductionCard, ModBlocks.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get(), 1, "group.pattern_provider.name");
         Upgrades.add(inductionCard, ModBlocks.OVERLOADED_INTERFACE.get(), 1);
     }
 
