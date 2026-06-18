@@ -41,6 +41,7 @@
   "item.ae2lt.thunderstorm_condensate": "Thunderstorm Condensate",
   "item.ae2lt.overload_pattern": "Overload Pattern",
   "item.ae2lt.overload_pattern_encoder": "Overload Pattern Encoder",
+  "item.ae2lt.overloaded_pattern_provider_upgrade": "Overloaded Pattern Provider Upgrade",
   "item.ae2lt.overloaded_wireless_connect_tool": "Overloaded Wireless Connect Tool",
   "item.ae2lt.overloaded_frequency_card": "Overloaded Frequency Card",
   "tooltip.ae2lt.frequency_card.unbound": "Frequency: Unbound",

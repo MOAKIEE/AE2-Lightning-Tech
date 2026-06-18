@@ -36,6 +36,7 @@
   "item.ae2lt.debug_lightning_rod.tooltip": "调试物品:右键避雷针,在避雷针位置召唤一道自然闪电,非创造模式会被消耗。",
   "item.ae2lt.overload_pattern": "过载样板",
   "item.ae2lt.overload_pattern_encoder": "过载样板编码器",
+  "item.ae2lt.overloaded_pattern_provider_upgrade": "过载样板供应器升级",
   "item.ae2lt.overloaded_wireless_connect_tool": "过载无线连接工具",
   "item.ae2lt.overloaded_frequency_card": "过载频率卡",
   "tooltip.ae2lt.frequency_card.unbound": "频率：未绑定",

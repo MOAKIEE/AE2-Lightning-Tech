@@ -11,6 +11,7 @@ import com.moakiee.ae2lt.item.OverloadPatternEncoderItem;
 import com.moakiee.ae2lt.item.OverloadPatternItem;
 import com.moakiee.ae2lt.item.OverloadedFilterComponentItem;
 import com.moakiee.ae2lt.item.OverloadedFrequencyCardItem;
+import com.moakiee.ae2lt.item.OverloadedPatternProviderUpgradeItem;
 import com.moakiee.ae2lt.item.OverloadedWirelessConnectorItem;
 import com.moakiee.ae2lt.item.PerfectElectroChimeCrystalItem;
 import com.moakiee.ae2lt.item.ResearchNoteItem;
@@ -135,6 +136,10 @@ public final class ModItems {
 
     public static final DeferredItem<Item> CHARRED_RITUAL_FRAGMENT =
             ITEMS.registerSimpleItem("charred_ritual_fragment");
+
+    public static final DeferredItem<Item> OVERLOADED_PATTERN_PROVIDER_UPGRADE = ITEMS.registerItem(
+            "overloaded_pattern_provider_upgrade",
+            OverloadedPatternProviderUpgradeItem::new);
 
     public static final DeferredItem<Item> OVERLOAD_PATTERN = ITEMS.registerItem(
             "overload_pattern",
