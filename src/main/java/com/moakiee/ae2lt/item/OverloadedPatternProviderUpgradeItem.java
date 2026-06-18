@@ -8,8 +8,10 @@ import appeng.blockentity.AEBaseBlockEntity;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.ProblemReporter;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -21,6 +23,33 @@ public class OverloadedPatternProviderUpgradeItem extends Item {
 
     public OverloadedPatternProviderUpgradeItem(Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public InteractionResult onItemUseFirst(ItemStack stack, UseOnContext context) {
+        return tryUpgrade(context, stack);
+    }
+
+    @Override
+    public InteractionResult useOn(UseOnContext context) {
+        return tryUpgrade(context, context.getItemInHand());
+    }
+
+    private static InteractionResult tryUpgrade(UseOnContext context, ItemStack stack) {
+        if (context.getPlayer() == null) {
+            return InteractionResult.PASS;
+        }
+
+        var level = context.getLevel();
+        var pos = context.getClickedPos();
+        if (!canUpgrade(level, pos)) {
+            return InteractionResult.PASS;
+        }
+
+        if (!level.isClientSide()) {
+            upgrade(level, pos, stack);
+        }
+        return InteractionResult.SUCCESS;
     }
 
     public static boolean canUpgrade(Level level, BlockPos pos) {
