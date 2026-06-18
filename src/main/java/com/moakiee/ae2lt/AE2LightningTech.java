@@ -366,6 +366,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.OVERLOADED_INTERFACE.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
