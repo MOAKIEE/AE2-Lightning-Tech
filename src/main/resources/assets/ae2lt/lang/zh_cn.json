@@ -73,6 +73,8 @@
   "ae2lt.frequency_card.device.part": "过载频率卡部件连接",
   "ae2lt.gui.button.frequency_card_short": "频",
   "ae2lt.gui.button.open_frequency_card": "配置频率卡",
+  "ae2lt.gui.button.auto_connect_off": "自动连接：关闭",
+  "ae2lt.gui.button.auto_connect_on": "自动连接：开启",
   "item.ae2lt.clear_condensate": "晴空凝核",
   "item.ae2lt.rain_condensate": "降雨凝核",
   "item.ae2lt.thunderstorm_condensate": "雷暴凝核",
