@@ -88,16 +88,37 @@ public interface MachineAdapter {
     }
 
     /**
-     * Extract items from the machine that match the allowed output keys.
-     * Only items accepted by {@code allowedOutputs} will be extracted — input
-     * materials, catalysts, upgrades etc. are left alone.
+     * Destination for outputs extracted by {@link #extractOutputs}. Lets the
+     * caller cap extraction up-front (power + storage limits) so items are
+     * never pulled out of a machine without a guaranteed place to go.
+     */
+    interface OutputSink {
+        /** Max amount of {@code what} the sink can accept right now; 0 skips extraction. */
+        long maxAccept(AEKey what, long available);
+
+        /** Store extracted items. Returns the amount actually stored. */
+        long accept(AEKey what, long amount);
+
+        /**
+         * Last-resort delivery for items that could neither be stored via
+         * {@link #accept} nor pushed back into the machine. Must not void them.
+         */
+        void acceptOverflow(AEKey what, long amount);
+    }
+
+    /**
+     * Extract items matching {@code allowedOutputs} from the machine and hand
+     * them to {@code sink}. Implementations must query {@link OutputSink#maxAccept}
+     * before each extract so items without a destination stay in the machine
+     * instead of being voided.
      *
      * @param allowedOutputs filter describing which outputs belong to currently
      *                       loaded patterns
-     * @return extracted stacks (already committed, caller must store them)
+     * @return {@code true} if anything was extracted
      */
-    default List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
-                                              AllowedOutputFilter allowedOutputs, IActionSource source) {
-        return List.of();
+    default boolean extractOutputs(ServerLevel level, BlockPos pos, Direction face,
+                                   AllowedOutputFilter allowedOutputs, IActionSource source,
+                                   OutputSink sink) {
+        return false;
     }
 }

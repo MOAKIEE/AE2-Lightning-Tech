@@ -623,10 +623,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         if (!(level instanceof ServerLevel sl)) return false;
         var server = sl.getServer();
         var dispatchMode = overloadedHost.getWirelessDispatchMode();
-        if (dispatchMode == OverloadedPatternProviderBlockEntity.WirelessDispatchMode.SINGLE_TARGET
-                && !pendingOverflowByConn.isEmpty()) {
-            return false;
-        }
 
         var valid = getOrRefreshValidConnections(sl, sl.getGameTime());
         if (valid.isEmpty()) return false;
@@ -1253,9 +1249,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             if (adapter == null) continue;
 
             var face = dir.getOpposite();
-            var outputs = adapter.extractOutputs(level, targetPos, face, allowedOutputs, wirelessSource);
-            returnToNetwork(outputs);
-            updateBackoff(key, gameTick, !outputs.isEmpty());
+            boolean found = adapter.extractOutputs(
+                    level, targetPos, face, allowedOutputs, wirelessSource, networkSink);
+            updateBackoff(key, gameTick, found);
         }
     }
 
@@ -1282,9 +1278,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             var adapter = state.resolveAdapter(targetLevel, conn.pos());
             if (adapter == null) continue;
 
-            var outputs = adapter.extractOutputs(
-                    targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
-            insertOutputsToReturnInv(outputs);
+            adapter.extractOutputs(
+                    targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource,
+                    returnInvSink);
         }
     }
 
@@ -1331,20 +1327,78 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         machineNextPoll.put(key, gameTick + interval);
     }
 
-    private void returnToNetwork(List<GenericStack> outputs) {
-        if (outputs.isEmpty()) return;
-        gridNode.ifPresent((grid, node) -> {
-            var storage = grid.getStorageService().getInventory();
-            for (var stack : outputs) {
-                long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
-                if (affordable <= 0) continue;
-                long inserted = storage.insert(stack.what(), affordable,
-                        appeng.api.config.Actionable.MODULATE, wirelessSource);
-                if (inserted > 0) {
-                    PowerCostUtil.consume(grid, stack.what(), inserted);
-                }
+    /** Stores auto-returned outputs into the wireless return inventory (WIRELESS mode). */
+    private final MachineAdapter.OutputSink returnInvSink = new MachineAdapter.OutputSink() {
+        @Override
+        public long maxAccept(AEKey what, long available) {
+            long affordable = PowerCostUtil.maxAffordable(gridNode.getGrid(), what, available);
+            if (affordable <= 0) return 0;
+            return fullReturnInv.insert(0, what, affordable, Actionable.SIMULATE);
+        }
+
+        @Override
+        public long accept(AEKey what, long amount) {
+            long inserted = fullReturnInv.insert(0, what, amount, Actionable.MODULATE);
+            if (inserted > 0) {
+                PowerCostUtil.consume(gridNode.getGrid(), what, inserted);
             }
-        });
+            return inserted;
+        }
+
+        @Override
+        public void acceptOverflow(AEKey what, long amount) {
+            forceInsertToNetwork(what, amount);
+        }
+    };
+
+    /** Stores auto-returned outputs directly into the ME network (NORMAL mode). */
+    private final MachineAdapter.OutputSink networkSink = new MachineAdapter.OutputSink() {
+        @Override
+        public long maxAccept(AEKey what, long available) {
+            var grid = gridNode.getGrid();
+            long affordable = PowerCostUtil.maxAffordable(grid, what, available);
+            if (affordable <= 0) return 0;
+            return grid.getStorageService().getInventory()
+                    .insert(what, affordable, Actionable.SIMULATE, wirelessSource);
+        }
+
+        @Override
+        public long accept(AEKey what, long amount) {
+            var grid = gridNode.getGrid();
+            if (grid == null) return 0;
+            long inserted = grid.getStorageService().getInventory()
+                    .insert(what, amount, Actionable.MODULATE, wirelessSource);
+            if (inserted > 0) {
+                PowerCostUtil.consume(grid, what, inserted);
+            }
+            return inserted;
+        }
+
+        @Override
+        public void acceptOverflow(AEKey what, long amount) {
+            // Network rejected it in accept(); fall back to the return inventory.
+            long inserted = fullReturnInv.insert(0, what, amount, Actionable.MODULATE);
+            if (inserted < amount) {
+                logVoidedReturn(what, amount - inserted);
+            }
+        }
+    };
+
+    /** Power-free last-resort insert; losing job items is worse than free power. */
+    private void forceInsertToNetwork(AEKey what, long amount) {
+        var grid = gridNode.getGrid();
+        long inserted = grid == null ? 0
+                : grid.getStorageService().getInventory()
+                        .insert(what, amount, Actionable.MODULATE, wirelessSource);
+        if (inserted < amount) {
+            logVoidedReturn(what, amount - inserted);
+        }
+    }
+
+    private static void logVoidedReturn(AEKey what, long amount) {
+        org.slf4j.LoggerFactory.getLogger("ae2lt").warn(
+                "Auto-return voided {} x{}: return inventory, machine and network all rejected it",
+                what, amount);
     }
 
 
@@ -1364,21 +1418,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         var adapter = state.resolveAdapter(targetLevel, conn.pos());
         if (adapter == null) return;
 
-        var outputs = adapter.extractOutputs(
-                targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource);
-        insertOutputsToReturnInv(outputs);
-    }
-
-    protected void insertOutputsToReturnInv(List<GenericStack> outputs) {
-        var grid = gridNode.getGrid();
-        for (var stack : outputs) {
-            long affordable = PowerCostUtil.maxAffordable(grid, stack.what(), stack.amount());
-            if (affordable <= 0) continue;
-            long inserted = fullReturnInv.insert(0, stack.what(), affordable, Actionable.MODULATE);
-            if (inserted > 0) {
-                PowerCostUtil.consume(grid, stack.what(), inserted);
-            }
-        }
+        adapter.extractOutputs(
+                targetLevel, conn.pos(), conn.boundFace(), allowedOutputs, wirelessSource,
+                returnInvSink);
     }
 
     public boolean handleOverloadUnlockOnReturnedStack(GenericStack returnedStack) {

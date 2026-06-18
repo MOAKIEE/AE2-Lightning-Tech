@@ -194,15 +194,16 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
     // ---- extractOutputs ---------------------------------------------------------
 
     @Override
-    public List<GenericStack> extractOutputs(ServerLevel level, BlockPos pos, Direction face,
-                                             AllowedOutputFilter allowedOutputs, IActionSource source) {
+    public boolean extractOutputs(ServerLevel level, BlockPos pos, Direction face,
+                                  AllowedOutputFilter allowedOutputs, IActionSource source,
+                                  OutputSink sink) {
         var cached = resolveCache(level, pos, face);
-        if (cached == null) return List.of();
+        if (cached == null) return false;
 
         var wrappers = cached.getWrappers(level.getGameTime());
-        if (wrappers == null) return List.of();
+        if (wrappers == null) return false;
 
-        var extracted = new ArrayList<GenericStack>();
+        boolean extractedAny = false;
 
         for (var wrapper : wrappers.values()) {
             // Fresh counter per scan: KeyCounter.reset() keeps zeroed keys forever,
@@ -215,13 +216,27 @@ final class AE2NativeMachineAdapter implements MachineAdapter {
                 long amount = entry.getLongValue();
                 if (amount <= 0 || !allowedOutputs.matches(key)) continue;
 
-                long taken = wrapper.extract(key, amount, Actionable.MODULATE, source);
-                if (taken > 0) {
-                    extracted.add(new GenericStack(key, taken));
+                // Cap before extracting: an uncapped extract-then-store used to
+                // void items whenever power or sink capacity ran out mid-transfer.
+                long cap = sink.maxAccept(key, amount);
+                if (cap <= 0) continue;
+
+                long taken = wrapper.extract(key, Math.min(cap, amount), Actionable.MODULATE, source);
+                if (taken <= 0) continue;
+                extractedAny = true;
+
+                long leftover = taken - sink.accept(key, taken);
+                if (leftover > 0) {
+                    // Sink state changed between maxAccept and accept; try the
+                    // machine first, then force the rest on the sink — never void.
+                    leftover -= wrapper.insert(key, leftover, Actionable.MODULATE, source);
+                    if (leftover > 0) {
+                        sink.acceptOverflow(key, leftover);
+                    }
                 }
             }
         }
-        return extracted;
+        return extractedAny;
     }
 
     // ---- helpers ----------------------------------------------------------------
