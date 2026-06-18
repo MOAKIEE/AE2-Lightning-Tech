@@ -15,16 +15,19 @@ item_ids:
   <BlockImage id="ae2lt:lightning_collector" scale="4" />
 </Row>
 
-The **Lightning Collector** is the starting point of the Lightning system. When lightning strikes the collector, it injects Lightning energy directly into the ME network.
+The **Lightning Collector** is the starting point of the Lightning system. When lightning strikes the **Lightning Rod directly above the collector**, the collector injects Lightning energy directly into the ME network.
 
 ## Basic Usage
 
-Place the Lightning Collector **out in the open where lightning can reach it**, and connect it to an ME network. Two conditions must be met for a strike to be productive:
+Place the Lightning Collector **out in the open**, put a vanilla **Lightning Rod directly on top of it**, and connect the collector to an ME network. A strike is only collected when it hits that top Lightning Rod, so keep the rod exposed to the sky for natural thunderstorms.
 
+Three conditions must be met for a strike to be productive:
+
+* A Lightning Rod must be placed in the block directly above the collector
 * The network must be online
 * The network must have enough storage capacity to accept the Lightning about to be produced (otherwise the strike is wasted)
 
-The tier of Lightning produced depends on what hits the collector:
+The tier of Lightning produced depends on what hits the top Lightning Rod:
 
 * **Artificial lightning** (summoned by a player carrying an Overload Crystal, or discharged by a Tesla Coil) → **High Voltage Lightning**
 * **Natural lightning** (a real thunderstorm bolt) → **Extreme High Voltage Lightning**
@@ -60,6 +63,6 @@ The Electro-Chime Crystal progresses through four stages based on cultivation va
 
 ## Automation Tips
 
-* The collector must be connected to an online ME network, otherwise lightning strikes on it are wasted
+* The collector must have a Lightning Rod directly above it and be connected to an online ME network, otherwise lightning strikes are wasted
 * If you do not want to wait for natural thunderstorms, use the [Atmospheric Ionizer](../machines/atmospheric-ionizer.md) with Thunderstorm Condensate to force thunderstorm weather
 * For a fully weather-independent solution, use the [Tesla Coil](tesla-coil.md) to produce HV / EHV Lightning on demand
