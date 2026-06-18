@@ -626,6 +626,10 @@ public class AE2LightningTech {
 
             registerOverloadTntDispenseBehavior();
 
+            if (net.neoforged.fml.ModList.get().isLoaded("ae2wtlib")) {
+                com.moakiee.ae2lt.integration.ae2wtlib.Ae2wtlibIntegration.register();
+            }
+
         });
     }
 

@@ -263,6 +263,14 @@ public final class WirelessFrequencyManager extends SavedData {
         return entry != null && entry.advanced();
     }
 
+    @Nullable
+    public IGridNode resolveAdvancedNode(int freqId, MinecraftServer server) {
+        if (!isAdvancedTransmitter(freqId)) {
+            return null;
+        }
+        return resolveNode(freqId, server);
+    }
+
     /**
      * Resolve a transmitter to a live GridNode.
      * Re-evaluates the node from the block entity when the chunk is loaded.

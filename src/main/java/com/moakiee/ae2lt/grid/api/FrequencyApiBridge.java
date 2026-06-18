@@ -83,10 +83,7 @@ public final class FrequencyApiBridge implements FrequencyApiProvider {
 
     @Override
     public void openBindingScreen(AbstractContainerMenu menu) {
-        FrequencyBindingMenuHost host = (FrequencyBindingMenuHost) menu;
-        ClientPacketDistributor.sendToServer(new OpenFrequencyMenuPacket(
-                host.getFrequencyBindingToken(),
-                host.getFrequencyBindingBlockPos()));
+        ClientPacketDistributor.sendToServer(OpenFrequencyMenuPacket.forBlock());
     }
 
     private static FrequencySecurity toApiSecurity(FrequencySecurityLevel level) {
