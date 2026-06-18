@@ -1250,7 +1250,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
             var face = dir.getOpposite();
             boolean found = adapter.extractOutputs(
-                    level, targetPos, face, allowedOutputs, wirelessSource, networkSink);
+                    level, targetPos, face, allowedOutputs, wirelessSource, returnInvSink);
             updateBackoff(key, gameTick, found);
         }
     }
@@ -1351,39 +1351,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         }
     };
 
-    /** Stores auto-returned outputs directly into the ME network (NORMAL mode). */
-    private final MachineAdapter.OutputSink networkSink = new MachineAdapter.OutputSink() {
-        @Override
-        public long maxAccept(AEKey what, long available) {
-            var grid = gridNode.getGrid();
-            long affordable = PowerCostUtil.maxAffordable(grid, what, available);
-            if (affordable <= 0) return 0;
-            return grid.getStorageService().getInventory()
-                    .insert(what, affordable, Actionable.SIMULATE, wirelessSource);
-        }
-
-        @Override
-        public long accept(AEKey what, long amount) {
-            var grid = gridNode.getGrid();
-            if (grid == null) return 0;
-            long inserted = grid.getStorageService().getInventory()
-                    .insert(what, amount, Actionable.MODULATE, wirelessSource);
-            if (inserted > 0) {
-                PowerCostUtil.consume(grid, what, inserted);
-            }
-            return inserted;
-        }
-
-        @Override
-        public void acceptOverflow(AEKey what, long amount) {
-            // Network rejected it in accept(); fall back to the return inventory.
-            long inserted = fullReturnInv.insert(0, what, amount, Actionable.MODULATE);
-            if (inserted < amount) {
-                logVoidedReturn(what, amount - inserted);
-            }
-        }
-    };
-
     /** Power-free last-resort insert; losing job items is worse than free power. */
     private void forceInsertToNetwork(AEKey what, long amount) {
         var grid = gridNode.getGrid();
@@ -1392,6 +1359,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                         .insert(what, amount, Actionable.MODULATE, wirelessSource);
         if (inserted < amount) {
             logVoidedReturn(what, amount - inserted);
+        }
+        if (inserted > 0) {
+            handleOverloadUnlockOnReturnedStack(new GenericStack(what, inserted));
         }
     }
 
@@ -1424,10 +1394,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     public boolean handleOverloadUnlockOnReturnedStack(GenericStack returnedStack) {
-        if (pendingUnlockMatchMode != MatchMode.ID_ONLY) {
-            return false;
-        }
-
         if (getCraftingLockedReason() != LockCraftingMode.LOCK_UNTIL_RESULT) {
             clearPendingUnlockRule();
             return false;
@@ -1439,30 +1405,39 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             return true;
         }
 
-        Item expectedItem = null;
-        if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
-            expectedItem = pendingUnlockTemplate.getItem();
-        } else if (unlockStack.what() instanceof AEItemKey unlockItemKey) {
-            expectedItem = unlockItemKey.getItem();
-        }
-
-        if (expectedItem == null) {
+        var result = ReturnedCraftingUnlock.resolveMatchedAmount(
+                returnedStackMatchesUnlock(unlockStack, returnedStack),
+                unlockStack.amount(),
+                returnedStack.amount());
+        if (!result.matched()) {
             return false;
         }
 
-        if (returnedStack.what() instanceof AEItemKey returnedItemKey
-                && returnedItemKey.getItem() == expectedItem) {
-            long remainingAmount = unlockStack.amount() - returnedStack.amount();
-            if (remainingAmount <= 0) {
-                resetCraftingLock();
-            } else {
-                ((PatternProviderLogicAccessor) this)
-                        .setUnlockStack(new GenericStack(unlockStack.what(), remainingAmount));
-                saveChanges();
-            }
+        if (result.shouldResetLock()) {
+            resetCraftingLock();
+        } else {
+            ((PatternProviderLogicAccessor) this)
+                    .setUnlockStack(new GenericStack(unlockStack.what(), result.remainingAmount()));
+            saveChanges();
         }
 
         return true;
+    }
+
+    private boolean returnedStackMatchesUnlock(GenericStack unlockStack, GenericStack returnedStack) {
+        if (pendingUnlockMatchMode == MatchMode.ID_ONLY) {
+            Item expectedItem = null;
+            if (pendingUnlockTemplate != null && !pendingUnlockTemplate.isEmpty()) {
+                expectedItem = pendingUnlockTemplate.getItem();
+            } else if (unlockStack.what() instanceof AEItemKey unlockItemKey) {
+                expectedItem = unlockItemKey.getItem();
+            }
+            return expectedItem != null
+                    && returnedStack.what() instanceof AEItemKey returnedItemKey
+                    && returnedItemKey.getItem() == expectedItem;
+        }
+
+        return unlockStack.what().equals(returnedStack.what());
     }
 
     protected void syncPendingUnlockRule(IPatternDetails pattern) {
