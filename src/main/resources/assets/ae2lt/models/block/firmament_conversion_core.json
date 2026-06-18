@@ -1,11 +1,11 @@
 {
   "credit": "Made with Blockbench",
   "textures": {
-    "side": "ae2lt:block/firmament_conversion_core",
-    "top": "ae2lt:block/firmament_conversion_core",
-    "bottom": "ae2lt:block/firmament_conversion_core",
+    "side": "ae2lt:block/firmament_conversion_core_flash",
+    "top": "ae2lt:block/firmament_conversion_core_flash",
+    "bottom": "ae2lt:block/firmament_conversion_core_flash",
     "particle": "ae2lt:block/firmament_conversion_core",
-    "core": "ae2lt:block/firmament_conversion_core_flash"
+    "core": "ae2lt:block/firmament_conversion_core"
   },
   "render_type": "cutout",
   "elements": [
