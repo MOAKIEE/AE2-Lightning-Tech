@@ -11,9 +11,12 @@ import appeng.client.gui.implementations.PatternProviderScreen;
 import appeng.client.gui.style.ScreenStyle;
 import appeng.menu.SlotSemantics;
 
+import com.moakiee.ae2lt.api.client.PatternProviderToolbarButtonHider;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.menu.OverloadedPatternProviderMenu;
+import com.moakiee.ae2lt.mixin.client.AEBaseScreenAccessor;
 import com.moakiee.ae2lt.mixin.client.PatternProviderScreenAccessor;
+import com.moakiee.ae2lt.mixin.client.VerticalButtonBarAccessor;
 
 public class OverloadedPatternProviderScreen<M extends OverloadedPatternProviderMenu> extends PatternProviderScreen<M> {
 
@@ -50,6 +53,8 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
     public OverloadedPatternProviderScreen(M menu, Inventory playerInventory,
                                            Component title, ScreenStyle style) {
         super(menu, playerInventory, title, style);
+
+        removeHiddenToolbarButtons();
 
         addToLeftToolbar(FrequencyBindingClient.createToolbarButton(menu));
 
@@ -173,6 +178,12 @@ public class OverloadedPatternProviderScreen<M extends OverloadedPatternProvider
         var button = ((PatternProviderScreenAccessor) this).ae2lt$getBlockingModeButton();
         button.visible = visible;
         button.active = visible;
+    }
+
+    private void removeHiddenToolbarButtons() {
+        var toolbar = ((AEBaseScreenAccessor) this).ae2lt$getVerticalToolbar();
+        var buttons = ((VerticalButtonBarAccessor) toolbar).ae2lt$getButtons();
+        PatternProviderToolbarButtonHider.removeHiddenToolbarButtons(buttons);
     }
 
 }
