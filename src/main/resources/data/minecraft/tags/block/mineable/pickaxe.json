@@ -13,6 +13,7 @@
     "ae2lt:crystal_catalyzer",
     "ae2lt:overloaded_controller",
     "ae2lt:overloaded_pattern_provider",
+    "ae2lt:extended_overloaded_pattern_provider",
     "ae2lt:overloaded_interface",
     "ae2lt:wireless_receiver",
     "ae2lt:wireless_overloaded_controller",

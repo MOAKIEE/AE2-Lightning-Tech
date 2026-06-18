@@ -16,6 +16,7 @@ import com.moakiee.ae2lt.blockentity.CrystalCatalyzerBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningAssemblyChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningCollectorBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedControllerBlockEntity;
+import com.moakiee.ae2lt.blockentity.ExtendedOverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedInterfaceBlockEntity;
 import com.moakiee.ae2lt.blockentity.LightningSimulationChamberBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity;
@@ -101,6 +102,7 @@ public class AE2LightningTech {
                         // 网络设备
                         output.accept(ModBlocks.OVERLOADED_CONTROLLER);
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
+                        output.accept(ModBlocks.EXTENDED_OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
                         output.accept(ModBlocks.WIRELESS_RECEIVER);
                         output.accept(ModBlocks.WIRELESS_OVERLOADED_CONTROLLER);
@@ -444,7 +446,8 @@ public class AE2LightningTech {
                     }
                     return null;
                 },
-                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get());
+                ModBlocks.OVERLOADED_PATTERN_PROVIDER.get(),
+                ModBlocks.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get());
 
         event.registerBlock(
                 AECapabilities.GENERIC_INTERNAL_INV,
@@ -541,6 +544,15 @@ public class AE2LightningTech {
                     OverloadedPatternProviderBlockEntity::serverTick
             );
 
+            var extendedPatternProviderBlock = ModBlocks.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get();
+            var extendedPatternProviderBeType = ModBlockEntities.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get();
+            extendedPatternProviderBlock.setBlockEntity(
+                    ExtendedOverloadedPatternProviderBlockEntity.class,
+                    extendedPatternProviderBeType,
+                    null,
+                    ExtendedOverloadedPatternProviderBlockEntity::serverTick
+            );
+
             var interfaceBlock = ModBlocks.OVERLOADED_INTERFACE.get();
             var interfaceBeType = ModBlockEntities.OVERLOADED_INTERFACE.get();
             interfaceBlock.setBlockEntity(
@@ -558,6 +570,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     ModBlockEntities.OVERLOADED_PATTERN_PROVIDER.get(),
                     ModBlocks.OVERLOADED_PATTERN_PROVIDER.get().asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    ModBlockEntities.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get(),
+                    ModBlocks.EXTENDED_OVERLOADED_PATTERN_PROVIDER.get().asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     interfaceBeType,
                     interfaceBlock.asItem());
