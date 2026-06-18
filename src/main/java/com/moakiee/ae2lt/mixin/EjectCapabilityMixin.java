@@ -65,6 +65,9 @@ public abstract class EjectCapabilityMixin<T, C> {
             BlockState state, BlockEntity blockEntity, C context,
             CallbackInfoReturnable<T> cir) {
         if (proxying) return;
+        // Static field read first: skip the ThreadLocal lookup entirely when
+        // no eject registrations exist (the common case, all queries pass through).
+        if (EjectModeRegistry.isEmpty()) return;
         if (EjectModeRegistry.isBypassed()) return;
         if (!(level instanceof ServerLevel)) return;
         if (!(context instanceof Direction face)) return;

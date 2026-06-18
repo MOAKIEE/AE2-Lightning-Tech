@@ -49,24 +49,26 @@ public final class EjectModeRegistry {
     @Nullable
     private static EjectModeSavedData savedData;
 
-    private static final ThreadLocal<Integer> bypassDepth = ThreadLocal.withInitial(() -> 0);
+    // Resident int[] holder: remove()/re-set on a ThreadLocal<Integer> forced
+    // ThreadLocal.get() onto the slow miss path on the hot capability hook.
+    private static final ThreadLocal<int[]> bypassDepth = ThreadLocal.withInitial(() -> new int[1]);
 
     public static void setBypass(boolean value) {
+        int[] depth = bypassDepth.get();
         if (value) {
-            bypassDepth.set(bypassDepth.get() + 1);
-            return;
-        }
-
-        int current = bypassDepth.get();
-        if (current <= 1) {
-            bypassDepth.remove();
-        } else {
-            bypassDepth.set(current - 1);
+            depth[0]++;
+        } else if (depth[0] > 0) {
+            depth[0]--;
         }
     }
 
     public static boolean isBypassed() {
-        return bypassDepth.get() > 0;
+        return bypassDepth.get()[0] > 0;
+    }
+
+    /** Cheap gate for the capability mixin: no registrations means nothing to intercept. */
+    public static boolean isEmpty() {
+        return registrations.isEmpty();
     }
 
     private EjectModeRegistry() {}
