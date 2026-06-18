@@ -213,6 +213,7 @@
   "ae2lt.gui.title.extended_overloaded_pattern_provider": "Extended Pattern Provider",
   "config.jade.plugin_ae2lt.firmament_conversion_core": "Firmament Conversion Core",
   "jade.ae2lt.firmament_conversion_core.idle": "Idle",
+  "jade.ae2lt.firmament_conversion_core.invalid_structure": "Requires a Firmament Starship structure",
   "jade.ae2lt.firmament_conversion_core.progress": "Progress: %s%%",
   "ae2lt.gui.provider_mode.normal": "Normal Mode",
   "ae2lt.gui.provider_mode.wireless": "Wireless Mode",

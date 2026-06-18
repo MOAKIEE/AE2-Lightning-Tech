@@ -70,6 +70,10 @@ public class FirmamentConversionCoreBlockEntity extends BlockEntity {
         return lockedRecipe != null ? lockedRecipe.processTime() : 0;
     }
 
+    public boolean isInsideFirmamentStarship() {
+        return canProcessHere();
+    }
+
     public boolean insertHeldItem(Player player, InteractionHand hand) {
         ItemStack held = player.getItemInHand(hand);
         if (held.isEmpty()) {

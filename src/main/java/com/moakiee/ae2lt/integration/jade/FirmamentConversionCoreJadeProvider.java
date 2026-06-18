@@ -16,6 +16,7 @@ import snownee.jade.api.config.IPluginConfig;
 public class FirmamentConversionCoreJadeProvider implements IBlockComponentProvider, IServerDataProvider<BlockAccessor> {
     private static final ResourceLocation UID =
             ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, "firmament_conversion_core");
+    private static final String TAG_INSIDE_STARSHIP = "InsideStarship";
     private static final String TAG_PROGRESS = "Progress";
     private static final String TAG_PROCESS_TIME = "ProcessTime";
 
@@ -27,6 +28,7 @@ public class FirmamentConversionCoreJadeProvider implements IBlockComponentProvi
     @Override
     public void appendServerData(CompoundTag data, BlockAccessor accessor) {
         if (accessor.getBlockEntity() instanceof FirmamentConversionCoreBlockEntity core) {
+            data.putBoolean(TAG_INSIDE_STARSHIP, core.isInsideFirmamentStarship());
             data.putInt(TAG_PROGRESS, core.getProgress());
             data.putInt(TAG_PROCESS_TIME, core.getProcessTime());
         }
@@ -39,6 +41,11 @@ public class FirmamentConversionCoreJadeProvider implements IBlockComponentProvi
         }
 
         CompoundTag data = accessor.getServerData();
+        if (data.contains(TAG_INSIDE_STARSHIP) && !data.getBoolean(TAG_INSIDE_STARSHIP)) {
+            tooltip.add(Component.translatable("jade.ae2lt.firmament_conversion_core.invalid_structure"));
+            return;
+        }
+
         int processTime = data.getInt(TAG_PROCESS_TIME);
         if (processTime <= 0) {
             tooltip.add(Component.translatable("jade.ae2lt.firmament_conversion_core.idle"));
