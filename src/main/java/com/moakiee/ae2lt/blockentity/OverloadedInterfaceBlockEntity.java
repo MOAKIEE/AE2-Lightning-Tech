@@ -28,6 +28,7 @@ import com.moakiee.ae2lt.logic.WirelessConnectionLists;
 import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.WirelessConnectionRef;
 import com.moakiee.ae2lt.logic.WirelessConnectionValidator;
+import com.moakiee.ae2lt.logic.WirelessImportCacheCursor;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.menu.OverloadedInterfaceMenu;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
@@ -1398,7 +1399,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             visited++;
         }
 
-        cache.nextIndex = size > 0 ? (start + Math.max(visited, 1)) % size : 0;
+        cache.nextIndex = WirelessImportCacheCursor.nextIndex(start, size, visited);
         return new ImportResult(totalAvail, moved);
     }
 
