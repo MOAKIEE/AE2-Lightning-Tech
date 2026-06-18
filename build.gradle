@@ -16,6 +16,13 @@ repositories {
         content {
             includeGroup "dev.technici4n"
             includeGroup "mekanism"
+            includeGroup "de.mari_023"
+        }
+    }
+    maven {
+        url = "https://maven.theillusivec4.top/"
+        content {
+            includeGroup "top.theillusivec4.curios"
         }
     }
     maven {
@@ -145,6 +152,8 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 dependencies {
     implementation "curse.maven:applied-energistics-2-223794:8049397"
+    compileOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}:api"
+    runtimeOnly "top.theillusivec4.curios:curios-neoforge:${curios_version}"
     runtimeOnly "org.appliedenergistics:guideme:${guideme_version}"
     compileOnly "curse.maven:jei-238222:8014757"
     runtimeOnly "curse.maven:jei-238222:8014757"

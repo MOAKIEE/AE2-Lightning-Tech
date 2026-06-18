@@ -258,6 +258,11 @@ public final class WirelessFrequencyManager extends SavedData {
         return transmitters.get(freqId);
     }
 
+    public boolean isAdvancedTransmitter(int freqId) {
+        var entry = transmitters.get(freqId);
+        return entry != null && entry.advanced();
+    }
+
     /**
      * Resolve a transmitter to a live GridNode.
      * Re-evaluates the node from the block entity when the chunk is loaded.

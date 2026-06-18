@@ -177,7 +177,11 @@ public class WirelessFrequency {
 
     @Nonnull
     public FrequencyAccessLevel getPlayerAccess(@Nonnull Player player) {
-        UUID uuid = player.getUUID();
+        return getPlayerAccess(player.getUUID());
+    }
+
+    @Nonnull
+    public FrequencyAccessLevel getPlayerAccess(@Nonnull UUID uuid) {
         FrequencyMember member = members.get(uuid);
         if (member != null) {
             return member.getAccessLevel();

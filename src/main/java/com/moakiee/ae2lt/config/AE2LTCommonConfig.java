@@ -162,6 +162,26 @@ public final class AE2LTCommonConfig {
         return VALUES.pigmeeFumoGiftOnFirstJoin.get();
     }
 
+    public static boolean frequencyCardEnableAutoCleanup() {
+        return VALUES.frequencyCardEnableAutoCleanup.get();
+    }
+
+    public static int frequencyCardCleanupIntervalSeconds() {
+        return VALUES.frequencyCardCleanupIntervalSeconds.get();
+    }
+
+    public static int frequencyCardInvalidCleanupDelaySeconds() {
+        return VALUES.frequencyCardInvalidCleanupDelaySeconds.get();
+    }
+
+    public static int frequencyCardInvalidCleanupRequiredChecks() {
+        return VALUES.frequencyCardInvalidCleanupRequiredChecks.get();
+    }
+
+    public static int frequencyCardCleanupBatchSize() {
+        return VALUES.frequencyCardCleanupBatchSize.get();
+    }
+
     private static final class Values {
         private final ModConfigSpec.IntValue configVersion;
         private final ModConfigSpec.IntValue lightningCollectorCooldownTicks;
@@ -200,6 +220,11 @@ public final class AE2LTCommonConfig {
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageInput;
         private final ModConfigSpec.IntValue teslaCoilExtremeHighVoltageFe;
         private final ModConfigSpec.BooleanValue pigmeeFumoGiftOnFirstJoin;
+        private final ModConfigSpec.BooleanValue frequencyCardEnableAutoCleanup;
+        private final ModConfigSpec.IntValue frequencyCardCleanupIntervalSeconds;
+        private final ModConfigSpec.IntValue frequencyCardInvalidCleanupDelaySeconds;
+        private final ModConfigSpec.IntValue frequencyCardInvalidCleanupRequiredChecks;
+        private final ModConfigSpec.IntValue frequencyCardCleanupBatchSize;
 
         private Values(ModConfigSpec.Builder builder) {
             configVersion = builder
@@ -346,6 +371,26 @@ public final class AE2LTCommonConfig {
             pigmeeFumoGiftOnFirstJoin = builder
                     .comment("Controls whether players receive a Pigmee Fumo as a gift on their first login.")
                     .define("giftOnFirstJoin", true);
+            builder.pop();
+
+            builder.push("frequencyCard");
+            builder.push("cleanup");
+            frequencyCardEnableAutoCleanup = builder
+                    .comment("Controls whether invalid Overloaded Frequency Card wireless link records are cleaned up automatically.")
+                    .define("enableAutoCleanup", true);
+            frequencyCardCleanupIntervalSeconds = builder
+                    .comment("Seconds between cleanup passes for Overloaded Frequency Card wireless links.")
+                    .defineInRange("cleanupIntervalSeconds", 300, 1, Integer.MAX_VALUE);
+            frequencyCardInvalidCleanupDelaySeconds = builder
+                    .comment("Seconds an invalid Overloaded Frequency Card wireless link must remain invalid before removal.")
+                    .defineInRange("invalidCleanupDelaySeconds", 300, 0, Integer.MAX_VALUE);
+            frequencyCardInvalidCleanupRequiredChecks = builder
+                    .comment("Number of cleanup passes that must confirm an invalid Overloaded Frequency Card wireless link before removal.")
+                    .defineInRange("invalidCleanupRequiredChecks", 3, 1, Integer.MAX_VALUE);
+            frequencyCardCleanupBatchSize = builder
+                    .comment("Maximum Overloaded Frequency Card wireless links checked per cleanup pass.")
+                    .defineInRange("cleanupBatchSize", 128, 1, Integer.MAX_VALUE);
+            builder.pop();
             builder.pop();
         }
     }

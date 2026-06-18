@@ -13,6 +13,6 @@ public class AdvancedWirelessOverloadedControllerBlock extends WirelessOverloade
     }
 
     public AdvancedWirelessOverloadedControllerBlock() {
-        this(Properties.of());
+        super();
     }
 }
