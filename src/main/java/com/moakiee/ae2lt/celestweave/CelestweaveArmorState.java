@@ -347,11 +347,12 @@ public final class CelestweaveArmorState {
         for (var entry : installedSubmodules) {
             var submodule = entry.submodule();
             boolean active = hasCore && isSubmoduleEnabled(armor, submodule);
+            boolean previouslyRuntimeActive = isSubmoduleRuntimeActive(armor, submodule.id());
             Boolean previous = dist == Dist.CLIENT
                     ? ArmorRuntimeRegistry.setClientSubmoduleActive(armorId, submodule.id(), active)
                     : ArmorRuntimeRegistry.setServerSubmoduleActive(armorId, submodule.id(), active);
             setSubmoduleRuntimeActive(armor, submodule.id(), active);
-            boolean changed = previous == null || previous != active;
+            boolean changed = previous == null ? previouslyRuntimeActive != active : previous != active;
             boolean predictiveMovement = PhaseFlightSubmodule.INSTANCE.id().equals(submodule.id());
             if (dist == Dist.DEDICATED_SERVER
                     && player instanceof ServerPlayer serverPlayer
@@ -485,6 +486,7 @@ public final class CelestweaveArmorState {
         if (armorId == null) {
             return;
         }
+        forgetSubmoduleActiveCache(armorId);
     }
 
     public static void clearTransientRuntimeAndCaches(ItemStack armor) {

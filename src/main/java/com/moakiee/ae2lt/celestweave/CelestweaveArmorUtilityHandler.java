@@ -9,8 +9,10 @@ import net.minecraft.world.food.FoodData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.tags.FluidTags;
 import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.living.MobEffectEvent;
+import net.neoforged.neoforge.event.entity.living.LivingEquipmentChangeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
@@ -44,6 +46,14 @@ public final class CelestweaveArmorUtilityHandler {
                 PhaseFlightSubmodule.clearTransientPhaseState(player);
             }
         }
+    }
+
+    @SubscribeEvent
+    public static void onLivingEquipmentChange(LivingEquipmentChangeEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        deactivateRemovedArmor(player, event.getFrom());
     }
 
     @SubscribeEvent
@@ -197,6 +207,21 @@ public final class CelestweaveArmorUtilityHandler {
             }
         }
         return ItemStack.EMPTY;
+    }
+
+    private static void deactivateRemovedArmor(ServerPlayer player, ItemStack armor) {
+        if (armor.isEmpty() || !(armor.getItem() instanceof BaseCelestweaveArmorItem)) {
+            return;
+        }
+        ArmorCapabilityCollector.clearCache(player);
+        CelestweaveArmorState.syncSubmoduleActiveState(
+                player,
+                armor,
+                player.registryAccess(),
+                false,
+                Dist.DEDICATED_SERVER);
+        CelestweaveArmorState.clearTransientRuntime(armor);
+        ArmorInteractionRangeService.tick(player, ArmorCapabilityCollector.collectPerInstalledStack(player));
     }
 
     private static void clearPlayerRuntime(Player player) {
