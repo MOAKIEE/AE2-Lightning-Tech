@@ -2,7 +2,9 @@ package com.moakiee.ae2lt.celestweave;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.jetbrains.annotations.Nullable;
@@ -16,6 +18,7 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.celestweave.ArmorEnergyModuleItem;
+import com.moakiee.ae2lt.network.CelestweaveArmorStateSnapshotPacket;
 import com.moakiee.ae2lt.network.CelestweaveSubmoduleActivePacket;
 import com.moakiee.ae2lt.network.FlightInertiaSyncPacket;
 import com.moakiee.ae2lt.celestweave.module.FlightSubmodule;
@@ -492,6 +495,14 @@ public final class CelestweaveArmorState {
         ArmorRuntimeRegistry.setClientSubmoduleActive(armorId, submoduleId, active);
     }
 
+    public static void applyClientStateSnapshot(
+            UUID armorId,
+            Map<String, Boolean> submoduleActiveStates,
+            boolean flightInertiaEnabled) {
+        ArmorRuntimeRegistry.replaceClientSubmoduleActiveStates(armorId, submoduleActiveStates);
+        setClientFlightInertia(armorId, flightInertiaEnabled);
+    }
+
     public static boolean isClientSubmoduleActive(UUID armorId, String submoduleId) {
         return ArmorRuntimeRegistry.isClientSubmoduleActive(armorId, submoduleId);
     }
@@ -508,6 +519,29 @@ public final class CelestweaveArmorState {
 
     public static void forgetSubmoduleActiveCache(UUID armorId) {
         ArmorRuntimeRegistry.clear(armorId);
+    }
+
+    public static void sendClientStateSnapshot(
+            ServerPlayer player,
+            ItemStack armor,
+            HolderLookup.Provider registries,
+            boolean equipped) {
+        sendClientStateSnapshot(player, armor, collectInstalledSubmoduleEntries(armor, registries), equipped);
+    }
+
+    public static void sendClientStateSnapshot(
+            ServerPlayer player,
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            boolean equipped) {
+        UUID armorId = ensureArmorId(armor);
+        Map<String, Boolean> activeStates = buildClientSubmoduleActiveSnapshot(armor, installedSubmodules, equipped);
+        PacketDistributor.sendToPlayer(
+                player,
+                new CelestweaveArmorStateSnapshotPacket(
+                        armorId,
+                        activeStates,
+                        buildClientFlightInertiaSnapshot(armor, activeStates)));
     }
 
     public static void clearTransientRuntime(ItemStack armor) {
@@ -595,6 +629,28 @@ public final class CelestweaveArmorState {
             installedIds.add(entry.submodule().id());
         }
         return installedIds;
+    }
+
+    private static Map<String, Boolean> buildClientSubmoduleActiveSnapshot(
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            boolean equipped) {
+        var activeStates = new LinkedHashMap<String, Boolean>();
+        boolean hasCore = equipped && ArmorPersistentData.hasStructuralCore(armor);
+        for (var entry : installedSubmodules) {
+            var submodule = entry.submodule();
+            activeStates.put(submodule.id(), hasCore && isSubmoduleEnabled(armor, submodule));
+        }
+        return Map.copyOf(activeStates);
+    }
+
+    private static boolean buildClientFlightInertiaSnapshot(
+            ItemStack armor,
+            Map<String, Boolean> activeStates) {
+        boolean phaseFlightActive = Boolean.TRUE.equals(activeStates.get(PhaseFlightSubmodule.INSTANCE.id()));
+        return phaseFlightActive
+                ? PhaseFlightSubmodule.isInertiaEnabled(armor)
+                : FlightSubmodule.isInertiaEnabled(armor);
     }
 
     private static void setSubmoduleRuntimeActive(ItemStack armor, String submoduleId, boolean active) {

@@ -87,6 +87,10 @@ public final class NetworkInit {
                 CelestweaveSubmoduleActivePacket.STREAM_CODEC,
                 CelestweaveSubmoduleActivePacket::handle);
         registrar.playToClient(
+                CelestweaveArmorStateSnapshotPacket.TYPE,
+                CelestweaveArmorStateSnapshotPacket.STREAM_CODEC,
+                CelestweaveArmorStateSnapshotPacket::handle);
+        registrar.playToClient(
                 FlightInertiaSyncPacket.TYPE,
                 FlightInertiaSyncPacket.STREAM_CODEC,
                 FlightInertiaSyncPacket::handle);

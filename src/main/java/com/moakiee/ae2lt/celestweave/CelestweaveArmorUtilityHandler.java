@@ -258,12 +258,19 @@ public final class CelestweaveArmorUtilityHandler {
             if (armor.isEmpty() || !(armor.getItem() instanceof BaseCelestweaveArmorItem)) {
                 continue;
             }
+            var installedSubmodules = CelestweaveArmorState.collectInstalledSubmoduleEntries(
+                    armor,
+                    player.registryAccess());
             CelestweaveArmorState.syncSubmoduleActiveState(
                     player,
                     armor,
-                    player.registryAccess(),
+                    installedSubmodules,
                     true,
-                    Dist.DEDICATED_SERVER,
+                    Dist.DEDICATED_SERVER);
+            CelestweaveArmorState.sendClientStateSnapshot(
+                    player,
+                    armor,
+                    installedSubmodules,
                     true);
         }
     }

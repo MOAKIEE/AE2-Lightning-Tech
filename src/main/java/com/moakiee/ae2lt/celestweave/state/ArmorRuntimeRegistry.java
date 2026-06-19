@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.celestweave.state;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,6 +44,22 @@ public final class ArmorRuntimeRegistry {
             }
         }
         return false;
+    }
+
+    public static void replaceClientSubmoduleActiveStates(UUID armorId, Map<String, Boolean> activeStates) {
+        if (armorId == null) {
+            return;
+        }
+        String prefix = armorId + "#";
+        CLIENT_SUBMODULE_ACTIVE.keySet().removeIf(key -> key.startsWith(prefix));
+        if (activeStates == null || activeStates.isEmpty()) {
+            return;
+        }
+        activeStates.forEach((submoduleId, active) -> {
+            if (submoduleId != null && !submoduleId.isBlank()) {
+                CLIENT_SUBMODULE_ACTIVE.put(cacheKey(armorId, submoduleId), Boolean.TRUE.equals(active));
+            }
+        });
     }
 
     public static void clearClientActiveCache() {
