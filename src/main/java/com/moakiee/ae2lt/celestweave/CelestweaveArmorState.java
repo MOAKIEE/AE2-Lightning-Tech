@@ -333,7 +333,23 @@ public final class CelestweaveArmorState {
             HolderLookup.Provider registries,
             boolean equipped,
             Dist dist) {
-        syncSubmoduleActiveState(player, armor, collectInstalledSubmoduleEntries(armor, registries), equipped, dist);
+        syncSubmoduleActiveState(player, armor, registries, equipped, dist, false);
+    }
+
+    public static void syncSubmoduleActiveState(
+            @Nullable Player player,
+            ItemStack armor,
+            HolderLookup.Provider registries,
+            boolean equipped,
+            Dist dist,
+            boolean forceClientSync) {
+        syncSubmoduleActiveState(
+                player,
+                armor,
+                collectInstalledSubmoduleEntries(armor, registries),
+                equipped,
+                dist,
+                forceClientSync);
     }
 
     public static void syncSubmoduleActiveState(
@@ -342,6 +358,16 @@ public final class CelestweaveArmorState {
             List<InstalledSubmodule> installedSubmodules,
             boolean equipped,
             Dist dist) {
+        syncSubmoduleActiveState(player, armor, installedSubmodules, equipped, dist, false);
+    }
+
+    public static void syncSubmoduleActiveState(
+            @Nullable Player player,
+            ItemStack armor,
+            List<InstalledSubmodule> installedSubmodules,
+            boolean equipped,
+            Dist dist,
+            boolean forceClientSync) {
         UUID armorId = ensureArmorId(armor);
         boolean hasCore = equipped && ArmorPersistentData.hasStructuralCore(armor);
         for (var entry : installedSubmodules) {
@@ -355,7 +381,11 @@ public final class CelestweaveArmorState {
             boolean predictiveMovement = PhaseFlightSubmodule.INSTANCE.id().equals(submodule.id());
             if (dist == Dist.DEDICATED_SERVER
                     && player instanceof ServerPlayer serverPlayer
-                    && ArmorPhaseFlightRules.shouldSyncClientActiveState(active, changed, predictiveMovement)) {
+                    && ArmorPhaseFlightRules.shouldSyncClientActiveState(
+                            active,
+                            changed,
+                            predictiveMovement,
+                            forceClientSync)) {
                 PacketDistributor.sendToPlayer(
                         serverPlayer,
                         new CelestweaveSubmoduleActivePacket(armorId, submodule.id(), active));

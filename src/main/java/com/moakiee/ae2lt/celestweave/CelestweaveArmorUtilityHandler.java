@@ -80,6 +80,14 @@ public final class CelestweaveArmorUtilityHandler {
     }
 
     @SubscribeEvent
+    public static void onPlayerChangedDimension(PlayerEvent.PlayerChangedDimensionEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) {
+            return;
+        }
+        forceResyncEquippedArmor(player);
+    }
+
+    @SubscribeEvent
     public static void onBreakSpeed(PlayerEvent.BreakSpeed event) {
         Player player = event.getEntity();
         var capabilities = ArmorCapabilityCollector.collectPerInstalledStack(player);
@@ -237,6 +245,27 @@ public final class CelestweaveArmorUtilityHandler {
                 player.registryAccess(),
                 false,
                 Dist.DEDICATED_SERVER);
+    }
+
+    private static void forceResyncEquippedArmor(ServerPlayer player) {
+        ArmorCapabilityCollector.clearCache(player);
+        for (EquipmentSlot slot : List.of(
+                EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,
+                EquipmentSlot.LEGS,
+                EquipmentSlot.FEET)) {
+            ItemStack armor = player.getItemBySlot(slot);
+            if (armor.isEmpty() || !(armor.getItem() instanceof BaseCelestweaveArmorItem)) {
+                continue;
+            }
+            CelestweaveArmorState.syncSubmoduleActiveState(
+                    player,
+                    armor,
+                    player.registryAccess(),
+                    true,
+                    Dist.DEDICATED_SERVER,
+                    true);
+        }
     }
 
     private static void clearPlayerRuntime(Player player) {
