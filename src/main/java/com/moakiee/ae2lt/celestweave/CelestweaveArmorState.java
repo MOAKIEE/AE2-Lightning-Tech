@@ -641,7 +641,8 @@ public final class CelestweaveArmorState {
             var submodule = entry.submodule();
             activeStates.put(submodule.id(), hasCore && isSubmoduleEnabled(armor, submodule));
         }
-        return Map.copyOf(activeStates);
+        // Packet ctor takes a defensive copy; avoid double-wrapping here.
+        return activeStates;
     }
 
     private static boolean buildClientFlightInertiaSnapshot(
