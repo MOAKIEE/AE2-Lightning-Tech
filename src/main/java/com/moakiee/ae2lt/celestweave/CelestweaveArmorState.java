@@ -2,11 +2,10 @@ package com.moakiee.ae2lt.celestweave;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.core.HolderLookup;
@@ -18,7 +17,6 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.neoforge.network.PacketDistributor;
 
 import com.moakiee.ae2lt.celestweave.ArmorEnergyModuleItem;
-import com.moakiee.ae2lt.network.CelestweaveArmorStateSnapshotPacket;
 import com.moakiee.ae2lt.network.CelestweaveSubmoduleActivePacket;
 import com.moakiee.ae2lt.network.FlightInertiaSyncPacket;
 import com.moakiee.ae2lt.celestweave.module.FlightSubmodule;
@@ -26,6 +24,7 @@ import com.moakiee.ae2lt.celestweave.module.PhaseFlightSubmodule;
 import com.moakiee.ae2lt.celestweave.module.CelestweaveArmorSubmodule;
 import com.moakiee.ae2lt.celestweave.module.CelestweaveArmorSubmoduleItem;
 import com.moakiee.ae2lt.registry.ModItems;
+import com.moakiee.ae2lt.registry.ModDataComponents;
 import com.moakiee.ae2lt.celestweave.state.ArmorPersistentData;
 import com.moakiee.ae2lt.celestweave.state.ArmorRuntimeRegistry;
 
@@ -35,6 +34,8 @@ public final class CelestweaveArmorState {
     private static final int MAX_MODULE_TYPES = 32;
     private static volatile boolean CLIENT_FLIGHT_INERTIA = true;
     private static volatile UUID CLIENT_FLIGHT_INERTIA_ARMOR_ID = null;
+    // Client-side set of armor ids whose phase flight is active (authoritative, pushed from server).
+    private static final Set<UUID> CLIENT_PHASE_FLIGHT_ACTIVE = ConcurrentHashMap.newKeySet();
 
     private CelestweaveArmorState() {
     }
@@ -373,32 +374,26 @@ public final class CelestweaveArmorState {
             boolean forceClientSync) {
         UUID armorId = ensureArmorId(armor);
         boolean hasCore = equipped && ArmorPersistentData.hasStructuralCore(armor);
+        boolean dedicatedServer = dist == Dist.DEDICATED_SERVER && player instanceof ServerPlayer;
         for (var entry : installedSubmodules) {
             var submodule = entry.submodule();
             boolean active = hasCore && isSubmoduleEnabled(armor, submodule);
-            Boolean previous;
-            if (dist == Dist.CLIENT) {
-                previous = ArmorRuntimeRegistry.setClientSubmoduleActive(armorId, submodule.id(), active);
-                // Runtime cache is read side-agnostically (isActive), so keep it in sync on the client too.
-                setSubmoduleRuntimeActive(armor, submodule.id(), active);
-            } else {
-                previous = setSubmoduleRuntimeActive(armor, submodule.id(), active);
-            }
-            // Stored maps hold only active entries, so absent (null) means previously inactive.
+            // Runtime map holds only active entries, so absent (null) means previously inactive.
+            Boolean previous = setSubmoduleRuntimeActive(armor, submodule.id(), active);
             boolean changed = (previous != null && previous) != active;
-            boolean predictiveMovement = PhaseFlightSubmodule.INSTANCE.id().equals(submodule.id());
-            if (dist == Dist.DEDICATED_SERVER
-                    && player instanceof ServerPlayer serverPlayer
-                    && ArmorPhaseFlightRules.shouldSyncClientActiveState(
-                            active,
-                            changed,
-                            predictiveMovement,
-                            forceClientSync)) {
-                PacketDistributor.sendToPlayer(
-                        serverPlayer,
-                        new CelestweaveSubmoduleActivePacket(armorId, submodule.id(), active));
-                if (active && (submodule.id().equals(FlightSubmodule.INSTANCE.id())
-                        || submodule.id().equals("phase_flight"))) {
+            if (dedicatedServer) {
+                ServerPlayer serverPlayer = (ServerPlayer) player;
+                // Phase flight is the only submodule the client cannot safely derive from the stack
+                // (server may force it off when energy runs out), so it keeps an authoritative push.
+                if (PhaseFlightSubmodule.INSTANCE.id().equals(submodule.id()) && (changed || forceClientSync)) {
+                    PacketDistributor.sendToPlayer(
+                            serverPlayer,
+                            new CelestweaveSubmoduleActivePacket(armorId, submodule.id(), active));
+                }
+                // Flight inertia drives client-side movement decay, so push it when flight engages.
+                if (changed && active
+                        && (FlightSubmodule.INSTANCE.id().equals(submodule.id())
+                                || PhaseFlightSubmodule.INSTANCE.id().equals(submodule.id()))) {
                     syncFlightInertiaToClient(serverPlayer, armor, armorId);
                 }
             }
@@ -489,57 +484,63 @@ public final class CelestweaveArmorState {
         return ArmorEnergyBuffer.receiveFe(armor, registries, (int) Math.min(Integer.MAX_VALUE, amount), false);
     }
 
+    /**
+     * Client-side active derivation. Core + toggle live on the synced stack, and the
+     * server publishes its energy-based forced-off state via {@link #isModulesPowered}, so no
+     * client cache or per-submodule sync packet is required. Callers iterate equipped armor,
+     * so being in an armor slot already implies "equipped".
+     */
+    public static boolean isSubmoduleActiveClient(ItemStack armor, CelestweaveArmorSubmodule submodule) {
+        return submodule != null
+                && ArmorPersistentData.hasStructuralCore(armor)
+                && isModulesPowered(armor)
+                && isSubmoduleEnabled(armor, submodule);
+    }
+
+    // Absent component means powered (common case); only an unpowered piece carries false.
+    public static boolean isModulesPowered(ItemStack armor) {
+        return armor != null && armor.getOrDefault(ModDataComponents.CELESTWEAVE_MODULES_POWERED.get(), Boolean.TRUE);
+    }
+
+    // Server-authoritative; set from the tick loop's passive-drain result (set-when-changed).
+    public static void setModulesPowered(ItemStack armor, boolean powered) {
+        if (armor == null || armor.isEmpty() || isModulesPowered(armor) == powered) {
+            return;
+        }
+        if (powered) {
+            armor.remove(ModDataComponents.CELESTWEAVE_MODULES_POWERED.get());
+        } else {
+            armor.set(ModDataComponents.CELESTWEAVE_MODULES_POWERED.get(), Boolean.FALSE);
+        }
+    }
+
+    // Phase flight is the only submodule pushed to the client (authoritative, predictive movement).
     public static void markClientActive(UUID armorId, String submoduleId, boolean active) {
-        ArmorRuntimeRegistry.setClientSubmoduleActive(armorId, submoduleId, active);
+        if (armorId == null || !PhaseFlightSubmodule.INSTANCE.id().equals(submoduleId)) {
+            return;
+        }
+        if (active) {
+            CLIENT_PHASE_FLIGHT_ACTIVE.add(armorId);
+        } else {
+            CLIENT_PHASE_FLIGHT_ACTIVE.remove(armorId);
+        }
     }
 
-    public static void applyClientStateSnapshot(
-            UUID armorId,
-            Map<String, Boolean> submoduleActiveStates,
-            boolean flightInertiaEnabled) {
-        ArmorRuntimeRegistry.replaceClientSubmoduleActiveStates(armorId, submoduleActiveStates);
-        setClientFlightInertia(armorId, flightInertiaEnabled);
-    }
-
-    public static boolean isClientSubmoduleActive(UUID armorId, String submoduleId) {
-        return ArmorRuntimeRegistry.isClientSubmoduleActive(armorId, submoduleId);
-    }
-
-    public static boolean isAnyClientSubmoduleActive(String submoduleId) {
-        return ArmorRuntimeRegistry.isAnyClientSubmoduleActive(submoduleId);
+    public static boolean isAnyClientPhaseFlightActive() {
+        return !CLIENT_PHASE_FLIGHT_ACTIVE.isEmpty();
     }
 
     public static void clearClientActiveCache() {
-        ArmorRuntimeRegistry.clearClientActiveCache();
+        CLIENT_PHASE_FLIGHT_ACTIVE.clear();
         CLIENT_FLIGHT_INERTIA = true;
         CLIENT_FLIGHT_INERTIA_ARMOR_ID = null;
     }
 
     public static void forgetSubmoduleActiveCache(UUID armorId) {
         ArmorRuntimeRegistry.clear(armorId);
-    }
-
-    public static void sendClientStateSnapshot(
-            ServerPlayer player,
-            ItemStack armor,
-            HolderLookup.Provider registries,
-            boolean equipped) {
-        sendClientStateSnapshot(player, armor, collectInstalledSubmoduleEntries(armor, registries), equipped);
-    }
-
-    public static void sendClientStateSnapshot(
-            ServerPlayer player,
-            ItemStack armor,
-            List<InstalledSubmodule> installedSubmodules,
-            boolean equipped) {
-        UUID armorId = ensureArmorId(armor);
-        Map<String, Boolean> activeStates = buildClientSubmoduleActiveSnapshot(armor, installedSubmodules, equipped);
-        PacketDistributor.sendToPlayer(
-                player,
-                new CelestweaveArmorStateSnapshotPacket(
-                        armorId,
-                        activeStates,
-                        buildClientFlightInertiaSnapshot(armor, activeStates)));
+        if (armorId != null) {
+            CLIENT_PHASE_FLIGHT_ACTIVE.remove(armorId);
+        }
     }
 
     public static void clearTransientRuntimeAndCaches(ItemStack armor) {
@@ -620,29 +621,6 @@ public final class CelestweaveArmorState {
             installedIds.add(entry.submodule().id());
         }
         return installedIds;
-    }
-
-    private static Map<String, Boolean> buildClientSubmoduleActiveSnapshot(
-            ItemStack armor,
-            List<InstalledSubmodule> installedSubmodules,
-            boolean equipped) {
-        var activeStates = new LinkedHashMap<String, Boolean>();
-        boolean hasCore = equipped && ArmorPersistentData.hasStructuralCore(armor);
-        for (var entry : installedSubmodules) {
-            var submodule = entry.submodule();
-            activeStates.put(submodule.id(), hasCore && isSubmoduleEnabled(armor, submodule));
-        }
-        // Packet ctor takes a defensive copy; avoid double-wrapping here.
-        return activeStates;
-    }
-
-    private static boolean buildClientFlightInertiaSnapshot(
-            ItemStack armor,
-            Map<String, Boolean> activeStates) {
-        boolean phaseFlightActive = Boolean.TRUE.equals(activeStates.get(PhaseFlightSubmodule.INSTANCE.id()));
-        return phaseFlightActive
-                ? PhaseFlightSubmodule.isInertiaEnabled(armor)
-                : FlightSubmodule.isInertiaEnabled(armor);
     }
 
     private static Boolean setSubmoduleRuntimeActive(ItemStack armor, String submoduleId, boolean active) {

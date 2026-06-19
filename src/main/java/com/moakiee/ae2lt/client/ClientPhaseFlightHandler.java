@@ -58,7 +58,7 @@ public final class ClientPhaseFlightHandler {
 
     private static boolean isClientPhaseActive() {
         return ArmorPhaseFlightRules.clientPhaseStateActive(
-                CelestweaveArmorState.isAnyClientSubmoduleActive(PhaseFlightSubmodule.INSTANCE.id()),
+                CelestweaveArmorState.isAnyClientPhaseFlightActive(),
                 true,
                 true,
                 true,

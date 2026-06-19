@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.registry;
 import com.mojang.serialization.Codec;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.celestweave.state.CelestweaveModuleContainer;
 import com.moakiee.ae2lt.item.railgun.RailgunModuleEntries;
 import com.moakiee.ae2lt.item.railgun.RailgunSettings;
 
@@ -98,4 +99,25 @@ public final class ModDataComponents {
                     builder -> builder
                             .persistent(Codec.LONG)
                             .networkSynchronized(ByteBufCodecs.VAR_LONG));
+
+    /** Installed modules, toggles and per-submodule data for one Celestweave armor piece. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<CelestweaveModuleContainer>>
+            CELESTWEAVE_MODULES = DATA_COMPONENTS.registerComponentType(
+                    "celestweave_modules",
+                    builder -> builder
+                            .persistent(CelestweaveModuleContainer.CODEC)
+                            .networkSynchronized(CelestweaveModuleContainer.STREAM_CODEC)
+                            .cacheEncoding());
+
+    /**
+     * Server-authoritative "modules are powered this tick" flag. Absent means powered (the common
+     * case); only an unpowered piece carries {@code false}. Synced so the client can mirror the
+     * server's energy-based forced-off state when deriving submodule activity from the stack.
+     */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<Boolean>>
+            CELESTWEAVE_MODULES_POWERED = DATA_COMPONENTS.registerComponentType(
+                    "celestweave_modules_powered",
+                    builder -> builder
+                            .persistent(Codec.BOOL)
+                            .networkSynchronized(ByteBufCodecs.BOOL));
 }

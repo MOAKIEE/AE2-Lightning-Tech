@@ -3,17 +3,13 @@ package com.moakiee.ae2lt.celestweave.state;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.component.DataComponents;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.Tag;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 
 import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
@@ -23,55 +19,40 @@ import com.moakiee.ae2lt.celestweave.BaseCelestweaveArmorItem;
 import com.moakiee.ae2lt.celestweave.module.CelestweaveArmorSubmoduleItem;
 import com.moakiee.ae2lt.registry.ModDataComponents;
 
+/**
+ * Persistent state for one Celestweave armor piece. Backed by the immutable
+ * {@link CelestweaveModuleContainer} data component (auto-synced + saved with
+ * the stack); the structural core and energy buffer live in their own
+ * components. Public method signatures are kept stable so submodules and the
+ * GUI need no changes.
+ */
 public final class ArmorPersistentData {
     private static final int MAX_MODULE_TYPES = 32;
-    private static final String TAG_ROOT = "CelestweaveArmor";
-    private static final String TAG_ARMOR_ID = "ArmorId";
-    private static final String TAG_INSTALLED_SUBMODULES = "InstalledSubmodules";
-    private static final String TAG_SUBMODULE_DATA = "SubmoduleData";
-    private static final String TAG_FEATURE_TOGGLES = "FeatureToggles";
-    private static final String TAG_ENERGY_MODULE_CAPACITY_FE = "EnergyModuleCapacityFe";
 
     private ArmorPersistentData() {
     }
 
     public static UUID ensureArmorId(ItemStack armor) {
-        Optional<UUID> existing = armorId(armor);
-        if (existing.isPresent()) {
-            return existing.get();
+        CelestweaveModuleContainer container = container(armor);
+        if (container.armorId().isPresent()) {
+            return container.armorId().get();
         }
         UUID created = UUID.randomUUID();
-        updateArmorTag(armor, armorTag -> armorTag.putUUID(TAG_ARMOR_ID, created));
+        setContainer(armor, container.withArmorId(created));
         return created;
     }
 
     public static Optional<UUID> armorId(ItemStack armor) {
-        if (armor == null || armor.isEmpty()) {
-            return Optional.empty();
-        }
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return Optional.empty();
-        }
-        CompoundTag armorTag = root.getCompound(TAG_ROOT);
-        return armorTag.hasUUID(TAG_ARMOR_ID) ? Optional.of(armorTag.getUUID(TAG_ARMOR_ID)) : Optional.empty();
+        return container(armor).armorId();
     }
 
     public static long getCachedEnergyModuleCapacityFe(ItemStack armor) {
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return 0L;
-        }
-        return Math.max(0L, root.getCompound(TAG_ROOT).getLong(TAG_ENERGY_MODULE_CAPACITY_FE));
+        return Math.max(0L, container(armor).energyModuleCapacityFe().orElse(0L));
     }
 
-    // Tag presence distinguishes "computed, value is 0" from "never computed" (legacy stacks).
+    // Optional presence distinguishes "computed, value is 0" from "never computed" (legacy stacks).
     public static boolean hasCachedEnergyModuleCapacityFe(ItemStack armor) {
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return false;
-        }
-        return root.getCompound(TAG_ROOT).contains(TAG_ENERGY_MODULE_CAPACITY_FE, Tag.TAG_LONG);
+        return container(armor).energyModuleCapacityFe().isPresent();
     }
 
     public static void setCachedEnergyModuleCapacityFe(ItemStack armor, long capacityFe) {
@@ -79,7 +60,7 @@ public final class ArmorPersistentData {
             return;
         }
         // Always store (even 0) so the cache reliably hits next tick.
-        updateArmorTag(armor, armorTag -> armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, Math.max(0L, capacityFe)));
+        setContainer(armor, container(armor).withCapacity(Optional.of(Math.max(0L, capacityFe))));
     }
 
     public static ItemStack structuralCore(ItemStack armor) {
@@ -102,20 +83,15 @@ public final class ArmorPersistentData {
     }
 
     public static List<ItemStack> loadModuleStacks(ItemStack armor, HolderLookup.Provider registries) {
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
+        List<ItemStack> modules = container(armor).modules();
+        if (modules.isEmpty()) {
             return List.of();
         }
-        CompoundTag armorTag = root.getCompound(TAG_ROOT);
-        if (!armorTag.contains(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_LIST)) {
-            return List.of();
-        }
-        ListTag list = armorTag.getList(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_COMPOUND);
-        List<ItemStack> result = new ArrayList<>(list.size());
-        for (int i = 0; i < list.size(); i++) {
-            ItemStack stack = ItemStack.parseOptional(registries, list.getCompound(i).copy());
+        // Hand out copies so callers can mutate (grow/shrink) without aliasing the stored stacks.
+        List<ItemStack> result = new ArrayList<>(modules.size());
+        for (ItemStack stack : modules) {
             if (!stack.isEmpty()) {
-                result.add(stack);
+                result.add(stack.copy());
             }
         }
         return List.copyOf(result);
@@ -125,17 +101,8 @@ public final class ArmorPersistentData {
         if (submoduleId == null || submoduleId.isBlank()) {
             return false;
         }
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return false;
-        }
-        CompoundTag armorTag = root.getCompound(TAG_ROOT);
-        if (!armorTag.contains(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_LIST)) {
-            return false;
-        }
-        ListTag list = armorTag.getList(TAG_INSTALLED_SUBMODULES, CompoundTag.TAG_COMPOUND);
-        for (int i = 0; i < list.size(); i++) {
-            if (submoduleId.equals(persistedModuleTypeId(list.getCompound(i)))) {
+        for (ItemStack stack : container(armor).modules()) {
+            if (submoduleId.equals(resolveModuleTypeId(stack))) {
                 return true;
             }
         }
@@ -143,123 +110,94 @@ public final class ArmorPersistentData {
     }
 
     public static void saveModuleStacks(ItemStack armor, HolderLookup.Provider registries, List<ItemStack> stacks) {
-        updateArmorTag(armor, armorTag -> {
-            ListTag out = new ListTag();
-            LinkedHashMap<String, ItemStack> merged = new LinkedHashMap<>();
-            for (ItemStack stack : stacks) {
-                if (stack == null || stack.isEmpty()) {
-                    continue;
-                }
-                String id = resolveModuleTypeId(stack);
-                if (id.isBlank()) {
-                    continue;
-                }
-                merged.compute(id, (ignored, existing) -> {
-                    if (existing == null) {
-                        return stack.copy();
-                    }
-                    existing.grow(stack.getCount());
-                    return existing;
-                });
+        if (armor == null || armor.isEmpty()) {
+            return;
+        }
+        LinkedHashMap<String, ItemStack> merged = new LinkedHashMap<>();
+        for (ItemStack stack : stacks) {
+            if (stack == null || stack.isEmpty()) {
+                continue;
             }
-            int writtenTypes = 0;
-            int writtenUnits = 0;
-            long energyCapacityFe = 0L;
-            int maxUnits = armorPart(armor).moduleSlotCount();
-            for (ItemStack stack : merged.values()) {
-                if (writtenTypes >= MAX_MODULE_TYPES || writtenUnits >= maxUnits) {
-                    break;
+            String id = resolveModuleTypeId(stack);
+            if (id.isBlank()) {
+                continue;
+            }
+            merged.compute(id, (ignored, existing) -> {
+                if (existing == null) {
+                    return stack.copy();
                 }
-                int count = Math.min(Math.max(1, stack.getCount()), maxUnits - writtenUnits);
-                ItemStack writtenStack = stack.copyWithCount(count);
-                out.add(writtenStack.saveOptional(registries));
-                energyCapacityFe = Math.max(energyCapacityFe, energyCapacityFe(writtenStack));
-                writtenTypes++;
-                writtenUnits += count;
+                existing.grow(stack.getCount());
+                return existing;
+            });
+        }
+        List<ItemStack> out = new ArrayList<>();
+        int writtenTypes = 0;
+        int writtenUnits = 0;
+        long energyCapacityFe = 0L;
+        int maxUnits = armorPart(armor).moduleSlotCount();
+        for (ItemStack stack : merged.values()) {
+            if (writtenTypes >= MAX_MODULE_TYPES || writtenUnits >= maxUnits) {
+                break;
             }
-            if (out.isEmpty()) {
-                armorTag.remove(TAG_INSTALLED_SUBMODULES);
-                armorTag.remove(TAG_ENERGY_MODULE_CAPACITY_FE);
-            } else {
-                armorTag.put(TAG_INSTALLED_SUBMODULES, out);
-                // Always cache (even 0) so the tick path hits the cache instead of reparsing.
-                armorTag.putLong(TAG_ENERGY_MODULE_CAPACITY_FE, energyCapacityFe);
-            }
-        });
+            int count = Math.min(Math.max(1, stack.getCount()), maxUnits - writtenUnits);
+            ItemStack writtenStack = stack.copyWithCount(count);
+            out.add(writtenStack);
+            energyCapacityFe = Math.max(energyCapacityFe, energyCapacityFe(writtenStack));
+            writtenTypes++;
+            writtenUnits += count;
+        }
+        // No modules -> clear the capacity cache (empty) too; otherwise always cache (even 0).
+        Optional<Long> capacity = out.isEmpty() ? Optional.empty() : Optional.of(energyCapacityFe);
+        setContainer(armor, container(armor).withModules(out, capacity));
     }
 
     public static boolean getToggle(ItemStack armor, String key, boolean defaultValue) {
-        CompoundTag armorTag = armorTag(rootTag(armor));
-        if (!armorTag.contains(TAG_FEATURE_TOGGLES, CompoundTag.TAG_COMPOUND)) {
-            return defaultValue;
-        }
-        CompoundTag toggles = armorTag.getCompound(TAG_FEATURE_TOGGLES);
-        return toggles.contains(key, Tag.TAG_BYTE) ? toggles.getBoolean(key) : defaultValue;
+        Boolean value = container(armor).toggles().get(key);
+        return value == null ? defaultValue : value;
     }
 
     public static void setToggle(ItemStack armor, String key, boolean value, boolean defaultValue) {
         if (key == null || key.isBlank()) {
             return;
         }
-        updateArmorTag(armor, armorTag -> {
-            CompoundTag toggles = armorTag.contains(TAG_FEATURE_TOGGLES, CompoundTag.TAG_COMPOUND)
-                    ? armorTag.getCompound(TAG_FEATURE_TOGGLES)
-                    : new CompoundTag();
-            if (value == defaultValue) {
-                toggles.remove(key);
-            } else {
-                toggles.putBoolean(key, value);
-            }
-            if (toggles.isEmpty()) {
-                armorTag.remove(TAG_FEATURE_TOGGLES);
-            } else {
-                armorTag.put(TAG_FEATURE_TOGGLES, toggles);
-            }
-        });
+        CelestweaveModuleContainer container = container(armor);
+        Map<String, Boolean> toggles = new LinkedHashMap<>(container.toggles());
+        if (value == defaultValue) {
+            toggles.remove(key);
+        } else {
+            toggles.put(key, value);
+        }
+        setContainer(armor, container.withToggles(toggles));
     }
 
     public static CompoundTag getSubmoduleData(ItemStack armor, String submoduleId) {
-        CompoundTag root = rootTag(armor);
-        if (!root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)) {
-            return new CompoundTag();
-        }
-        CompoundTag armorTag = root.getCompound(TAG_ROOT);
-        if (!armorTag.contains(TAG_SUBMODULE_DATA, CompoundTag.TAG_COMPOUND)) {
-            return new CompoundTag();
-        }
-        CompoundTag data = armorTag.getCompound(TAG_SUBMODULE_DATA);
-        return data.contains(submoduleId, CompoundTag.TAG_COMPOUND)
-                ? data.getCompound(submoduleId).copy()
-                : new CompoundTag();
+        CompoundTag data = container(armor).submoduleData().get(submoduleId);
+        return data == null ? new CompoundTag() : data.copy();
     }
 
     public static void setSubmoduleData(ItemStack armor, String submoduleId, CompoundTag data) {
-        updateArmorTag(armor, armorTag -> {
-            CompoundTag allData = armorTag.contains(TAG_SUBMODULE_DATA, CompoundTag.TAG_COMPOUND)
-                    ? armorTag.getCompound(TAG_SUBMODULE_DATA)
-                    : new CompoundTag();
-            if (data == null || data.isEmpty()) {
-                allData.remove(submoduleId);
-            } else {
-                allData.put(submoduleId, data.copy());
-            }
-            if (allData.isEmpty()) {
-                armorTag.remove(TAG_SUBMODULE_DATA);
-            } else {
-                armorTag.put(TAG_SUBMODULE_DATA, allData);
-            }
-        });
+        CelestweaveModuleContainer container = container(armor);
+        Map<String, CompoundTag> allData = new LinkedHashMap<>(container.submoduleData());
+        if (data == null || data.isEmpty()) {
+            allData.remove(submoduleId);
+        } else {
+            allData.put(submoduleId, data.copy());
+        }
+        setContainer(armor, container.withSubmoduleData(allData));
     }
 
-    private static void updateArmorTag(ItemStack armor, Consumer<CompoundTag> update) {
+    private static CelestweaveModuleContainer container(ItemStack armor) {
+        if (armor == null || armor.isEmpty()) {
+            return CelestweaveModuleContainer.EMPTY;
+        }
+        return armor.getOrDefault(ModDataComponents.CELESTWEAVE_MODULES.get(), CelestweaveModuleContainer.EMPTY);
+    }
+
+    private static void setContainer(ItemStack armor, CelestweaveModuleContainer container) {
         if (armor == null || armor.isEmpty()) {
             return;
         }
-        CustomData.update(DataComponents.CUSTOM_DATA, armor, root -> {
-            CompoundTag armorTag = armorTag(root);
-            update.accept(armorTag);
-            root.put(TAG_ROOT, armorTag);
-        });
+        armor.set(ModDataComponents.CELESTWEAVE_MODULES.get(), container);
     }
 
     private static String resolveModuleTypeId(ItemStack stack) {
@@ -276,29 +214,6 @@ public final class ArmorPersistentData {
             }
         });
         return ref[0];
-    }
-
-    private static String persistedModuleTypeId(CompoundTag stackTag) {
-        String itemId = stackTag.getString("id");
-        return switch (itemId) {
-            case "ae2lt:energy_module_t1",
-                 "ae2lt:energy_module_t2",
-                 "ae2lt:energy_module_t3" -> ArmorEnergyModuleItem.MODULE_TYPE_ID;
-            case "ae2lt:module_night_vision" -> "night_vision";
-            case "ae2lt:module_water_breathing" -> "water_breathing";
-            case "ae2lt:module_reach_extension" -> "reach_extension";
-            case "ae2lt:module_matrix_shield" -> "matrix_shield";
-            case "ae2lt:module_phase_shield" -> "phase_shield";
-            case "ae2lt:module_reflect" -> "reflect";
-            case "ae2lt:module_undying" -> "undying";
-            case "ae2lt:module_dash" -> "dash";
-            case "ae2lt:module_creative_flight" -> "flight";
-            case "ae2lt:module_purification" -> "purification";
-            case "ae2lt:module_saturation" -> "saturation";
-            case "ae2lt:module_dig_affinity" -> "dig_affinity";
-            case "ae2lt:module_phase_flight" -> "phase_flight";
-            default -> "";
-        };
     }
 
     private static long energyCapacityFe(ItemStack stack) {
@@ -325,18 +240,5 @@ public final class ArmorPersistentData {
             return item.armorPart();
         }
         return ArmorPart.CHEST;
-    }
-
-    private static CompoundTag rootTag(ItemStack stack) {
-        if (stack == null || stack.isEmpty()) {
-            return new CompoundTag();
-        }
-        return stack.getOrDefault(DataComponents.CUSTOM_DATA, CustomData.EMPTY).copyTag();
-    }
-
-    private static CompoundTag armorTag(CompoundTag root) {
-        return root.contains(TAG_ROOT, CompoundTag.TAG_COMPOUND)
-                ? root.getCompound(TAG_ROOT)
-                : new CompoundTag();
     }
 }

@@ -15,6 +15,7 @@ import com.moakiee.ae2lt.device.capability.DeviceCapability;
 import com.moakiee.ae2lt.device.module.OverloadDeviceModuleItem;
 import com.moakiee.ae2lt.celestweave.BaseCelestweaveArmorItem;
 import com.moakiee.ae2lt.celestweave.CelestweaveArmorState;
+import com.moakiee.ae2lt.celestweave.module.CelestweaveArmorSubmodule;
 import com.moakiee.ae2lt.celestweave.module.CelestweaveArmorSubmoduleItem;
 
 public final class ArmorCapabilityCollector {
@@ -68,7 +69,7 @@ public final class ArmorCapabilityCollector {
                 for (int i = 0; i < iterations; i++) {
                     ItemStack unit = moduleStack.copyWithCount(1);
                     submoduleProvider.collectSubmodules(unit, submodule -> {
-                        if (submodule == null || !isSubmoduleActiveForSide(player, armor, submodule.id())) {
+                        if (submodule == null || !isSubmoduleActiveForSide(player, armor, submodule)) {
                             return;
                         }
                         for (var capability : module.capabilities(unit)) {
@@ -81,12 +82,12 @@ public final class ArmorCapabilityCollector {
         return List.copyOf(out);
     }
 
-    private static boolean isSubmoduleActiveForSide(Player player, ItemStack armor, String submoduleId) {
+    private static boolean isSubmoduleActiveForSide(Player player, ItemStack armor, CelestweaveArmorSubmodule submodule) {
         if (player.level().isClientSide()) {
-            var armorId = CelestweaveArmorState.getArmorId(armor);
-            return armorId != null && CelestweaveArmorState.isClientSubmoduleActive(armorId, submoduleId);
+            // Client derives active state from the synced stack; no client-side cache.
+            return CelestweaveArmorState.isSubmoduleActiveClient(armor, submodule);
         }
-        return CelestweaveArmorState.isSubmoduleRuntimeActive(armor, submoduleId);
+        return CelestweaveArmorState.isSubmoduleRuntimeActive(armor, submodule.id());
     }
 
     public record ActiveCapability(ItemStack armor, String submoduleId, DeviceCapability capability) {

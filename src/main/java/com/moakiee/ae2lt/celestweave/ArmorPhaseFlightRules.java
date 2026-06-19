@@ -13,21 +13,6 @@ public final class ArmorPhaseFlightRules {
         return serverActive && configEnabled;
     }
 
-    public static boolean shouldSyncClientActiveState(
-            boolean active,
-            boolean changed,
-            boolean predictiveMovement) {
-        return shouldSyncClientActiveState(active, changed, predictiveMovement, false);
-    }
-
-    public static boolean shouldSyncClientActiveState(
-            boolean active,
-            boolean changed,
-            boolean predictiveMovement,
-            boolean forceSync) {
-        return changed || forceSync;
-    }
-
     public static boolean shouldApplyPseudoSpectatorState(
             boolean phaseStateActive,
             boolean afterVanillaNoPhysicsReset) {
