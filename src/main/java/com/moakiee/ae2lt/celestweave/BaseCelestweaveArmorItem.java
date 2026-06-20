@@ -20,6 +20,7 @@ import net.neoforged.api.distmarker.Dist;
 import com.moakiee.ae2lt.device.DeviceItem;
 import com.moakiee.ae2lt.device.DeviceKind;
 import com.moakiee.ae2lt.celestweave.service.ArmorTickService;
+import com.moakiee.ae2lt.util.DeviceHubTooltip;
 import com.moakiee.ae2lt.util.EnergyText;
 
 public abstract class BaseCelestweaveArmorItem extends ArmorItem implements DeviceItem {
@@ -73,6 +74,7 @@ public abstract class BaseCelestweaveArmorItem extends ArmorItem implements Devi
         long capacity = ArmorEnergyBuffer.capacity(stack, level == null ? null : level.registryAccess());
         tooltip.add(EnergyText.storedFe(current, capacity));
         tooltip.add(Component.translatable("ae2lt.celestweave.tooltip.workbench"));
+        tooltip.add(DeviceHubTooltip.openConfigHint());
     }
 
     @Override

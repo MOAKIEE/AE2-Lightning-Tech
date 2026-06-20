@@ -5,6 +5,7 @@
   "message.ae2lt.config_migrated_v2.matrix": "[AE2 Lightning Tech] The Overload Processing Factory's matrix slot is now capped at 32. Existing stacks above 32 are preserved but only 32 matrices contribute to parallelism — please open the GUI and take out the excess matrices.",
   "key.categories.ae2lt": "AE2 Lightning Tech",
   "key.ae2lt.open_config": "Open Overload Device Config",
+  "ae2lt.tooltip.open_device_hub": "Press %s to open Overload Device Config",
   "key.ae2lt.toggle_frequency_card_auto_connect": "Toggle Frequency Card Auto Connect",
   "gui.ae2lt.device_hub": "Overload Device Hub",
   "curios.identifier.overloaded_frequency_card": "Overloaded Frequency Card",

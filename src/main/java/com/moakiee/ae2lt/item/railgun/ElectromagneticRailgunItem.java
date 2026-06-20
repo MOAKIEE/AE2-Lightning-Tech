@@ -32,6 +32,7 @@ import com.moakiee.ae2lt.logic.railgun.RailgunEnergyBuffer;
 import com.moakiee.ae2lt.logic.railgun.RailgunFireService;
 import com.moakiee.ae2lt.menu.railgun.RailgunHost;
 import com.moakiee.ae2lt.registry.ModDataComponents;
+import com.moakiee.ae2lt.util.DeviceHubTooltip;
 import com.moakiee.ae2lt.util.EnergyText;
 
 public class ElectromagneticRailgunItem extends Item implements IMenuItem, DeviceItem {
@@ -166,6 +167,7 @@ public class ElectromagneticRailgunItem extends Item implements IMenuItem, Devic
         long current = RailgunEnergyBuffer.read(stack);
         long capacity = RailgunEnergyBuffer.capacity(stack);
         tooltip.add(EnergyText.storedFe(current, capacity));
+        tooltip.add(DeviceHubTooltip.openConfigHint());
     }
 
     @Override
