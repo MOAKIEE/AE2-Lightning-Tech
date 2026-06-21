@@ -1,0 +1,163 @@
+name: Bug 反馈 (Bug report)
+description: 报告可复现的错误、崩溃、性能问题或异常行为。Report a reproducible bug, crash, performance issue, or incorrect behavior.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        提交前请先搜索已有 Issues，确认不是重复报告。标题请直接概括问题，不需要额外添加标签。
+
+        Please search existing issues before reporting. Use the title to summarize the problem directly; no extra title tags are needed.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认 (Preflight checklist)
+      options:
+        - label: 我已经搜索过现有 Issues，没有找到重复报告。 / I have searched existing issues and did not find a duplicate.
+          required: true
+        - label: 我正在使用或已经测试过较新的 AE2 Lightning Tech 版本。 / I am using or have tested a recent AE2 Lightning Tech version.
+          required: true
+
+  - type: dropdown
+    id: minecraft-version
+    attributes:
+      label: Minecraft 版本 (Minecraft version)
+      options:
+        - "1.21.1"
+        - "其他 / Other"
+    validations:
+      required: true
+
+  - type: input
+    id: neoforge-version
+    attributes:
+      label: NeoForge 版本 (NeoForge version)
+      placeholder: "例如 / Example: 21.1.219"
+    validations:
+      required: true
+
+  - type: input
+    id: ae2lt-version
+    attributes:
+      label: AE2 Lightning Tech 版本 (AE2 Lightning Tech version)
+      placeholder: "例如 / Example: 1.0.19"
+    validations:
+      required: true
+
+  - type: input
+    id: ae2-version
+    attributes:
+      label: Applied Energistics 2 版本 (Applied Energistics 2 version)
+      placeholder: "填写你实际安装的 AE2 版本 / Enter the AE2 version you installed"
+    validations:
+      required: true
+
+  - type: input
+    id: modpack
+    attributes:
+      label: 整合包信息，可选 (Modpack info, optional)
+      description: 如果在整合包中游玩，请填写整合包名称、版本和链接。 / If you are using a modpack, provide its name, version, and link.
+      placeholder: "例如 / Example: My Pack 1.2.3, https://..."
+
+  - type: dropdown
+    id: side
+    attributes:
+      label: 发生位置 (Where did it happen?)
+      options:
+        - 单人游戏 / Singleplayer
+        - 客户端 / Client
+        - 服务端 / Dedicated server
+        - 客户端和服务端 / Both client and server
+        - 不确定 / Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: 严重程度 (Severity)
+      options:
+        - 异常结果 / Incorrect or odd result
+        - 影响正常游玩 / Gameplay-impacting bug
+        - 崩溃 / Crash
+        - 性能问题 / Performance issue
+        - 存档或数据损坏风险 / Save or data corruption risk
+    validations:
+      required: true
+
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: 相关模块 (Affected area)
+      options:
+        - 闪电能源系统 / Lightning energy system
+        - 闪电机器 / Lightning machines
+        - 过载水晶 / Overload crystals
+        - 过载 ME 网络 / Overloaded ME network
+        - 无线频率系统 / Wireless frequency system
+        - 样板编码器或样板供应器 / Pattern encoder or pattern provider
+        - 配方、战利品或数据包 / Recipes, loot, or datapacks
+        - 指南书或文本 / Guidebook or localization
+        - Addon API 或模组联动 / Addon API or integration
+        - 不确定 / Not sure
+        - 其他 / Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望表现 (Expected behavior)
+      description: 描述你认为应该发生什么。 / Describe what you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际表现 (Actual behavior)
+      description: 描述实际发生了什么，以及为什么你认为这是问题。 / Describe what actually happened and why it seems wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 (Steps to reproduce)
+      description: 请写出能让维护者复现问题的具体步骤。 / Provide exact steps that allow maintainers to reproduce the issue.
+      placeholder: |
+        1. 放置... / Place...
+        2. 连接... / Connect...
+        3. 执行... / Do...
+        4. 看到问题... / See the issue...
+    validations:
+      required: true
+
+  - type: input
+    id: log
+    attributes:
+      label: 日志或崩溃报告链接 (Log or crash report link)
+      description: |
+        请上传 latest.log 或 crash report 到 mclo.gs、GitHub Gist、Pastebin 等稳定链接。不要设置过期时间。
+        如果没有崩溃，也可以在游戏内按住 F3+C 约 10 秒生成调试崩溃报告。
+
+        Please upload latest.log or the crash report to mclo.gs, GitHub Gist, Pastebin, or a similar stable paste service. Do not use expiring links.
+        If there is no crash report, you can hold F3+C in game for about 10 seconds to generate a debug crash report.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: media
+    attributes:
+      label: 截图或视频，可选 (Screenshots or videos, optional)
+      description: 如果截图、视频或结构示意能帮助说明问题，请贴在这里。 / Add screenshots, videos, or structure diagrams if they help explain the issue.
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 其他信息，可选 (Additional context, optional)
+      description: 任何无法归入上面字段的补充信息。 / Any extra details that do not fit elsewhere.
+

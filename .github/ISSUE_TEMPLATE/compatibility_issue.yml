@@ -1,0 +1,143 @@
+name: 兼容性问题 (Compatibility issue)
+description: 报告与其他模组、整合包或可选联动相关的问题。Report a problem involving another mod, modpack, or optional integration.
+title: "[Compatibility]: "
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        兼容性问题通常需要精确版本和日志。请尽量确认问题不是由整合包脚本、数据包或配置改动单独导致。
+
+        Compatibility issues usually need exact versions and logs. Please try to confirm that the problem is not caused only by modpack scripts, datapacks, or config changes.
+
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: 提交前确认 (Preflight checklist)
+      options:
+        - label: 我已经搜索过现有 Issues，没有找到重复报告。 / I have searched existing issues and did not find a duplicate.
+          required: true
+        - label: 这个问题涉及 AE2 Lightning Tech 与其他模组、整合包或可选联动。 / This issue involves AE2 Lightning Tech and another mod, modpack, or optional integration.
+          required: true
+
+  - type: input
+    id: related-mod
+    attributes:
+      label: 相关模组或整合包 (Related mod or modpack)
+      placeholder: "例如 / Example: AdvancedAE, ExtendedAE, Applied Flux, Mekanism, ..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: minecraft-version
+    attributes:
+      label: Minecraft 版本 (Minecraft version)
+      options:
+        - "1.21.1"
+        - "其他 / Other"
+    validations:
+      required: true
+
+  - type: input
+    id: neoforge-version
+    attributes:
+      label: NeoForge 版本 (NeoForge version)
+      placeholder: "例如 / Example: 21.1.219"
+    validations:
+      required: true
+
+  - type: input
+    id: ae2lt-version
+    attributes:
+      label: AE2 Lightning Tech 版本 (AE2 Lightning Tech version)
+      placeholder: "例如 / Example: 1.0.19"
+    validations:
+      required: true
+
+  - type: input
+    id: ae2-version
+    attributes:
+      label: Applied Energistics 2 版本 (Applied Energistics 2 version)
+      placeholder: "填写你实际安装的 AE2 版本 / Enter the AE2 version you installed"
+    validations:
+      required: true
+
+  - type: textarea
+    id: other-mod-versions
+    attributes:
+      label: 其他相关模组版本 (Other relevant mod versions)
+      description: 写出相关模组及其版本，包含前置库或联动模组。 / List related mods and their versions, including required libraries or integration mods.
+      placeholder: |
+        AdvancedAE: ...
+        ExtendedAE: ...
+        Applied Flux: ...
+        Mekanism: ...
+    validations:
+      required: true
+
+  - type: input
+    id: modpack
+    attributes:
+      label: 整合包信息，可选 (Modpack info, optional)
+      description: 如果只在整合包中出现，请填写整合包名称、版本和链接。 / If this only happens in a modpack, provide its name, version, and link.
+      placeholder: "例如 / Example: My Pack 1.2.3, https://..."
+
+  - type: dropdown
+    id: minimal-reproduction
+    attributes:
+      label: 最小复现情况 (Minimal reproduction)
+      description: 是否能在只保留 AE2LT、AE2、NeoForge 和相关模组的实例中复现？ / Can it be reproduced with only AE2LT, AE2, NeoForge, and the related mod?
+      options:
+        - 可以复现 / Reproduces with only relevant mods
+        - 只在整合包中复现 / Only reproduces in a modpack
+        - 还没有测试 / Not tested yet
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望表现 (Expected behavior)
+      description: 描述两个模组或整合包环境下应该如何工作。 / Describe how the mods or modpack should behave together.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际表现 (Actual behavior)
+      description: 描述实际冲突、错误、崩溃、配方问题、物品丢失或联动失效。 / Describe the conflict, error, crash, recipe problem, item loss, or integration failure.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: 复现步骤 (Steps to reproduce)
+      description: 请写出能让维护者复现兼容性问题的具体步骤。 / Provide exact steps that allow maintainers to reproduce the compatibility issue.
+      placeholder: |
+        1. 安装... / Install...
+        2. 创建或加载... / Create or load...
+        3. 放置或连接... / Place or connect...
+        4. 看到问题... / See the issue...
+    validations:
+      required: true
+
+  - type: input
+    id: log
+    attributes:
+      label: 日志或崩溃报告链接 (Log or crash report link)
+      description: |
+        请上传 latest.log 或 crash report 到 mclo.gs、GitHub Gist、Pastebin 等稳定链接。不要设置过期时间。
+
+        Please upload latest.log or the crash report to mclo.gs, GitHub Gist, Pastebin, or a similar stable paste service. Do not use expiring links.
+      placeholder: "https://mclo.gs/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 其他信息，可选 (Additional context, optional)
+      description: 可以附配置、数据包、KubeJS 脚本、截图、视频或最小实例说明。 / Add configs, datapacks, KubeJS scripts, screenshots, videos, or minimal instance notes.
+
