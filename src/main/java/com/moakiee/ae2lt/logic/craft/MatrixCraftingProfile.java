@@ -87,19 +87,14 @@ public record MatrixCraftingProfile(
         var issues = java.util.EnumSet.noneOf(MatrixProfileIssue.class);
         if (coreCount == 0) {
             issues.add(MatrixProfileIssue.MISSING_CORE);
-        }
-        if (coreCount > 1 || mode == MatrixCoreMode.CONFLICT) {
+        } else if (coreCount > 1
+                || mode == MatrixCoreMode.CONFLICT
+                || (mode != MatrixCoreMode.QUANTUM && mode != MatrixCoreMode.OVERLOAD)) {
+            // has core(s) but not a single valid mode
             issues.add(MatrixProfileIssue.CONFLICTING_CORES);
         }
         if (multiplierLimitExceeded) {
             issues.add(MatrixProfileIssue.MULTIPLIER_LIMIT_EXCEEDED);
-        }
-        if (mode != MatrixCoreMode.QUANTUM && mode != MatrixCoreMode.OVERLOAD) {
-            if (coreCount == 0) {
-                issues.add(MatrixProfileIssue.MISSING_CORE);
-            } else {
-                issues.add(MatrixProfileIssue.CONFLICTING_CORES);
-            }
         }
         return issues.isEmpty() ? Set.of() : Set.copyOf(issues);
     }
