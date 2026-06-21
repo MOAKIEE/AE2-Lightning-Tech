@@ -73,7 +73,7 @@ public final class MatrixCraftingCluster {
         var result = new ArrayList<IPatternDetails>();
         for (var core : patternCores) {
             for (var pattern : core.getAvailablePatterns()) {
-                if (pattern != null && !seen.containsKey(pattern)) {
+                if (MatrixPatternRepository.isSupportedPattern(pattern) && !seen.containsKey(pattern)) {
                     seen.put(pattern, Boolean.TRUE);
                     result.add(pattern);
                 }
@@ -83,7 +83,7 @@ public final class MatrixCraftingCluster {
     }
 
     public boolean hasPattern(IPatternDetails details) {
-        if (!formed.getAsBoolean() || details == null) return false;
+        if (!formed.getAsBoolean() || !MatrixPatternRepository.isSupportedPattern(details)) return false;
         for (var core : patternCores) {
             for (var pattern : core.getAvailablePatterns()) {
                 if (pattern == details) {

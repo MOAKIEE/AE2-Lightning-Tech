@@ -10,9 +10,16 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import net.minecraft.core.NonNullList;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.CraftingInput;
+import net.minecraft.world.level.Level;
+
 import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEItemKey;
 import appeng.api.stacks.GenericStack;
+import appeng.api.stacks.KeyCounter;
+import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 
 class MatrixPatternStorageTest {
     @Test
@@ -54,6 +61,21 @@ class MatrixPatternStorageTest {
         assertSame(second, repository.units().get(1).get(0));
         assertSame(third, repository.units().get(1).get(1));
         assertEquals(0, repository.freeSlots());
+    }
+
+    @Test
+    void repositoryRejectsNonMolecularPatterns() {
+        var repository = new MatrixPatternRepository(List.of(new MatrixPatternStorageUnit(2)));
+        var craftable = pattern("craftable");
+        var plain = plainPattern("plain");
+
+        assertTrue(repository.insert(craftable));
+        assertFalse(repository.insert(plain));
+        assertEquals(List.of(plain), repository.insertAll(List.of(plain)));
+
+        assertEquals(1, repository.usedSlots());
+        assertSame(craftable, repository.units().get(0).get(0));
+        assertNull(repository.units().get(0).get(1));
     }
 
     @Test
@@ -168,10 +190,61 @@ class MatrixPatternStorageTest {
         return new FakePattern(id);
     }
 
-    private static final class FakePattern implements IPatternDetails {
+    private static FakePlainPattern plainPattern(String id) {
+        return new FakePlainPattern(id);
+    }
+
+    private static final class FakePattern implements IMolecularAssemblerSupportedPattern {
         private final String id;
 
         private FakePattern(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public ItemStack assemble(CraftingInput input, Level level) {
+            return ItemStack.EMPTY;
+        }
+
+        @Override
+        public boolean isItemValid(int slotIndex, AEItemKey key, Level level) {
+            return true;
+        }
+
+        @Override
+        public boolean isSlotEnabled(int slot) {
+            return true;
+        }
+
+        @Override
+        public void fillCraftingGrid(KeyCounter[] inputHolder, CraftingGridAccessor accessor) {
+        }
+
+        @Override
+        public AEItemKey getDefinition() {
+            return null;
+        }
+
+        @Override
+        public IInput[] getInputs() {
+            return new IInput[0];
+        }
+
+        @Override
+        public List<GenericStack> getOutputs() {
+            return List.of();
+        }
+
+        @Override
+        public NonNullList<ItemStack> getRemainingItems(CraftingInput input) {
+            return NonNullList.create();
+        }
+    }
+
+    private static final class FakePlainPattern implements IPatternDetails {
+        private final String id;
+
+        private FakePlainPattern(String id) {
             this.id = id;
         }
 

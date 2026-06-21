@@ -73,6 +73,24 @@ class MatrixMultiblockInterfaceTest {
     }
 
     @Test
+    void interfaceDoesNotExposeOrAcceptNonMolecularPatterns() {
+        var assembler = new FakeAssembler();
+        var cluster = cluster(new FakeHost(), List.of(new FakeCraftCore(
+                MatrixCraftingUnit.quantumCore(),
+                MatrixCraftingUnit.threadPower(160),
+                MatrixCraftingUnit.multiplierPower(20))), assembler);
+        var plainPattern = new FakePlainPattern("plain");
+        var repository = new MatrixPatternRepository(List.of(unit(PATTERN, plainPattern)));
+
+        var matrixInterface = new MatrixMultiblockInterface(cluster, repository);
+
+        assertEquals(List.of(PATTERN), matrixInterface.getAvailablePatterns());
+        assertEquals(0, matrixInterface.getBatchCapacity(plainPattern));
+        assertEquals(7, matrixInterface.pushBatch(plainPattern, emptyInputs(), 7));
+        assertEquals(0, assembler.calls);
+    }
+
+    @Test
     void interfacePatternInsertionUsesRepositoryBackpressure() {
         var cluster = cluster(new FakeHost(), List.of(new FakeCraftCore(MatrixCraftingUnit.quantumCore())),
                 (details, oneCopyInputs) -> null);
@@ -85,6 +103,20 @@ class MatrixMultiblockInterfaceTest {
         assertFalse(matrixInterface.insertPattern(overflow));
         assertEquals(List.of(first), matrixInterface.getAvailablePatterns());
         assertSame(first, matrixInterface.exposedPatternUnit().get(0));
+    }
+
+    @Test
+    void interfaceRejectsNonMolecularPatternInsertion() {
+        var cluster = cluster(new FakeHost(), List.of(new FakeCraftCore(MatrixCraftingUnit.quantumCore())),
+                (details, oneCopyInputs) -> null);
+        var repository = new MatrixPatternRepository(List.of(new MatrixPatternStorageUnit(2)));
+        var matrixInterface = new MatrixMultiblockInterface(cluster, repository);
+        var plain = new FakePlainPattern("plain");
+
+        assertFalse(matrixInterface.insertPattern(plain));
+        assertEquals(List.of(plain), matrixInterface.insertPatterns(List.of(plain)));
+        assertEquals(0, repository.usedSlots());
+        assertEquals(List.of(), matrixInterface.getAvailablePatterns());
     }
 
     private static MatrixCraftingCluster cluster(FakeHost host, List<FakeCraftCore> cores, CopyAssembler assembler) {
@@ -202,6 +234,29 @@ class MatrixMultiblockInterfaceTest {
         @Override
         public NonNullList<ItemStack> getRemainingItems(CraftingInput input) {
             return NonNullList.create();
+        }
+    }
+
+    private static final class FakePlainPattern implements IPatternDetails {
+        private final String id;
+
+        private FakePlainPattern(String id) {
+            this.id = id;
+        }
+
+        @Override
+        public AEItemKey getDefinition() {
+            return null;
+        }
+
+        @Override
+        public IInput[] getInputs() {
+            return new IInput[0];
+        }
+
+        @Override
+        public List<GenericStack> getOutputs() {
+            return List.of();
         }
     }
 

@@ -5,6 +5,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 
 import appeng.api.crafting.IPatternDetails;
+import appeng.blockentity.crafting.IMolecularAssemblerSupportedPattern;
 
 public final class MatrixPatternRepository implements MatrixPatternCore {
     private final List<MatrixPatternStorageUnit> units;
@@ -38,7 +39,7 @@ public final class MatrixPatternRepository implements MatrixPatternCore {
     }
 
     public boolean insert(IPatternDetails pattern) {
-        if (pattern == null) return false;
+        if (!isSupportedPattern(pattern)) return false;
         for (var unit : units) {
             if (unit.insert(pattern)) {
                 return true;
@@ -102,6 +103,10 @@ public final class MatrixPatternRepository implements MatrixPatternCore {
             }
         }
         return List.copyOf(result);
+    }
+
+    public static boolean isSupportedPattern(IPatternDetails pattern) {
+        return pattern instanceof IMolecularAssemblerSupportedPattern;
     }
 
     public record UpgradeResult(int upgraded, int totalT1BeforeUpgrade, int remainingT1) {
