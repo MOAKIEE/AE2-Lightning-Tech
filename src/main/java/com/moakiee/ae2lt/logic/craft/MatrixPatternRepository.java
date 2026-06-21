@@ -106,7 +106,7 @@ public final class MatrixPatternRepository implements MatrixPatternCore {
     }
 
     public static boolean isSupportedPattern(IPatternDetails pattern) {
-        return pattern instanceof IMolecularAssemblerSupportedPattern;
+        return pattern != null && pattern instanceof IMolecularAssemblerSupportedPattern;
     }
 
     public record UpgradeResult(int upgraded, int totalT1BeforeUpgrade, int remainingT1) {
