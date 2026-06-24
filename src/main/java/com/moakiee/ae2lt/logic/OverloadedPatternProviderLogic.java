@@ -1,13 +1,10 @@
 package com.moakiee.ae2lt.logic;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.Object2IntOpenHashMap;
@@ -56,6 +53,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ProviderMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.ReturnMode;
 import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessConnection;
+import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity.WirelessDispatchMode;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
@@ -143,9 +141,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     private static final float[] PROBE_LEVELS = {5f, 3f, 2f, 1f, 0.5f, 0.3f, 0.1f};
     private static final int PROBE_LEVEL_INIT_IDX = 0;
 
-    static final class ConnectionState {
-        int pushCount;
-
+    static final class ConnectionState implements ReadyDispatchQueue.State {
         // push cooldown — far: binary search on [searchLo, searchHi]; near: +/- with streaks
         long cooldownUntil = -1;
         int cooldownN = COOLDOWN_INIT;
@@ -163,8 +159,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
         // timing-wheel dispatch state
         boolean ready = true;
-        int readyGeneration;
         boolean probeArmed;
+        boolean queued;
 
         // adapter cache (avoids MachineAdapterRegistry.find() scan every push)
         @Nullable WeakReference<BlockEntity> adapterBERef;
@@ -279,6 +275,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     : Math.min(backoffInterval * 2, BACKOFF_MAX);
             nextPollTick = gameTick + backoffInterval;
         }
+
+        @Override
+        public boolean isQueued() {
+            return queued;
+        }
+
+        @Override
+        public void setQueued(boolean queued) {
+            this.queued = queued;
+        }
     }
 
     private final Map<WirelessConnection, ConnectionState> connectionStates = new HashMap<>();
@@ -288,8 +294,6 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     }
 
     // ---- push timing wheel + ready queue ----------------------------------------
-
-    private record PushEntry(WirelessConnection conn, ConnectionState state, int generation) {}
 
     private static final int PUSH_WHEEL_BITS = 6;
     private static final int PUSH_WHEEL_SIZE = 1 << PUSH_WHEEL_BITS; // 64 — comfortably covers COOLDOWN_MAX (40)
@@ -301,9 +305,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         for (int i = 0; i < PUSH_WHEEL_SIZE; i++) pushWheel[i] = new ArrayList<>();
     }
 
-    private final PriorityQueue<PushEntry> readyPQ = new PriorityQueue<>(
-            Comparator.comparingInt(e -> e.state().pushCount));
-    private final ArrayDeque<WirelessConnection> readyQueue = new ArrayDeque<>();
+    private final ReadyDispatchQueue<WirelessConnection, ConnectionState> singleReadyQueue =
+            new ReadyDispatchQueue<>(connectionStates::get);
+    private final ReadyDispatchQueue<WirelessConnection, ConnectionState> evenReadyQueue =
+            new ReadyDispatchQueue<>(connectionStates::get);
     private List<WirelessConnection> pushWheelValidRef = List.of();
     private long lastPushWheelTick = -1;
 
@@ -669,9 +674,9 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 == OverloadedPatternProviderBlockEntity.WirelessSpeedMode.FAST;
 
         if (valid != pushWheelValidRef) {
-            rebuildPushStructures(valid, gameTick);
+            rebuildPushStructures(valid, gameTick, dispatchMode);
         }
-        advancePushWheel(gameTick, fastMode);
+        advancePushWheel(gameTick, fastMode, dispatchMode);
 
         return switch (dispatchMode) {
             case EVEN_DISTRIBUTION -> wirelessPushEvenDistribution(pattern, inputs, valid, server, gameTick, fastMode);
@@ -679,77 +684,23 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         };
     }
 
-    // ---- EVEN_DISTRIBUTION: PQ-based balanced push --------------------------------
+    // ---- EVEN_DISTRIBUTION: ready-target round-robin push -------------------------
 
     private boolean wirelessPushEvenDistribution(IPatternDetails pattern, KeyCounter[] inputs,
             List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
             long gameTick, boolean fastMode) {
 
-        while (!readyPQ.isEmpty()) {
-            var entry = readyPQ.poll();
-            var state = entry.state();
-
-            if (entry.generation() != state.readyGeneration) continue;
-            if (!state.ready) continue;
-            if (pendingOverflowByConn.containsKey(entry.conn())) continue;
-
-            boolean probing = state.probeArmed
-                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
-            state.probeArmed = false;
-
-            var outcome = tryPushToConnection(pattern, inputs, entry.conn(), server);
-            switch (outcome) {
-                case SUCCESS -> {
-                    if (probing) {
-                        state.onProbeSuccess();
-                    } else {
-                        state.onPushSuccess(gameTick);
-                    }
-                    state.pushCount++;
-                    if (!pendingOverflowByConn.containsKey(entry.conn())) {
-                        state.readyGeneration++;
-                        readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
-                    }
-                    return true;
-                }
-                case HARD_FAIL -> {
-                    if (!isConnectionAlive(entry.conn(), server)) {
-                        connectionsDirty = true;
-                    } else {
-                        state.readyGeneration++;
-                        readyPQ.offer(new PushEntry(entry.conn(), state, state.readyGeneration));
-                    }
-                }
-                case SOFT_FAIL -> {
-                    if (probing) {
-                        state.onProbeFail();
-                        schedulePushWheel(entry.conn(), state, fastMode);
-                    } else {
-                        state.onPushFail(gameTick);
-                        schedulePushWheel(entry.conn(), state, fastMode);
-                    }
-                }
-            }
-        }
-        return false;
-    }
-
-    // ---- SINGLE_TARGET: sticky round-robin push -----------------------------------
-
-    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
-            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
-            long gameTick, boolean fastMode) {
-
-        while (!readyQueue.isEmpty()) {
-            var conn = readyQueue.peek();
+        int scanBudget = evenReadyQueue.size();
+        while (scanBudget-- > 0 && !evenReadyQueue.isEmpty()) {
+            var conn = evenReadyQueue.peek();
             if (pendingOverflowByConn.containsKey(conn)) {
-                readyQueue.poll();
+                evenReadyQueue.removeHead();
                 continue;
             }
-            var state = connectionStates.get(conn);
 
-            if (state == null) {
-                readyQueue.poll();
+            var state = connectionStates.get(conn);
+            if (state == null || !state.ready) {
+                evenReadyQueue.removeHead();
                 continue;
             }
 
@@ -765,23 +716,82 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     } else {
                         state.onPushSuccess(gameTick);
                     }
-                    state.pushCount++;
                     if (pendingOverflowByConn.containsKey(conn)) {
-                        readyQueue.poll();
+                        evenReadyQueue.removeHead();
+                    } else {
+                        evenReadyQueue.rotateHeadToTail();
                     }
                     return true;
                 }
+                case HARD_FAIL -> {
+                    if (!isConnectionAlive(conn, server)) {
+                        evenReadyQueue.removeHead();
+                        connectionsDirty = true;
+                    } else {
+                        evenReadyQueue.rotateHeadToTail();
+                    }
+                }
                 case SOFT_FAIL -> {
-                    readyQueue.poll();
+                    evenReadyQueue.removeHead();
                     if (probing) {
                         state.onProbeFail();
                     } else {
                         state.onPushFail(gameTick);
                     }
-                    schedulePushWheel(conn, state, fastMode);
+                    schedulePushWheel(conn, state, fastMode, WirelessDispatchMode.EVEN_DISTRIBUTION);
+                }
+            }
+        }
+        return false;
+    }
+
+    // ---- SINGLE_TARGET: sticky round-robin push -----------------------------------
+
+    private boolean wirelessPushSingleTarget(IPatternDetails pattern, KeyCounter[] inputs,
+            List<WirelessConnection> valid, net.minecraft.server.MinecraftServer server,
+            long gameTick, boolean fastMode) {
+
+        while (!singleReadyQueue.isEmpty()) {
+            var conn = singleReadyQueue.peek();
+            if (pendingOverflowByConn.containsKey(conn)) {
+                singleReadyQueue.removeHead();
+                continue;
+            }
+            var state = connectionStates.get(conn);
+
+            if (state == null) {
+                singleReadyQueue.removeHead();
+                continue;
+            }
+
+            boolean probing = state.probeArmed
+                    && state.cooldownUntil >= 0 && gameTick < state.cooldownUntil;
+            state.probeArmed = false;
+
+            var outcome = tryPushToConnection(pattern, inputs, conn, server);
+            switch (outcome) {
+                case SUCCESS -> {
+                    if (probing) {
+                        state.onProbeSuccess();
+                    } else {
+                        state.onPushSuccess(gameTick);
+                    }
+                    if (pendingOverflowByConn.containsKey(conn)) {
+                        singleReadyQueue.removeHead();
+                    }
+                    return true;
+                }
+                case SOFT_FAIL -> {
+                    singleReadyQueue.removeHead();
+                    if (probing) {
+                        state.onProbeFail();
+                    } else {
+                        state.onPushFail(gameTick);
+                    }
+                    schedulePushWheel(conn, state, fastMode, WirelessDispatchMode.SINGLE_TARGET);
                 }
                 case HARD_FAIL -> {
-                    readyQueue.poll();
+                    singleReadyQueue.removeHead();
                     if (!isConnectionAlive(conn, server)) {
                         connectionsDirty = true;
                     }
@@ -798,10 +808,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                 && level.getBlockEntity(conn.pos()) != null;
     }
 
-    private void rebuildPushStructures(List<WirelessConnection> valid, long gameTick) {
+    private void rebuildPushStructures(List<WirelessConnection> valid, long gameTick,
+                                       WirelessDispatchMode dispatchMode) {
         for (var slot : pushWheel) slot.clear();
-        readyPQ.clear();
-        readyQueue.clear();
+        clearReadyQueuesAndQueuedFlags();
         for (var conn : valid) {
             if (pendingOverflowByConn.containsKey(conn)) {
                 continue;
@@ -815,16 +825,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
             } else {
                 state.ready = true;
                 state.probeArmed = false;
-                state.readyGeneration++;
-                readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
-                readyQueue.addLast(conn);
+                enqueueReady(conn, state, dispatchMode);
             }
         }
         pushWheelValidRef = valid;
         lastPushWheelTick = gameTick;
     }
 
-    private void advancePushWheel(long gameTick, boolean fastMode) {
+    private void advancePushWheel(long gameTick, boolean fastMode,
+                                  WirelessDispatchMode dispatchMode) {
         if (lastPushWheelTick < 0) lastPushWheelTick = gameTick - 1;
         long delta = gameTick - lastPushWheelTick;
         if (delta <= 0) return;
@@ -855,16 +864,15 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
                     iter.remove();
                     state.ready = true;
                     state.probeArmed = probe;
-                    state.readyGeneration++;
-                    readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
-                    readyQueue.addLast(conn);
+                    enqueueReady(conn, state, dispatchMode);
                 }
             }
         }
         lastPushWheelTick = gameTick;
     }
 
-    private void schedulePushWheel(WirelessConnection conn, ConnectionState state, boolean fastMode) {
+    private void schedulePushWheel(WirelessConnection conn, ConnectionState state,
+                                   boolean fastMode, WirelessDispatchMode dispatchMode) {
         if (pendingOverflowByConn.containsKey(conn)) {
             return;
         }
@@ -872,9 +880,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         state.probeArmed = false;
         if (state.cooldownUntil < 0) {
             state.ready = true;
-            state.readyGeneration++;
-            readyPQ.offer(new PushEntry(conn, state, state.readyGeneration));
-            readyQueue.addLast(conn);
+            enqueueReady(conn, state, dispatchMode);
             return;
         }
         long targetTick = state.cooldownUntil;
@@ -894,6 +900,25 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         targetTick = Math.max(targetTick, lastPushWheelTick + 1);
         int slot = (int) (targetTick & PUSH_WHEEL_MASK);
         pushWheel[slot].add(conn);
+    }
+
+    private void enqueueReady(WirelessConnection conn, ConnectionState state,
+                              WirelessDispatchMode dispatchMode) {
+        if (!state.ready || pendingOverflowByConn.containsKey(conn)) {
+            return;
+        }
+        switch (dispatchMode) {
+            case SINGLE_TARGET -> singleReadyQueue.offer(conn);
+            case EVEN_DISTRIBUTION -> evenReadyQueue.offer(conn);
+        }
+    }
+
+    private void clearReadyQueuesAndQueuedFlags() {
+        singleReadyQueue.clear();
+        evenReadyQueue.clear();
+        for (var state : connectionStates.values()) {
+            state.setQueued(false);
+        }
     }
 
     private PushOutcome tryPushToConnection(IPatternDetails pattern, KeyCounter[] inputs,
@@ -2113,8 +2138,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         validTargetsVersion++;
         pushWheelValidRef = List.of();
         for (var slot : pushWheel) slot.clear();
-        readyPQ.clear();
-        readyQueue.clear();
+        clearReadyQueuesAndQueuedFlags();
         lastPushWheelTick = -1;
         targetCache.clear();
         connectionStates.clear();
