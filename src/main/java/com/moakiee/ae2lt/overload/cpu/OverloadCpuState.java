@@ -285,6 +285,13 @@ public final class OverloadCpuState {
         }
 
         var outputKey = AEItemKey.of(output.template());
-        return outputKey != null && outputKey.equals(finalOutputKey);
+        if (outputKey == null) {
+            return false;
+        }
+
+        return OutputRouteDecision.routesToRequester(
+                output.matchMode(),
+                outputKey.equals(finalOutputKey),
+                outputKey.dropSecondary().equals(finalOutputKey.dropSecondary()));
     }
 }
