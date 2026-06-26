@@ -2204,31 +2204,20 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     // ---- SavedData persistence helpers ------------------------------------------
 
-    private void saveToSavedData() {
-        var level = overloadedHost.getLevel();
-        if (!(level instanceof ServerLevel sl)) return;
-        var inv = ((PatternProviderLogicAccessor) this).getPatternInventory();
-        var patterns = new ItemStack[inv.size()];
-        for (int i = 0; i < inv.size(); i++) {
-            patterns[i] = inv.getStackInSlot(i);
-        }
-        PatternStorageSavedData.get(sl).set(overloadedHost.getBlockPos().asLong(), patterns);
-    }
-
-    private void loadFromSavedData() {
+    private boolean loadFromSavedData() {
         var level = overloadedHost.getLevel();
         if (!(level instanceof ServerLevel sl)) {
             org.slf4j.LoggerFactory.getLogger("ae2lt").warn(
                     "[SavedData] loadFromSavedData skipped: level={} pos={}",
                     level, overloadedHost.getBlockPos());
-            return;
+            return false;
         }
         var savedData = PatternStorageSavedData.get(sl);
         var stored = savedData.get(overloadedHost.getBlockPos().asLong());
         if (stored == null) {
             org.slf4j.LoggerFactory.getLogger("ae2lt").info(
                     "[SavedData] No stored data for pos={}", overloadedHost.getBlockPos());
-            return;
+            return false;
         }
         org.slf4j.LoggerFactory.getLogger("ae2lt").info(
                 "[SavedData] Loaded {} patterns for pos={}", stored.length, overloadedHost.getBlockPos());
@@ -2237,6 +2226,8 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         for (int i = 0; i < limit; i++) {
             inv.setItemDirect(i, stored[i] != null ? stored[i] : ItemStack.EMPTY);
         }
+        savedData.remove(overloadedHost.getBlockPos().asLong());
+        return true;
     }
 
     public void removeSavedData() {
@@ -2253,7 +2244,10 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     public void onBlockEntityReady() {
         if (needsSavedDataLoad) {
             needsSavedDataLoad = false;
-            loadFromSavedData();
+            if (loadFromSavedData()) {
+                updatePatterns();
+                saveChanges();
+            }
         }
         finishPendingWirelessOverflowLoad();
     }
@@ -2373,19 +2367,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
 
     @Override
     public void writeToNBT(CompoundTag tag, HolderLookup.Provider registries) {
-        if (totalCapacity > 36) {
-            var accessor = (PatternProviderLogicAccessor) this;
-            var realInv = accessor.getPatternInventory();
-            accessor.setPatternInventory(new appeng.util.inv.AppEngInternalInventory(this, totalCapacity));
-            try {
-                super.writeToNBT(tag, registries);
-            } finally {
-                accessor.setPatternInventory(realInv);
-            }
-            saveToSavedData();
-        } else {
-            super.writeToNBT(tag, registries);
-        }
+        super.writeToNBT(tag, registries);
         tag.putInt(TAG_W_ROUND_ROBIN, wirelessRoundRobin);
         if (pendingUnlockMatchMode != null) {
             tag.putString(TAG_UNLOCK_MATCH_MODE, pendingUnlockMatchMode.name());
@@ -2399,9 +2381,7 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
     @Override
     public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
         super.readFromNBT(tag, registries);
-        if (totalCapacity > 36) {
-            needsSavedDataLoad = true;
-        }
+        needsSavedDataLoad = totalCapacity > 36 && !hasPatternInventoryContents();
         wirelessRoundRobin = tag.getInt(TAG_W_ROUND_ROBIN);
         pendingUnlockMatchMode = null;
         pendingUnlockTemplate = null;
@@ -2428,6 +2408,16 @@ public class OverloadedPatternProviderLogic extends PatternProviderLogic {
         lastReturnRobinTick = -1;
         lastSingleReturnTick = -1;
         refreshEjectRegistrations();
+    }
+
+    private boolean hasPatternInventoryContents() {
+        var inv = ((PatternProviderLogicAccessor) this).getPatternInventory();
+        for (int i = 0; i < inv.size(); i++) {
+            if (!inv.getStackInSlot(i).isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void addBucketDrops(ConnBucket bucket, List<ItemStack> drops) {
