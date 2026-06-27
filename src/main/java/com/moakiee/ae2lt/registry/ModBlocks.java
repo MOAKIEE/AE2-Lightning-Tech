@@ -8,6 +8,7 @@ import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
 import com.moakiee.ae2lt.block.MatrixControllerBlock;
+import com.moakiee.ae2lt.block.MatrixGlassBlock;
 import com.moakiee.ae2lt.block.MatrixMultiblockSimpleBlock;
 import com.moakiee.ae2lt.block.MatrixPatternStorageBlock;
 import com.moakiee.ae2lt.block.MatrixPortBlock;
@@ -191,8 +192,8 @@ public final class ModBlocks {
             registerBlock("matter_warping_matrix_constraint_frame", () -> new MatrixMultiblockSimpleBlock(
                     MATRIX_MACHINE_PROPERTIES, MatrixMultiblockComponent.MATRIX_CONSTRAINT_FRAME));
 
-    public static final DeferredBlock<MatrixMultiblockSimpleBlock> MATTER_WARPING_MATRIX_GLASS =
-            registerBlock("matter_warping_matrix_glass", () -> new MatrixMultiblockSimpleBlock(
+    public static final DeferredBlock<MatrixGlassBlock> MATTER_WARPING_MATRIX_GLASS =
+            registerBlock("matter_warping_matrix_glass", () -> new MatrixGlassBlock(
                     MATRIX_GLASS_PROPERTIES, MatrixMultiblockComponent.MATRIX_GLASS));
 
     public static final DeferredBlock<MatrixControllerBlock> MATTER_WARPING_MATRIX_CONTROLLER =

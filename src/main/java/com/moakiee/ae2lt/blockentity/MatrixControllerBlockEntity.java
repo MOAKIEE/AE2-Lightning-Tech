@@ -3,6 +3,7 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.moakiee.ae2lt.block.MatrixGlassBlock;
 import com.moakiee.ae2lt.block.MatrixMultiblockDirectionalBlock;
 import com.moakiee.ae2lt.block.MatrixPatternStorageBlock;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
@@ -334,11 +335,13 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         structureCacheValid = true;
 
         bindMembers(result);
+        setMembersFormed(result, true);
         setChangedAndUpdate();
     }
 
     private void deform() {
         clearBindingsInStoredBounds();
+        setBoundsGlassFormed(false);
         formed = false;
         portPos = null;
         minPos = null;
@@ -396,6 +399,38 @@ public class MatrixControllerBlockEntity extends BlockEntity {
                     }
                 }
             }
+        }
+    }
+
+    private void setMembersFormed(MatrixMultiblockScanResult result, boolean formedValue) {
+        for (MatrixMultiblockMember member : result.members()) {
+            setGlassFormed(member.worldPos(), formedValue);
+        }
+    }
+
+    private void setBoundsGlassFormed(boolean formedValue) {
+        if (level == null || minPos == null || maxPos == null) {
+            return;
+        }
+        for (int x = minPos.getX(); x <= maxPos.getX(); x++) {
+            for (int y = minPos.getY(); y <= maxPos.getY(); y++) {
+                for (int z = minPos.getZ(); z <= maxPos.getZ(); z++) {
+                    setGlassFormed(new BlockPos(x, y, z), formedValue);
+                }
+            }
+        }
+    }
+
+    // Toggle FORMED on a matrix glass block so its client model switches between
+    // the base and the assembled connected-texture appearance. Client-only update.
+    private void setGlassFormed(BlockPos pos, boolean formedValue) {
+        if (level == null) {
+            return;
+        }
+        BlockState state = level.getBlockState(pos);
+        if (state.getBlock() instanceof MatrixGlassBlock
+                && state.getValue(MatrixGlassBlock.FORMED) != formedValue) {
+            level.setBlock(pos, state.setValue(MatrixGlassBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
         }
     }
 
