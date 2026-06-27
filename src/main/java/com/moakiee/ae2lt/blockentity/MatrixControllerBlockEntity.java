@@ -3,6 +3,8 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.moakiee.ae2lt.block.MatrixCasingBlock;
+import com.moakiee.ae2lt.block.MatrixControllerBlock;
 import com.moakiee.ae2lt.block.MatrixGlassBlock;
 import com.moakiee.ae2lt.block.MatrixMultiblockDirectionalBlock;
 import com.moakiee.ae2lt.block.MatrixPatternStorageBlock;
@@ -82,6 +84,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
             be.scheduledScanTick = NO_SCHEDULED_SCAN;
             be.refreshStructure();
         }
+        be.syncRenderState();
     }
 
     public boolean isFormed() {
@@ -341,7 +344,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
 
     private void deform() {
         clearBindingsInStoredBounds();
-        setBoundsGlassFormed(false);
+        setBoundsConnectedTextureFormed(false);
         formed = false;
         portPos = null;
         minPos = null;
@@ -404,26 +407,25 @@ public class MatrixControllerBlockEntity extends BlockEntity {
 
     private void setMembersFormed(MatrixMultiblockScanResult result, boolean formedValue) {
         for (MatrixMultiblockMember member : result.members()) {
-            setGlassFormed(member.worldPos(), formedValue);
+            setConnectedTextureFormed(member.worldPos(), formedValue);
         }
     }
 
-    private void setBoundsGlassFormed(boolean formedValue) {
+    private void setBoundsConnectedTextureFormed(boolean formedValue) {
         if (level == null || minPos == null || maxPos == null) {
             return;
         }
         for (int x = minPos.getX(); x <= maxPos.getX(); x++) {
             for (int y = minPos.getY(); y <= maxPos.getY(); y++) {
                 for (int z = minPos.getZ(); z <= maxPos.getZ(); z++) {
-                    setGlassFormed(new BlockPos(x, y, z), formedValue);
+                    setConnectedTextureFormed(new BlockPos(x, y, z), formedValue);
                 }
             }
         }
     }
 
-    // Toggle FORMED on a matrix glass block so its client model switches between
-    // the base and the assembled connected-texture appearance. Client-only update.
-    private void setGlassFormed(BlockPos pos, boolean formedValue) {
+    // Toggle FORMED on connected-texture matrix shell blocks. Client-only update.
+    private void setConnectedTextureFormed(BlockPos pos, boolean formedValue) {
         if (level == null) {
             return;
         }
@@ -431,7 +433,32 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         if (state.getBlock() instanceof MatrixGlassBlock
                 && state.getValue(MatrixGlassBlock.FORMED) != formedValue) {
             level.setBlock(pos, state.setValue(MatrixGlassBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
+        } else if (state.getBlock() instanceof MatrixCasingBlock
+                && state.getValue(MatrixCasingBlock.FORMED) != formedValue) {
+            level.setBlock(pos, state.setValue(MatrixCasingBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
         }
+    }
+
+    private void syncRenderState() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        BlockState state = getBlockState();
+        if (!state.hasProperty(MatrixControllerBlock.FORMED) || !state.hasProperty(MatrixControllerBlock.WORKING)) {
+            return;
+        }
+        boolean working = isWorking();
+        if (state.getValue(MatrixControllerBlock.FORMED) != formed
+                || state.getValue(MatrixControllerBlock.WORKING) != working) {
+            level.setBlock(worldPosition, state
+                    .setValue(MatrixControllerBlock.FORMED, formed)
+                    .setValue(MatrixControllerBlock.WORKING, working), Block.UPDATE_CLIENTS);
+        }
+    }
+
+    private boolean isWorking() {
+        var port = getPort();
+        return formed && port != null && port.isWorking();
     }
 
     private BlockState stateForAutoBuild(MatrixMultiblockRole role, BlockPos local) {

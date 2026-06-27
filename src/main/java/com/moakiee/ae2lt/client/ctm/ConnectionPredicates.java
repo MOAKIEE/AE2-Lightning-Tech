@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.moakiee.ae2lt.AE2LightningTech;
+import com.moakiee.ae2lt.block.MatrixCasingBlock;
 import com.moakiee.ae2lt.block.MatrixGlassBlock;
 
 import net.minecraft.core.BlockPos;
@@ -59,9 +60,30 @@ public final class ConnectionPredicates {
         }
     };
 
+    /** Matrix casing: active only once formed; connects to other formed matrix casing blocks. */
+    public static final ConnectionPredicate MATRIX_FORMED_CASING = new ConnectionPredicate() {
+        @Override
+        public boolean isActive(BlockAndTintGetter level, BlockPos pos, BlockState self) {
+            return self.getBlock() instanceof MatrixCasingBlock && self.getValue(MatrixCasingBlock.FORMED);
+        }
+
+        @Override
+        public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, Direction dir) {
+            BlockState neighbour = level.getBlockState(pos.relative(dir));
+            return neighbour.getBlock() instanceof MatrixCasingBlock && neighbour.getValue(MatrixCasingBlock.FORMED);
+        }
+
+        @Override
+        public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, BlockPos neighbourPos) {
+            BlockState neighbour = level.getBlockState(neighbourPos);
+            return neighbour.getBlock() instanceof MatrixCasingBlock && neighbour.getValue(MatrixCasingBlock.FORMED);
+        }
+    };
+
     static {
         register(rl("same_block"), SAME_BLOCK);
         register(rl("matrix_formed_glass"), MATRIX_FORMED_GLASS);
+        register(rl("matrix_formed_casing"), MATRIX_FORMED_CASING);
     }
 
     private ConnectionPredicates() {

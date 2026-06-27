@@ -140,6 +140,10 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
         return cluster.previewSnapshot();
     }
 
+    public boolean isWorking() {
+        return formed && cluster.threadsInFlight() > 0;
+    }
+
     public void patternsChanged() {
         long now = level != null ? level.getGameTime() : Long.MIN_VALUE;
         if (now == Long.MIN_VALUE || lastPatternUpdateTick != now) {

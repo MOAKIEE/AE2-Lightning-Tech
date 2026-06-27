@@ -7,6 +7,7 @@ import com.moakiee.ae2lt.block.CrystalCatalyzerBlock;
 import com.moakiee.ae2lt.block.LightningAssemblyChamberBlock;
 import com.moakiee.ae2lt.block.LightningCollectorBlock;
 import com.moakiee.ae2lt.block.LightningSimulationChamberBlock;
+import com.moakiee.ae2lt.block.MatrixCasingBlock;
 import com.moakiee.ae2lt.block.MatrixControllerBlock;
 import com.moakiee.ae2lt.block.MatrixGlassBlock;
 import com.moakiee.ae2lt.block.MatrixMultiblockSimpleBlock;
@@ -184,8 +185,8 @@ public final class ModBlocks {
     public static final DeferredBlock<TestBatchCraftingCoreBlock> TEST_BATCH_CRAFTING_CORE =
             registerBlock("test_batch_crafting_core", TestBatchCraftingCoreBlock::new);
 
-    public static final DeferredBlock<MatrixMultiblockSimpleBlock> MATTER_WARPING_MATRIX_CASING =
-            registerBlock("matter_warping_matrix_casing", () -> new MatrixMultiblockSimpleBlock(
+    public static final DeferredBlock<MatrixCasingBlock> MATTER_WARPING_MATRIX_CASING =
+            registerBlock("matter_warping_matrix_casing", () -> new MatrixCasingBlock(
                     MATRIX_MACHINE_PROPERTIES, MatrixMultiblockComponent.MATRIX_CASING));
 
     public static final DeferredBlock<MatrixMultiblockSimpleBlock> MATTER_WARPING_MATRIX_CONSTRAINT_FRAME =

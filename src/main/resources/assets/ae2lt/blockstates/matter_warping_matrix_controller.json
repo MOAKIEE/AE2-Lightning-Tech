@@ -1,18 +1,63 @@
 {
   "variants": {
-    "facing=north": {
-      "model": "ae2lt:block/matter_warping_matrix_controller"
+    "facing=north,formed=false,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off"
     },
-    "facing=east": {
-      "model": "ae2lt:block/matter_warping_matrix_controller",
+    "facing=east,formed=false,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
       "y": 90
     },
-    "facing=south": {
-      "model": "ae2lt:block/matter_warping_matrix_controller",
+    "facing=south,formed=false,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
       "y": 180
     },
-    "facing=west": {
-      "model": "ae2lt:block/matter_warping_matrix_controller",
+    "facing=west,formed=false,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
+      "y": 270
+    },
+    "facing=north,formed=false,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off"
+    },
+    "facing=east,formed=false,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
+      "y": 90
+    },
+    "facing=south,formed=false,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
+      "y": 180
+    },
+    "facing=west,formed=false,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_off",
+      "y": 270
+    },
+    "facing=north,formed=true,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_idle"
+    },
+    "facing=east,formed=true,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_idle",
+      "y": 90
+    },
+    "facing=south,formed=true,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_idle",
+      "y": 180
+    },
+    "facing=west,formed=true,working=false": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_idle",
+      "y": 270
+    },
+    "facing=north,formed=true,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_work"
+    },
+    "facing=east,formed=true,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_work",
+      "y": 90
+    },
+    "facing=south,formed=true,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_work",
+      "y": 180
+    },
+    "facing=west,formed=true,working=true": {
+      "model": "ae2lt:block/matter_warping_matrix_controller_work",
       "y": 270
     }
   }
