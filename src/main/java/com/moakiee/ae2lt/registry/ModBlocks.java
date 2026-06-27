@@ -90,6 +90,8 @@ public final class ModBlocks {
             .strength(3.0F, 6.0F)
             .sound(SoundType.GLASS)
             .noOcclusion()
+            .isSuffocating((state, level, pos) -> false)
+            .isViewBlocking((state, level, pos) -> false)
             .requiresCorrectToolForDrops();
 
     public static final DeferredBlock<Block> OVERLOAD_CRYSTAL_BLOCK =
