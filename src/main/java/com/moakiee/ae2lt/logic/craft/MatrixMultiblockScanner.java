@@ -118,6 +118,9 @@ public final class MatrixMultiblockScanner {
         if (!hasMainCoreAtCenter) {
             addIssue(issues, MatrixMultiblockScanIssue.MISSING_MAIN_CORE);
         }
+        if (patternMembers.isEmpty()) {
+            addIssue(issues, MatrixMultiblockScanIssue.MISSING_PATTERN_STORAGE);
+        }
         if (hasMainCoreOutsideCenter) {
             addIssue(issues, MatrixMultiblockScanIssue.MAIN_CORE_OUTSIDE_CENTER);
         }

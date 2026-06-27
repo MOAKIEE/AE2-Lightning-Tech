@@ -577,6 +577,7 @@
   "ae2lt.matrix.upgrade_none": "没有可升级的 T1 样板仓",
   "ae2lt.matrix.upgrade_missing": "缺少样板仓升级物品",
   "ae2lt.matrix.upgraded": "已升级 %s 个样板仓，可升级总数 %s",
+  "ae2lt.matrix.pattern_storage_any": "任意等级样板仓",
   "ae2lt.matrix.build_missing": "背包缺少：%s",
   "ae2lt.matrix.build_blocked": "自动搭建位置被占用：%s",
   "ae2lt.matrix.terminal.tooltip": "样板仓：%s，样板槽：%s"

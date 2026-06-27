@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.moakiee.ae2lt.block.MatrixMultiblockDirectionalBlock;
+import com.moakiee.ae2lt.block.MatrixPatternStorageBlock;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftingMath;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftingProfile;
@@ -28,6 +29,7 @@ import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
@@ -173,7 +175,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
             return;
         }
 
-        var requirements = autoBuildRequirements();
+        java.util.Map<Item, Integer> requirements = java.util.Map.of();
         if (!player.getAbilities().instabuild) {
             var blocked = findBlockedAutoBuildPositions();
             if (!blocked.isEmpty()) {
@@ -183,11 +185,13 @@ public class MatrixControllerBlockEntity extends BlockEntity {
                 return;
             }
             requirements = autoBuildRequirementsForMissingBlocks();
+            int missingPatternStorages = missingPatternStorageRequirement();
             var missing = findMissingRequirements(player, requirements);
-            if (!missing.isEmpty()) {
+            int missingPatternStorageItems = Math.max(0, missingPatternStorages - countPatternStorageItems(player));
+            if (!missing.isEmpty() || missingPatternStorageItems > 0) {
                 player.displayClientMessage(Component.translatable(
                         "ae2lt.matrix.build_missing",
-                        describeMissing(missing)).withStyle(ChatFormatting.RED), true);
+                        describeMissing(missing, missingPatternStorageItems)).withStyle(ChatFormatting.RED), true);
                 return;
             }
         }
@@ -202,7 +206,14 @@ public class MatrixControllerBlockEntity extends BlockEntity {
             if (acceptsExistingForAutoBuild(entry.role(), local, pos)) {
                 continue;
             }
-            BlockState state = stateForAutoBuild(entry.role(), local);
+            Item consumedPatternStorage = null;
+            BlockState state;
+            if (entry.role() == MatrixMultiblockRole.PATTERN_BAY && !player.getAbilities().instabuild) {
+                consumedPatternStorage = findPatternStorageItem(player);
+                state = stateForPatternStorageItem(consumedPatternStorage);
+            } else {
+                state = stateForAutoBuild(entry.role(), local);
+            }
             if (state == null) {
                 continue;
             }
@@ -214,6 +225,9 @@ public class MatrixControllerBlockEntity extends BlockEntity {
                         Block.UPDATE_ALL);
             } else {
                 level.setBlock(pos, state, Block.UPDATE_ALL);
+            }
+            if (consumedPatternStorage != null) {
+                consumeItem(player, consumedPatternStorage, 1);
             }
         }
         if (!player.getAbilities().instabuild) {
@@ -406,31 +420,14 @@ public class MatrixControllerBlockEntity extends BlockEntity {
                 && role != MatrixMultiblockRole.CRAFTING_BAY;
     }
 
-    private java.util.Map<Item, Integer> autoBuildRequirements() {
-        var result = new java.util.LinkedHashMap<Item, Integer>();
-        for (var entry : MatrixMultiblockTemplate.entries()) {
-            var local = entry.localPos();
-            if (!shouldAutoBuild(entry.role())) {
-                continue;
-            }
-            BlockState state = stateForAutoBuild(entry.role(), local);
-            if (state == null || state.isAir()) {
-                continue;
-            }
-            Item item = state.getBlock().asItem();
-            if (item == net.minecraft.world.item.Items.AIR) {
-                continue;
-            }
-            result.merge(item, 1, Integer::sum);
-        }
-        return result;
-    }
-
     private java.util.Map<Item, Integer> autoBuildRequirementsForMissingBlocks() {
         var result = new java.util.LinkedHashMap<Item, Integer>();
         Direction facing = getOrientation();
         for (var entry : MatrixMultiblockTemplate.entries()) {
             if (!shouldAutoBuild(entry.role())) {
+                continue;
+            }
+            if (entry.role() == MatrixMultiblockRole.PATTERN_BAY) {
                 continue;
             }
             var state = stateForAutoBuild(entry.role(), entry.localPos());
@@ -488,11 +485,29 @@ public class MatrixControllerBlockEntity extends BlockEntity {
             case CONTROLLER -> component == MatrixMultiblockComponent.MATRIX_CONTROLLER;
             case PORT_CANDIDATE -> component == MatrixMultiblockComponent.MATRIX_PORT
                     || component == MatrixMultiblockComponent.MATRIX_CONSTRAINT_FRAME;
-            case PATTERN_BAY -> component == MatrixMultiblockComponent.AIR || component.isPatternStorage();
+            case PATTERN_BAY -> component.isPatternStorage();
             case CRAFTING_BAY -> local.equals(MatrixMultiblockTemplate.CRAFTING_CENTER_LOCAL)
                     ? component.isMainCore()
                     : component.isCraftingSubCore();
         };
+    }
+
+    private int missingPatternStorageRequirement() {
+        return hasPatternStorageForAutoBuild() ? 0 : 1;
+    }
+
+    private boolean hasPatternStorageForAutoBuild() {
+        Direction facing = getOrientation();
+        for (var entry : MatrixMultiblockTemplate.entries()) {
+            if (entry.role() != MatrixMultiblockRole.PATTERN_BAY) {
+                continue;
+            }
+            var pos = MatrixMultiblockScanner.worldPos(worldPosition, entry.localPos(), facing);
+            if (MatrixMultiblockScanner.componentAt(level, pos).isPatternStorage()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private java.util.Map<Item, Integer> findMissingRequirements(Player player, java.util.Map<Item, Integer> requirements) {
@@ -518,6 +533,40 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         return count;
     }
 
+    private int countPatternStorageItems(Player player) {
+        int count = 0;
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (isPatternStorageItem(stack.getItem())) {
+                count += stack.getCount();
+            }
+        }
+        return count;
+    }
+
+    private Item findPatternStorageItem(Player player) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < inventory.getContainerSize(); i++) {
+            ItemStack stack = inventory.getItem(i);
+            if (!stack.isEmpty() && isPatternStorageItem(stack.getItem())) {
+                return stack.getItem();
+            }
+        }
+        return null;
+    }
+
+    private BlockState stateForPatternStorageItem(Item item) {
+        if (item instanceof BlockItem blockItem && blockItem.getBlock() instanceof MatrixPatternStorageBlock) {
+            return blockItem.getBlock().defaultBlockState();
+        }
+        return null;
+    }
+
+    private boolean isPatternStorageItem(Item item) {
+        return item instanceof BlockItem blockItem && blockItem.getBlock() instanceof MatrixPatternStorageBlock;
+    }
+
     private void consumeRequirements(Player player, java.util.Map<Item, Integer> requirements) {
         for (var entry : requirements.entrySet()) {
             consumeItem(player, entry.getKey(), entry.getValue());
@@ -541,11 +590,16 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         }
     }
 
-    private String describeMissing(java.util.Map<Item, Integer> missing) {
+    private String describeMissing(java.util.Map<Item, Integer> missing, int missingPatternStorages) {
         var parts = new ArrayList<String>();
+        int totalEntries = missing.size() + (missingPatternStorages > 0 ? 1 : 0);
+        if (missingPatternStorages > 0) {
+            parts.add(Component.translatable("ae2lt.matrix.pattern_storage_any").getString()
+                    + " x" + missingPatternStorages);
+        }
         for (var entry : missing.entrySet()) {
             parts.add(entry.getKey().getDescription().getString() + " x" + entry.getValue());
-            if (parts.size() >= 4 && missing.size() > parts.size()) {
+            if (parts.size() >= 4 && totalEntries > parts.size()) {
                 parts.add("...");
                 break;
             }
