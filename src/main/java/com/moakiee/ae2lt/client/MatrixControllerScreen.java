@@ -33,8 +33,9 @@ public class MatrixControllerScreen extends AbstractContainerScreen<MatrixContro
     protected void renderBg(GuiGraphics guiGraphics, float partialTick, int mouseX, int mouseY) {
         guiGraphics.fill(leftPos, topPos, leftPos + imageWidth, topPos + imageHeight, 0xFF20242A);
         guiGraphics.fill(leftPos + 4, topPos + 4, leftPos + imageWidth - 4, topPos + imageHeight - 4, 0xFF2D333A);
-        guiGraphics.fill(leftPos + 8, topPos + 26, leftPos + imageWidth - 8, topPos + 62, 0xFF171A1F);
-        guiGraphics.fill(leftPos + 8, topPos + 68, leftPos + imageWidth - 8, topPos + 128, 0xFF242A31);
+        guiGraphics.fill(leftPos + 8, topPos + 26, leftPos + imageWidth - 8, topPos + 58, 0xFF171A1F);
+        guiGraphics.fill(leftPos + 8, topPos + 64, leftPos + imageWidth - 8, topPos + 100, 0xFF242A31);
+        guiGraphics.fill(leftPos + 8, topPos + 106, leftPos + imageWidth - 8, topPos + 128, 0xFF20262D);
     }
 
     @Override
@@ -42,30 +43,28 @@ public class MatrixControllerScreen extends AbstractContainerScreen<MatrixContro
         guiGraphics.drawString(font, title, 10, 10, 0xE6EEF5, false);
         int y = 32;
         drawLine(guiGraphics, Component.translatable(
-                menu.isFormed() ? "ae2lt.matrix.gui.status_formed" : "ae2lt.matrix.gui.status_unformed",
-                menu.getMemberCount(),
-                menu.getCraftingUnitCount()), 12, y, menu.isFormed() ? 0x85F29E : 0xF2D37A);
+                menu.isFormed() ? "ae2lt.matrix.gui.header_formed" : "ae2lt.matrix.gui.header_unformed",
+                modeName()), 12, y, menu.isFormed() ? 0x85F29E : 0xF2D37A);
 
-        y += 14;
+        y += 13;
         drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.storage",
                 menu.getPatternStorageCount(), menu.getPatternSlotCount()), 12, y, 0xB7C5D3);
 
-        y = 74;
-        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.mode", modeName()), 12, y, 0xE6EEF5);
-        y += 12;
-        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.dispatch_base",
-                fixed(menu.getDispatchBase())), 12, y, 0xB7C5D3);
-        y += 12;
-        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.batch",
-                fixed(menu.getBaseBatch()), fixed(menu.getBatchSize())), 12, y, 0xB7C5D3);
-        y += 12;
-        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.dispatches",
-                fixed(menu.getDispatches()), menu.getOperationsPerTick()), 12, y, 0xB7C5D3);
+        y = 70;
+        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.throughput",
+                compact(menu.getOperationsPerTick())), 12, y, 0xE6EEF5);
         y += 12;
         drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.heat",
-                percent(menu.getNormalizedHeat()), fixed(menu.getEfficiencyFactor())), 12, y, 0xB7C5D3);
+                percent(menu.getNormalizedHeat()), Component.translatable(heatStateKey())), 12, y, heatColor());
+        drawHeatBar(guiGraphics, 12, 94, imageWidth - 24, 4);
+
+        y = 110;
+        drawLine(guiGraphics, factorLine(), 12, y, 0xE6EEF5);
         y += 12;
-        drawLine(guiGraphics, Component.translatable(statusHintKey()), 12, y, hintColor());
+        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.dispatches",
+                fixed(menu.getDispatches())), 12, y, 0xB7C5D3);
+        drawLine(guiGraphics, Component.translatable("ae2lt.matrix.gui.batch",
+                fixed(menu.getBaseBatch()), compact(menu.getBatchSize())), 118, y, 0xB7C5D3);
     }
 
     @Override
@@ -86,6 +85,19 @@ public class MatrixControllerScreen extends AbstractContainerScreen<MatrixContro
         guiGraphics.drawString(font, text, x, y, color, false);
     }
 
+    private void drawHeatBar(GuiGraphics guiGraphics, int x, int y, int width, int height) {
+        guiGraphics.fill(x, y, x + width, y + height, 0xFF111419);
+        int fill = Math.max(0, Math.min(width, (int) Math.round(width * menu.getNormalizedHeat())));
+        if (fill > 0) {
+            guiGraphics.fill(x, y, x + fill, y + height, heatColor());
+        }
+        if (menu.getMode() == com.moakiee.ae2lt.logic.craft.MatrixCoreMode.OVERLOAD) {
+            int sweetMin = x + (int) Math.round(width * 0.42D);
+            int sweetMax = x + (int) Math.round(width * 0.58D);
+            guiGraphics.fill(sweetMin, y, sweetMax, y + 1, 0xFF85F29E);
+        }
+    }
+
     private Component modeName() {
         return Component.translatable("ae2lt.matrix.mode." + menu.getMode().name().toLowerCase(Locale.ROOT));
     }
@@ -94,42 +106,66 @@ public class MatrixControllerScreen extends AbstractContainerScreen<MatrixContro
         return String.format(Locale.ROOT, "%.1f", value);
     }
 
+    private static String compact(double value) {
+        if (Double.isNaN(value) || value <= 0.0D) {
+            return "0";
+        }
+        if (value >= 1_000_000.0D) {
+            return String.format(Locale.ROOT, "%.2fM", value / 1_000_000.0D);
+        }
+        if (value >= 1_000.0D) {
+            return String.format(Locale.ROOT, "%.1fk", value / 1_000.0D);
+        }
+        return String.format(Locale.ROOT, "%.0f", value);
+    }
+
     private static String percent(double value) {
         return String.format(Locale.ROOT, "%.1f%%", value * 100.0D);
     }
 
-    private String statusHintKey() {
+    private Component factorLine() {
+        return switch (menu.getMode()) {
+            case STABLE -> Component.translatable("ae2lt.matrix.gui.efficiency", percent(menu.getEfficiencyFactor()));
+            case QUANTUM -> Component.translatable("ae2lt.matrix.gui.quantum_factor", fixed(menu.getEfficiencyFactor()));
+            case OVERLOAD -> Component.translatable("ae2lt.matrix.gui.overload_factor", fixed(menu.getEfficiencyFactor()));
+            default -> Component.translatable("ae2lt.matrix.gui.efficiency", "0.0%");
+        };
+    }
+
+    private String heatStateKey() {
         if (!menu.isFormed()) {
-            return "ae2lt.matrix.gui.hint_unformed";
+            return "ae2lt.matrix.gui.heat_idle";
         }
         return switch (menu.getMode()) {
             case OVERLOAD -> {
                 double heat = menu.getNormalizedHeat();
                 if (heat < 0.42D) {
-                    yield "ae2lt.matrix.gui.hint_cold";
+                    yield "ae2lt.matrix.gui.heat_cold";
                 }
                 if (heat > 0.58D) {
-                    yield "ae2lt.matrix.gui.hint_hot";
+                    yield "ae2lt.matrix.gui.heat_hot";
                 }
-                yield "ae2lt.matrix.gui.hint_sweet";
+                yield "ae2lt.matrix.gui.heat_sweet";
             }
             case STABLE, QUANTUM -> {
-                if (menu.getDispatchBase() < 300.0D) {
-                    yield "ae2lt.matrix.gui.hint_dispatch_low";
+                double heat = menu.getNormalizedHeat();
+                if (heat < 0.35D) {
+                    yield "ae2lt.matrix.gui.heat_good";
                 }
-                if (menu.getBaseBatch() < 8.0D) {
-                    yield "ae2lt.matrix.gui.hint_batch_low";
+                if (heat < 0.70D) {
+                    yield "ae2lt.matrix.gui.heat_warm";
                 }
-                yield "ae2lt.matrix.gui.hint_stable";
+                yield "ae2lt.matrix.gui.heat_hot";
             }
-            default -> "ae2lt.matrix.gui.hint_invalid";
+            default -> "ae2lt.matrix.gui.heat_idle";
         };
     }
 
-    private int hintColor() {
-        return switch (statusHintKey()) {
-            case "ae2lt.matrix.gui.hint_sweet", "ae2lt.matrix.gui.hint_stable" -> 0x85F29E;
-            case "ae2lt.matrix.gui.hint_invalid" -> 0xFF9090;
+    private int heatColor() {
+        return switch (heatStateKey()) {
+            case "ae2lt.matrix.gui.heat_sweet", "ae2lt.matrix.gui.heat_good" -> 0xFF85F29E;
+            case "ae2lt.matrix.gui.heat_hot" -> 0xFFFF9090;
+            case "ae2lt.matrix.gui.heat_cold" -> 0xFF80C6FF;
             default -> 0xF2D37A;
         };
     }
