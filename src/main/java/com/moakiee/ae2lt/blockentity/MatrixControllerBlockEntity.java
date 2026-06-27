@@ -3,9 +3,9 @@ package com.moakiee.ae2lt.blockentity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.moakiee.ae2lt.block.MatrixCasingBlock;
 import com.moakiee.ae2lt.block.MatrixControllerBlock;
-import com.moakiee.ae2lt.block.MatrixGlassBlock;
+import com.moakiee.ae2lt.block.MatrixFormedBlock;
+import com.moakiee.ae2lt.block.MatrixMultiblockComponentBlock;
 import com.moakiee.ae2lt.block.MatrixMultiblockDirectionalBlock;
 import com.moakiee.ae2lt.block.MatrixPatternStorageBlock;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
@@ -153,6 +153,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
     }
 
     public void clearStructureBindings() {
+        setBoundsConnectedTextureFormed(false);
         clearBindingsInStoredBounds();
     }
 
@@ -424,18 +425,17 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         }
     }
 
-    // Toggle FORMED on connected-texture matrix shell blocks. Client-only update.
+    // Toggle FORMED on connected-texture matrix blocks. Client-only update.
     private void setConnectedTextureFormed(BlockPos pos, boolean formedValue) {
         if (level == null) {
             return;
         }
         BlockState state = level.getBlockState(pos);
-        if (state.getBlock() instanceof MatrixGlassBlock
-                && state.getValue(MatrixGlassBlock.FORMED) != formedValue) {
-            level.setBlock(pos, state.setValue(MatrixGlassBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
-        } else if (state.getBlock() instanceof MatrixCasingBlock
-                && state.getValue(MatrixCasingBlock.FORMED) != formedValue) {
-            level.setBlock(pos, state.setValue(MatrixCasingBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
+        if (state.getBlock() instanceof MatrixMultiblockComponentBlock componentBlock
+                && componentBlock.matrixComponent(state) != MatrixMultiblockComponent.MATRIX_CONTROLLER
+                && state.hasProperty(MatrixFormedBlock.FORMED)
+                && state.getValue(MatrixFormedBlock.FORMED) != formedValue) {
+            level.setBlock(pos, state.setValue(MatrixFormedBlock.FORMED, formedValue), Block.UPDATE_CLIENTS);
         }
     }
 

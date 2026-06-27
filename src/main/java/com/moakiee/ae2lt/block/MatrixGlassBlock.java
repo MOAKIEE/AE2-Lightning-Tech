@@ -5,9 +5,7 @@ import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -18,18 +16,11 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * model can switch to the assembled appearance once the multiblock forms.
  * The controller updates this state on form/deform.
  */
-public class MatrixGlassBlock extends MatrixMultiblockSimpleBlock {
-    public static final BooleanProperty FORMED = BooleanProperty.create("formed");
+public class MatrixGlassBlock extends MatrixFormedBlock {
+    public static final BooleanProperty FORMED = MatrixFormedBlock.FORMED;
 
     public MatrixGlassBlock(Properties properties, MatrixMultiblockComponent component) {
         super(properties, component);
-        registerDefaultState(defaultBlockState().setValue(FORMED, Boolean.FALSE));
-    }
-
-    @Override
-    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
-        super.createBlockStateDefinition(builder);
-        builder.add(FORMED);
     }
 
     @Override

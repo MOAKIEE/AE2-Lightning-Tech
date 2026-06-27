@@ -4,8 +4,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.moakiee.ae2lt.AE2LightningTech;
-import com.moakiee.ae2lt.block.MatrixCasingBlock;
-import com.moakiee.ae2lt.block.MatrixGlassBlock;
+import com.moakiee.ae2lt.block.MatrixFormedBlock;
+import com.moakiee.ae2lt.block.MatrixMultiblockComponentBlock;
+import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -40,50 +41,29 @@ public final class ConnectionPredicates {
         }
     };
 
-    /** Matrix glass: active only once formed; connects to other formed matrix glass. */
-    public static final ConnectionPredicate MATRIX_FORMED_GLASS = new ConnectionPredicate() {
+    /** Matrix components: active only once formed; connects only to formed blocks of the same type. */
+    public static final ConnectionPredicate MATRIX_FORMED_SAME_BLOCK = new ConnectionPredicate() {
         @Override
         public boolean isActive(BlockAndTintGetter level, BlockPos pos, BlockState self) {
-            return self.getBlock() instanceof MatrixGlassBlock && self.getValue(MatrixGlassBlock.FORMED);
+            return isFormedMatrixComponent(self);
         }
 
         @Override
         public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, Direction dir) {
             BlockState neighbour = level.getBlockState(pos.relative(dir));
-            return neighbour.getBlock() instanceof MatrixGlassBlock && neighbour.getValue(MatrixGlassBlock.FORMED);
+            return neighbour.is(self.getBlock()) && isFormedMatrixComponent(neighbour);
         }
 
         @Override
         public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, BlockPos neighbourPos) {
             BlockState neighbour = level.getBlockState(neighbourPos);
-            return neighbour.getBlock() instanceof MatrixGlassBlock && neighbour.getValue(MatrixGlassBlock.FORMED);
-        }
-    };
-
-    /** Matrix casing: active only once formed; connects to other formed matrix casing blocks. */
-    public static final ConnectionPredicate MATRIX_FORMED_CASING = new ConnectionPredicate() {
-        @Override
-        public boolean isActive(BlockAndTintGetter level, BlockPos pos, BlockState self) {
-            return self.getBlock() instanceof MatrixCasingBlock && self.getValue(MatrixCasingBlock.FORMED);
-        }
-
-        @Override
-        public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, Direction dir) {
-            BlockState neighbour = level.getBlockState(pos.relative(dir));
-            return neighbour.getBlock() instanceof MatrixCasingBlock && neighbour.getValue(MatrixCasingBlock.FORMED);
-        }
-
-        @Override
-        public boolean connects(BlockAndTintGetter level, BlockPos pos, BlockState self, BlockPos neighbourPos) {
-            BlockState neighbour = level.getBlockState(neighbourPos);
-            return neighbour.getBlock() instanceof MatrixCasingBlock && neighbour.getValue(MatrixCasingBlock.FORMED);
+            return neighbour.is(self.getBlock()) && isFormedMatrixComponent(neighbour);
         }
     };
 
     static {
         register(rl("same_block"), SAME_BLOCK);
-        register(rl("matrix_formed_glass"), MATRIX_FORMED_GLASS);
-        register(rl("matrix_formed_casing"), MATRIX_FORMED_CASING);
+        register(rl("matrix_formed_same_block"), MATRIX_FORMED_SAME_BLOCK);
     }
 
     private ConnectionPredicates() {
@@ -99,5 +79,14 @@ public final class ConnectionPredicates {
 
     private static ResourceLocation rl(String path) {
         return ResourceLocation.fromNamespaceAndPath(AE2LightningTech.MODID, path);
+    }
+
+    private static boolean isFormedMatrixComponent(BlockState state) {
+        if (!(state.getBlock() instanceof MatrixMultiblockComponentBlock componentBlock)
+                || componentBlock.matrixComponent(state) == MatrixMultiblockComponent.MATRIX_CONTROLLER
+                || !state.hasProperty(MatrixFormedBlock.FORMED)) {
+            return false;
+        }
+        return state.getValue(MatrixFormedBlock.FORMED);
     }
 }

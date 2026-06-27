@@ -12,7 +12,7 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import org.jetbrains.annotations.Nullable;
 
-public class MatrixPatternStorageBlock extends MatrixMultiblockSimpleBlock implements EntityBlock {
+public class MatrixPatternStorageBlock extends MatrixFormedBlock implements EntityBlock {
     public MatrixPatternStorageBlock(Properties properties, MatrixMultiblockComponent component) {
         super(properties, component);
         if (!component.isPatternStorage()) {

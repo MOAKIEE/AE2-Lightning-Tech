@@ -8,18 +8,29 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 import appeng.block.AEBaseEntityBlock;
 
 public class MatrixPortBlock extends AEBaseEntityBlock<MatrixPortBlockEntity>
         implements MatrixMultiblockComponentBlock {
+    public static final BooleanProperty FORMED = MatrixFormedBlock.FORMED;
+
     public MatrixPortBlock(Properties properties) {
         super(properties);
+        registerDefaultState(defaultBlockState().setValue(FORMED, Boolean.FALSE));
     }
 
     @Override
     public MatrixMultiblockComponent matrixComponent(BlockState state) {
         return MatrixMultiblockComponent.MATRIX_PORT;
+    }
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        super.createBlockStateDefinition(builder);
+        builder.add(FORMED);
     }
 
     @Override
