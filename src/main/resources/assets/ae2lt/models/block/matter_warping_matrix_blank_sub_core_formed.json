@@ -3,8 +3,8 @@
   "render_type": "minecraft:solid",
   "connection": "ae2lt:matrix_formed_same_block",
   "textures": {
-    "base": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_casing_formed",
-    "ctm": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_casing_ctm",
-    "particle": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_casing_formed"
+    "base": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_blank_sub_core_formed",
+    "ctm": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_blank_sub_core_ctm",
+    "particle": "ae2lt:block/matter_warping_matrix/matter_warping_matrix_blank_sub_core_formed"
   }
 }
