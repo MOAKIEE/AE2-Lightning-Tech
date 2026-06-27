@@ -148,7 +148,6 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
     private void setChangedAndUpdate() {
         setChanged();
         if (level != null && !level.isClientSide) {
-            level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), net.minecraft.world.level.block.Block.UPDATE_CLIENTS);
             notifyPortPatternsChanged();
         }
     }

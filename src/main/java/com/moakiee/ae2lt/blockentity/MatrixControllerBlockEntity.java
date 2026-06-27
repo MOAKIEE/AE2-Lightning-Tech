@@ -5,6 +5,8 @@ import java.util.List;
 
 import com.moakiee.ae2lt.block.MatrixMultiblockDirectionalBlock;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockComponent;
+import com.moakiee.ae2lt.logic.craft.MatrixCraftingMath;
+import com.moakiee.ae2lt.logic.craft.MatrixCraftingProfile;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftingUnit;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockMember;
 import com.moakiee.ae2lt.logic.craft.MatrixMultiblockRole;
@@ -35,6 +37,7 @@ import net.minecraft.world.level.block.state.BlockState;
 
 public class MatrixControllerBlockEntity extends BlockEntity {
     private static final BlockPos DEFAULT_PORT_LOCAL = new BlockPos(6, 5, 3);
+    private static final long NO_SCHEDULED_SCAN = Long.MIN_VALUE;
     private static final String TAG_FORMED = "Formed";
     private static final String TAG_ORIENTATION = "Orientation";
     private static final String TAG_PORT_POS = "PortPos";
@@ -52,10 +55,30 @@ public class MatrixControllerBlockEntity extends BlockEntity {
     private int memberCount;
     private int patternStorageCount;
     private int craftingUnitCount;
+    private List<BlockPos> patternStoragePositions = List.of();
+    private List<MatrixCraftingUnit> cachedCraftingUnits = List.of();
+    private boolean structureCacheValid;
+    private long scheduledScanTick = NO_SCHEDULED_SCAN;
 
     public MatrixControllerBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.MATRIX_CONTROLLER.get(), pos, blockState);
         orientation = orientationFromState(blockState);
+    }
+
+    public static void serverTick(net.minecraft.world.level.Level level,
+                                  BlockPos pos,
+                                  BlockState state,
+                                  MatrixControllerBlockEntity be) {
+        if (level.isClientSide) {
+            return;
+        }
+        if (be.formed && !be.structureCacheValid) {
+            be.scheduleStructureCheck();
+        }
+        if (be.scheduledScanTick != NO_SCHEDULED_SCAN && level.getGameTime() >= be.scheduledScanTick) {
+            be.scheduledScanTick = NO_SCHEDULED_SCAN;
+            be.refreshStructure();
+        }
     }
 
     public boolean isFormed() {
@@ -82,22 +105,55 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         return craftingUnitCount;
     }
 
+    public int getPatternSlotCount() {
+        int total = 0;
+        for (var storage : findPatternStorages()) {
+            total += storage.capacity();
+        }
+        return total;
+    }
+
+    public MatrixCraftingProfile getCraftingProfile() {
+        var port = getPort();
+        return port != null ? port.getCraftingProfile() : MatrixCraftingProfile.empty();
+    }
+
+    public MatrixCraftingMath.Snapshot getLimiterSnapshot() {
+        var port = getPort();
+        return port != null
+                ? port.getLimiterSnapshot()
+                : MatrixCraftingMath.idleSnapshot(0.0D, 0.0D);
+    }
+
     public void performAction(MatrixControllerActionPacket.Action action, ServerPlayer player) {
         if (level == null || level.isClientSide) {
             return;
         }
         switch (action) {
-            case SCAN_FORM -> scanAndForm(player);
             case AUTO_BUILD -> autoBuild(player);
             case UPGRADE_PATTERN_STORAGE -> upgradePatternStorage(player);
-            case DEFORM -> deform(player, true);
         }
+    }
+
+    public void scheduleStructureCheck() {
+        if (level == null || level.isClientSide) {
+            return;
+        }
+        long targetTick = level.getGameTime() + 1L;
+        if (scheduledScanTick == NO_SCHEDULED_SCAN || targetTick < scheduledScanTick) {
+            scheduledScanTick = targetTick;
+        }
+        setChanged();
+    }
+
+    public void clearStructureBindings() {
+        clearBindingsInStoredBounds();
     }
 
     public void scanAndForm(ServerPlayer player) {
         var attempt = scanCurrent();
         if (!attempt.formed()) {
-            deform(player, false);
+            deform();
             player.displayClientMessage(Component.translatable(
                     "ae2lt.matrix.scan_failed",
                     describeIssues(attempt)).withStyle(ChatFormatting.RED), true);
@@ -217,13 +273,10 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         if (level == null || !formed) {
             return List.of();
         }
-        var attempt = scanCurrent();
-        if (!attempt.formed()) {
-            return List.of();
-        }
+        ensureStructureCache();
         var storages = new ArrayList<MatrixPatternStorageBlockEntity>();
-        for (var member : attempt.result().patternMembers()) {
-            if (level.getBlockEntity(member.worldPos()) instanceof MatrixPatternStorageBlockEntity storage) {
+        for (var pos : patternStoragePositions) {
+            if (level.getBlockEntity(pos) instanceof MatrixPatternStorageBlockEntity storage) {
                 storages.add(storage);
             }
         }
@@ -234,13 +287,20 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         if (level == null || !formed) {
             return List.of();
         }
-        var attempt = scanCurrent();
-        return attempt.formed() ? attempt.result().craftingUnits() : List.of();
+        ensureStructureCache();
+        return cachedCraftingUnits;
     }
 
     private MatrixMultiblockScanAttempt scanCurrent() {
         return MatrixMultiblockScanner.scan(worldPosition, getOrientation(),
                 pos -> MatrixMultiblockScanner.componentAt(level, pos));
+    }
+
+    private MatrixPortBlockEntity getPort() {
+        if (level == null || !formed || portPos == null) {
+            return null;
+        }
+        return level.getBlockEntity(portPos) instanceof MatrixPortBlockEntity port ? port : null;
     }
 
     private void form(MatrixMultiblockScanResult result) {
@@ -253,12 +313,17 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         memberCount = result.members().size();
         patternStorageCount = result.patternMembers().size();
         craftingUnitCount = result.craftingMembers().size();
+        patternStoragePositions = result.patternMembers().stream()
+                .map(member -> member.worldPos().immutable())
+                .toList();
+        cachedCraftingUnits = result.craftingUnits();
+        structureCacheValid = true;
 
         bindMembers(result);
         setChangedAndUpdate();
     }
 
-    private void deform(Player player, boolean showFeedback) {
+    private void deform() {
         clearBindingsInStoredBounds();
         formed = false;
         portPos = null;
@@ -267,11 +332,26 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         memberCount = 0;
         patternStorageCount = 0;
         craftingUnitCount = 0;
+        patternStoragePositions = List.of();
+        cachedCraftingUnits = List.of();
+        structureCacheValid = false;
         setChangedAndUpdate();
-        if (showFeedback && player != null) {
-            player.displayClientMessage(Component.translatable("ae2lt.matrix.deformed")
-                    .withStyle(ChatFormatting.YELLOW), true);
+    }
+
+    private void refreshStructure() {
+        var attempt = scanCurrent();
+        if (attempt.formed()) {
+            form(attempt.result());
+        } else if (formed) {
+            deform();
         }
+    }
+
+    private void ensureStructureCache() {
+        if (!formed || structureCacheValid || level == null || level.isClientSide) {
+            return;
+        }
+        refreshStructure();
     }
 
     private void bindMembers(MatrixMultiblockScanResult result) {
@@ -570,6 +650,9 @@ public class MatrixControllerBlockEntity extends BlockEntity {
     protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         formed = tag.getBoolean(TAG_FORMED);
+        structureCacheValid = false;
+        patternStoragePositions = List.of();
+        cachedCraftingUnits = List.of();
         orientation = Direction.from3DDataValue(tag.getInt(TAG_ORIENTATION));
         if (orientation.getAxis() == Direction.Axis.Y) {
             orientation = Direction.NORTH;
@@ -580,5 +663,11 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         memberCount = tag.getInt(TAG_MEMBER_COUNT);
         patternStorageCount = tag.getInt(TAG_PATTERN_STORAGE_COUNT);
         craftingUnitCount = tag.getInt(TAG_CRAFTING_UNIT_COUNT);
+    }
+
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        scheduleStructureCheck();
     }
 }

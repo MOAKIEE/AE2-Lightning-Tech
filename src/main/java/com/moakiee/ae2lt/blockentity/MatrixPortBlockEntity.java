@@ -7,7 +7,9 @@ import com.moakiee.ae2lt.AE2LightningTech;
 import com.moakiee.ae2lt.api.crafting.IBatchCraftingProvider;
 import com.moakiee.ae2lt.logic.craft.CraftingCoreHost;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftCore;
+import com.moakiee.ae2lt.logic.craft.MatrixCraftingMath;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftingCluster;
+import com.moakiee.ae2lt.logic.craft.MatrixCraftingProfile;
 import com.moakiee.ae2lt.logic.craft.MatrixCraftingUnit;
 import com.moakiee.ae2lt.logic.craft.MatrixPatternCore;
 import com.moakiee.ae2lt.logic.craft.MolecularCopyAssembler;
@@ -71,6 +73,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
             AE2LightningTech.craftingCoreRegistry());
     private BlockPos controllerPos;
     private boolean formed;
+    private long lastPatternUpdateTick = Long.MIN_VALUE;
 
     public MatrixPortBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MATRIX_PORT.get(), pos, state);
@@ -129,8 +132,20 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
         return controller != null ? controller.findPatternStorages() : List.of();
     }
 
+    public MatrixCraftingProfile getCraftingProfile() {
+        return cluster.craftingProfile();
+    }
+
+    public MatrixCraftingMath.Snapshot getLimiterSnapshot() {
+        return cluster.previewSnapshot();
+    }
+
     public void patternsChanged() {
-        requestCraftingUpdate();
+        long now = level != null ? level.getGameTime() : Long.MIN_VALUE;
+        if (now == Long.MIN_VALUE || lastPatternUpdateTick != now) {
+            lastPatternUpdateTick = now;
+            requestCraftingUpdate();
+        }
     }
 
     @Override

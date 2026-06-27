@@ -1,9 +1,11 @@
 package com.moakiee.ae2lt.logic.craft;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 import com.moakiee.ae2lt.block.MatrixMultiblockComponentBlock;
 
@@ -148,6 +150,33 @@ public final class MatrixMultiblockScanner {
             case SOUTH -> controllerPos.offset(-dz, dy, dx);
             case WEST -> controllerPos.offset(-dx, dy, -dz);
             case NORTH -> controllerPos.offset(dz, dy, -dx);
+            default -> throw new IllegalArgumentException("Matrix orientation must be horizontal: " + orientation);
+        };
+    }
+
+    public static Set<BlockPos> candidateControllerPositions(BlockPos changedPos) {
+        Objects.requireNonNull(changedPos);
+        var candidates = new LinkedHashSet<BlockPos>();
+        for (var orientation : Direction.Plane.HORIZONTAL) {
+            for (var entry : MatrixMultiblockTemplate.entries()) {
+                candidates.add(controllerPosFor(changedPos, entry.localPos(), orientation));
+            }
+        }
+        return Set.copyOf(candidates);
+    }
+
+    public static BlockPos controllerPosFor(BlockPos worldPos, BlockPos localPos, Direction orientation) {
+        Objects.requireNonNull(worldPos);
+        Objects.requireNonNull(localPos);
+        Objects.requireNonNull(orientation);
+        int dx = localPos.getX() - MatrixMultiblockTemplate.CONTROLLER_LOCAL.getX();
+        int dy = localPos.getY() - MatrixMultiblockTemplate.CONTROLLER_LOCAL.getY();
+        int dz = localPos.getZ() - MatrixMultiblockTemplate.CONTROLLER_LOCAL.getZ();
+        return switch (orientation) {
+            case EAST -> worldPos.offset(-dx, -dy, -dz);
+            case SOUTH -> worldPos.offset(dz, -dy, -dx);
+            case WEST -> worldPos.offset(dx, -dy, dz);
+            case NORTH -> worldPos.offset(-dz, -dy, dx);
             default -> throw new IllegalArgumentException("Matrix orientation must be horizontal: " + orientation);
         };
     }

@@ -19,10 +19,8 @@ public record MatrixControllerActionPacket(int token, BlockPos pos, Action actio
             StreamCodec.of(MatrixControllerActionPacket::encode, MatrixControllerActionPacket::decode);
 
     public enum Action {
-        SCAN_FORM,
         AUTO_BUILD,
-        UPGRADE_PATTERN_STORAGE,
-        DEFORM
+        UPGRADE_PATTERN_STORAGE
     }
 
     private static void encode(FriendlyByteBuf buf, MatrixControllerActionPacket packet) {

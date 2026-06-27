@@ -143,6 +143,10 @@ public final class MatrixCraftingCluster {
         return lastLimiterSnapshot;
     }
 
+    public MatrixCraftingMath.Snapshot previewSnapshot() {
+        return craftingProfile().snapshot(heat);
+    }
+
     public double heat() {
         return heat;
     }

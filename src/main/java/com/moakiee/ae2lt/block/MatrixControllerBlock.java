@@ -34,7 +34,23 @@ public class MatrixControllerBlock extends MatrixMultiblockDirectionalBlock impl
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level,
                                                                   BlockState state,
                                                                   BlockEntityType<T> blockEntityType) {
-        return null;
+        if (level.isClientSide) {
+            return null;
+        }
+        return (tickLevel, pos, tickState, blockEntity) -> {
+            if (blockEntity instanceof MatrixControllerBlockEntity controller) {
+                MatrixControllerBlockEntity.serverTick(tickLevel, pos, tickState, controller);
+            }
+        };
+    }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())
+                && level.getBlockEntity(pos) instanceof MatrixControllerBlockEntity controller) {
+            controller.clearStructureBindings();
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
     }
 
     @Override
