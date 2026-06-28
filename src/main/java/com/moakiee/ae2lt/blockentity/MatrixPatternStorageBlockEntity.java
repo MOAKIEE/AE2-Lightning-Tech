@@ -38,6 +38,7 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
     private final List<IPatternDetails> cachedPatterns = new ArrayList<>();
     private BlockPos controllerPos;
     private boolean patternsDirty = true;
+    private int usedSlots;
 
     public MatrixPatternStorageBlockEntity(BlockPos pos, BlockState blockState) {
         super(ModBlockEntities.MATRIX_PATTERN_STORAGE.get(), pos, blockState);
@@ -56,21 +57,11 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
     }
 
     public boolean isEmpty() {
-        for (int slot = 0; slot < capacity(); slot++) {
-            if (!inventory.getStackInSlot(slot).isEmpty()) {
-                return false;
-            }
-        }
-        return true;
+        return usedSlots == 0;
     }
 
     public boolean hasFreeSlot() {
-        for (int slot = 0; slot < capacity(); slot++) {
-            if (inventory.getStackInSlot(slot).isEmpty()) {
-                return true;
-            }
-        }
-        return false;
+        return usedSlots < capacity();
     }
 
     public List<ItemStack> copyContents() {
@@ -245,6 +236,7 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
 
         private void setStackInSlotInternal(int slot, ItemStack stack, boolean validatePattern) {
             validateSlot(slot);
+            var previous = items.get(slot);
             if (stack == null || stack.isEmpty()) {
                 items.set(slot, ItemStack.EMPTY);
             } else {
@@ -254,6 +246,7 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
                 }
                 items.set(slot, copy);
             }
+            updateUsedSlots(previous, items.get(slot));
             patternsDirty = true;
             setChangedAndUpdate();
         }
@@ -268,7 +261,9 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
                 return stack;
             }
             if (!simulate) {
+                var previous = items.get(slot);
                 items.set(slot, stack.copyWithCount(1));
+                updateUsedSlots(previous, items.get(slot));
                 patternsDirty = true;
                 setChangedAndUpdate();
             }
@@ -292,7 +287,9 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
             }
             var extracted = existing.copyWithCount(1);
             if (!simulate) {
+                var previous = items.get(slot);
                 items.set(slot, ItemStack.EMPTY);
+                updateUsedSlots(previous, ItemStack.EMPTY);
                 patternsDirty = true;
                 setChangedAndUpdate();
             }
@@ -315,7 +312,18 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
             for (int slot = 0; slot < items.size(); slot++) {
                 items.set(slot, ItemStack.EMPTY);
             }
+            usedSlots = 0;
             patternsDirty = true;
+        }
+
+        private void updateUsedSlots(ItemStack previous, ItemStack current) {
+            boolean wasEmpty = previous == null || previous.isEmpty();
+            boolean isEmpty = current == null || current.isEmpty();
+            if (wasEmpty && !isEmpty) {
+                usedSlots++;
+            } else if (!wasEmpty && isEmpty) {
+                usedSlots--;
+            }
         }
 
         private void validateSlot(int slot) {

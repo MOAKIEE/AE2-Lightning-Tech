@@ -73,6 +73,8 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
     private BlockPos controllerPos;
     private boolean formed;
     private long lastPatternUpdateTick = Long.MIN_VALUE;
+    private MatrixPatternStorageBlockEntity exposedPatternStorage;
+    private boolean exposedPatternStorageDirty = true;
 
     public MatrixPortBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.MATRIX_PORT.get(), pos, state);
@@ -108,6 +110,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
     public void bindToController(BlockPos controllerPos) {
         this.controllerPos = controllerPos == null ? null : controllerPos.immutable();
         this.formed = controllerPos != null;
+        invalidateExposedPatternStorage();
         saveChanges();
         markForUpdate();
         requestCraftingUpdate();
@@ -144,6 +147,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
     }
 
     public void patternsChanged() {
+        invalidateExposedPatternStorage();
         long now = level != null ? level.getGameTime() : Long.MIN_VALUE;
         if (now == Long.MIN_VALUE || lastPatternUpdateTick != now) {
             lastPatternUpdateTick = now;
@@ -263,6 +267,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
         if (tag.contains(TAG_CLUSTER, Tag.TAG_COMPOUND)) {
             cluster.readEngineFrom(tag.getCompound(TAG_CLUSTER), registries);
         }
+        invalidateExposedPatternStorage();
     }
 
     @Override
@@ -284,6 +289,35 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
     private List<MatrixCraftingUnit> collectCraftingUnits() {
         var controller = getController();
         return controller != null ? controller.findCraftingUnits() : List.of();
+    }
+
+    private void invalidateExposedPatternStorage() {
+        exposedPatternStorageDirty = true;
+    }
+
+    private MatrixPatternStorageBlockEntity getExposedPatternStorage() {
+        if (exposedPatternStorageDirty) {
+            exposedPatternStorage = selectExposedPatternStorage();
+            exposedPatternStorageDirty = false;
+        }
+        return exposedPatternStorage;
+    }
+
+    private MatrixPatternStorageBlockEntity selectExposedPatternStorage() {
+        var firstStorage = (MatrixPatternStorageBlockEntity) null;
+        var firstFree = (MatrixPatternStorageBlockEntity) null;
+        for (var storage : getPatternStorages()) {
+            if (firstStorage == null) {
+                firstStorage = storage;
+            }
+            if (!storage.isEmpty()) {
+                return storage;
+            }
+            if (firstFree == null && storage.hasFreeSlot()) {
+                firstFree = storage;
+            }
+        }
+        return firstFree != null ? firstFree : firstStorage;
     }
 
     private void requestCraftingUpdate() {
@@ -418,8 +452,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
 
         @Override
         public int getSlotLimit(int slot) {
-            requireStorage(slot);
-            return 1;
+            return requireStorage(slot) == null ? 0 : 1;
         }
 
         @Override
@@ -437,20 +470,7 @@ public class MatrixPortBlockEntity extends AENetworkedBlockEntity
         }
 
         private MatrixPatternStorageBlockEntity exposedStorage() {
-            var firstStorage = (MatrixPatternStorageBlockEntity) null;
-            var firstFree = (MatrixPatternStorageBlockEntity) null;
-            for (var storage : getPatternStorages()) {
-                if (firstStorage == null) {
-                    firstStorage = storage;
-                }
-                if (!storage.isEmpty()) {
-                    return storage;
-                }
-                if (firstFree == null && storage.hasFreeSlot()) {
-                    firstFree = storage;
-                }
-            }
-            return firstFree != null ? firstFree : firstStorage;
+            return getExposedPatternStorage();
         }
     }
 }

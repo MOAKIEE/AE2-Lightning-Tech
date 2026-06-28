@@ -59,6 +59,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
     private int patternStorageCount;
     private int craftingUnitCount;
     private List<BlockPos> patternStoragePositions = List.of();
+    private List<MatrixPatternStorageBlockEntity> cachedPatternStorages = List.of();
     private List<MatrixCraftingUnit> cachedCraftingUnits = List.of();
     private boolean structureCacheValid;
     private long scheduledScanTick = NO_SCHEDULED_SCAN;
@@ -293,13 +294,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
             return List.of();
         }
         ensureStructureCache();
-        var storages = new ArrayList<MatrixPatternStorageBlockEntity>();
-        for (var pos : patternStoragePositions) {
-            if (level.getBlockEntity(pos) instanceof MatrixPatternStorageBlockEntity storage) {
-                storages.add(storage);
-            }
-        }
-        return List.copyOf(storages);
+        return cachedPatternStorages;
     }
 
     public List<MatrixCraftingUnit> findCraftingUnits() {
@@ -335,6 +330,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         patternStoragePositions = result.patternMembers().stream()
                 .map(member -> member.worldPos().immutable())
                 .toList();
+        cachedPatternStorages = resolvePatternStorages(result);
         cachedCraftingUnits = result.craftingUnits();
         structureCacheValid = true;
 
@@ -354,9 +350,20 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         patternStorageCount = 0;
         craftingUnitCount = 0;
         patternStoragePositions = List.of();
+        cachedPatternStorages = List.of();
         cachedCraftingUnits = List.of();
         structureCacheValid = false;
         setChangedAndUpdate();
+    }
+
+    private List<MatrixPatternStorageBlockEntity> resolvePatternStorages(MatrixMultiblockScanResult result) {
+        var storages = new ArrayList<MatrixPatternStorageBlockEntity>();
+        for (var member : result.patternMembers()) {
+            if (level.getBlockEntity(member.worldPos()) instanceof MatrixPatternStorageBlockEntity storage) {
+                storages.add(storage);
+            }
+        }
+        return List.copyOf(storages);
     }
 
     private void refreshStructure() {
@@ -692,6 +699,7 @@ public class MatrixControllerBlockEntity extends BlockEntity {
         formed = tag.getBoolean(TAG_FORMED);
         structureCacheValid = false;
         patternStoragePositions = List.of();
+        cachedPatternStorages = List.of();
         cachedCraftingUnits = List.of();
         orientation = Direction.from3DDataValue(tag.getInt(TAG_ORIENTATION));
         if (orientation.getAxis() == Direction.Axis.Y) {
