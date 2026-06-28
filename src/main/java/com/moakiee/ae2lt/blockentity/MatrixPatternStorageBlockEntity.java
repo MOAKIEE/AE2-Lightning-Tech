@@ -18,6 +18,8 @@ import net.minecraft.network.protocol.game.ClientGamePacketListener;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.core.NonNullList;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandlerModifiable;
@@ -70,6 +72,15 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
             result.add(inventory.getStackInSlot(slot).copy());
         }
         return result;
+    }
+
+    public void dropStoredPatterns(Level level, BlockPos pos) {
+        for (int slot = 0; slot < capacity(); slot++) {
+            var stack = inventory.getStackInSlot(slot);
+            if (!stack.isEmpty()) {
+                Block.popResource(level, pos, stack.copy());
+            }
+        }
     }
 
     public void loadContents(List<ItemStack> stacks) {

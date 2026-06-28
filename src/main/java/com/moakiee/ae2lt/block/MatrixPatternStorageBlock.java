@@ -33,4 +33,15 @@ public class MatrixPatternStorageBlock extends MatrixFormedBlock implements Enti
                                                                   BlockEntityType<T> blockEntityType) {
         return null;
     }
+
+    @Override
+    public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
+        if (!state.is(newState.getBlock())
+                && !(newState.getBlock() instanceof MatrixPatternStorageBlock)
+                && !level.isClientSide
+                && level.getBlockEntity(pos) instanceof MatrixPatternStorageBlockEntity storage) {
+            storage.dropStoredPatterns(level, pos);
+        }
+        super.onRemove(state, level, pos, newState, movedByPiston);
+    }
 }
