@@ -591,6 +591,5 @@
   "ae2lt.matrix.upgraded": "Upgraded %s pattern storage blocks out of %s available",
   "ae2lt.matrix.pattern_storage_any": "Any-tier pattern storage",
   "ae2lt.matrix.build_missing": "Missing from inventory: %s",
-  "ae2lt.matrix.build_blocked": "Auto-build positions are blocked: %s",
   "ae2lt.matrix.terminal.tooltip": "Pattern storages: %s, pattern slots: %s"
 }
