@@ -88,6 +88,7 @@ public final class CtmFaceGeometry {
         QuadBakingVertexConsumer builder = new QuadBakingVertexConsumer();
         builder.setSprite(sprite);
         builder.setDirection(side);
+        builder.setShade(true);
         Vec3i n = side.getNormal();
         putVertex(builder, n, tl, sprite, u0, v0);
         putVertex(builder, n, bl, sprite, u0, v1);

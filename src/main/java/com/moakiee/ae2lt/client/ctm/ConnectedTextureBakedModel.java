@@ -38,13 +38,20 @@ public class ConnectedTextureBakedModel implements IDynamicBakedModel {
     private final TextureAtlasSprite ctmSprite;
     private final ConnectionPredicate predicate;
     private final ChunkRenderTypeSet renderTypes;
+    private final boolean ambientOcclusion;
+    private final boolean gui3d;
+    private final boolean usesBlockLight;
 
     public ConnectedTextureBakedModel(TextureAtlasSprite baseSprite, TextureAtlasSprite ctmSprite,
-            ConnectionPredicate predicate, ChunkRenderTypeSet renderTypes) {
+            ConnectionPredicate predicate, ChunkRenderTypeSet renderTypes,
+            boolean ambientOcclusion, boolean gui3d, boolean usesBlockLight) {
         this.baseSprite = baseSprite;
         this.ctmSprite = ctmSprite;
         this.predicate = predicate;
         this.renderTypes = renderTypes;
+        this.ambientOcclusion = ambientOcclusion;
+        this.gui3d = gui3d;
+        this.usesBlockLight = usesBlockLight;
     }
 
     @Override
@@ -125,17 +132,17 @@ public class ConnectedTextureBakedModel implements IDynamicBakedModel {
 
     @Override
     public boolean useAmbientOcclusion() {
-        return false;
+        return ambientOcclusion;
     }
 
     @Override
     public boolean isGui3d() {
-        return false;
+        return gui3d;
     }
 
     @Override
     public boolean usesBlockLight() {
-        return false;
+        return usesBlockLight;
     }
 
     @Override

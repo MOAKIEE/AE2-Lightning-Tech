@@ -22,10 +22,17 @@ public class ConnectedTextureGeometry implements IUnbakedGeometry<ConnectedTextu
 
     private final ResourceLocation connectionId;
     private final ChunkRenderTypeSet renderTypes;
+    private final boolean ambientOcclusion;
+    private final boolean gui3d;
+    private final boolean usesBlockLight;
 
-    public ConnectedTextureGeometry(ResourceLocation connectionId, ChunkRenderTypeSet renderTypes) {
+    public ConnectedTextureGeometry(ResourceLocation connectionId, ChunkRenderTypeSet renderTypes,
+            boolean ambientOcclusion, boolean gui3d, boolean usesBlockLight) {
         this.connectionId = connectionId;
         this.renderTypes = renderTypes;
+        this.ambientOcclusion = ambientOcclusion;
+        this.gui3d = gui3d;
+        this.usesBlockLight = usesBlockLight;
     }
 
     @Override
@@ -34,6 +41,7 @@ public class ConnectedTextureGeometry implements IUnbakedGeometry<ConnectedTextu
         TextureAtlasSprite base = spriteGetter.apply(context.getMaterial("base"));
         TextureAtlasSprite ctm = spriteGetter.apply(context.getMaterial("ctm"));
         ConnectionPredicate predicate = ConnectionPredicates.get(connectionId);
-        return new ConnectedTextureBakedModel(base, ctm, predicate, renderTypes);
+        return new ConnectedTextureBakedModel(base, ctm, predicate, renderTypes,
+                ambientOcclusion, gui3d, usesBlockLight);
     }
 }

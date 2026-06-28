@@ -13,7 +13,8 @@ import net.neoforged.neoforge.client.model.geometry.IGeometryLoader;
  * Loader for {@code "loader": "ae2lt:connected_texture"} models.
  *
  * <p>Recognised fields: {@code connection} (predicate id, default
- * {@code ae2lt:same_block}) and {@code render_type} (default translucent).
+ * {@code ae2lt:same_block}), {@code render_type} (default translucent),
+ * {@code ambientocclusion}, {@code gui3d}, and {@code uses_block_light}.
  * Textures come from the standard {@code textures} block (keys {@code base},
  * {@code ctm}).
  */
@@ -24,7 +25,11 @@ public class ConnectedTextureLoader implements IGeometryLoader<ConnectedTextureG
         ResourceLocation connection = ResourceLocation.parse(
                 GsonHelper.getAsString(json, "connection", "ae2lt:same_block"));
         RenderType renderType = parseRenderType(GsonHelper.getAsString(json, "render_type", "minecraft:translucent"));
-        return new ConnectedTextureGeometry(connection, ChunkRenderTypeSet.of(renderType));
+        boolean ambientOcclusion = GsonHelper.getAsBoolean(json, "ambientocclusion", true);
+        boolean gui3d = GsonHelper.getAsBoolean(json, "gui3d", true);
+        boolean usesBlockLight = GsonHelper.getAsBoolean(json, "uses_block_light", true);
+        return new ConnectedTextureGeometry(connection, ChunkRenderTypeSet.of(renderType),
+                ambientOcclusion, gui3d, usesBlockLight);
     }
 
     private static RenderType parseRenderType(String name) {
