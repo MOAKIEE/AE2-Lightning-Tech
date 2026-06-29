@@ -105,6 +105,17 @@ public final class MatrixPatternRepository implements MatrixPatternCore {
         return List.copyOf(result);
     }
 
+    @Override
+    public boolean hasPattern(IPatternDetails details) {
+        if (!isSupportedPattern(details)) return false;
+        for (var unit : units) {
+            if (unit.hasPattern(details)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public static boolean isSupportedPattern(IPatternDetails pattern) {
         return pattern != null && pattern instanceof IMolecularAssemblerSupportedPattern;
     }
