@@ -1,7 +1,6 @@
 package com.moakiee.ae2lt.logic.timewheelcpu;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,7 +83,6 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
     private final ListCraftingInventory inventory = new ListCraftingInventory(this::postChange);
     private final Set<Consumer<AEKey>> listeners = new HashSet<>();
     private final Map<IPatternDetails, IdentityHashMap<ICraftingProvider, Boolean>> batchedByTask = new HashMap<>();
-    private final Map<IPatternDetails, SinglePushProviderCursor> singlePushProviderCursors = new HashMap<>();
     private final ArrayDeque<IPatternDetails>[] taskWheel = createWheel();
     private final Set<IPatternDetails> queuedTasks = Collections.newSetFromMap(new IdentityHashMap<>());
     private final Set<AEKey> batchedStatusChanges = new HashSet<>();
@@ -171,7 +169,6 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
             batchTick = now;
             batchedByTask.clear();
             nonBatchTasksThisTick.clear();
-            singlePushProviderCursors.clear();
         }
 
         cantStoreItems = false;
@@ -302,11 +299,6 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
         var expectedContainerItems = scratchExpectedContainerItems;
         clearScratchCounter(expectedOutputs);
         clearScratchCounter(expectedContainerItems);
-        var providers = providersForSinglePush(craftingService, details).iterator();
-        if (!providers.hasNext()) {
-            return DispatchOutcome.RETRY_SOON;
-        }
-
         @Nullable
         var craftingContainer = CraftingCpuHelper.extractPatternInputs(
                 details, inventory, level, expectedOutputs, expectedContainerItems);
@@ -317,9 +309,7 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
         boolean pushed = false;
         try {
             var patternPower = CraftingCpuHelper.calculatePatternPower(craftingContainer);
-            while (providers.hasNext()) {
-                var candidate = providers.next();
-                var provider = candidate.provider();
+            for (var provider : providersForSinglePush(craftingService, details)) {
                 if (provider.isBusy()) {
                     continue;
                 }
@@ -339,10 +329,9 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
                 recordPushedPattern(activeJob, details, expectedOutputs, expectedContainerItems, 1L);
 
                 consumeTaskCopies(activeJob, details, 1L);
-                advanceSinglePushProviderCursor(details, candidate.index());
                 return DispatchOutcome.PUSHED;
             }
-            return DispatchOutcome.RETRY_SOON;
+                return DispatchOutcome.RETRY_SOON;
         } finally {
             if (!pushed && craftingContainer != null) {
                 CraftingCpuHelper.reinjectPatternInputs(inventory, craftingContainer);
@@ -663,20 +652,38 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
         }
     }
 
-    private Iterable<ProviderCandidate> providersForSinglePush(CraftingService craftingService,
+    private Iterable<ICraftingProvider> providersForSinglePush(CraftingService craftingService,
                                                                IPatternDetails details) {
         var skipped = batchedByTask.get(details);
-        var cursor = singlePushProviderCursors.computeIfAbsent(
-                details,
-                ignored -> new SinglePushProviderCursor(craftingService.getProviders(details)));
-        return () -> cursor.iterator(skipped);
-    }
-
-    private void advanceSinglePushProviderCursor(IPatternDetails details, int providerIndex) {
-        var cursor = singlePushProviderCursors.get(details);
-        if (cursor != null) {
-            cursor.advancePast(providerIndex);
+        if (skipped == null || skipped.isEmpty()) {
+            return craftingService.getProviders(details);
         }
+        return () -> new Iterator<>() {
+            private final Iterator<ICraftingProvider> raw = craftingService.getProviders(details).iterator();
+            @Nullable
+            private ICraftingProvider next;
+
+            @Override
+            public boolean hasNext() {
+                while (next == null && raw.hasNext()) {
+                    var candidate = raw.next();
+                    if (!skipped.containsKey(candidate)) {
+                        next = candidate;
+                    }
+                }
+                return next != null;
+            }
+
+            @Override
+            public ICraftingProvider next() {
+                if (!hasNext()) {
+                    throw new java.util.NoSuchElementException();
+                }
+                var result = next;
+                next = null;
+                return result;
+            }
+        };
     }
 
     private boolean hasAmbiguousOverloadOutput(IPatternDetails details) {
@@ -1030,66 +1037,6 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
             return Long.MAX_VALUE;
         }
         return left * right;
-    }
-
-    private record ProviderCandidate(ICraftingProvider provider, int index) {
-    }
-
-    private static final class SinglePushProviderCursor {
-        private final ArrayList<ICraftingProvider> providers = new ArrayList<>();
-        private int nextIndex;
-
-        private SinglePushProviderCursor(Iterable<ICraftingProvider> providers) {
-            for (var provider : providers) {
-                this.providers.add(provider);
-            }
-        }
-
-        private Iterator<ProviderCandidate> iterator(
-                @Nullable IdentityHashMap<ICraftingProvider, Boolean> skipped) {
-            return new Iterator<>() {
-                private final int startIndex = nextIndex;
-                private int visited;
-                @Nullable
-                private ProviderCandidate next;
-                private boolean ready;
-
-                @Override
-                public boolean hasNext() {
-                    int size = providers.size();
-                    while (!ready && visited < size) {
-                        int index = (startIndex + visited) % size;
-                        visited++;
-
-                        var provider = providers.get(index);
-                        if (skipped != null && skipped.containsKey(provider)) continue;
-                        if (provider.isBusy()) continue;
-
-                        next = new ProviderCandidate(provider, index);
-                        ready = true;
-                    }
-                    return ready;
-                }
-
-                @Override
-                public ProviderCandidate next() {
-                    if (!hasNext()) {
-                        throw new java.util.NoSuchElementException();
-                    }
-                    var result = next;
-                    next = null;
-                    ready = false;
-                    return result;
-                }
-            };
-        }
-
-        private void advancePast(int providerIndex) {
-            int size = providers.size();
-            if (size > 0) {
-                nextIndex = (providerIndex + 1) % size;
-            }
-        }
     }
 
     private enum DispatchOutcome {
