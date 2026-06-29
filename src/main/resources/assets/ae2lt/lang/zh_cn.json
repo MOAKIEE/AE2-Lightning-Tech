@@ -179,6 +179,7 @@
   "block.ae2lt.overloaded_pattern_provider": "过载样板供应器",
   "block.ae2lt.extended_overloaded_pattern_provider": "扩展过载样板供应器",
   "block.ae2lt.overloaded_interface": "过载ME接口",
+  "block.ae2lt.test_time_wheel_crafting_cpu": "测试时间轮合成CPU",
   "block.ae2lt.overloaded_power_supply": "过载供电仪",
   "ae2lt.gui.title.extended_overloaded_pattern_provider": "扩展过载样板供应器",
   "ae2lt.gui.provider_mode.normal": "普通模式",

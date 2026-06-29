@@ -124,6 +124,22 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
         return List.copyOf(cachedPatterns);
     }
 
+    @Override
+    public boolean hasPattern(IPatternDetails details) {
+        if (details == null) {
+            return false;
+        }
+        if (patternsDirty) {
+            rebuildPatternCache();
+        }
+        for (var pattern : cachedPatterns) {
+            if (pattern == details) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void rebuildPatternCache() {
         if (level == null) {
             return;

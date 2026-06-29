@@ -23,6 +23,7 @@ import com.moakiee.ae2lt.block.OverloadedInterfaceBlock;
 import com.moakiee.ae2lt.block.OverloadedPatternProviderBlock;
 import com.moakiee.ae2lt.block.OverloadedPowerSupplyBlock;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
+import com.moakiee.ae2lt.block.TestTimeWheelCraftingCpuBlock;
 import com.moakiee.ae2lt.block.AdvancedWirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessOverloadedControllerBlock;
 import com.moakiee.ae2lt.block.WirelessReceiverBlock;
@@ -206,6 +207,9 @@ public final class ModBlocks {
 
     public static final DeferredBlock<OverloadDeviceWorkbenchBlock> OVERLOAD_DEVICE_WORKBENCH =
             registerBlock("overload_device_workbench", OverloadDeviceWorkbenchBlock::new);
+
+    public static final DeferredBlock<TestTimeWheelCraftingCpuBlock> TEST_TIME_WHEEL_CRAFTING_CPU =
+            registerBlock("test_time_wheel_crafting_cpu", TestTimeWheelCraftingCpuBlock::new);
 
     public static final DeferredBlock<MatrixCasingBlock> MATTER_WARPING_MATRIX_CASING =
             registerBlock("matter_warping_matrix_casing", () -> new MatrixCasingBlock(

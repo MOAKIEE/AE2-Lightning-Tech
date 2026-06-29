@@ -85,6 +85,17 @@ public final class MatrixPatternStorageUnit implements MatrixPatternCore {
         return pattern;
     }
 
+    @Override
+    public boolean hasPattern(IPatternDetails details) {
+        if (details == null) return false;
+        for (var pattern : slots) {
+            if (pattern == details) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean canUpgradeToT2() {
         return tier == MatrixPatternStorageTier.T1;
     }

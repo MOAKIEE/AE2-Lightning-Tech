@@ -22,6 +22,8 @@
     "ECOCraftingCpuLogicMixin",
     "CraftingCpuLogicMixin",
     "CraftingCpuLogicBatchMixin",
+    "TimeWheelCraftingServiceMixin",
+    "TimeWheelCraftingCPUMenuMixin",
     "GridNodeMaxChannelsMixin",
     "GridConnectionMaxChannelsMixin",
     "GridGetMachineNodesMixin",

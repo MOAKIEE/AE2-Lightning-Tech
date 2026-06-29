@@ -40,6 +40,7 @@ public final class BatchExecutor {
         int opsBudget = remainingOps;
         if (opsBudget <= 0) return BatchRunResult.EMPTY;
         boolean dirty = false;
+        boolean sawBatchProvider = false;
 
         while (taskIter.hasNext()) {
             var task = taskIter.next();
@@ -60,6 +61,7 @@ public final class BatchExecutor {
             long availableBatchCapacity = 0;
             for (var provider : cs.getProviders(details)) {
                 if (!(provider instanceof IBatchCraftingProvider batch)) continue;
+                sawBatchProvider = true;
                 if (perTaskBatched.containsKey(provider)) continue;
                 int capacity = batch.getBatchCapacity(details);
                 if (capacity <= 0) continue;
@@ -81,7 +83,7 @@ public final class BatchExecutor {
             int copyBudget = BatchCpuAccounting.maxCopiesForCpuOps(opsBudget);
             if (copyBudget <= 0) {
                 if (dirty) markDirty.run();
-                return new BatchRunResult(totalPushed, consumedOps);
+                return new BatchRunResult(totalPushed, consumedOps, sawBatchProvider);
             }
 
             int budget = (int) Math.min(Math.min(taskValue, availableBatchCapacity), copyBudget);
@@ -101,7 +103,7 @@ public final class BatchExecutor {
                 if (affordable <= 0) {
                     ParallelBatchCpuHelper.reinject(result, realCraft, inv);
                     if (dirty) markDirty.run();
-                    return new BatchRunResult(totalPushed, consumedOps);
+                    return new BatchRunResult(totalPushed, consumedOps, sawBatchProvider);
                 }
                 int scaleDown = realCraft - affordable;
                 if (scaleDown > 0) {
@@ -167,7 +169,7 @@ public final class BatchExecutor {
                     }
                     if (opsBudget <= 0) {
                         if (dirty) markDirty.run();
-                        return new BatchRunResult(totalPushed, consumedOps);
+                        return new BatchRunResult(totalPushed, consumedOps, sawBatchProvider);
                     }
                     break;
                 }
@@ -178,7 +180,7 @@ public final class BatchExecutor {
                         leftover = 0;
                     }
                     if (dirty) markDirty.run();
-                    return new BatchRunResult(totalPushed, consumedOps);
+                    return new BatchRunResult(totalPushed, consumedOps, sawBatchProvider);
                 }
             }
 
@@ -188,13 +190,17 @@ public final class BatchExecutor {
         }
 
         if (dirty) markDirty.run();
-        return new BatchRunResult(totalPushed, consumedOps);
+        return new BatchRunResult(totalPushed, consumedOps, sawBatchProvider);
     }
 
     private record EligibleProvider(IBatchCraftingProvider provider, int capacity) {
     }
 
-    public record BatchRunResult(int dispatchedCopies, int consumedCpuOps) {
-        public static final BatchRunResult EMPTY = new BatchRunResult(0, 0);
+    public record BatchRunResult(int dispatchedCopies, int consumedCpuOps, boolean sawBatchProvider) {
+        public static final BatchRunResult EMPTY = new BatchRunResult(0, 0, false);
+
+        public boolean shouldRetryBatchThisTick() {
+            return dispatchedCopies > 0;
+        }
     }
 }

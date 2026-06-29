@@ -85,10 +85,8 @@ public final class MatrixCraftingCluster {
     public boolean hasPattern(IPatternDetails details) {
         if (!formed.getAsBoolean() || !MatrixPatternRepository.isSupportedPattern(details)) return false;
         for (var core : patternCores) {
-            for (var pattern : core.getAvailablePatterns()) {
-                if (pattern == details) {
-                    return true;
-                }
+            if (core.hasPattern(details)) {
+                return true;
             }
         }
         return false;
