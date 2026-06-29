@@ -24,6 +24,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
+import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
 import com.moakiee.ae2lt.block.TeslaCoilBlock;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
@@ -112,6 +113,7 @@ public class AE2LightningTech {
                         output.accept(ModBlocks.OVERLOADED_PATTERN_PROVIDER);
                         output.accept(ModBlocks.OVERLOADED_INTERFACE);
                         output.accept(ModBlocks.TEST_BATCH_CRAFTING_CORE);
+                        output.accept(ModBlocks.TEST_TIME_WHEEL_CRAFTING_CPU);
                         output.accept(ModBlocks.MATTER_WARPING_MATRIX_CASING);
                         output.accept(ModBlocks.MATTER_WARPING_MATRIX_CONSTRAINT_FRAME);
                         output.accept(ModBlocks.MATTER_WARPING_MATRIX_GLASS);
@@ -393,6 +395,11 @@ public class AE2LightningTech {
 
         event.registerBlockEntity(
                 AECapabilities.IN_WORLD_GRID_NODE_HOST,
+                ModBlockEntities.TEST_TIME_WHEEL_CRAFTING_CPU.get(),
+                (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
+
+        event.registerBlockEntity(
+                AECapabilities.IN_WORLD_GRID_NODE_HOST,
                 ModBlockEntities.MATRIX_PORT.get(),
                 (blockEntity, context) -> (IInWorldGridNodeHost) blockEntity);
 
@@ -590,6 +597,14 @@ public class AE2LightningTech {
                     null,
                     null);
 
+            var testTimeWheelCraftingCpuBlock = ModBlocks.TEST_TIME_WHEEL_CRAFTING_CPU.get();
+            var testTimeWheelCraftingCpuBeType = ModBlockEntities.TEST_TIME_WHEEL_CRAFTING_CPU.get();
+            testTimeWheelCraftingCpuBlock.setBlockEntity(
+                    TestTimeWheelCraftingCpuBlockEntity.class,
+                    testTimeWheelCraftingCpuBeType,
+                    null,
+                    null);
+
             var matrixPortBlock = ModBlocks.MATTER_WARPING_MATRIX_PORT.get();
             var matrixPortBeType = ModBlockEntities.MATRIX_PORT.get();
             matrixPortBlock.setBlockEntity(
@@ -628,6 +643,9 @@ public class AE2LightningTech {
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     testBatchCraftingCoreBeType,
                     testBatchCraftingCoreBlock.asItem());
+            appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
+                    testTimeWheelCraftingCpuBeType,
+                    testTimeWheelCraftingCpuBlock.asItem());
             appeng.blockentity.AEBaseBlockEntity.registerBlockEntityItem(
                     matrixPortBeType,
                     matrixPortBlock.asItem());

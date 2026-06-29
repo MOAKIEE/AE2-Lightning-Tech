@@ -128,6 +128,7 @@
   "block.ae2lt.overloaded_controller": "Overloaded ME Controller",
   "block.ae2lt.overloaded_pattern_provider": "Overloaded Pattern Provider",
   "block.ae2lt.overloaded_interface": "Overloaded ME Interface",
+  "block.ae2lt.test_time_wheel_crafting_cpu": "Test Time Wheel Crafting CPU",
   "block.ae2lt.overloaded_power_supply": "Overloaded Power Supply",
   "config.jade.plugin_ae2lt.lightning_collector": "Lightning Collector",
   "jade.ae2lt.lightning_collector.cooldown": "Cooldown: %ss",

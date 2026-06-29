@@ -18,6 +18,7 @@ import com.moakiee.ae2lt.blockentity.OverloadedPatternProviderBlockEntity;
 import com.moakiee.ae2lt.blockentity.OverloadedPowerSupplyBlockEntity;
 import com.moakiee.ae2lt.blockentity.TeslaCoilBlockEntity;
 import com.moakiee.ae2lt.blockentity.TestBatchCraftingCoreBlockEntity;
+import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
 import com.moakiee.ae2lt.blockentity.AdvancedWirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessOverloadedControllerBlockEntity;
 import com.moakiee.ae2lt.blockentity.WirelessReceiverBlockEntity;
@@ -151,6 +152,14 @@ public final class ModBlockEntities {
                     () -> BlockEntityType.Builder.of(
                             TestBatchCraftingCoreBlockEntity::new,
                             ModBlocks.TEST_BATCH_CRAFTING_CORE.get())
+                            .build(null));
+
+    public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<TestTimeWheelCraftingCpuBlockEntity>>
+            TEST_TIME_WHEEL_CRAFTING_CPU = BLOCK_ENTITY_TYPES.register(
+                    "test_time_wheel_crafting_cpu",
+                    () -> BlockEntityType.Builder.of(
+                            TestTimeWheelCraftingCpuBlockEntity::new,
+                            ModBlocks.TEST_TIME_WHEEL_CRAFTING_CPU.get())
                             .build(null));
 
     public static final DeferredHolder<BlockEntityType<?>, BlockEntityType<MatrixControllerBlockEntity>>

@@ -174,9 +174,8 @@ public final class ParallelBatchCpuHelper {
     public static void registerExpectedOutputs(BatchJobView job, IPatternDetails details, int dispatched) {
         if (dispatched <= 0) return;
 
-        var waitingFor = job.waitingFor();
         for (var output : details.getOutputs()) {
-            waitingFor.insert(output.what(), output.amount() * (long) dispatched, Actionable.MODULATE);
+            job.insertWaitingFor(output.what(), output.amount() * (long) dispatched);
         }
 
         for (var input : details.getInputs()) {
@@ -185,7 +184,7 @@ public final class ParallelBatchCpuHelper {
             AEKey containerKey = input.getRemainingKey(possibles[0].what());
             if (containerKey != null) {
                 long count = input.getMultiplier() * (long) dispatched;
-                waitingFor.insert(containerKey, count, Actionable.MODULATE);
+                job.insertWaitingFor(containerKey, count);
                 job.addContainerMaxItems(count, containerKey.getType());
             }
         }
