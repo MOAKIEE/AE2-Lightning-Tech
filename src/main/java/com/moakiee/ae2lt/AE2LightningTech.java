@@ -56,7 +56,6 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import appeng.api.AECapabilities;
 import appeng.api.crafting.PatternDetailsHelper;
-import appeng.api.features.GridLinkables;
 import appeng.api.networking.IInWorldGridNodeHost;
 import appeng.api.storage.StorageCells;
 import appeng.api.upgrades.Upgrades;
@@ -778,11 +777,6 @@ public class AE2LightningTech {
             if (net.neoforged.fml.ModList.get().isLoaded("ae2wtlib")) {
                 com.moakiee.ae2lt.integration.ae2wtlib.Ae2wtlibIntegration.register();
             }
-
-            // Railgun: wireless link handler so AE2 wireless access points can bind it.
-            GridLinkables.register(
-                    ModItems.ELECTROMAGNETIC_RAILGUN.get(),
-                    com.moakiee.ae2lt.event.railgun.RailgunGridLinkHandler.INSTANCE);
 
         });
     }
