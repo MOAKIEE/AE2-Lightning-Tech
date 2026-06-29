@@ -19,7 +19,7 @@ import appeng.api.stacks.GenericStack;
 
 import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
 
-public final class TimeWheelCraftingCPU implements ICraftingCPU {
+public final class TimeWheelCraftingCPU implements ICraftingCPU, TimeWheelFastPlanningGate.CpuState {
     private final TestTimeWheelCraftingCpuBlockEntity host;
     private final long storageBytes;
     private final int coProcessors;
@@ -91,6 +91,7 @@ public final class TimeWheelCraftingCPU implements ICraftingCPU {
         return CpuSelectionMode.ANY;
     }
 
+    @Override
     public boolean isActive() {
         return host.isCpuActive();
     }

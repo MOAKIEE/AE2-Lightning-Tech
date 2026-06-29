@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import com.google.common.collect.ImmutableSet;
 import com.llamalad7.mixinextras.sugar.Local;
@@ -21,23 +22,29 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.level.Level;
 
 import appeng.api.config.Actionable;
 import appeng.api.networking.IGrid;
 import appeng.api.networking.IGridNode;
+import appeng.api.networking.crafting.CalculationStrategy;
 import appeng.api.networking.crafting.ICraftingCPU;
 import appeng.api.networking.crafting.ICraftingLink;
 import appeng.api.networking.crafting.ICraftingPlan;
 import appeng.api.networking.crafting.ICraftingRequester;
+import appeng.api.networking.crafting.ICraftingSimulationRequester;
 import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.api.networking.energy.IEnergyService;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.AEKey;
+import appeng.crafting.CraftingCalculation;
 import appeng.crafting.CraftingLink;
 import appeng.me.service.CraftingService;
 
 import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
+import com.moakiee.ae2lt.logic.timewheelcpu.FastCraftingCalculation;
 import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCPU;
+import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelFastPlanningGate;
 
 @Mixin(value = CraftingService.class, remap = false)
 public abstract class TimeWheelCraftingServiceMixin {
@@ -67,6 +74,23 @@ public abstract class TimeWheelCraftingServiceMixin {
 
     @Shadow
     public abstract void addLink(CraftingLink link);
+
+    @Inject(
+            method = "beginCraftingCalculation",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Ljava/util/concurrent/ExecutorService;submit(Ljava/util/concurrent/Callable;)Ljava/util/concurrent/Future;",
+                    shift = At.Shift.BEFORE))
+    private void ae2lt$enableFastPlanningForTimeWheelCpu(Level level,
+                                                        ICraftingSimulationRequester simRequester,
+                                                        AEKey what,
+                                                        long amount,
+                                                        CalculationStrategy strategy,
+                                                        CallbackInfoReturnable<Future<ICraftingPlan>> cir,
+                                                        @Local CraftingCalculation job) {
+        boolean enabled = TimeWheelFastPlanningGate.shouldEnableFastPlanning(this.ae2lt$timeWheelCpus);
+        ((FastCraftingCalculation) job).ae2lt$setFastPlanningEnabled(enabled);
+    }
 
     @Inject(
             method = "onServerEndTick",
