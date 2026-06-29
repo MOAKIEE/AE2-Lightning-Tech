@@ -95,22 +95,6 @@ public abstract class CraftingTreeNodeFastMixin implements FastCraftingTreeNode 
 
         fastCalculation.ae2lt$handlePausing();
 
-        if (this.canEmit) {
-            stats.recordLegacyBranch();
-            this.request(inv, requestedAmount, containerItems);
-            return;
-        }
-
-        buildChildPatterns();
-        int branchCount = this.nodes.size();
-        stats.recordBranches(branchCount);
-
-        if (FastPlanningDecision.useLegacyNode(branchCount)) {
-            stats.recordLegacyBranch();
-            this.request(inv, requestedAmount, containerItems);
-            return;
-        }
-
         inv.addStackBytes(what, amount, requestedAmount);
 
         requestedAmount = ae2lt$extractExactThenFallback(inv, requestedAmount, containerItems, stats);
@@ -120,14 +104,33 @@ public abstract class CraftingTreeNodeFastMixin implements FastCraftingTreeNode 
 
         addContainerItems(what, requestedAmount, containerItems);
 
+        if (this.canEmit) {
+            inv.emitItems(this.what, this.amount * requestedAmount);
+            return;
+        }
+
+        buildChildPatterns();
+        int branchCount = this.nodes.size();
+        stats.recordBranches(branchCount);
+
         long totalRequestedItems = requestedAmount * this.amount;
-        totalRequestedItems = ae2lt$requestMultipleBranches(inv, totalRequestedItems);
+        if (branchCount == 1) {
+            stats.recordLegacyBranch();
+            totalRequestedItems = ae2lt$requestSingleBranch(
+                    inv,
+                    (FastCraftingTreeProcess) this.nodes.get(0),
+                    totalRequestedItems);
+        } else if (branchCount > 1) {
+            totalRequestedItems = ae2lt$requestMultipleBranches(inv, totalRequestedItems);
+        } else {
+            stats.recordLegacyBranch();
+        }
 
         if (totalRequestedItems <= 0) {
             return;
         }
 
-        throw new CraftBranchFailure(this.what, totalRequestedItems);
+        ae2lt$handleMissingOrThrow(fastCalculation, totalRequestedItems);
     }
 
     @Override
@@ -191,6 +194,29 @@ public abstract class CraftingTreeNodeFastMixin implements FastCraftingTreeNode 
         }
 
         return requestedAmount;
+    }
+
+    @Unique
+    private long ae2lt$requestSingleBranch(CraftingSimulationState inv,
+                                           FastCraftingTreeProcess process,
+                                           long totalRequestedItems)
+            throws CraftBranchFailure, InterruptedException {
+        long craftedPerPattern = process.ae2lt$getOutputCount(this.what);
+        while (process.ae2lt$isPossible() && totalRequestedItems > 0) {
+            long times = process.ae2lt$limitsQuantity()
+                    ? 1
+                    : (totalRequestedItems + craftedPerPattern - 1) / craftedPerPattern;
+
+            process.ae2lt$fastRequest(inv, times);
+
+            long available = inv.extract(this.what, totalRequestedItems, Actionable.MODULATE);
+            if (available == 0) {
+                throw ae2lt$missingCraftedItems(process, totalRequestedItems, times);
+            }
+
+            totalRequestedItems -= available;
+        }
+        return totalRequestedItems;
     }
 
     @Unique
@@ -316,5 +342,41 @@ public abstract class CraftingTreeNodeFastMixin implements FastCraftingTreeNode 
                 process.ae2lt$restoreFastProcessStates(states);
             }
         }
+    }
+
+    @Unique
+    private void ae2lt$handleMissingOrThrow(FastCraftingCalculation fastCalculation, long amount)
+            throws CraftBranchFailure {
+        if (this.job.isSimulation()) {
+            fastCalculation.ae2lt$addMissing(this.what, amount);
+            return;
+        }
+
+        throw new CraftBranchFailure(this.what, amount);
+    }
+
+    @Unique
+    private UnsupportedOperationException ae2lt$missingCraftedItems(FastCraftingTreeProcess process,
+                                                                    long remaining,
+                                                                    long times) {
+        var outputs = new StringBuilder();
+        for (var output : process.ae2lt$getDetails().getOutputs()) {
+            if (!outputs.isEmpty()) {
+                outputs.append(',');
+            }
+            outputs.append(output.what());
+        }
+
+        var message = "Unexpected error in the crafting calculation: can't find created items.\n"
+                + "This is an AE2 bug, please report it, with the following important information:\n\n"
+                + "- Found none of %s. Remaining request: %d.\n"
+                + "- Tried crafting %d times the pattern %s.\n"
+                + "- Pattern outputs: %s.\n";
+        return new UnsupportedOperationException(message.formatted(
+                this.what,
+                remaining,
+                times,
+                process.ae2lt$getDetails().getDefinition(),
+                outputs));
     }
 }

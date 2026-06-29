@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.mixin;
 
+import java.util.IdentityHashMap;
+
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -8,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 import appeng.crafting.CraftBranchFailure;
 import appeng.crafting.CraftingCalculation;
@@ -17,6 +20,7 @@ import appeng.crafting.inv.CraftingSimulationState;
 
 import com.moakiee.ae2lt.logic.timewheelcpu.FastCraftingCalculation;
 import com.moakiee.ae2lt.logic.timewheelcpu.FastCraftingTreeNode;
+import com.moakiee.ae2lt.logic.timewheelcpu.FastCraftingTreeProcess;
 import com.moakiee.ae2lt.logic.timewheelcpu.FastPlanningDecision;
 import com.moakiee.ae2lt.logic.timewheelcpu.FastPlanningStats;
 
@@ -35,6 +39,9 @@ public abstract class CraftingCalculationFastMixin implements FastCraftingCalcul
     abstract void handlePausing() throws InterruptedException;
 
     @Shadow
+    abstract void addMissing(AEKey what, long amount);
+
+    @Shadow
     public abstract boolean isSimulation();
 
     @Override
@@ -50,6 +57,11 @@ public abstract class CraftingCalculationFastMixin implements FastCraftingCalcul
     @Override
     public void ae2lt$handlePausing() throws InterruptedException {
         this.handlePausing();
+    }
+
+    @Override
+    public void ae2lt$addMissing(AEKey what, long amount) {
+        this.addMissing(what, amount);
     }
 
     @Override
@@ -74,6 +86,8 @@ public abstract class CraftingCalculationFastMixin implements FastCraftingCalcul
         }
 
         boolean fallback = false;
+        var processStates = new IdentityHashMap<FastCraftingTreeProcess, Boolean>();
+        fastTree.ae2lt$captureFastProcessStates(processStates);
         this.ae2lt$fastPlanningStats.reset(System.nanoTime());
         try {
             var child = new ChildCraftingSimulationState(inv);
@@ -82,7 +96,8 @@ public abstract class CraftingCalculationFastMixin implements FastCraftingCalcul
         } catch (CraftBranchFailure fastFailure) {
             fallback = true;
             this.ae2lt$fastPlanningStats.recordFallback();
-            ((FastCraftingTreeNode) tree).ae2lt$legacyRequest(inv, amount, containerItems);
+            fastTree.ae2lt$restoreFastProcessStates(processStates);
+            fastTree.ae2lt$legacyRequest(inv, amount, containerItems);
         } finally {
             this.ae2lt$fastPlanningStats.finish(System.nanoTime());
             if (AE2LT_FAST_LOG.isDebugEnabled()) {
