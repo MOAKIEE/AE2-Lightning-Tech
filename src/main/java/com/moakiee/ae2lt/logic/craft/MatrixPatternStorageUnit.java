@@ -89,7 +89,7 @@ public final class MatrixPatternStorageUnit implements MatrixPatternCore {
     public boolean hasPattern(IPatternDetails details) {
         if (details == null) return false;
         for (var pattern : slots) {
-            if (pattern == details) {
+            if (MatrixPatternCore.samePattern(pattern, details)) {
                 return true;
             }
         }

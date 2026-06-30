@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -15,11 +16,13 @@ import com.google.common.base.Preconditions;
 
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 import appeng.api.config.Actionable;
@@ -440,6 +443,33 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
         finishJob(false);
     }
 
+    public void prepareForRemoval() {
+        if (this.job != null) {
+            cancel();
+        }
+        this.pendingJobTag = null;
+        this.pendingOverloadTag = null;
+        OverloadCpuStateManager.INSTANCE.clear(this);
+        clearTaskWheel();
+        cpu.updateOutput(null);
+        cantStoreItems = false;
+    }
+
+    public void addStoredDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+        prepareForRemoval();
+        for (var entry : this.inventory.list) {
+            if (entry.getLongValue() > 0) {
+                entry.getKey().addDrops(entry.getLongValue(), drops, level, pos);
+            }
+        }
+    }
+
+    public void clearRemovedContent() {
+        prepareForRemoval();
+        this.inventory.clear();
+        this.inventory.list.removeEmptySubmaps();
+    }
+
     public void storeItems() {
         Preconditions.checkState(job == null, "CPU should not have a job to prevent re-insertion when dumping items");
         if (this.inventory.list.isEmpty()) {
@@ -487,19 +517,28 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
     }
 
     public void writeToNBT(CompoundTag data, HolderLookup.Provider registries) {
-        data.put(TAG_INVENTORY, this.inventory.writeToNBT(registries));
+        if (!this.inventory.list.isEmpty()) {
+            data.put(TAG_INVENTORY, this.inventory.writeToNBT(registries));
+        } else {
+            data.remove(TAG_INVENTORY);
+        }
         if (this.job != null) {
             data.put(TAG_JOB, this.job.writeToNBT(registries));
             var overloadTag = OverloadCpuStateManager.INSTANCE.writeToTag(this, registries);
             if (overloadTag != null) {
                 data.put(TAG_OVERLOAD_STATE, overloadTag);
+            } else {
+                data.remove(TAG_OVERLOAD_STATE);
             }
         } else if (this.pendingJobTag != null) {
             data.put(TAG_JOB, this.pendingJobTag.copy());
             if (this.pendingOverloadTag != null) {
                 data.put(TAG_OVERLOAD_STATE, this.pendingOverloadTag.copy());
+            } else {
+                data.remove(TAG_OVERLOAD_STATE);
             }
         } else {
+            data.remove(TAG_JOB);
             data.remove(TAG_OVERLOAD_STATE);
         }
     }
@@ -587,6 +626,14 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
 
     public boolean hasJob() {
         return this.job != null || this.pendingJobTag != null;
+    }
+
+    public boolean hasPersistentState() {
+        return this.job != null
+                || this.pendingJobTag != null
+                || this.pendingOverloadTag != null
+                || !this.inventory.list.isEmpty()
+                || OverloadCpuStateManager.INSTANCE.hasAnyPending(this);
     }
 
     @Nullable

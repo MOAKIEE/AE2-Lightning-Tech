@@ -1,10 +1,14 @@
 package com.moakiee.ae2lt.logic.timewheelcpu;
 
+import java.util.List;
+
 import org.jetbrains.annotations.Nullable;
 
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 
 import appeng.api.config.CpuSelectionMode;
@@ -17,17 +21,15 @@ import appeng.api.networking.crafting.ICraftingSubmitResult;
 import appeng.api.networking.security.IActionSource;
 import appeng.api.stacks.GenericStack;
 
-import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
-
 public final class TimeWheelCraftingCPU implements ICraftingCPU, TimeWheelFastPlanningGate.CpuState {
-    private final TestTimeWheelCraftingCpuBlockEntity host;
+    private final TimeWheelCraftingCpuHost host;
     private final long storageBytes;
     private final int coProcessors;
     private final Ae2LtTimeWheelCraftingCpuLogic craftingLogic = new Ae2LtTimeWheelCraftingCpuLogic(this);
 
     private GenericStack finalOutput;
 
-    public TimeWheelCraftingCPU(TestTimeWheelCraftingCpuBlockEntity host, long storageBytes, int coProcessors) {
+    public TimeWheelCraftingCPU(TimeWheelCraftingCpuHost host, long storageBytes, int coProcessors) {
         this.host = host;
         this.storageBytes = storageBytes;
         this.coProcessors = coProcessors;
@@ -37,7 +39,7 @@ public final class TimeWheelCraftingCPU implements ICraftingCPU, TimeWheelFastPl
         return craftingLogic;
     }
 
-    public TestTimeWheelCraftingCpuBlockEntity getHost() {
+    public TimeWheelCraftingCpuHost getHost() {
         return host;
     }
 
@@ -150,11 +152,23 @@ public final class TimeWheelCraftingCPU implements ICraftingCPU, TimeWheelFastPl
         craftingLogic.writeToNBT(tag, registries);
     }
 
+    public boolean hasPersistentState() {
+        return craftingLogic.hasPersistentState();
+    }
+
     public void readFromNBT(CompoundTag tag, HolderLookup.Provider registries) {
         craftingLogic.readFromNBT(tag, registries);
     }
 
     public void resolvePendingLoad() {
         craftingLogic.resolvePendingLoad();
+    }
+
+    public void addRemovalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+        craftingLogic.addStoredDrops(level, pos, drops);
+    }
+
+    public void clearRemovedContent() {
+        craftingLogic.clearRemovedContent();
     }
 }

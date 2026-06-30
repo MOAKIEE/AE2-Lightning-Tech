@@ -1,6 +1,7 @@
 package com.moakiee.ae2lt.blockentity;
 
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import net.minecraft.core.BlockPos;
@@ -8,6 +9,8 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 
 import appeng.api.networking.IGrid;
@@ -20,10 +23,11 @@ import appeng.hooks.ticking.TickHandler;
 import appeng.me.helpers.MachineSource;
 
 import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCPU;
+import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCpuHost;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
-public class TestTimeWheelCraftingCpuBlockEntity extends AENetworkedBlockEntity {
+public class TestTimeWheelCraftingCpuBlockEntity extends AENetworkedBlockEntity implements TimeWheelCraftingCpuHost {
     public static final long STORAGE_BYTES = 10L * 1024L * 1024L * 1024L;
     public static final int PARALLELISM = 100_000;
 
@@ -83,6 +87,10 @@ public class TestTimeWheelCraftingCpuBlockEntity extends AENetworkedBlockEntity 
     @Override
     public void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.saveAdditional(tag, registries);
+        if (!cpu.hasPersistentState()) {
+            return;
+        }
+
         var cpuTag = new CompoundTag();
         cpu.writeToNBT(cpuTag, registries);
         if (!cpuTag.isEmpty()) {
@@ -102,6 +110,18 @@ public class TestTimeWheelCraftingCpuBlockEntity extends AENetworkedBlockEntity 
     public void onLoad() {
         super.onLoad();
         cpu.resolvePendingLoad();
+    }
+
+    @Override
+    public void addAdditionalDrops(Level level, BlockPos pos, List<ItemStack> drops) {
+        super.addAdditionalDrops(level, pos, drops);
+        cpu.addRemovalDrops(level, pos, drops);
+    }
+
+    @Override
+    public void clearContent() {
+        super.clearContent();
+        cpu.clearRemovedContent();
     }
 
     @Override

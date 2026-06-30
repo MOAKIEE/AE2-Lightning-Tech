@@ -133,7 +133,7 @@ public class MatrixPatternStorageBlockEntity extends BlockEntity implements Matr
             rebuildPatternCache();
         }
         for (var pattern : cachedPatterns) {
-            if (pattern == details) {
+            if (MatrixPatternCore.samePattern(pattern, details)) {
                 return true;
             }
         }
