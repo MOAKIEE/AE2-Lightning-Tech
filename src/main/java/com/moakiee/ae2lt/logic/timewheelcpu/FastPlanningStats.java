@@ -61,6 +61,28 @@ public final class FastPlanningStats {
         return this.binarySearches;
     }
 
+    /**
+     * Live, lock-free snapshot of the counters for the watchdog. Reads can race with the calculating
+     * thread's writes, but these are plain {@code long} counters used only for diagnostics, so a torn /
+     * slightly-stale value is harmless and never throws.
+     */
+    public String live() {
+        long now = System.nanoTime();
+        long elapsedMs = Math.max(0, now - this.startNanos) / 1_000_000L;
+        return String.format(
+                Locale.ROOT,
+                "elapsedMs=%d branches=%d fastBranches=%d legacyBranches=%d failures=%d "
+                        + "binarySearches=%d fuzzyCandidates=%d fallbacks=%d",
+                elapsedMs,
+                this.branches,
+                this.fastBranches,
+                this.legacyBranches,
+                this.failures,
+                this.binarySearches,
+                this.fuzzyCandidates,
+                this.fallbacks);
+    }
+
     public String summary(long amount, boolean fallback) {
         return String.format(
                 Locale.ROOT,

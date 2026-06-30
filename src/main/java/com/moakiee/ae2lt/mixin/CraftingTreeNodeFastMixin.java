@@ -134,6 +134,12 @@ public abstract class CraftingTreeNodeFastMixin implements FastCraftingTreeNode 
     }
 
     @Override
+    public String ae2lt$describe(long requestedAmount) {
+        return "output=" + this.what + " unit=" + this.amount + " requested=" + requestedAmount
+                + " items=" + (this.amount * requestedAmount) + " canEmit=" + this.canEmit;
+    }
+
+    @Override
     public void ae2lt$captureFastProcessStates(IdentityHashMap<FastCraftingTreeProcess, Boolean> states) {
         if (this.nodes == null) {
             return;

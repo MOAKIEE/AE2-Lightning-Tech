@@ -18,4 +18,7 @@ public interface FastCraftingTreeNode {
     void ae2lt$captureFastProcessStates(IdentityHashMap<FastCraftingTreeProcess, Boolean> states);
 
     void ae2lt$restoreFastProcessStates(IdentityHashMap<FastCraftingTreeProcess, Boolean> states);
+
+    /** Human-readable description of this (top-level) request for diagnostics/watchdog logging. */
+    String ae2lt$describe(long requestedAmount);
 }
