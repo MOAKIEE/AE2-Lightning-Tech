@@ -901,9 +901,22 @@ public final class Ae2LtTimeWheelCraftingCpuLogic {
 
     private void prepareScheduler(TimeWheelJob activeJob) {
         advanceWheel();
-        if (queueRebuildNeeded || (queuedTasks.isEmpty() && !activeJob.tasks.isEmpty())) {
+        if (queueRebuildNeeded || needsSchedulerRebuild(activeJob)) {
             rebuildTaskWheel();
         }
+    }
+
+    private boolean needsSchedulerRebuild(TimeWheelJob activeJob) {
+        return !activeJob.tasks.isEmpty() && (queuedTasks.isEmpty() || !hasScheduledWheelEntries());
+    }
+
+    private boolean hasScheduledWheelEntries() {
+        for (var bucket : taskWheel) {
+            if (!bucket.isEmpty()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void advanceWheel() {
