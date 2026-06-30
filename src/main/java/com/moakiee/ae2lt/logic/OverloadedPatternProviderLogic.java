@@ -59,9 +59,9 @@ import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyDistributor;
 import com.moakiee.ae2lt.mixin.PatternProviderLogicAccessor;
 
-import com.moakiee.ae2lt.overload.model.MatchMode;
-import com.moakiee.ae2lt.overload.pattern.OverloadedProviderOnlyPatternDetails;
-import com.moakiee.ae2lt.overload.pattern.OverloadPatternDetails;
+import com.moakiee.thunderbolt.ae2.overload.model.MatchMode;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadedProviderOnlyPatternDetails;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternDetails;
 
 /**
  * Extended pattern-provider logic that adds a wireless dispatch path.

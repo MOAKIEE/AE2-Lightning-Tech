@@ -12,12 +12,12 @@ import net.minecraft.world.level.Level;
 import appeng.api.crafting.IPatternDetails;
 import appeng.crafting.pattern.EncodedPatternItem;
 
-import com.moakiee.ae2lt.overload.model.EncodedOverloadPattern;
+import com.moakiee.thunderbolt.ae2.overload.model.EncodedOverloadPattern;
 import com.moakiee.ae2lt.overload.pattern.OverloadPatternDecoder;
-import com.moakiee.ae2lt.overload.pattern.OverloadPatternPayload;
-import com.moakiee.ae2lt.overload.pattern.OverloadPatternPayloadTagCodec;
-import com.moakiee.ae2lt.overload.pattern.PatternExecutionHostKind;
-import com.moakiee.ae2lt.overload.pattern.SourcePatternSnapshot;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternPayload;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternPayloadTagCodec;
+import com.moakiee.thunderbolt.ae2.overload.pattern.PatternExecutionHostKind;
+import com.moakiee.thunderbolt.ae2.overload.pattern.SourcePatternSnapshot;
 
 /**
  * Final item form of an overload pattern.

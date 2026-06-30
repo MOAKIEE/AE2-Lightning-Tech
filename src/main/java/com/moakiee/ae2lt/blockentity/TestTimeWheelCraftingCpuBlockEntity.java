@@ -8,6 +8,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -22,8 +23,8 @@ import appeng.blockentity.grid.AENetworkedBlockEntity;
 import appeng.hooks.ticking.TickHandler;
 import appeng.me.helpers.MachineSource;
 
-import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCPU;
-import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCpuHost;
+import com.moakiee.thunderbolt.ae2.timewheel.TimeWheelCraftingCPU;
+import com.moakiee.thunderbolt.ae2.timewheel.TimeWheelCraftingCpuHost;
 import com.moakiee.ae2lt.registry.ModBlockEntities;
 import com.moakiee.ae2lt.registry.ModBlocks;
 
@@ -82,6 +83,11 @@ public class TestTimeWheelCraftingCpuBlockEntity extends AENetworkedBlockEntity 
         }
         lastCpuDirtyTick = now;
         saveChanges();
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.ae2lt.test_time_wheel_crafting_cpu");
     }
 
     @Override

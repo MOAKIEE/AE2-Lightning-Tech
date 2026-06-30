@@ -27,8 +27,8 @@ import appeng.menu.me.crafting.CraftingCPUMenu;
 import appeng.menu.me.crafting.CraftingStatus;
 import appeng.menu.me.crafting.CraftingStatusEntry;
 
-import com.moakiee.ae2lt.logic.timewheelcpu.Ae2LtTimeWheelCraftingCpuLogic;
-import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCPU;
+import com.moakiee.thunderbolt.ae2.timewheel.Ae2LtTimeWheelCraftingCpuLogic;
+import com.moakiee.thunderbolt.ae2.timewheel.TimeWheelCraftingCPU;
 
 @Mixin(value = CraftingCPUMenu.class, remap = false)
 public abstract class TimeWheelCraftingCPUMenuMixin extends AEBaseMenu {
