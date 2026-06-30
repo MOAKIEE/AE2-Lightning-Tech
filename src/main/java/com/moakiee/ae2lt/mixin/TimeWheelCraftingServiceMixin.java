@@ -44,7 +44,7 @@ import appeng.me.service.CraftingService;
 import com.moakiee.ae2lt.blockentity.TestTimeWheelCraftingCpuBlockEntity;
 import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelCraftingCPU;
 import com.moakiee.ae2lt.logic.timewheelcpu.TimeWheelFastPlanningGate;
-import com.qianchang.ae2lt_core.ae2.crafting.FastCraftingControl;
+import com.moakiee.thunderbolt.ae2.crafting.FastCraftingControl;
 
 @Mixin(value = CraftingService.class, remap = false)
 public abstract class TimeWheelCraftingServiceMixin {

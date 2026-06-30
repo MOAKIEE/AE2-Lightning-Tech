@@ -60,7 +60,7 @@ public final class NaturalLightningTransformationHandler {
         var data = lightningBolt.getPersistentData();
         if (data.getBoolean(TRANSFORMATION_CHECKED_TAG)) {
             // The transformation_checked tag is set but our own marker isn't — another
-            // mod (e.g. Thunderbolt_lib) intercepted the lightning at higher priority
+            // mod (e.g. Thunderbolt Core) intercepted the lightning at higher priority
             // and ran its own pipeline. The collector's captureLightning() will not be
             // called for this strike, which means LightningCollectedEvent will not
             // fire either. Warn once so server operators can correlate missing

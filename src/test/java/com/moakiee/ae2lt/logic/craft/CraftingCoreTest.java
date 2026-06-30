@@ -7,6 +7,10 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.moakiee.thunderbolt.core.craft.CopyAssembler;
+import com.moakiee.thunderbolt.core.craft.CraftingCore;
+import com.moakiee.thunderbolt.core.craft.CraftingCoreHost;
+import com.moakiee.thunderbolt.core.craft.CraftingCoreRegistry;
 import com.mojang.serialization.MapCodec;
 import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
 import net.minecraft.core.BlockPos;

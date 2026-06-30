@@ -19,7 +19,7 @@ import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import org.jetbrains.annotations.Nullable;
 
-import com.qianchang.ae2lt_core.core.cell.ByteTracker;
+import com.moakiee.thunderbolt.core.cell.ByteTracker;
 
 /**
  * Lightweight wrapper around a shared {@link IndexedStorage} cached in

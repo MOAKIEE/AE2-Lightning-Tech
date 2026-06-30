@@ -14,10 +14,10 @@ import appeng.api.crafting.IPatternDetails;
 import appeng.api.stacks.AEKey;
 import appeng.api.stacks.KeyCounter;
 
-import com.qianchang.ae2lt_core.core.craft.CopyAssembler;
-import com.qianchang.ae2lt_core.core.craft.CraftingCore;
-import com.qianchang.ae2lt_core.core.craft.CraftingCoreHost;
-import com.qianchang.ae2lt_core.core.craft.CraftingCoreRegistry;
+import com.moakiee.thunderbolt.core.craft.CopyAssembler;
+import com.moakiee.thunderbolt.core.craft.CraftingCore;
+import com.moakiee.thunderbolt.core.craft.CraftingCoreHost;
+import com.moakiee.thunderbolt.core.craft.CraftingCoreRegistry;
 
 /**
  * Multiblock-side rate limiter that wraps a shared {@link CraftingCore} engine: it aggregates the

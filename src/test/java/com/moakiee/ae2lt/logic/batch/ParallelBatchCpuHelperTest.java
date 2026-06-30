@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import com.moakiee.thunderbolt.ae2.batch.BatchProviderFilterIterable;
+import com.moakiee.thunderbolt.ae2.batch.ParallelBatchCpuHelper;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.nbt.CompoundTag;
