@@ -29,7 +29,6 @@ import com.moakiee.ae2lt.logic.WirelessConnectionLists;
 import com.moakiee.ae2lt.logic.WirelessConnectionRange;
 import com.moakiee.ae2lt.logic.WirelessConnectionRef;
 import com.moakiee.ae2lt.logic.WirelessConnectionValidator;
-import com.moakiee.ae2lt.logic.WirelessImportCacheCursor;
 import com.moakiee.ae2lt.logic.energy.AppFluxBridge;
 import com.moakiee.ae2lt.logic.energy.PowerCostUtil;
 import com.moakiee.ae2lt.logic.energy.WirelessEnergyAPI;
@@ -357,7 +356,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
     static final class ImportKeyCache {
         final List<AEKey> keys = new ArrayList<>();
         long lastFullScanTick = Long.MIN_VALUE;
-        int nextIndex;
         boolean truncated;
 
         boolean isScanFresh(long now) {
@@ -373,26 +371,16 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             return now - lastFullScanTick < ttl;
         }
 
-        boolean canUseKeys(long now) {
-            return !keys.isEmpty() && isScanFresh(now);
-        }
-
         void update(List<AEKey> scannedKeys, boolean wasTruncated, long now) {
             keys.clear();
             keys.addAll(scannedKeys);
             lastFullScanTick = now;
             truncated = wasTruncated;
-            if (keys.isEmpty()) {
-                nextIndex = 0;
-            } else {
-                nextIndex %= keys.size();
-            }
         }
 
         void clear() {
             keys.clear();
             lastFullScanTick = Long.MIN_VALUE;
-            nextIndex = 0;
             truncated = false;
         }
     }
@@ -1376,12 +1364,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             result = extractExactImportKeys(keyType, wrapper, src, transferLimit, exactFilterKeys);
         } else {
             var cache = state.importKeyCacheFor(keyType);
-            if (cache.canUseKeys(now)) {
-                result = extractCachedImportKeys(cache, wrapper, src, transferLimit);
-                if (result.totalAvail() <= 0) {
-                    result = scanImportKeys(keyType, wrapper, src, cache, now, transferLimit, true);
-                }
-            } else if (cache.isScanFresh(now)) {
+            if (cache.isScanFresh(now) && cache.keys.isEmpty()) {
                 result = new ImportResult(0, 0);
             } else {
                 result = scanImportKeys(keyType, wrapper, src, cache, now, transferLimit, true);
@@ -1408,14 +1391,7 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
         }
 
         var cache = state.importKeyCacheFor(keyType);
-        if (cache.canUseKeys(now)) {
-            long cachedAvail = observeCachedImportAvailable(cache, wrapper, src, probeLimit);
-            if (cachedAvail > 0) {
-                return cachedAvail;
-            }
-            return scanImportKeys(keyType, wrapper, src, cache, now, probeLimit, false).totalAvail();
-        }
-        if (cache.isScanFresh(now)) {
+        if (cache.isScanFresh(now) && cache.keys.isEmpty()) {
             return 0;
         }
         return scanImportKeys(keyType, wrapper, src, cache, now, probeLimit, false).totalAvail();
@@ -1449,47 +1425,6 @@ public class OverloadedInterfaceBlockEntity extends InterfaceBlockEntity
             if (key.getType() != keyType) continue;
             long amount = wrapper.extract(key, Math.max(1L, probeLimit), Actionable.SIMULATE, src);
             if (amount > 0) total += amount;
-        }
-        return total;
-    }
-
-    private ImportResult extractCachedImportKeys(ImportKeyCache cache, MEStorage wrapper,
-                                                 IActionSource src, long transferLimit) {
-        int size = cache.keys.size();
-        if (size <= 0) return new ImportResult(0, 0);
-        long budget = transferLimit;
-        long totalAvail = 0;
-        long moved = 0;
-        int start = Math.floorMod(cache.nextIndex, size);
-        int visited = 0;
-
-        while (visited < size && budget > 0) {
-            var key = cache.keys.get((start + visited) % size);
-            long available = wrapper.extract(key, Math.max(1L, budget), Actionable.SIMULATE, src);
-            if (available > 0) {
-                totalAvail += available;
-                long extracted = importExtractToBuffer(key, Math.min(available, budget), wrapper, src);
-                moved += extracted;
-                budget -= extracted;
-            }
-            visited++;
-        }
-
-        cache.nextIndex = WirelessImportCacheCursor.nextIndex(start, size, visited);
-        return new ImportResult(totalAvail, moved);
-    }
-
-    private long observeCachedImportAvailable(ImportKeyCache cache, MEStorage wrapper,
-                                              IActionSource src, long probeLimit) {
-        long total = 0;
-        int checked = 0;
-        int size = cache.keys.size();
-        int start = size > 0 ? Math.floorMod(cache.nextIndex, size) : 0;
-        while (checked < size) {
-            var key = cache.keys.get((start + checked) % size);
-            long amount = wrapper.extract(key, Math.max(1L, probeLimit), Actionable.SIMULATE, src);
-            if (amount > 0) total += amount;
-            checked++;
         }
         return total;
     }
