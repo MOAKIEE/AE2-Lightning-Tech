@@ -7,8 +7,15 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.world.item.ItemStack;
 
 import com.moakiee.ae2lt.item.OverloadPatternItem;
-import com.moakiee.ae2lt.overload.model.EncodedOverloadPattern;
-import com.moakiee.ae2lt.overload.model.MatchMode;
+import com.moakiee.thunderbolt.ae2.overload.model.EncodedOverloadPattern;
+import com.moakiee.thunderbolt.ae2.overload.model.MatchMode;
+import com.moakiee.thunderbolt.ae2.overload.pattern.EditableOverloadPatternState;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternDetails;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternEditState;
+import com.moakiee.thunderbolt.ae2.overload.pattern.OverloadPatternPayload;
+import com.moakiee.thunderbolt.ae2.overload.pattern.ParsedPatternDefinition;
+import com.moakiee.thunderbolt.ae2.overload.pattern.PatternExecutionHostKind;
+import com.moakiee.thunderbolt.ae2.overload.pattern.PlainPatternResolver;
 
 /**
  * Converts plain-pattern parse results into overload-pattern payloads and item

@@ -1,5 +1,7 @@
 package com.moakiee.ae2lt.me.cell;
 
+import com.moakiee.thunderbolt.ae2.cell.IndexedStorage;
+
 import java.util.UUID;
 
 import appeng.api.config.Actionable;
