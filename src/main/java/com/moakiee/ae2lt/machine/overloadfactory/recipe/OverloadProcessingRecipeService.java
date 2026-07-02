@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Optional;
 
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.RecipeManager;
 import net.minecraft.world.level.Level;
@@ -268,19 +269,34 @@ public final class OverloadProcessingRecipeService {
             return Optional.empty();
         }
 
+        Optional<OverloadProcessingRecipe.MatchPlan> plan = recipe.prepareMatch(input);
+        if (plan.isEmpty()) {
+            return Optional.empty();
+        }
+
+        upper = (int) Math.min(upper, plan.get().maxOperationsByAvailability());
+        upper = (int) Math.min(upper, maxOutputParallel(inventory, recipe, outputFluid));
+        if (upper <= 0) {
+            return Optional.empty();
+        }
+
+        // The capacity bound above is exact for at most one item result (the
+        // current recipe limit); with several distinct results competing for
+        // empty slots, fall back to simulating output placement per probe.
+        boolean checkOutputsPerProbe = recipe.rawItemResults().size() > 1;
+
         int low = 1;
         int high = upper;
         int best = 0;
         OverloadProcessingRecipeMatch bestMatch = null;
         while (low <= high) {
             int mid = (low + high) >>> 1;
-            if (!recipe.hasRequiredFluid(input.inputFluid(), mid)
-                    || !canAcceptOutputs(inventory, recipe, outputFluid, mid)) {
+            if (checkOutputsPerProbe && !canAcceptOutputs(inventory, recipe, outputFluid, mid)) {
                 high = mid - 1;
                 continue;
             }
 
-            Optional<OverloadProcessingRecipeMatch> match = recipe.planMatch(input, mid);
+            Optional<OverloadProcessingRecipeMatch> match = plan.get().allocate(mid);
             if (match.isPresent()) {
                 best = mid;
                 bestMatch = match.get();
@@ -290,6 +306,40 @@ public final class OverloadProcessingRecipeService {
             }
         }
         return bestMatch == null ? Optional.empty() : Optional.of(new ParallelMatch(best, bestMatch));
+    }
+
+    /**
+     * Upper bound on parallel operations from output space: item output slot
+     * capacity plus output tank headroom. Mirrors canAcceptOutputs without
+     * allocating scaled result stacks per probe.
+     */
+    private static long maxOutputParallel(
+            OverloadProcessingFactoryInventory inventory,
+            OverloadProcessingRecipe recipe,
+            FluidStack outputFluid) {
+        long bound = Long.MAX_VALUE;
+
+        List<ItemStack> itemResults = recipe.rawItemResults();
+        if (itemResults.size() == 1) {
+            ItemStack result = itemResults.getFirst();
+            bound = inventory.getOutputCapacityFor(result) / result.getCount();
+        }
+
+        FluidStack fluidResult = recipe.rawFluidResult();
+        if (!fluidResult.isEmpty()) {
+            long tankCapacity = com.moakiee.ae2lt.blockentity.OverloadProcessingFactoryBlockEntity.OUTPUT_TANK_CAPACITY;
+            long space;
+            if (outputFluid.isEmpty()) {
+                space = tankCapacity;
+            } else if (FluidStack.isSameFluidSameComponents(outputFluid, fluidResult)) {
+                space = tankCapacity - outputFluid.getAmount();
+            } else {
+                space = 0L;
+            }
+            bound = Math.min(bound, Math.max(0L, space) / fluidResult.getAmount());
+        }
+
+        return bound;
     }
 
     private record ParallelMatch(int parallel, OverloadProcessingRecipeMatch match) {
